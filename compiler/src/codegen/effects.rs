@@ -937,7 +937,10 @@ pub(super) fn do_block_requires_function_boundary(expression: &Expr) -> bool {
                 || do_block_requires_function_boundary(&chain.success)
                 || do_block_requires_function_boundary(&chain.residual)
         }
-        Expr::Call(callee, arguments) => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             do_block_requires_function_boundary(callee)
                 || arguments
                     .iter()

@@ -1,7 +1,11 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt;
+use std::hash::Hash;
 
-use crate::ast::{BinaryOp, ItemOrigin, PassMode, StructRepresentation, Type, UnaryOp, Visibility};
+use crate::ast::{
+    BinaryOp, GroupDelimiter, ItemOrigin, PassMode, StructRepresentation, Type, UnaryOp,
+    Visibility,
+};
 
 use super::ctfe_value::CtfeValue;
 
@@ -60,13 +64,59 @@ pub(super) enum Ty {
     Error,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub(super) struct FunctionTy {
     pub(super) groups: Vec<Vec<Ty>>,
+    pub(super) group_delimiters: Vec<GroupDelimiter>,
     pub(super) unsafety: bool,
     pub(super) failure_error: Option<Box<Ty>>,
     pub(super) custom_effects: Vec<String>,
     pub(super) result: Box<Ty>,
+}
+
+impl PartialEq for FunctionTy {
+    fn eq(&self, other: &Self) -> bool {
+        self.groups == other.groups
+            && group_delimiters_equal(self, other)
+            && self.unsafety == other.unsafety
+            && self.failure_error == other.failure_error
+            && self.custom_effects == other.custom_effects
+            && self.result == other.result
+    }
+}
+
+impl Eq for FunctionTy {}
+
+impl std::hash::Hash for FunctionTy {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.groups.hash(state);
+        for index in 0..self.groups.len() {
+            self.group_delimiters
+                .get(index)
+                .copied()
+                .unwrap_or(GroupDelimiter::Parenthesis)
+                .hash(state);
+        }
+        self.unsafety.hash(state);
+        self.failure_error.hash(state);
+        self.custom_effects.hash(state);
+        self.result.hash(state);
+    }
+}
+
+fn group_delimiters_equal(left: &FunctionTy, right: &FunctionTy) -> bool {
+    left.groups.len() == right.groups.len()
+        && (0..left.groups.len()).all(|index| {
+            left.group_delimiters
+                .get(index)
+                .copied()
+                .unwrap_or(GroupDelimiter::Parenthesis)
+                == right
+                    .group_delimiters
+                    .get(index)
+                    .copied()
+                    .unwrap_or(GroupDelimiter::Parenthesis)
+        })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -137,7 +187,8 @@ pub(super) fn type_is_assignable(actual: &Ty, expected: &Ty) -> bool {
 }
 
 pub(super) fn function_type_is_assignable(actual: &FunctionTy, expected: &FunctionTy) -> bool {
-    actual.groups.len() == expected.groups.len()
+    group_delimiters_equal(actual, expected)
+        && actual.groups.len() == expected.groups.len()
         && actual
             .groups
             .iter()
@@ -223,15 +274,20 @@ impl fmt::Display for Ty {
             Self::Never => f.write_str("never"),
             Self::Error => f.write_str("<error>"),
             Self::Function(function) => {
-                for group in &function.groups {
-                    f.write_str("(")?;
+                for (group_index, group) in function.groups.iter().enumerate() {
+                    let delimiter = function
+                        .group_delimiters
+                        .get(group_index)
+                        .copied()
+                        .unwrap_or(GroupDelimiter::Parenthesis);
+                    write!(f, "{}", delimiter.opening())?;
                     for (index, ty) in group.iter().enumerate() {
                         if index != 0 {
                             f.write_str(", ")?;
                         }
                         write!(f, "{ty}")?;
                     }
-                    f.write_str(")")?;
+                    write!(f, "{}", delimiter.closing())?;
                 }
                 f.write_str(": ")?;
                 write!(f, "{}", function.result)?;
@@ -847,6 +903,7 @@ impl FunctionSig {
                 .iter()
                 .map(|group| group.iter().map(|param| param.ty.clone()).collect())
                 .collect(),
+            group_delimiters: vec![GroupDelimiter::Parenthesis; self.groups.len()],
             unsafety: self.unsafety,
             failure_error: self.failure_error.clone().map(Box::new),
             custom_effects: self.custom_effects.clone(),

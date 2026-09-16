@@ -425,7 +425,9 @@ literal length as a compile-time argument.
 
 ## 5. Functions and Application
 
-A function declaration may contain multiple compile-time and runtime parameter groups:
+A function declaration may contain multiple compile-time and runtime parameter groups. Each group
+chooses one of four delimiters, `()`, `[]`, `<>`, or `{}`, and application must use the same
+delimiter at that group position:
 
 ```sc fragment
 let map(comptime t: type, comptime u: type)(value: t)(transform: (t): u): u = {
@@ -441,9 +443,27 @@ let add_two = add(2)
 let answer = add_two(40)
 ```
 
+```sc fragment
+let select<comptime t: type>[left: t]{right: t}(fallback: t): t = { left }
+let answer = select<i32>[40]{2}(0)
+```
+
 Supplying a group creates or invokes the next function layer. Arguments for a supplied group are
 evaluated left to right. A partial application performs the passing actions for supplied arguments
 but does not execute the final body until all runtime groups are supplied.
+
+The delimiter is part of a function's type and calling convention. It is checked for direct calls,
+function-valued calls, and every remaining layer of a partial application. `comptime`, not the
+delimiter, determines whether a declaration group is compile-time.
+
+An explicit opener is a postfix call only when it is byte-adjacent to the callee token. Comparison
+operators require whitespace on both sides, so `a < b` compares and `a<b>` calls an angle group.
+Postfix `[]` is a square call; indexable values retain bounds checks, borrowing, assignment-place
+lowering, and user index protocol dispatch. Tight `{}` is a brace call; struct callees retain
+struct construction. An uncalled `[...]` remains an array literal, an uncalled `{...}` remains a
+block or closure, and a whitespace-separated trailing closure continues to supply a `()` group.
+When two angle groups are open, a tight `>>` is split into two closing delimiters. A
+whitespace-separated `a >> b` remains the shift operator.
 
 ### 5.1 Unary Groups, Labels, and Trailing Closures
 
@@ -484,7 +504,7 @@ if condition then {
 
 ### 5.2 Function Types and Closures
 
-A function type records its runtime groups, result, and effect row:
+A function type records each runtime group's delimiter, its result, and effect row:
 
 ```sc fragment
 let apply(comptime t: type, comptime u: type)(value: t)(function: (t): u): u = {

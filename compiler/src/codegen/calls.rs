@@ -1,4 +1,4 @@
-use crate::ast::{CallArg, Expr, PassMode, Type};
+use crate::ast::{CallArg, Expr, GroupDelimiter, PassMode, Type};
 use crate::core::LangItemKind;
 
 use super::fallible::InferredEnumHints;
@@ -7,7 +7,9 @@ use super::hir::{
     ContinuationAdapter, EffectCallableAdapter, HirExpr, HirExprKind, HirPlace, LayoutQueryKind,
     LocalCapability, Ty,
 };
-use super::lower::{error_expr, flatten_call, BoundMethodConstraint, TypeProbe};
+use super::lower::{
+    error_expr, flatten_call, flatten_call_delimiters, BoundMethodConstraint, TypeProbe,
+};
 use super::registry::NominalKind;
 use super::Analyzer;
 
@@ -80,6 +82,54 @@ impl Analyzer {
     ) -> HirExpr {
         let mut groups = Vec::new();
         let root = flatten_call(expression, &mut groups);
+        let mut actual_delimiters = Vec::new();
+        flatten_call_delimiters(expression, &mut actual_delimiters);
+        if let Expr::Name(name) = root {
+            let expected = context.lookup(name).and_then(|local| {
+                if let Some(partial) = &local.partial {
+                    self.collection
+                        .functions
+                        .get(&partial.function)
+                        .or_else(|| self.collection.function_templates.get(&partial.function))
+                        .map(|function| {
+                            function
+                                .effects
+                                .group_delimiters
+                                .iter()
+                                .copied()
+                                .skip(partial.consumed_groups)
+                                .collect::<Vec<_>>()
+                        })
+                } else {
+                    match &local.ty {
+                        Ty::Function(function) => Some(function.group_delimiters.clone()),
+                        Ty::Callable(callable) => {
+                            Some(callable.signature.group_delimiters.clone())
+                        }
+                        _ => None,
+                    }
+                }
+            }).or_else(|| {
+                self.collection
+                    .functions
+                    .get(name)
+                    .or_else(|| self.collection.function_templates.get(name))
+                    .map(|function| {
+                        function
+                            .effects
+                            .compile_group_delimiters
+                            .iter()
+                            .chain(&function.effects.group_delimiters)
+                            .copied()
+                            .collect::<Vec<_>>()
+                    })
+            });
+            if let Some(expected) = expected {
+                if !self.call_delimiters_match(name, &actual_delimiters, &expected) {
+                    return error_expr();
+                }
+            }
+        }
         if let Expr::Name(name) = root {
             if self.is_lang_item_name(name, LangItemKind::If) {
                 return self.lower_if_match_call(&groups, expected, context);
@@ -867,6 +917,30 @@ impl Analyzer {
         }
         self.error("calls require a named function, constructor, associated function, or method");
         error_expr()
+    }
+
+    fn call_delimiters_match(
+        &mut self,
+        name: &str,
+        actual: &[GroupDelimiter],
+        expected: &[GroupDelimiter],
+    ) -> bool {
+        for (index, actual) in actual.iter().enumerate() {
+            let expected = expected
+                .get(index)
+                .copied()
+                .unwrap_or(GroupDelimiter::Parenthesis);
+            if *actual != expected {
+                self.error(format!(
+                    "argument group {} in call to `{name}` uses `{}` but the parameter group uses `{}`",
+                    index + 1,
+                    actual.opening(),
+                    expected.opening(),
+                ));
+                return false;
+            }
+        }
+        true
     }
 
     pub(super) fn empty_struct_candidate(

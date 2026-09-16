@@ -752,7 +752,10 @@ fn normalize_expr_region_qualifiers(
             normalize_expr_region_qualifiers(&mut chain.success, regions, accesses)?;
             normalize_expr_region_qualifiers(&mut chain.residual, regions, accesses)
         }
-        Expr::Call(callee, arguments) => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             normalize_expr_region_qualifiers(callee, regions, accesses)?;
             for argument in arguments {
                 normalize_expr_region_qualifiers(&mut argument.value, regions, accesses)?;
@@ -1129,7 +1132,10 @@ fn validate_expr_accesses(expression: &Expr, accesses: &HashSet<String>) -> Resu
             validate_expr_accesses(&chain.success, accesses)?;
             validate_expr_accesses(&chain.residual, accesses)
         }
-        Expr::Call(callee, arguments) => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             validate_expr_accesses(callee, accesses)?;
             for argument in arguments {
                 validate_expr_accesses(&argument.value, accesses)?;
@@ -1375,7 +1381,10 @@ fn validate_expr_regions(expression: &Expr, regions: &HashSet<String>) -> Result
             validate_expr_regions(&chain.success, regions)?;
             validate_expr_regions(&chain.residual, regions)
         }
-        Expr::Call(callee, arguments) => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             validate_expr_regions(callee, regions)?;
             for argument in arguments {
                 validate_expr_regions(&argument.value, regions)?;

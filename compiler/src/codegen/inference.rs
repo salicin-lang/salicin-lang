@@ -1072,6 +1072,7 @@ impl Analyzer {
                                 .collect::<Option<Vec<_>>>()
                         })
                         .collect::<Option<Vec<_>>>()?,
+                    group_delimiters: effects.group_delimiters.clone(),
                     unsafety,
                     failure_error,
                     custom_effects,

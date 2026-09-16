@@ -3,9 +3,9 @@ use std::{collections::HashSet, fmt};
 use crate::ast::{
     default_trait_self_parameter, AssociatedKind, AssociatedTypeBinding, BinaryOp, Binding,
     CallArg, CompileParam, CompileParamDefault, EffectDef, EnumDef, Expr, ExtendDef, ExtendMember,
-    Field, ForeignAbi, ForeignFunction, Function, FunctionEffects, Item, MatchArm, Param, PassMode,
-    Pattern, PatternField, PatternFields, Program, Sort, SortDef, StaticCallArg, StaticExpr, Stmt,
-    StructDef, StructRepresentation, TraitDef, TraitMember, Type, TypeAliasDef, TypeArg,
+    Field, ForeignAbi, ForeignFunction, Function, FunctionEffects, GroupDelimiter, Item, MatchArm,
+    Param, PassMode, Pattern, PatternField, PatternFields, Program, Sort, SortDef, StaticCallArg,
+    StaticExpr, Stmt, StructDef, StructRepresentation, TraitDef, TraitMember, Type, TypeAliasDef, TypeArg,
     TypeFormDef, USizeConst, UnaryOp, UseDecl, VariantDef, VariantFields, Visibility,
     WherePredicate,
 };
@@ -122,6 +122,7 @@ struct Parser {
     next_control_binding: usize,
     async_depth: usize,
     layout: SourceLayout,
+    expression_group_closers: Vec<TokenKind>,
 }
 
 type DeclarationGroups = (
@@ -141,6 +142,7 @@ impl Parser {
             next_control_binding: 0,
             async_depth: 0,
             layout: SourceLayout::default(),
+            expression_group_closers: Vec::new(),
         }
     }
 
@@ -542,8 +544,10 @@ impl Parser {
             None
         };
         if !has_callable_boundary {
-            let (legacy_effects, _failure_error, legacy_has_effect_clause) =
+            let (mut legacy_effects, _failure_error, legacy_has_effect_clause) =
                 self.function_effect_clause()?;
+            legacy_effects.compile_group_delimiters = effects.compile_group_delimiters;
+            legacy_effects.group_delimiters = effects.group_delimiters;
             effects = legacy_effects;
             has_effect_clause = legacy_has_effect_clause;
         }
@@ -892,7 +896,10 @@ impl Parser {
             self.expect(&TokenKind::Colon, "`:` before effect operation result type")?;
             let logical_result = self.function_result_type()?;
             if !has_callable_boundary {
-                effects = self.function_effect_clause()?.0;
+                let mut declared = self.function_effect_clause()?.0;
+                declared.compile_group_delimiters = effects.compile_group_delimiters;
+                declared.group_delimiters = effects.group_delimiters;
+                effects = declared;
             }
             let failure_error = effects.failure.as_deref().cloned();
             let return_type = Some(Self::apply_failure_effect(logical_result, failure_error));
@@ -1259,7 +1266,10 @@ impl Parser {
             None
         };
         if !has_callable_boundary {
-            effects = self.function_effect_clause()?.0;
+            let mut declared = self.function_effect_clause()?.0;
+            declared.compile_group_delimiters = effects.compile_group_delimiters;
+            declared.group_delimiters = effects.group_delimiters;
+            effects = declared;
         }
         let failure_error = effects.failure.as_deref().cloned();
         let annotation =
@@ -1565,9 +1575,12 @@ impl Parser {
         self.effect_parameters_in_scope
             .extend(outer_effect_parameters.iter().cloned());
         let mut compile_groups: Vec<Vec<CompileParam>> = Vec::new();
+        let mut compile_group_delimiters = Vec::new();
         let mut runtime_groups = Vec::new();
+        let mut runtime_group_delimiters = Vec::new();
 
         while self.group_starts_with_compile_parameter() {
+            compile_group_delimiters.push(self.current_group_delimiter().unwrap());
             let params = self.compile_parameter_group()?;
             self.effect_parameters_in_scope.extend(
                 params
@@ -1577,13 +1590,14 @@ impl Parser {
             );
             compile_groups.push(params);
             self.take_newlines_if_followed_by(&[
-                TokenKind::LParen,
+                TokenKind::LParen, TokenKind::LBracket, TokenKind::Less, TokenKind::LBrace,
                 TokenKind::Colon,
                 TokenKind::Equal,
             ]);
         }
 
-        while self.at(&TokenKind::LParen) {
+        while self.current_group_delimiter().is_some() {
+            runtime_group_delimiters.push(self.current_group_delimiter().unwrap());
             runtime_groups.push(
                 self.runtime_parameter_group(
                     allow_receiver,
@@ -1596,7 +1610,7 @@ impl Parser {
                 )?,
             );
             self.take_newlines_if_followed_by(&[
-                TokenKind::LParen,
+                TokenKind::LParen, TokenKind::LBracket, TokenKind::Less, TokenKind::LBrace,
                 TokenKind::Ellipsis,
                 TokenKind::Colon,
                 TokenKind::Equal,
@@ -1606,7 +1620,11 @@ impl Parser {
             return Ok((
                 compile_groups,
                 runtime_groups,
-                FunctionEffects::default(),
+                FunctionEffects {
+                    compile_group_delimiters,
+                    group_delimiters: runtime_group_delimiters,
+                    ..FunctionEffects::default()
+                },
                 false,
                 false,
             ));
@@ -1621,7 +1639,11 @@ impl Parser {
             return Ok((
                 compile_groups,
                 runtime_groups,
-                FunctionEffects::default(),
+                FunctionEffects {
+                    compile_group_delimiters,
+                    group_delimiters: runtime_group_delimiters,
+                    ..FunctionEffects::default()
+                },
                 false,
                 false,
             ));
@@ -1635,26 +1657,27 @@ impl Parser {
             TokenKind::Ellipsis,
             TokenKind::Ident("with".to_owned()),
         ]);
-        let (effects, _failure_error, has_effect_clause) = self.function_effect_clause()?;
-        self.take_newlines_if_followed_by(&[TokenKind::LParen, TokenKind::Ellipsis]);
+        let (mut effects, _failure_error, has_effect_clause) = self.function_effect_clause()?;
+        self.take_newlines_if_followed_by(&[TokenKind::LParen, TokenKind::LBracket, TokenKind::Less, TokenKind::LBrace, TokenKind::Ellipsis]);
         let modifier_parameters = compile_groups
             .iter()
             .flatten()
             .map(|parameter| parameter.name.clone())
             .collect::<HashSet<_>>();
-        while self.at(&TokenKind::LParen) {
+        while self.current_group_delimiter().is_some() {
             if self.group_starts_with_compile_parameter() {
                 return Err(self.error_here(
                     "compile-time parameter groups must precede the callable-type/body boundary",
                 ));
             }
+            runtime_group_delimiters.push(self.current_group_delimiter().unwrap());
             runtime_groups.push(self.runtime_parameter_group(
                 allow_receiver,
                 &modifier_parameters,
                 true,
             )?);
             self.take_newlines_if_followed_by(&[
-                TokenKind::LParen,
+                TokenKind::LParen, TokenKind::LBracket, TokenKind::Less, TokenKind::LBrace,
                 TokenKind::Ellipsis,
                 TokenKind::Colon,
                 TokenKind::Equal,
@@ -1697,7 +1720,7 @@ impl Parser {
                 TokenKind::Colon,
                 TokenKind::Equal,
             ]);
-            while self.at(&TokenKind::LParen) {
+            while self.current_group_delimiter().is_some() {
                 if self.group_starts_with_compile_parameter() {
                     return Err(self.error_here(
                         "compile-time parameter groups must precede repeated runtime parameter groups",
@@ -1709,6 +1732,7 @@ impl Parser {
                     .filter(|parameter| parameter.kind.is_parameter_modifier())
                     .map(|parameter| parameter.name.clone())
                     .collect::<HashSet<_>>();
+                runtime_group_delimiters.push(self.current_group_delimiter().unwrap());
                 runtime_groups.push(self.runtime_parameter_group(
                     allow_receiver,
                     &passing_parameters,
@@ -1725,7 +1749,11 @@ impl Parser {
         Ok((
             compile_groups,
             runtime_groups,
-            effects,
+            {
+                effects.compile_group_delimiters = compile_group_delimiters;
+                effects.group_delimiters = runtime_group_delimiters;
+                effects
+            },
             true,
             has_effect_clause,
         ))
@@ -1757,7 +1785,7 @@ impl Parser {
     }
 
     fn group_starts_with_compile_parameter(&self) -> bool {
-        self.at(&TokenKind::LParen)
+        self.current_group_delimiter().is_some()
             && self.at_offset(1, &TokenKind::Comptime)
             && if self.at_offset(2, &TokenKind::Ellipsis) {
                 matches!(
@@ -1775,6 +1803,56 @@ impl Parser {
                 ) && self.at_offset(3, &TokenKind::Colon)
                     && self.compile_parameter_sort_starts_at(4)
             }
+    }
+
+    fn current_group_delimiter(&self) -> Option<GroupDelimiter> {
+        match self.current().kind {
+            TokenKind::LParen => Some(GroupDelimiter::Parenthesis),
+            TokenKind::LBracket => Some(GroupDelimiter::Square),
+            TokenKind::Less => Some(GroupDelimiter::Angle),
+            TokenKind::LBrace => Some(GroupDelimiter::Brace),
+            _ => None,
+        }
+    }
+
+    fn group_close(delimiter: GroupDelimiter) -> TokenKind {
+        match delimiter {
+            GroupDelimiter::Parenthesis => TokenKind::RParen,
+            GroupDelimiter::Square => TokenKind::RBracket,
+            GroupDelimiter::Angle => TokenKind::Greater,
+            GroupDelimiter::Brace => TokenKind::RBrace,
+        }
+    }
+
+    fn open_group(&mut self, context: &str) -> Result<(GroupDelimiter, TokenKind), ParseError> {
+        let Some(delimiter) = self.current_group_delimiter() else {
+            return Err(self.error_here(format!("expected a parameter group {context}")));
+        };
+        let close = Self::group_close(delimiter);
+        self.advance();
+        Ok((delimiter, close))
+    }
+
+    fn expect_group_close(&mut self, close: &TokenKind, context: &str) -> Result<(), ParseError> {
+        if close == &TokenKind::Greater && self.at(&TokenKind::Shr) {
+            self.split_current_shift_right();
+        }
+        self.expect(close, context)
+    }
+
+    fn split_current_shift_right(&mut self) {
+        let token = self.current().clone();
+        debug_assert_eq!(token.kind, TokenKind::Shr);
+        let mut first = token.clone();
+        first.kind = TokenKind::Greater;
+        first.end_byte = first.start_byte + 1;
+        first.end_column = first.column + 1;
+        let mut second = token;
+        second.kind = TokenKind::Greater;
+        second.start_byte += 1;
+        second.column += 1;
+        self.tokens[self.index] = first;
+        self.tokens.insert(self.index + 1, second);
     }
 
     fn current_starts_compile_parameter(&self) -> bool {
@@ -2075,7 +2153,7 @@ impl Parser {
 
     fn compile_parameter_group(&mut self) -> Result<Vec<CompileParam>, ParseError> {
         self.layout.parameter_groups.push(self.current().start_byte);
-        self.expect(&TokenKind::LParen, "`(`")?;
+        let (_, close) = self.open_group("for compile-time parameters")?;
         let mut params = Vec::new();
 
         loop {
@@ -2099,7 +2177,7 @@ impl Parser {
                     default: None,
                 });
                 self.take(&TokenKind::Comma);
-                self.expect(&TokenKind::RParen, "`)` after parameter pack")?;
+                self.expect_group_close(&close, "after parameter pack")?;
                 break;
             }
             if !matches!(
@@ -2134,11 +2212,11 @@ impl Parser {
             });
 
             if self.take(&TokenKind::Comma) {
-                if self.take(&TokenKind::RParen) {
+                if self.take(&close) {
                     break;
                 }
             } else {
-                self.expect(&TokenKind::RParen, "`)`")?;
+                self.expect_group_close(&close, "after compile-time parameters")?;
                 break;
             }
         }
@@ -2234,9 +2312,9 @@ impl Parser {
         if record_layout {
             self.layout.parameter_groups.push(self.current().start_byte);
         }
-        self.expect(&TokenKind::LParen, "`(`")?;
+        let (_, close) = self.open_group("for runtime parameters")?;
         let mut params = Vec::new();
-        if self.take(&TokenKind::RParen) {
+        if self.take(&close) {
             return Ok(params);
         }
 
@@ -2252,8 +2330,8 @@ impl Parser {
             self.expect(&TokenKind::Colon, "`:` after parameter-pack binding name")?;
             let schema = self.type_expr()?;
             self.expect(
-                &TokenKind::RParen,
-                "`)` after parameter-pack expansion; an expansion must occupy its complete parameter group",
+                &close,
+                "after parameter-pack expansion; an expansion must occupy its complete parameter group",
             )?;
             return Ok(vec![Param {
                 mode,
@@ -2345,11 +2423,11 @@ impl Parser {
             });
 
             if self.take(&TokenKind::Comma) {
-                if self.take(&TokenKind::RParen) {
+                if self.take(&close) {
                     break;
                 }
             } else {
-                self.expect(&TokenKind::RParen, "`)`")?;
+                self.expect_group_close(&close, "after runtime parameters")?;
                 break;
             }
         }
@@ -2729,7 +2807,10 @@ impl Parser {
             None
         };
         if !has_callable_boundary {
-            effects = self.function_effect_clause()?.0;
+            let mut declared = self.function_effect_clause()?.0;
+            declared.compile_group_delimiters = effects.compile_group_delimiters;
+            declared.group_delimiters = effects.group_delimiters;
+            effects = declared;
         }
         let failure_error = effects.failure.as_deref().cloned();
         let return_type =
@@ -2908,6 +2989,8 @@ impl Parser {
                 failure: failure_error.clone().map(Box::new),
                 custom,
                 parameters: effect_parameters,
+                compile_group_delimiters: Vec::new(),
+                group_delimiters: Vec::new(),
             },
             failure_error,
             true,
@@ -3111,8 +3194,9 @@ impl Parser {
             });
         }
 
-        if self.take(&TokenKind::LParen) {
-            return self.function_type_or_unit();
+        if let Some(delimiter) = self.current_group_delimiter() {
+            self.advance();
+            return self.function_type_or_unit(delimiter);
         }
 
         if self.at(&TokenKind::Borrow) {
@@ -3274,10 +3358,17 @@ impl Parser {
                 *operator,
                 Box::new(Self::static_expression(right)?),
             )),
-            Expr::Call(_, _) => {
+            Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
                 fn flatten<'a>(expression: &'a Expr, groups: &mut Vec<&'a [CallArg]>) -> &'a Expr {
                     match expression.unlocated() {
                         Expr::Call(callee, arguments) => {
+                            let root = flatten(callee, groups);
+                            groups.push(arguments);
+                            root
+                        }
+                        Expr::DelimitedCall {
+                            callee, arguments, ..
+                        } => {
                             let root = flatten(callee, groups);
                             groups.push(arguments);
                             root
@@ -3391,11 +3482,13 @@ impl Parser {
         Ok(pointee)
     }
 
-    fn function_type_or_unit(&mut self) -> Result<Type, ParseError> {
+    fn function_type_or_unit(&mut self, first_delimiter: GroupDelimiter) -> Result<Type, ParseError> {
         let mut groups = Vec::new();
+        let mut group_delimiters = vec![first_delimiter];
         let mut group = Vec::new();
         let mut first_group_had_comma = false;
-        if !self.take(&TokenKind::RParen) {
+        let first_close = Self::group_close(first_delimiter);
+        if !self.take(&first_close) {
             loop {
                 if self.ident_followed_by_colon() {
                     self.expect_ident("a function type parameter name")?;
@@ -3404,27 +3497,23 @@ impl Parser {
                 group.push(self.type_expr()?);
                 if self.take(&TokenKind::Comma) {
                     first_group_had_comma = true;
-                    if self.take(&TokenKind::RParen) {
+                    if self.take(&first_close) {
                         break;
                     }
                 } else {
-                    self.expect(
-                        &TokenKind::RParen,
-                        "`)` after function type parameter group",
-                    )?;
+                    self.expect_group_close(&first_close, "after function type parameter group")?;
                     break;
                 }
             }
         }
         groups.push(group);
 
-        while self.at(&TokenKind::LParen) {
-            self.expect(
-                &TokenKind::LParen,
-                "`(` before function type parameter group",
-            )?;
+        while let Some(delimiter) = self.current_group_delimiter() {
+            group_delimiters.push(delimiter);
+            let close = Self::group_close(delimiter);
+            self.advance();
             let mut group = Vec::new();
-            if !self.take(&TokenKind::RParen) {
+            if !self.take(&close) {
                 loop {
                     if self.ident_followed_by_colon() {
                         self.expect_ident("a function type parameter name")?;
@@ -3432,14 +3521,11 @@ impl Parser {
                     }
                     group.push(self.type_expr()?);
                     if self.take(&TokenKind::Comma) {
-                        if self.take(&TokenKind::RParen) {
+                        if self.take(&close) {
                             break;
                         }
                     } else {
-                        self.expect(
-                            &TokenKind::RParen,
-                            "`)` after function type parameter group",
-                        )?;
+                        self.expect_group_close(&close, "after function type parameter group")?;
                         break;
                     }
                 }
@@ -3461,7 +3547,8 @@ impl Parser {
             return Err(self.error_here("function types require `:` before the result type"));
         }
         let logical_result = self.function_result_type()?;
-        let (effects, failure_error, _has_legacy_effect_clause) = self.function_effect_clause()?;
+        let (mut effects, failure_error, _has_legacy_effect_clause) = self.function_effect_clause()?;
+        effects.group_delimiters = group_delimiters;
         let result = Self::apply_failure_effect(logical_result, failure_error);
         Ok(Type::Function {
             groups,
@@ -3493,6 +3580,8 @@ impl Parser {
         outer.parameters.extend(inner.parameters);
         outer.parameters.sort();
         outer.parameters.dedup();
+        outer.compile_group_delimiters = inner.compile_group_delimiters;
+        outer.group_delimiters = inner.group_delimiters;
         Ok(outer)
     }
 
@@ -3802,6 +3891,14 @@ impl Parser {
             Expr::Name(_) => true,
             Expr::Member(base, _) => Self::is_assignable_place(base),
             Expr::Index { base, .. } => Self::is_assignable_place(base),
+            Expr::DelimitedCall {
+                callee,
+                delimiter: GroupDelimiter::Square,
+                arguments,
+            } => {
+                matches!(arguments.as_slice(), [CallArg { label: None, .. }])
+                    && Self::is_assignable_place(callee)
+            }
             Expr::Unary(UnaryOp::Deref, _) => true,
             _ => false,
         }
@@ -3874,7 +3971,31 @@ impl Parser {
 
     fn relation(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
         let left = self.shift(allow_trailing_closure)?;
-        let operator = if self.take(&TokenKind::Less) {
+        if matches!(
+            self.current().kind,
+            TokenKind::Less | TokenKind::LessEqual | TokenKind::Greater | TokenKind::GreaterEqual
+        ) && !self
+            .expression_group_closers
+            .last()
+            .is_some_and(|close| close == &self.current().kind)
+        {
+            let operator = self.current();
+            let right = self.tokens.get(self.index + 1).unwrap_or(operator);
+            if self.previous().end_byte == operator.start_byte
+                || operator.end_byte == right.start_byte
+            {
+                return Err(self.error_here(
+                    "comparison operators require whitespace on both sides; a tight `<...>` is an angle call",
+                ));
+            }
+        }
+        let operator = if self
+            .expression_group_closers
+            .last()
+            .is_some_and(|close| close == &self.current().kind)
+        {
+            None
+        } else if self.take(&TokenKind::Less) {
             Some(BinaryOp::Lt)
         } else if self.take(&TokenKind::LessEqual) {
             Some(BinaryOp::Le)
@@ -3902,6 +4023,18 @@ impl Parser {
     fn shift(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
         let mut expression = self.additive(allow_trailing_closure)?;
         loop {
+            if self.at(&TokenKind::Shr)
+                && self
+                    .expression_group_closers
+                    .iter()
+                    .filter(|close| *close == &TokenKind::Greater)
+                    .count()
+                    >= 2
+                && self.previous().end_byte == self.current().start_byte
+            {
+                self.split_current_shift_right();
+                break;
+            }
             let operator = if self.take(&TokenKind::Shl) {
                 Some(BinaryOp::Shl)
             } else if self.take(&TokenKind::Shr) {
@@ -4029,57 +4162,28 @@ impl Parser {
         let mut can_take_trailing_closure = false;
 
         loop {
-            if self.at(&TokenKind::LParen) && Self::starts_implicit_handler_groups(&expression) {
+            if self.explicit_call_delimiter_follows() == Some(GroupDelimiter::Parenthesis)
+                && Self::starts_implicit_handler_groups(&expression) {
                 return Err(self.error_here(
                     "`handle` clauses use named trailing groups; omit the parenthesized argument group",
                 ));
-            } else if self.take(&TokenKind::LParen) {
-                let mut arguments = Vec::new();
-                let mut labeled = None;
-                if !self.take(&TokenKind::RParen) {
-                    loop {
-                        let argument_start = self.current().clone();
-                        let label = if self.ident_followed_by_colon() {
-                            let label = self.expect_ident("an argument label")?;
-                            self.expect(&TokenKind::Colon, "`:` after argument label")?;
-                            Some(label)
-                        } else {
-                            None
-                        };
-                        let is_labeled = label.is_some();
-                        if let Some(expected_labeled) = labeled {
-                            if expected_labeled != is_labeled {
-                                return Err(self.error_at(
-                                    &argument_start,
-                                    "labeled and positional arguments cannot be mixed",
-                                ));
-                            }
-                        } else {
-                            labeled = Some(is_labeled);
-                        }
-                        arguments.push(CallArg {
-                            label,
-                            value: self.expression(true)?,
-                        });
-                        if self.take(&TokenKind::Comma) {
-                            if self.take(&TokenKind::RParen) {
-                                break;
-                            }
-                        } else {
-                            self.expect(&TokenKind::RParen, "`)` after arguments")?;
-                            break;
-                        }
+            } else if let Some(delimiter) = self.explicit_call_delimiter_follows() {
+                let arguments = self.call_argument_group(delimiter)?;
+                expression = match (delimiter, arguments.as_slice()) {
+                    (GroupDelimiter::Parenthesis, _) => {
+                        Expr::Call(Box::new(expression), arguments)
                     }
-                }
-                expression = Expr::Call(Box::new(expression), arguments);
-                can_take_trailing_closure = true;
-            } else if self.take(&TokenKind::LBracket) {
-                let index = self.expression(true)?;
-                self.expect(&TokenKind::RBracket, "`]` after index")?;
-                expression = Expr::Index {
-                    base: Box::new(expression),
-                    index: Box::new(index),
+                    (GroupDelimiter::Square, [CallArg { label: None, value }]) => Expr::Index {
+                        base: Box::new(expression),
+                        index: Box::new(value.clone()),
+                    },
+                    _ => Expr::DelimitedCall {
+                        callee: Box::new(expression),
+                        delimiter,
+                        arguments,
+                    },
                 };
+                can_take_trailing_closure = true;
             } else if self.take(&TokenKind::Dot) {
                 let member =
                     if self.at(&TokenKind::Super) && Self::is_super_path_expression(&expression) {
@@ -4222,10 +4326,62 @@ impl Parser {
         Ok(expression)
     }
 
+    fn explicit_call_delimiter_follows(&self) -> Option<GroupDelimiter> {
+        let delimiter = self.current_group_delimiter()?;
+        (self.previous().kind != TokenKind::Newline
+            && self.previous().end_byte == self.current().start_byte)
+            .then_some(delimiter)
+    }
+
+    fn call_argument_group(
+        &mut self,
+        delimiter: GroupDelimiter,
+    ) -> Result<Vec<CallArg>, ParseError> {
+        let close = Self::group_close(delimiter);
+        self.advance();
+        let mut arguments = Vec::new();
+        let mut labeled = None;
+        if self.take(&close) {
+            return Ok(arguments);
+        }
+        loop {
+            let argument_start = self.current().clone();
+            let label = if self.ident_followed_by_colon() {
+                let label = self.expect_ident("an argument label")?;
+                self.expect(&TokenKind::Colon, "`:` after argument label")?;
+                Some(label)
+            } else {
+                None
+            };
+            let is_labeled = label.is_some();
+            if labeled.is_some_and(|expected| expected != is_labeled) {
+                return Err(self.error_at(
+                    &argument_start,
+                    "labeled and positional arguments cannot be mixed",
+                ));
+            }
+            labeled.get_or_insert(is_labeled);
+            self.expression_group_closers.push(close.clone());
+            let value = self.expression(true)?;
+            self.expression_group_closers.pop();
+            arguments.push(CallArg { label, value });
+            if self.take(&TokenKind::Comma) {
+                if self.take(&close) {
+                    break;
+                }
+            } else {
+                self.expect_group_close(&close, "after arguments")?;
+                break;
+            }
+        }
+        Ok(arguments)
+    }
+
     fn starts_implicit_handler_groups(expression: &Expr) -> bool {
         match expression {
             Expr::Member(_, member) => member == "handle",
-            Expr::Call(callee, _) => Self::starts_implicit_handler_groups(callee),
+            Expr::Call(callee, _)
+            | Expr::DelimitedCall { callee, .. } => Self::starts_implicit_handler_groups(callee),
             _ => false,
         }
     }
@@ -4343,7 +4499,8 @@ impl Parser {
     fn struct_literal_root(expression: &Expr) -> &str {
         match expression {
             Expr::Name(name) => name,
-            Expr::Call(callee, _) => Self::struct_literal_root(callee),
+            Expr::Call(callee, _)
+            | Expr::DelimitedCall { callee, .. } => Self::struct_literal_root(callee),
             Expr::Member(_, member) => member,
             _ => "",
         }

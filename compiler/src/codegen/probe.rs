@@ -85,9 +85,20 @@ impl Analyzer {
                 } else if let Some(global) = self.lowering.hir_globals.get(name) {
                     TypeProbe::Known(global.ty.clone())
                 } else if let Some(signature) = self.lowering.signatures.get(name) {
-                    signature
-                        .function_ty()
-                        .map_or(TypeProbe::Unsupported, TypeProbe::Known)
+                    signature.function_ty().map_or(TypeProbe::Unsupported, |mut ty| {
+                        if let Ty::Function(function_ty) = &mut ty {
+                            if let Some(function) = self
+                                .collection
+                                .functions
+                                .get(name)
+                                .or_else(|| self.collection.function_templates.get(name))
+                            {
+                                function_ty.group_delimiters =
+                                    function.effects.group_delimiters.clone();
+                            }
+                        }
+                        TypeProbe::Known(ty)
+                    })
                 } else {
                     TypeProbe::Unsupported
                 }
@@ -287,7 +298,9 @@ impl Analyzer {
             Expr::ChainMember(base, member) => {
                 self.probe_chain_ty(base, member, None, hint, context)
             }
-            Expr::Call(_, _) => self.probe_call_ty(expression, hint, context),
+            Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
+                self.probe_call_ty(expression, hint, context)
+            }
             Expr::StructLiteral {
                 constructor,
                 fields,
@@ -619,6 +632,7 @@ impl Analyzer {
                     .iter()
                     .map(|group| group.iter().map(|parameter| parameter.ty.clone()).collect())
                     .collect(),
+                group_delimiters: Vec::new(),
                 unsafety: signature.unsafety,
                 failure_error: signature.failure_error.clone().map(Box::new),
                 custom_effects: signature.custom_effects.clone(),
@@ -698,6 +712,12 @@ impl Analyzer {
             };
             return TypeProbe::Known(Ty::Function(FunctionTy {
                 groups,
+                group_delimiters: function
+                    .effects
+                    .group_delimiters
+                    .get(runtime_groups.len()..)
+                    .unwrap_or_default()
+                    .to_vec(),
                 unsafety: self.function_effects_unsafe(&function.effects),
                 failure_error,
                 custom_effects: self.function_effects_custom_identities(&function.effects),
@@ -815,6 +835,11 @@ impl Analyzer {
             }
             return TypeProbe::Known(Ty::Function(FunctionTy {
                 groups: function.groups[groups.len()..].to_vec(),
+                group_delimiters: function
+                    .group_delimiters
+                    .get(groups.len()..)
+                    .unwrap_or_default()
+                    .to_vec(),
                 unsafety: function.unsafety,
                 failure_error: function.failure_error.clone(),
                 custom_effects: function.custom_effects.clone(),
@@ -862,6 +887,7 @@ impl Analyzer {
                     .iter()
                     .map(|group| group.iter().map(|parameter| parameter.ty.clone()).collect())
                     .collect(),
+                group_delimiters: Vec::new(),
                 unsafety: signature.unsafety,
                 failure_error: signature.failure_error.clone().map(Box::new),
                 custom_effects: signature.custom_effects.clone(),
@@ -977,6 +1003,12 @@ impl Analyzer {
                         };
                         return TypeProbe::Known(Ty::Function(FunctionTy {
                             groups,
+                            group_delimiters: template
+                                .effects
+                                .group_delimiters
+                                .get(runtime_groups.len()..)
+                                .unwrap_or_default()
+                                .to_vec(),
                             unsafety: self.function_effects_unsafe(&template.effects),
                             failure_error,
                             custom_effects: self
@@ -1017,6 +1049,7 @@ impl Analyzer {
                     .iter()
                     .map(|group| group.iter().map(|parameter| parameter.ty.clone()).collect())
                     .collect(),
+                group_delimiters: Vec::new(),
                 unsafety: signature.unsafety,
                 failure_error: signature.failure_error.clone().map(Box::new),
                 custom_effects: signature.custom_effects.clone(),

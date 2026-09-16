@@ -194,6 +194,8 @@ pub(super) fn static_value_from_source(source: &Type, sort: &Sort) -> Option<Sta
                 failure: failure.map(Box::new),
                 custom: effect_identity_sources(&custom),
                 parameters: Vec::new(),
+                compile_group_delimiters: Vec::new(),
+                group_delimiters: Vec::new(),
             };
             effect_row_is_singleton(&effects).then_some(StaticValue::Effect(effects))
         }
@@ -204,6 +206,8 @@ pub(super) fn static_value_from_source(source: &Type, sort: &Sort) -> Option<Sta
                 failure: failure.map(Box::new),
                 custom: effect_identity_sources(&custom),
                 parameters: Vec::new(),
+                compile_group_delimiters: Vec::new(),
+                group_delimiters: Vec::new(),
             }))
         }
         Sort::TypeConstructor { .. } => match source {
@@ -649,12 +653,16 @@ mod tests {
                 failure: None,
                 custom: Vec::new(),
                 parameters: Vec::new(),
+                compile_group_delimiters: Vec::new(),
+                group_delimiters: Vec::new(),
             }),
             StaticValue::Effects(FunctionEffects {
                 unsafety: true,
                 failure: Some(Box::new(Type::I32)),
                 custom: vec![Type::Named("Log".into(), Vec::new())],
                 parameters: Vec::new(),
+                compile_group_delimiters: Vec::new(),
+                group_delimiters: Vec::new(),
             }),
         ] {
             let sort = value.sort();

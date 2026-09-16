@@ -290,7 +290,33 @@ pub(super) fn flatten_call<'a>(expression: &'a Expr, groups: &mut Vec<&'a [CallA
             groups.push(arguments);
             root
         }
+        Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
+            let root = flatten_call(callee, groups);
+            groups.push(arguments);
+            root
+        }
         expression => expression,
+    }
+}
+
+pub(super) fn flatten_call_delimiters(
+    expression: &Expr,
+    delimiters: &mut Vec<crate::ast::GroupDelimiter>,
+) {
+    match expression.unlocated() {
+        Expr::Call(callee, _) => {
+            flatten_call_delimiters(callee, delimiters);
+            delimiters.push(crate::ast::GroupDelimiter::Parenthesis);
+        }
+        Expr::DelimitedCall {
+            callee, delimiter, ..
+        } => {
+            flatten_call_delimiters(callee, delimiters);
+            delimiters.push(*delimiter);
+        }
+        _ => {}
     }
 }
 

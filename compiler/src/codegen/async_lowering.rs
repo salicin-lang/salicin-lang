@@ -555,6 +555,8 @@ impl Analyzer {
                             .filter_map(|effect| source_type_from_identity(effect))
                             .collect(),
                         parameters: Vec::new(),
+                        compile_group_delimiters: Vec::new(),
+                        group_delimiters: Vec::new(),
                     },
                 });
             }
@@ -2045,6 +2047,8 @@ impl Analyzer {
             failure: None,
             custom: Vec::new(),
             parameters: Vec::new(),
+            compile_group_delimiters: Vec::new(),
+            group_delimiters: Vec::new(),
         };
         if let Some(factory_output_source) = factory_output_source {
             self.collection.functions.insert(
@@ -3720,6 +3724,8 @@ impl Analyzer {
                 .filter_map(|effect| super::compile_time::source_type_from_identity(effect))
                 .collect(),
             parameters: Vec::new(),
+            compile_group_delimiters: Vec::new(),
+            group_delimiters: Vec::new(),
         }
     }
 }

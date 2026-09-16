@@ -951,6 +951,11 @@ impl Analyzer {
                 consumed_groups,
                 FunctionTy {
                     groups: function_ty.groups[consumed_groups..].to_vec(),
+                    group_delimiters: function_ty
+                        .group_delimiters
+                        .get(consumed_groups..)
+                        .unwrap_or_default()
+                        .to_vec(),
                     unsafety: function_ty.unsafety,
                     failure_error: function_ty.failure_error.clone(),
                     custom_effects: function_ty.custom_effects.clone(),
@@ -1153,6 +1158,7 @@ impl Analyzer {
                         .iter()
                         .map(|group| group.iter().map(|parameter| parameter.ty.clone()).collect())
                         .collect(),
+                    group_delimiters: Vec::new(),
                     unsafety: closure.unsafety,
                     failure_error: closure.failure_error.clone().map(Box::new),
                     custom_effects: closure.custom_effects.clone(),
@@ -1483,6 +1489,11 @@ impl Analyzer {
                 groups.len(),
                 FunctionTy {
                     groups: remaining,
+                    group_delimiters: function_ty
+                        .group_delimiters
+                        .get(groups.len()..)
+                        .unwrap_or_default()
+                        .to_vec(),
                     unsafety: function_ty.unsafety,
                     failure_error: function_ty.failure_error.clone(),
                     custom_effects: function_ty.custom_effects.clone(),
@@ -2311,6 +2322,11 @@ impl Analyzer {
                 consumed_groups,
                 FunctionTy {
                     groups: function_ty.groups[groups.len()..].to_vec(),
+                    group_delimiters: function_ty
+                        .group_delimiters
+                        .get(groups.len()..)
+                        .unwrap_or_default()
+                        .to_vec(),
                     unsafety: function_ty.unsafety,
                     failure_error: function_ty.failure_error.clone(),
                     custom_effects: function_ty.custom_effects.clone(),
@@ -2560,6 +2576,7 @@ impl Analyzer {
                     .iter()
                     .map(|group| group.iter().map(|parameter| parameter.ty.clone()).collect())
                     .collect(),
+                group_delimiters: function_ty.group_delimiters.clone(),
                 unsafety: closure.unsafety,
                 failure_error: closure.failure_error.clone().map(Box::new),
                 custom_effects: closure.custom_effects.clone(),
@@ -2604,6 +2621,7 @@ impl Analyzer {
                     .iter()
                     .map(|group| group.iter().map(|parameter| parameter.ty.clone()).collect())
                     .collect(),
+                group_delimiters: function_ty.group_delimiters.clone(),
                 unsafety: closure.unsafety,
                 failure_error: closure.failure_error.clone().map(Box::new),
                 custom_effects: closure.custom_effects.clone(),

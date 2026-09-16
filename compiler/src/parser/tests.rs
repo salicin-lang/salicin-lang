@@ -600,6 +600,88 @@ fn void_is_not_a_unit_type_alias() {
 }
 
 #[test]
+fn preserves_all_function_group_delimiters_and_tight_calls() {
+    let program = parse(
+        "let combine<comptime t: type>[left: t]{right: t}(last: t): t = { last }\n\
+         let value = combine<i32>[1]{2}(3)\n",
+    )
+    .unwrap();
+    let Item::Function(function) = &program.items[0] else {
+        panic!("expected function");
+    };
+    assert_eq!(
+        function.effects.compile_group_delimiters,
+        [GroupDelimiter::Angle]
+    );
+    assert_eq!(
+        function.effects.group_delimiters,
+        [
+            GroupDelimiter::Square,
+            GroupDelimiter::Brace,
+            GroupDelimiter::Parenthesis,
+        ]
+    );
+    let Item::Global(binding) = &program.items[1] else {
+        panic!("expected global");
+    };
+    let Expr::Call(paren, _) = &binding.value else {
+        panic!("expected parenthesis call");
+    };
+    let Expr::DelimitedCall {
+        callee: brace,
+        delimiter: GroupDelimiter::Brace,
+        ..
+    } = paren.as_ref()
+    else {
+        panic!("expected brace call");
+    };
+    assert!(matches!(brace.as_ref(), Expr::Index { base, .. }
+        if matches!(base.as_ref(), Expr::DelimitedCall {
+            delimiter: GroupDelimiter::Angle,
+            ..
+        })));
+}
+
+#[test]
+fn distinguishes_tight_angle_calls_from_spaced_comparisons() {
+    let program = parse("let less = 1 < 2\nlet call = select<1>\n").unwrap();
+    assert!(matches!(
+        &program.items[0],
+        Item::Global(Binding { value: Expr::Binary(_, BinaryOp::Lt, _), .. })
+    ));
+    assert!(matches!(
+        &program.items[1],
+        Item::Global(Binding { value: Expr::DelimitedCall { delimiter: GroupDelimiter::Angle, .. }, .. })
+    ));
+    assert!(parse("let invalid = 1>0\n")
+        .unwrap_err()
+        .message
+        .contains("require whitespace"));
+}
+
+#[test]
+fn splits_nested_angle_closers_from_shift_tokens() {
+    let program = parse("let value = outer<inner<1>>\n").unwrap();
+    let Item::Global(binding) = &program.items[0] else {
+        panic!("expected global");
+    };
+    assert!(matches!(
+        &binding.value,
+        Expr::DelimitedCall {
+            delimiter: GroupDelimiter::Angle,
+            arguments,
+            ..
+        } if matches!(arguments.as_slice(), [CallArg {
+            value: Expr::DelimitedCall {
+                delimiter: GroupDelimiter::Angle,
+                ..
+            },
+            ..
+        }])
+    ));
+}
+
+#[test]
 fn preserves_multiple_compile_parameters_in_one_group() {
     let program =
         parse("let choose(comptime t: type, comptime u: type)(value: t): u = { value }\n").unwrap();

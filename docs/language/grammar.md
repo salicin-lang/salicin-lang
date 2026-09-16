@@ -146,7 +146,7 @@ contract. It is not an expression initializer available to user packages.
 
 ```ebnf
 compile_parameter_group =
-    "(", compile_parameter, { ",", compile_parameter }, [ "," ], ")" ;
+    delimited_nonempty_group(compile_parameter) ;
 
 compile_parameter =
     contextual("comptime"),
@@ -184,7 +184,7 @@ have a default, be supplied as an explicit source argument, or occur as a
 runtime type.
 
 A compile-time parameter is always introduced by `comptime`. Whether a
-parenthesized declaration group is compile-time or runtime is therefore
+declaration group is compile-time or runtime is therefore
 determined by its parameter forms. The two classes cannot be mixed in one
 group.
 
@@ -192,7 +192,7 @@ group.
 
 ```ebnf
 runtime_parameter_group =
-    "(", [ runtime_parameter, { ",", runtime_parameter }, [ "," ] ], ")" ;
+    delimited_group(runtime_parameter) ;
 
 runtime_parameter =
     { parameter_modifier },
@@ -407,8 +407,7 @@ function_type =
     ":", type_expr ;
 
 function_type_group =
-    "(", [ function_type_parameter,
-    { ",", function_type_parameter }, [ "," ] ], ")" ;
+    delimited_group(function_type_parameter) ;
 
 function_type_parameter =
     { parameter_modifier }, [ IDENT, ":" ], type_expr ;
@@ -505,15 +504,14 @@ postfix_suffix =
   | bare_argument
   | ".", IDENT
   | "?.", IDENT
-  | "[", expression, "]"
   | trailing_closure ;
 
 argument_group =
-    "(", [ argument, { ",", argument }, [ "," ] ], ")" ;
+    delimited_group(argument) ;
 
 argument = [ IDENT, ":" ], expression ;
 
-bare_argument = primary, { argument_group | ".", IDENT | "?.", IDENT | "[", expression, "]" } ;
+bare_argument = primary, { argument_group | ".", IDENT | "?.", IDENT } ;
 
 trailing_closure =
     [ IDENT ], block ;
@@ -525,6 +523,34 @@ arguments preserve currying: `f left right` is `f(left)(right)`, not
 `f(left, right)`. Bare application binds more tightly than infix operators, so
 `f x + y` is `(f x) + y`; use `f (x + y)` to pass the complete infix
 expression. A logical newline does not begin a bare argument.
+
+Every explicit call opener must be byte-adjacent to its callee. Its delimiter
+must match the corresponding declaration or function-type group: `()`, `[]`,
+`<>`, and `{}` are four distinct group conventions. Thus `a < b` is a
+comparison (comparison operators require surrounding whitespace), while
+`a<b>` is an angle call. A postfix square group is the uniform surface form
+for calls and retains bounds-checked indexing/place behavior when its callee
+is indexable. A tight brace group is a brace call and retains struct
+construction when its callee is a struct type. A whitespace-separated block
+remains the existing parenthesis-group trailing-closure sugar.
+
+```ebnf
+delimited_group(item) =
+    "(", [ item, { ",", item }, [ "," ] ], ")"
+  | "[", [ item, { ",", item }, [ "," ] ], "]"
+  | "<", [ item, { ",", item }, [ "," ] ], ">"
+  | "{", [ item, { ",", item }, [ "," ] ], "}" ;
+
+delimited_nonempty_group(item) =
+    "(", item, { ",", item }, [ "," ], ")"
+  | "[", item, { ",", item }, [ "," ], "]"
+  | "<", item, { ",", item }, [ "," ], ">"
+  | "{", item, { ",", item }, [ "," ], "}" ;
+```
+
+In an angle-call context, the parser splits a tight `>>` into two closing
+delimiters when two angle groups are open. A whitespace-separated `a >> b`
+remains the shift operator.
 
 ```ebnf
 primary =

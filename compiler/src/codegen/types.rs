@@ -115,6 +115,7 @@ impl Analyzer {
                         .iter()
                         .map(|group| group.iter().map(|ty| self.lower_source_type(ty)).collect())
                         .collect(),
+                    group_delimiters: effects.group_delimiters.clone(),
                     unsafety: self.function_effects_unsafe(effects),
                     failure_error: effects
                         .failure
@@ -540,6 +541,8 @@ impl Analyzer {
                         .map(Box::new),
                     custom: effect_identity_sources(&function.custom_effects),
                     parameters: Vec::new(),
+                    compile_group_delimiters: Vec::new(),
+                    group_delimiters: function.group_delimiters.clone(),
                 },
                 result: Box::new(self.source_type_for_ty(&function.result)?),
             }),
@@ -1650,6 +1653,7 @@ impl Analyzer {
                                 .collect::<Option<Vec<_>>>()
                         })
                         .collect::<Option<Vec<_>>>()?,
+                    group_delimiters: effects.group_delimiters.clone(),
                     unsafety: self.function_effects_unsafe(effects),
                     failure_error: match effects.failure.as_deref() {
                         Some(error) => Some(Box::new(self.probe_source_ty(error)?)),

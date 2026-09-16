@@ -656,6 +656,41 @@ impl Analyzer {
             Expr::Call(_, _) => self
                 .lower_internal_async_loop_constructor(expression, context)
                 .unwrap_or_else(|| self.lower_call(expression, expected, context)),
+            Expr::DelimitedCall {
+                callee,
+                delimiter: crate::ast::GroupDelimiter::Square,
+                arguments,
+            } if matches!(arguments.as_slice(), [CallArg { label: None, .. }])
+                && matches!(
+                    self.probe_expr_ty(callee, None, context),
+                    TypeProbe::Known(Ty::Array(_, _))
+                        | TypeProbe::KnownSource(Ty::Array(_, _), _)
+                ) =>
+            {
+                let index = Expr::Index {
+                    base: callee.clone(),
+                    index: Box::new(arguments[0].value.clone()),
+                };
+                self.lower_expr_unlocated(&index, expected, context)
+            }
+            Expr::DelimitedCall {
+                callee,
+                delimiter: crate::ast::GroupDelimiter::Brace,
+                arguments,
+            } => {
+                let mut groups = Vec::new();
+                let root = flatten_call(callee, &mut groups);
+                if matches!(root, Expr::Name(name)
+                    if self.collection.struct_layouts.contains_key(name)
+                        || self.collection.struct_templates.contains_key(name))
+                    && arguments.iter().all(|argument| argument.label.is_some())
+                {
+                    self.lower_struct_literal(callee, arguments, expected, context)
+                } else {
+                    self.lower_call(expression, expected, context)
+                }
+            }
+            Expr::DelimitedCall { .. } => self.lower_call(expression, expected, context),
             Expr::StructLiteral {
                 constructor,
                 fields,
@@ -665,6 +700,21 @@ impl Analyzer {
                 self.lower_chain(base, field, None, expected, context)
             }
             Expr::Index { base, index } => {
+                if matches!(
+                    self.probe_expr_ty(base, None, context),
+                    TypeProbe::Known(Ty::Function(_) | Ty::Callable(_))
+                        | TypeProbe::KnownSource(Ty::Function(_) | Ty::Callable(_), _)
+                ) {
+                    let call = Expr::DelimitedCall {
+                        callee: base.clone(),
+                        delimiter: crate::ast::GroupDelimiter::Square,
+                        arguments: vec![CallArg {
+                            label: None,
+                            value: (**index).clone(),
+                        }],
+                    };
+                    return self.lower_call(&call, expected, context);
+                }
                 if matches!(
                     self.probe_expr_ty(base, None, context),
                     TypeProbe::Known(Ty::Array(_, _)) | TypeProbe::KnownSource(Ty::Array(_, _), _)
@@ -1741,6 +1791,7 @@ impl Analyzer {
                     .iter()
                     .map(|group| group.iter().map(|param| param.ty.clone()).collect())
                     .collect(),
+                group_delimiters: Vec::new(),
                 unsafety: effects.unsafe_depth > 0,
                 failure_error: effects.failure_error.clone().map(Box::new),
                 custom_effects: custom_effects.clone(),
@@ -1985,7 +2036,7 @@ impl Analyzer {
             Expr::Member(base, _) | Expr::ChainMember(base, _) => {
                 self.scan_simple_closure_captures(base, bound, outer, captures)
             }
-            Expr::Call(_, _) => {
+            Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
                 let mut groups = Vec::new();
                 let root = flatten_call(expression, &mut groups);
                 if matches!(root, Expr::Name(name) if self.lowering.internal_async_loop_constructors.contains_key(name))

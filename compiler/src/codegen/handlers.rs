@@ -297,7 +297,10 @@ pub(super) fn rewrite_handler_loop_control(
                 nested_loop_depth,
             );
         }
-        Expr::Call(callee, arguments) => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             rewrite_handler_loop_control(callee, recursive_name, break_name, nested_loop_depth);
             for argument in arguments {
                 rewrite_handler_loop_control(
@@ -441,7 +444,10 @@ pub(super) fn collect_internal_recursion_tokens(expression: &Expr, tokens: &mut 
             collect_internal_recursion_tokens(&chain.success, tokens);
             collect_internal_recursion_tokens(&chain.residual, tokens);
         }
-        Expr::Call(callee, arguments) => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             collect_internal_recursion_tokens(callee, tokens);
             for argument in arguments {
                 collect_internal_recursion_tokens(&argument.value, tokens);
@@ -756,7 +762,10 @@ pub(super) fn handler_expression_children(expression: &Expr) -> Vec<&Expr> {
             children.push(&chain.residual);
             children
         }
-        Expr::Call(callee, arguments) => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             let mut children = Vec::with_capacity(arguments.len() + 1);
             children.push(callee.as_ref());
             children.extend(arguments.iter().map(|argument| &argument.value));
@@ -983,7 +992,10 @@ pub(super) fn rewrite_handler_chain_wrappers(
                 residual_variant,
             );
         }
-        Expr::Call(callee, arguments) => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             rewrite_handler_chain_wrappers(callee, canonical, success_variant, residual_variant);
             for argument in arguments {
                 rewrite_handler_chain_wrappers(

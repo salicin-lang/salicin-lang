@@ -3730,7 +3730,10 @@ impl Resolver {
                 residual_scope.insert(chain.error.clone());
                 self.rewrite_expr(&mut chain.residual, context, type_scope, &residual_scope);
             }
-            Expr::Call(callee, arguments) => {
+            Expr::Call(callee, arguments)
+            | Expr::DelimitedCall {
+                callee, arguments, ..
+            } => {
                 self.rewrite_expr(callee, context, type_scope, value_scope);
                 for argument in arguments {
                     self.rewrite_expr(&mut argument.value, context, type_scope, value_scope);

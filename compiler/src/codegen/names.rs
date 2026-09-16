@@ -163,7 +163,15 @@ pub(super) fn canonical_type_encoding(ty: &Ty) -> String {
             let mut encoded = String::from("function");
             encoded.push_str(&function.groups.len().to_string());
             encoded.push(':');
-            for group in &function.groups {
+            for (group_index, group) in function.groups.iter().enumerate() {
+                encoded.push(
+                    function
+                        .group_delimiters
+                        .get(group_index)
+                        .copied()
+                        .unwrap_or(crate::ast::GroupDelimiter::Parenthesis)
+                        .opening(),
+                );
                 encoded.push_str(&group.len().to_string());
                 encoded.push(':');
                 for parameter in group {

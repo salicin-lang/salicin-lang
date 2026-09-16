@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::hash::Hash;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Program {
@@ -286,7 +287,7 @@ pub enum ForeignAbi {
     C,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default)]
 pub struct FunctionEffects {
     pub unsafety: bool,
     /// Error type propagated automatically by calls and handled by `try { ... }`.
@@ -295,6 +296,29 @@ pub struct FunctionEffects {
     pub custom: Vec<Type>,
     /// Compile-time effect-row parameters awaiting generic instantiation.
     pub parameters: Vec<String>,
+    /// Source calling convention for compile-time and runtime groups.
+    pub compile_group_delimiters: Vec<GroupDelimiter>,
+    pub group_delimiters: Vec<GroupDelimiter>,
+}
+
+impl PartialEq for FunctionEffects {
+    fn eq(&self, other: &Self) -> bool {
+        self.unsafety == other.unsafety
+            && self.failure == other.failure
+            && self.custom == other.custom
+            && self.parameters == other.parameters
+    }
+}
+
+impl Eq for FunctionEffects {}
+
+impl std::hash::Hash for FunctionEffects {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.unsafety.hash(state);
+        self.failure.hash(state);
+        self.custom.hash(state);
+        self.parameters.hash(state);
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -535,6 +559,34 @@ pub struct CallArg {
     pub value: Expr,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum GroupDelimiter {
+    Parenthesis,
+    Square,
+    Angle,
+    Brace,
+}
+
+impl GroupDelimiter {
+    pub fn opening(self) -> char {
+        match self {
+            Self::Parenthesis => '(',
+            Self::Square => '[',
+            Self::Angle => '<',
+            Self::Brace => '{',
+        }
+    }
+
+    pub fn closing(self) -> char {
+        match self {
+            Self::Parenthesis => ')',
+            Self::Square => ']',
+            Self::Angle => '>',
+            Self::Brace => '}',
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct MatchArm {
     pub pattern: Pattern,
@@ -639,6 +691,11 @@ pub enum Expr {
     Assign(Box<Expr>, Box<Expr>),
     CompoundAssign(Box<Expr>, BinaryOp, Box<Expr>),
     Call(Box<Expr>, Vec<CallArg>),
+    DelimitedCall {
+        callee: Box<Expr>,
+        delimiter: GroupDelimiter,
+        arguments: Vec<CallArg>,
+    },
     StructLiteral {
         constructor: Box<Expr>,
         fields: Vec<CallArg>,

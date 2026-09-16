@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::ast::{Expr, UnaryOp};
+use crate::ast::{CallArg, Expr, GroupDelimiter, UnaryOp};
 
 use super::flow::{places_overlap, InitializationStatus, Loan, LoanKind, LowerCtx, PlaceKey};
 use super::hir::{
@@ -240,6 +240,23 @@ impl Analyzer {
                 place.projections.push(projection);
                 place.ty = *element;
                 Some(place)
+            }
+            Expr::DelimitedCall {
+                callee,
+                delimiter: GroupDelimiter::Square,
+                arguments,
+            } => {
+                let [CallArg { label: None, value }] = arguments.as_slice() else {
+                    self.error("an indexed place requires exactly one unlabeled index");
+                    return None;
+                };
+                self.lower_place(
+                    &Expr::Index {
+                        base: callee.clone(),
+                        index: Box::new(value.clone()),
+                    },
+                    context,
+                )
             }
             _ => {
                 self.error("expression is not a local place");

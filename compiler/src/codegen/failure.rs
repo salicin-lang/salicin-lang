@@ -464,7 +464,10 @@ impl Analyzer {
             Expr::Async { body } => {
                 self.expression_uses_standard_failure_identity(body, identity, context)
             }
-            Expr::Call(callee, arguments) => {
+            Expr::Call(callee, arguments)
+            | Expr::DelimitedCall {
+                callee, arguments, ..
+            } => {
                 handled_operation_call(expression, identity).is_some()
                     || self
                         .call_custom_effect_identities(expression, context)
@@ -651,7 +654,10 @@ impl Analyzer {
             | Expr::Closure(_, _)
             | Expr::PatternClosure { .. }
             | Expr::Async { .. } => false,
-            Expr::Call(callee, arguments) => {
+            Expr::Call(callee, arguments)
+            | Expr::DelimitedCall {
+                callee, arguments, ..
+            } => {
                 self.call_failure_info(expression, context).is_some()
                     || self.try_body_uses_dedicated_failure_call(callee, context)
                     || arguments.iter().any(|argument| {
@@ -1308,7 +1314,7 @@ impl Analyzer {
                 self.collect_escaping_throwing(&chain.success, context, errors);
                 self.collect_escaping_throwing(&chain.residual, context, errors);
             }
-            Expr::Call(_, _) => {
+            Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
                 if let Some((_, error)) = self.call_failure_info(expression, context) {
                     errors.insert(error);
                 }

@@ -1865,7 +1865,10 @@ fn expression_names(expression: Option<&Expr>) -> HashSet<String> {
                 visit(&chain.success, names);
                 visit(&chain.residual, names);
             }
-            Expr::Call(callee, arguments) => {
+            Expr::Call(callee, arguments)
+            | Expr::DelimitedCall {
+                callee, arguments, ..
+            } => {
                 visit(callee, names);
                 for argument in arguments {
                     visit(&argument.value, names);

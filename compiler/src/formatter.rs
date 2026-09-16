@@ -477,6 +477,12 @@ mod tests {
     }
 
     #[test]
+    fn preserves_tight_uniform_group_delimiters() {
+        let source = "let choose<comptime t: type>[left: t]{right: t}(fallback: t): t = { left }\nlet value = choose<i32>[1]{2}(3)\n";
+        assert_eq!(format_source(source).unwrap(), source);
+    }
+
+    #[test]
     fn preserves_minimal_syntax_contract_tokens_idempotently() {
         let source = "let marker = trait {}\nlet bounded = trait(requires: self is marker) {\n}\nlet cell(comptime t: type) = struct { value: t }\nextend(cell(t))\n(requires: t is marker) {\n}\nlet guarded(comptime t: type)(value: t): t = requires(t is marker) {\nvalue\n}\ntest(\"minimal contracts\") {\nlet value = 1\n}\n";
         let expected = "let marker = trait {}\nlet bounded = trait(requires: self is marker) {\n}\nlet cell(comptime t: type) = struct { value: t }\nextend(cell(t))\n(requires: t is marker) {\n}\nlet guarded(comptime t: type)(value: t): t = requires(t is marker) {\n  value\n}\ntest(\"minimal contracts\") {\n  let value = 1\n}\n";

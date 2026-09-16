@@ -155,6 +155,31 @@ fn arg(value: Expr) -> CallArg {
 }
 
 #[test]
+fn validates_delimiters_for_direct_indirect_and_partial_calls() {
+    compile_text(
+        "let add[left: i32]<right: i32>: i32 = { left + right }\n\
+         let apply(function: [i32]: i32)(value: i32): i32 = { function[value] }\n\
+         let increment[value: i32]: i32 = { value + 1 }\n\
+         let main(): i32 = {\n\
+           let partial = add[20]\n\
+           apply(increment)(partial<22>)\n\
+         }\n",
+    )
+    .expect("matching delimiters must lower through direct, indirect, and partial calls");
+
+    let diagnostics = compile_text(
+        "let add[left: i32]<right: i32>: i32 = { left + right }\n\
+         let main(): i32 = { add(20)<22> }\n",
+    )
+    .unwrap_err();
+    assert!(diagnostics.iter().any(|diagnostic| {
+        diagnostic.message.contains("argument group 1")
+            && diagnostic.message.contains("uses `(`")
+            && diagnostic.message.contains("uses `[")
+    }));
+}
+
+#[test]
 fn monomorphizes_and_deduplicates_explicit_generic_function_calls() {
     let program = crate::parser::parse(
         "let identity(comptime t: type)(move value: t): t = { value }\n\

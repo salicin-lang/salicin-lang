@@ -366,9 +366,20 @@ impl Analyzer {
         if signature.result.is_none() {
             self.lower_function(name);
         }
-        self.lowering.signatures[name]
+        let mut ty = self.lowering.signatures[name]
             .function_ty()
-            .unwrap_or(Ty::Error)
+            .unwrap_or(Ty::Error);
+        if let Ty::Function(function_ty) = &mut ty {
+            if let Some(function) = self
+                .collection
+                .functions
+                .get(name)
+                .or_else(|| self.collection.function_templates.get(name))
+            {
+                function_ty.group_delimiters = function.effects.group_delimiters.clone();
+            }
+        }
+        ty
     }
 
     pub(super) fn lower_global(&mut self, name: &str) -> Ty {
