@@ -1,8 +1,8 @@
-let option = core.option
+let Option = core.Option
 
 let main(): i32 = {
-  let first = option<i32>.none
-  let second = option<i32>.some(42)
+  let first = Option<i32>.None
+  let second = Option<i32>.Some(42)
   first ?? second ?? 0
 }
 

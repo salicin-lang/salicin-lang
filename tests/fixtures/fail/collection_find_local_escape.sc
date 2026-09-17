@@ -1,10 +1,10 @@
-let option = core.option
+let Option = core.Option
 
-let read(value: borrow<i32>): i32 = { value }
-let positive(value: borrow<i32>): bool = { read(value) > 0 }
+let read(value: Borrow<i32>): i32 = { value }
+let positive(value: Borrow<i32>): bool = { read(value) > 0 }
 
-let invalid(): option<borrow<i32>> = {
-  let values: array<i32><1> = [42]
+let invalid(): Option<Borrow<i32>> = {
+  let values: Array<i32><1> = [42]
   values.find(positive)
 }
 

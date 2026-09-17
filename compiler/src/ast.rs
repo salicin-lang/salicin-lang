@@ -353,7 +353,7 @@ pub enum CompileParamDefault {
 ///
 /// Unlike runtime [`Type`] values, sorts are erased before code generation.
 /// Constructor sorts retain source parameter-group boundaries because
-/// `(T: type)(L: usize): type` and `(T: type, L: usize): type` are distinct
+/// `<T: type><L: usize>: type` and `<T: type, L: usize>: type` are distinct
 /// compile-time calling conventions.
 pub enum Sort {
     /// A universe classifier written `sort(level)`.
@@ -373,7 +373,7 @@ pub enum Sort {
     /// by compiler-validated control contracts such as `match`.
     ParameterPack,
     /// A compile-time parameter-schema transformer with the exact sort
-    /// `(P: parameters): parameters`.
+    /// `<P: parameters>: parameters`.
     ParameterModifier,
     TypeConstructor {
         parameter_groups: Vec<Vec<Sort>>,
@@ -469,7 +469,7 @@ pub enum USizeConst {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Param {
     pub mode: PassMode,
-    /// An access compile-time parameter used by `borrow(A)` until generic
+    /// An access compile-time parameter used by `Borrow<A>` until generic
     /// instantiation selects shared or mutable borrowing.
     pub access: Option<String>,
     /// Compile-time parameter-schema modifiers written before the parameter

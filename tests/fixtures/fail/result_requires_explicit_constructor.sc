@@ -1,5 +1,5 @@
-let result = core.result
+let Result = core.Result
 
-let wrong(): result<bool><i32> = { 42 }
+let wrong(): Result<bool><i32> = { 42 }
 
 let main(): i32 = { 42 }

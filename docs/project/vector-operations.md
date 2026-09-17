@@ -4,16 +4,16 @@ Status: implemented for the 2026 edition<br>
 Accepted: 2026-07-29
 
 This contract completes the common checked-access and slice-copy surface for
-`alloc.vec.vec<t>`.
+`alloc.vec.Vec<T>`.
 
 ## Operations and bounds
 
 Every vector exposes `len`, `is_empty`, `get`, `at`, `first`, `last`, and
-shared or mutable `as_slice`. `get`, `first`, and `last` return `option`
+shared or mutable `as_slice`. `get`, `first`, and `last` return `Option`
 without trapping. `at` and bracket indexing trap when the index is outside
 the initialized prefix.
 
-For `t is copyable`, vectors additionally expose:
+For `T is Copyable`, vectors additionally expose:
 
 - `extend_from_slice(source)`, which appends copies of the complete source;
 - `fill(value)`, which replaces every initialized element;
@@ -54,7 +54,7 @@ passed back to that vector's `extend_from_slice` or `copy_from` while its loan
 is live. Self-overlap is expressed only by `copy_within`, whose implementation
 uses one exclusive borrow.
 
-Slice extension and copying are unavailable for move-only or droppable
+Slice extension and copying are unavailable for move-only or `Droppable`
 elements because a borrowed slice cannot transfer ownership. Such elements
 continue to use `push` for one owned value and `append` to move the complete
 initialized prefix from another vector. `append` reserves first, then moves

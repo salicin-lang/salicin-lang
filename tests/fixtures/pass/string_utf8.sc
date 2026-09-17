@@ -1,29 +1,29 @@
-let greeting: string = "柳"
+let greeting: String = "柳"
 
-let runtime_text(): string = {
+let runtime_text(): String = {
   "salicin"
 }
 
 let is_scalar(expected_value: u32, expected_length: u64): bool = {
-  match core.string.unicode_scalar.from_u32(expected_value)
-    { some(scalar) ->
+  match core.string.UnicodeScalar.from_u32(expected_value)
+    { Some(scalar) ->
       scalar.to_u32() == expected_value && scalar.len_utf8() == expected_length
     }
-    { none -> false }
+    { None -> false }
 }
 
 let scalar_checks(): bool = {
-  let equality = match core.string.unicode_scalar.from_u32(65)
-    { some(a) ->
-      match core.string.unicode_scalar.from_u32(65)
-      { some(another_a) ->
-        match core.string.unicode_scalar.from_u32(66)
-        { some(b) -> a == another_a && a != b }
-        { none -> false }
+  let equality = match core.string.UnicodeScalar.from_u32(65)
+    { Some(a) ->
+      match core.string.UnicodeScalar.from_u32(65)
+      { Some(another_a) ->
+        match core.string.UnicodeScalar.from_u32(66)
+        { Some(b) -> a == another_a && a != b }
+        { None -> false }
       }
-      { none -> false }
+      { None -> false }
     }
-    { none -> false }
+    { None -> false }
   equality &&
     is_scalar(0, 1) &&
     is_scalar(127, 1) &&
@@ -35,61 +35,61 @@ let scalar_checks(): bool = {
     is_scalar(65535, 3) &&
     is_scalar(65536, 4) &&
     is_scalar(1114111, 4) &&
-    core.string.unicode_scalar.from_u32(55296).is_none() &&
-    core.string.unicode_scalar.from_u32(57343).is_none() &&
-    core.string.unicode_scalar.from_u32(1114112).is_none()
+    core.string.UnicodeScalar.from_u32(55296).is_none() &&
+    core.string.UnicodeScalar.from_u32(57343).is_none() &&
+    core.string.UnicodeScalar.from_u32(1114112).is_none()
 }
 
-let accepts_utf8(bytes: borrow<core.memory.slice<u8>>, expected_length: u64): bool = {
+let accepts_utf8(bytes: Borrow<core.memory.Slice<u8>>, expected_length: u64): bool = {
   match core.string.str.from_utf8(bytes)
-    { some(text) ->
+    { Some(text) ->
       let encoded = text.as_bytes()
       text.len() == expected_length &&
         text.is_empty() == (expected_length == 0) &&
         encoded.len() == expected_length
     }
-    { none -> false }
+    { None -> false }
 }
 
-let rejects_utf8(bytes: borrow<core.memory.slice<u8>>): bool = {
+let rejects_utf8(bytes: Borrow<core.memory.Slice<u8>>): bool = {
   core.string.str.from_utf8(bytes).is_none()
 }
 
 let borrowed_text_checks(): bool = {
-  let empty: array<u8><0> = []
-  let ascii: array<u8><1> = [65]
-  let two_byte: array<u8><2> = [194, 128]
-  let three_byte: array<u8><3> = [224, 160, 128]
-  let before_surrogates: array<u8><3> = [237, 159, 191]
-  let after_surrogates: array<u8><3> = [238, 128, 128]
-  let four_byte: array<u8><4> = [240, 144, 128, 128]
-  let maximum_scalar: array<u8><4> = [244, 143, 191, 191]
+  let empty: Array<u8><0> = []
+  let ascii: Array<u8><1> = [65]
+  let two_byte: Array<u8><2> = [194, 128]
+  let three_byte: Array<u8><3> = [224, 160, 128]
+  let before_surrogates: Array<u8><3> = [237, 159, 191]
+  let after_surrogates: Array<u8><3> = [238, 128, 128]
+  let four_byte: Array<u8><4> = [240, 144, 128, 128]
+  let maximum_scalar: Array<u8><4> = [244, 143, 191, 191]
 
-  let continuation: array<u8><1> = [128]
-  let overlong_two: array<u8><2> = [192, 128]
-  let truncated_three: array<u8><2> = [226, 130]
-  let overlong_three: array<u8><3> = [224, 128, 128]
-  let surrogate: array<u8><3> = [237, 160, 128]
-  let overlong_four: array<u8><4> = [240, 128, 128, 128]
-  let above_unicode: array<u8><4> = [244, 144, 128, 128]
-  let invalid_lead: array<u8><4> = [245, 128, 128, 128]
+  let continuation: Array<u8><1> = [128]
+  let overlong_two: Array<u8><2> = [192, 128]
+  let truncated_three: Array<u8><2> = [226, 130]
+  let overlong_three: Array<u8><3> = [224, 128, 128]
+  let surrogate: Array<u8><3> = [237, 160, 128]
+  let overlong_four: Array<u8><4> = [240, 128, 128, 128]
+  let above_unicode: Array<u8><4> = [244, 144, 128, 128]
+  let invalid_lead: Array<u8><4> = [245, 128, 128, 128]
 
-  let empty_view: borrow<core.memory.slice<u8>> = borrow(empty)
-  let ascii_view: borrow<core.memory.slice<u8>> = borrow(ascii)
-  let two_byte_view: borrow<core.memory.slice<u8>> = borrow(two_byte)
-  let three_byte_view: borrow<core.memory.slice<u8>> = borrow(three_byte)
-  let before_surrogates_view: borrow<core.memory.slice<u8>> = borrow(before_surrogates)
-  let after_surrogates_view: borrow<core.memory.slice<u8>> = borrow(after_surrogates)
-  let four_byte_view: borrow<core.memory.slice<u8>> = borrow(four_byte)
-  let maximum_scalar_view: borrow<core.memory.slice<u8>> = borrow(maximum_scalar)
-  let continuation_view: borrow<core.memory.slice<u8>> = borrow(continuation)
-  let overlong_two_view: borrow<core.memory.slice<u8>> = borrow(overlong_two)
-  let truncated_three_view: borrow<core.memory.slice<u8>> = borrow(truncated_three)
-  let overlong_three_view: borrow<core.memory.slice<u8>> = borrow(overlong_three)
-  let surrogate_view: borrow<core.memory.slice<u8>> = borrow(surrogate)
-  let overlong_four_view: borrow<core.memory.slice<u8>> = borrow(overlong_four)
-  let above_unicode_view: borrow<core.memory.slice<u8>> = borrow(above_unicode)
-  let invalid_lead_view: borrow<core.memory.slice<u8>> = borrow(invalid_lead)
+  let empty_view: Borrow<core.memory.Slice<u8>> = borrow(empty)
+  let ascii_view: Borrow<core.memory.Slice<u8>> = borrow(ascii)
+  let two_byte_view: Borrow<core.memory.Slice<u8>> = borrow(two_byte)
+  let three_byte_view: Borrow<core.memory.Slice<u8>> = borrow(three_byte)
+  let before_surrogates_view: Borrow<core.memory.Slice<u8>> = borrow(before_surrogates)
+  let after_surrogates_view: Borrow<core.memory.Slice<u8>> = borrow(after_surrogates)
+  let four_byte_view: Borrow<core.memory.Slice<u8>> = borrow(four_byte)
+  let maximum_scalar_view: Borrow<core.memory.Slice<u8>> = borrow(maximum_scalar)
+  let continuation_view: Borrow<core.memory.Slice<u8>> = borrow(continuation)
+  let overlong_two_view: Borrow<core.memory.Slice<u8>> = borrow(overlong_two)
+  let truncated_three_view: Borrow<core.memory.Slice<u8>> = borrow(truncated_three)
+  let overlong_three_view: Borrow<core.memory.Slice<u8>> = borrow(overlong_three)
+  let surrogate_view: Borrow<core.memory.Slice<u8>> = borrow(surrogate)
+  let overlong_four_view: Borrow<core.memory.Slice<u8>> = borrow(overlong_four)
+  let above_unicode_view: Borrow<core.memory.Slice<u8>> = borrow(above_unicode)
+  let invalid_lead_view: Borrow<core.memory.Slice<u8>> = borrow(invalid_lead)
 
   accepts_utf8(empty_view, 0) &&
     accepts_utf8(ascii_view, 1) &&
@@ -110,18 +110,18 @@ let borrowed_text_checks(): bool = {
 }
 
 let string_view_checks(): bool = {
-  let text: string = "柳"
+  let text: String = "柳"
   let view = text.as_str()
   let encoded = view.as_bytes()
   view.len() == 3 && !view.is_empty() && encoded.len() == 3
 }
 
 let subview_checks(): bool = {
-  let text: string = "A柳𐀀"
-  let ascii_expected: string = "A"
-  let three_byte_expected: string = "柳"
-  let four_byte_expected: string = "𐀀"
-  let empty_text: string = ""
+  let text: String = "A柳𐀀"
+  let ascii_expected: String = "A"
+  let three_byte_expected: String = "柳"
+  let four_byte_expected: String = "𐀀"
+  let empty_text: String = ""
   let view = text.as_str()
   let ascii_expected_view = ascii_expected.as_str()
   let three_byte_expected_view = three_byte_expected.as_str()
@@ -139,30 +139,30 @@ let subview_checks(): bool = {
     view.is_char_boundary(8) &&
     !view.is_char_boundary(9)
   let valid = match view.get(0, 8)
-    { some(whole) ->
+    { Some(whole) ->
       match view.get(0, 1)
-      { some(ascii) ->
+      { Some(ascii) ->
         match view.get(1, 4)
-        { some(three_byte) ->
+        { Some(three_byte) ->
           match view.get(4, 8)
-          { some(four_byte) ->
+          { Some(four_byte) ->
             match view.get(8, 8)
-            { some(empty) ->
+            { Some(empty) ->
               whole == view &&
                 ascii == ascii_expected_view &&
                 three_byte == three_byte_expected_view &&
                 four_byte == four_byte_expected_view &&
                 empty.is_empty()
             }
-            { none -> false }
+            { None -> false }
           }
-          { none -> false }
+          { None -> false }
         }
-        { none -> false }
+        { None -> false }
       }
-      { none -> false }
+      { None -> false }
     }
-    { none -> false }
+    { None -> false }
   boundaries &&
     valid &&
     view.get(2, 4).is_none() &&
@@ -170,16 +170,16 @@ let subview_checks(): bool = {
     view.get(9, 9).is_none() &&
     view.get(4, 1).is_none() &&
     match empty_view.get(0, 0)
-    { some(empty) -> empty.is_empty() }
-    { none -> false }
+    { Some(empty) -> empty.is_empty() }
+    { None -> false }
 }
 
 let text_equality_checks(): bool = {
-  let composed: string = "é"
-  let same: string = "é"
-  let decomposed: string = "é"
-  let longer: string = "é!"
-  let same_length_different: string = "ê"
+  let composed: String = "é"
+  let same: String = "é"
+  let decomposed: String = "é"
+  let longer: String = "é!"
+  let same_length_different: String = "ê"
   let view = composed.as_str()
   let same_view = same.as_str()
   let decomposed_view = decomposed.as_str()

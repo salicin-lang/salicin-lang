@@ -1,8 +1,8 @@
-let option = core.option
+let Option = core.Option
 
-let option<comptime t: type> = enum {
-  some(t),
-  none,
+let Option<t: type> = enum {
+  Some(t),
+  None,
 }
 
 let main(): i32 = { 42 }

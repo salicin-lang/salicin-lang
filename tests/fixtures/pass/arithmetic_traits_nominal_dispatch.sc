@@ -1,27 +1,27 @@
-let sub = core.ops.sub
-let mul = core.ops.mul
-let div = core.ops.div
-let rem = core.ops.rem
+let Sub = core.ops.Sub
+let Mul = core.ops.Mul
+let Div = core.ops.Div
+let Rem = core.ops.Rem
 
 let number = struct { value: i32 }
 
-extend(number, sub(number)) {
-  let output = number
+extend(number, Sub(number)) {
+  let Output = number;
   let sub(self)(rhs: number): number = { number{ value: self.value - rhs.value } }
 }
 
-extend(number, mul(number)) {
-  let output = number
+extend(number, Mul(number)) {
+  let Output = number;
   let mul(self)(rhs: number): number = { number{ value: self.value * rhs.value } }
 }
 
-extend(number, div(number)) {
-  let output = number
+extend(number, Div(number)) {
+  let Output = number;
   let div(self)(rhs: number): number = { number{ value: self.value / rhs.value } }
 }
 
-extend(number, rem(number)) {
-  let output = number
+extend(number, Rem(number)) {
+  let Output = number;
   let rem(self)(rhs: number): number = { number{ value: self.value % rhs.value } }
 }
 

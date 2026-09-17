@@ -160,7 +160,7 @@ fn suspended_residual_suspensions_specialize_and_cancel() {
     );
     assert!(
         String::from_utf8_lossy(&self_reference.stderr)
-            .contains("self-referential and cannot implement `movable`"),
+            .contains("self-referential and cannot implement `Movable`"),
         "{}",
         output_text(&self_reference)
     );

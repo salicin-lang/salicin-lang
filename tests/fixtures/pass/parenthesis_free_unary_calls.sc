@@ -13,7 +13,7 @@ let counter = struct {
 }
 
 extend(counter) {
-  let plus(self: borrow<self>)(amount: i32): i32 = {
+  let plus(self: Borrow<self>)(amount: i32): i32 = {
     self.value + amount
   }
 }

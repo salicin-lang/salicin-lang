@@ -1,29 +1,29 @@
-let string = core.string.string
+let String = core.string.String
 
 /// Product data owns its validated UTF-8 name.
-pub let product = struct {
-  pub name: string,
+pub let Product = struct {
+  pub name: String,
   pub units: i64,
   pub unit_price: i64,
 }
 
 /// Computes a value without exposing a product's representation.
-pub let valued = trait {
-  let value(self: borrow(self))(): i64
+pub let Valued = trait {
+  let value(self: Borrow<self>)(): i64
 }
 
-extend(product) {
-  let new(move name: string, units: i64, unit_price: i64): product = {
-    product{ name: name, units: units, unit_price: unit_price }
+extend(Product) {
+  let new(move name: String, units: i64, unit_price: i64): Product = {
+    Product{ name: name, units: units, unit_price: unit_price }
   }
 
-  let name_bytes(self: borrow(self))(): u64 = {
+  let name_bytes(self: Borrow<self>)(): u64 = {
     self.name.len_bytes()
   }
 }
 
-extend(product, valued) {
-  let value(self: borrow(self))(): i64 = {
+extend(Product, Valued) {
+  let value(self: Borrow<self>)(): i64 = {
     self.units * self.unit_price
   }
 }

@@ -1,7 +1,7 @@
-let cell<comptime t: type> = struct { value: t }
+let cell<t: type> = struct { value: t }
 
 extend(cell(t)) {
-  let identity<comptime u: type>(self: borrow<self>)(move value: u): u = { value }
+  let identity<u: type>(self: Borrow<self>)(move value: u): u = { value }
 }
 
 let main(): i32 = {

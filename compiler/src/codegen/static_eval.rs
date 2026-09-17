@@ -377,7 +377,7 @@ impl Analyzer {
             Expr::String(value) => {
                 let ty = self
                     .string_ty()
-                    .ok_or_else(|| "the core `string` type is unavailable".to_owned())?;
+                    .ok_or_else(|| "the core `String` type is unavailable".to_owned())?;
                 self.lowering.string_literals.insert(value.clone());
                 CtfeValue {
                     ty,
@@ -1439,20 +1439,20 @@ impl Analyzer {
     ) -> Result<CtfeValue, String> {
         let Ty::Enum(name) = option else {
             return Err(format!(
-                "checked integer conversion has non-option result `{option}`"
+                "checked integer conversion has non-`Option` result `{option}`"
             ));
         };
         let layout = self
             .collection
             .enum_layouts
             .get(name)
-            .ok_or_else(|| format!("missing `option<{target}>` layout during ctfe"))?;
-        let variant_name = if converted.is_some() { "some" } else { "none" };
+            .ok_or_else(|| format!("missing `Option<{target}>` layout during ctfe"))?;
+        let variant_name = if converted.is_some() { "Some" } else { "None" };
         let variant = layout
             .variants
             .iter()
             .position(|candidate| candidate.name == variant_name)
-            .ok_or_else(|| format!("missing `{variant_name}` option variant during ctfe"))?;
+            .ok_or_else(|| format!("missing `Option.{variant_name}` variant during ctfe"))?;
         Ok(CtfeValue {
             ty: option.clone(),
             kind: CtfeValueKind::Enum {
@@ -2773,7 +2773,7 @@ impl Analyzer {
                     }
                     if analyzer.type_has_custom_drop(ty) {
                         return Err(format!(
-                            "ctfe value type `{ty}` implements `droppable` and requires runtime destruction"
+                            "ctfe value type `{ty}` implements `Droppable` and requires runtime destruction"
                         ));
                     }
                     if !visiting.insert(name.clone()) {
@@ -2818,7 +2818,7 @@ impl Analyzer {
                     }
                     if analyzer.type_has_custom_drop(ty) {
                         return Err(format!(
-                            "ctfe value type `{ty}` implements `droppable` and requires runtime destruction"
+                            "ctfe value type `{ty}` implements `Droppable` and requires runtime destruction"
                         ));
                     }
                     if !visiting.insert(name.clone()) {

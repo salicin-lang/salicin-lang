@@ -587,7 +587,7 @@ fn render_sort(sort: &Sort) -> String {
         Sort::Parameters => "parameters".to_owned(),
         Sort::Fragment(kind) => kind.as_str().to_owned(),
         Sort::ParameterPack => "...parameters".to_owned(),
-        Sort::ParameterModifier => "(P: parameters): parameters".to_owned(),
+        Sort::ParameterModifier => "<P: parameters>: parameters".to_owned(),
         Sort::TypeConstructor { parameter_groups } => {
             render_constructor_sort(parameter_groups, "type")
         }

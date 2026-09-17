@@ -186,7 +186,7 @@ impl Analyzer {
                 Item::TypeForm(definition) => &definition.name,
                 Item::Trait(definition) => {
                     if origin.package == PackageId::CORE.0
-                        && definition.name.rsplit("::").next() == Some("is")
+                        && definition.name.rsplit("::").next() == Some("Is")
                     {
                         continue;
                     }
@@ -203,7 +203,7 @@ impl Analyzer {
                         && matches!(
                             &extension.trait_ref,
                             Some(Type::Named(name, arguments))
-                                if name.split(['.', ':']).next_back() == Some("is")
+                                if name.split(['.', ':']).next_back() == Some("Is")
                                     && matches!(
                                         arguments.as_slice(),
                                         [Type::Named(argument, nested)]
@@ -297,11 +297,7 @@ impl Analyzer {
                         continue;
                     }
                     let parameter_modifier_intrinsic = origin.package == PackageId::CORE.0
-                        && [
-                            LangItemKind::CopyParameters,
-                            LangItemKind::MoveParameters,
-                            LangItemKind::ComptimeParameters,
-                        ]
+                        && [LangItemKind::CopyParameters, LangItemKind::MoveParameters]
                         .into_iter()
                         .any(|kind| self.is_lang_item_name(&source_name, kind))
                         && function.compile_groups.as_slice().iter().flatten().count() == 1
@@ -497,7 +493,7 @@ impl Analyzer {
                     }
                     for derive in &definition.derives {
                         match derive.as_str() {
-                            "copyable" => {
+                            "Copyable" => {
                                 if let Some(extension) = self.derived_copy_extension(definition) {
                                     extensions.push((extension, origin.clone()));
                                 }
@@ -591,7 +587,7 @@ impl Analyzer {
                 }
                 Item::Trait(definition) => {
                     if origin.package == PackageId::CORE.0
-                        && definition.name.rsplit("::").next() == Some("is")
+                        && definition.name.rsplit("::").next() == Some("Is")
                     {
                         continue;
                     }
@@ -782,7 +778,7 @@ impl Analyzer {
         for parameter in &parameters {
             if parameter.kind != Sort::Type {
                 self.error(format!(
-                    "struct `{}` cannot derive `copyable` with non-type compile-time parameter `{}`",
+                    "struct `{}` cannot derive `Copyable` with non-type compile-time parameter `{}`",
                     definition.name, parameter.name
                 ));
                 return None;
@@ -851,11 +847,11 @@ impl Analyzer {
             if let Some((member, ty)) = self.first_non_copy_member(target, &valid) {
                 let ty = self.diagnostic_type_name(&ty);
                 self.error(format!(
-                    "`{target_name}` cannot implement `copyable`: {member} has type `{ty}`, which does not implement `copyable`"
+                    "`{target_name}` cannot implement `Copyable`: {member} has type `{ty}`, which does not implement `Copyable`"
                 ));
             } else {
                 self.error(format!(
-                    "`{target_name}` cannot implement `copyable` because its value layout is not copyable"
+                    "`{target_name}` cannot implement `Copyable` because its value layout does not support copying"
                 ));
             }
             self.collection.trait_impls.remove(key);
@@ -875,11 +871,11 @@ impl Analyzer {
         {
             let ty = self.diagnostic_type_name(&ty);
             self.error(format!(
-                "`{target_name}` cannot implement `copyable`: {member} has type `{ty}`, which does not implement `copyable`"
+                "`{target_name}` cannot implement `Copyable`: {member} has type `{ty}`, which does not implement `Copyable`"
             ));
         } else {
             self.error(format!(
-                "`{target_name}` cannot implement `copyable` because its value layout is not copyable"
+                "`{target_name}` cannot implement `Copyable` because its value layout does not support copying"
             ));
         }
         self.collection.trait_impls.remove(key);
@@ -1030,7 +1026,7 @@ impl Analyzer {
         });
         if !valid {
             self.error(format!(
-                "blanket `copyable` implementation for `{template_name}` is not structurally valid for every instance allowed by its where predicates"
+                "blanket `Copyable` implementation for `{template_name}` is not structurally valid for every instance allowed by its where predicates"
             ));
         }
         self.restore_nominals(nominals_before);
@@ -1048,14 +1044,14 @@ impl Analyzer {
         if definition.name == self.lang_item_name(LangItemKind::Move)
             && !move_trait_has_required_shape(&definition)
         {
-            self.error("`movable` language trait must have shape `let movable = trait {}`");
+            self.error("`Movable` language trait must have shape `let Movable = trait {}`");
             valid = false;
         }
         if definition.name == self.lang_item_name(LangItemKind::Copy)
             && !copy_trait_has_required_shape(&definition)
         {
             self.error(
-                "`copyable` language trait must have shape `let copyable = trait(requires: self is movable) {}`",
+                "`Copyable` language trait must have shape `let Copyable = trait(requires: self is Movable) {}`",
             );
             valid = false;
         }
@@ -1063,7 +1059,7 @@ impl Analyzer {
             && !drop_trait_has_required_shape(&definition)
         {
             self.error(
-                "`droppable` language trait must have shape `let droppable = trait { let drop(self: borrow<mut>(self))(): () }`",
+                "`Droppable` language trait must have shape `let Droppable = trait { let drop(self: Borrow<mut><self>)(): () }`",
             );
             valid = false;
         }
@@ -1077,13 +1073,13 @@ impl Analyzer {
                 let method = operator_trait.method();
                 let shape = match operator_trait.lang_item {
                     LangItemKind::Eq => format!(
-                        "let eq<comptime rhs: type> = trait {{ let {method}(self: borrow(self))(rhs: borrow(rhs)): bool }}"
+                        "let Eq<Rhs: type> = trait {{ let {method}(self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
                     ),
                     LangItemKind::PartialOrd => format!(
-                        "let partial_ord<comptime rhs: type> = trait {{ let {method}(self: borrow(self))(rhs: borrow(rhs)): partial_ordering }}"
+                        "let PartialOrd<Rhs: type> = trait {{ let {method}(self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
                     ),
                     _ => format!(
-                        "let {trait_name}<comptime rhs: type> = trait {{ let output: type; let {method}(self)(rhs: rhs): output }}"
+                        "let {trait_name}<Rhs: type> = trait {{ let Output: type; let {method}(self)(rhs: Rhs): Output }}"
                     ),
                 };
                 self.error(format!(
@@ -1413,7 +1409,7 @@ impl Analyzer {
                         && !self.trait_source_type_is_definitely_copy(&parameter.ty)
                     {
                         self.error(format!(
-                            "trait method `{}.{method_name}` parameter `{}` requires `copyable`, but its type is not provably copyable without a trait bound",
+                            "trait method `{}.{method_name}` parameter `{}` requires `Copyable`, but its type does not provably implement `Copyable` without a trait bound",
                             trait_name,
                             parameter.name
                         ));

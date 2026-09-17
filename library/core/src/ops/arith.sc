@@ -1,52 +1,52 @@
 /// Trait backing binary `+`.
-pub let add<comptime rhs: type> = trait {
+pub let Add<Rhs: type> = trait {
   /// Result type produced by addition.
-  let output: type
+  let Output: type
   /// Adds `rhs` to `self`.
   let add(self)
-    (rhs: rhs): output
+    (rhs: Rhs): Output
 }
 
 /// Trait backing binary `-`.
-pub let sub<comptime rhs: type> = trait {
+pub let Sub<Rhs: type> = trait {
   /// Result type produced by subtraction.
-  let output: type
+  let Output: type
   /// Subtracts `rhs` from `self`.
   let sub(self)
-    (rhs: rhs): output
+    (rhs: Rhs): Output
 }
 
 /// Trait backing binary `*`.
-pub let mul<comptime rhs: type> = trait {
+pub let Mul<Rhs: type> = trait {
   /// Result type produced by multiplication.
-  let output: type
+  let Output: type
   /// Multiplies `self` by `rhs`.
   let mul(self)
-    (rhs: rhs): output
+    (rhs: Rhs): Output
 }
 
 /// Trait backing binary `/`.
-pub let div<comptime rhs: type> = trait {
+pub let Div<Rhs: type> = trait {
   /// Result type produced by division.
-  let output: type
+  let Output: type
   /// Divides `self` by `rhs`.
   let div(self)
-    (rhs: rhs): output
+    (rhs: Rhs): Output
 }
 
 /// Trait backing binary `%`.
-pub let rem<comptime rhs: type> = trait {
+pub let Rem<Rhs: type> = trait {
   /// Result type produced by remainder.
-  let output: type
+  let Output: type
   /// Computes the remainder of `self` divided by `rhs`.
   let rem(self)
-    (rhs: rhs): output
+    (rhs: Rhs): Output
 }
 
 /// Trait backing unary numeric negation.
-pub let neg = trait {
+pub let Neg = trait {
   /// Result type produced by negation.
-  let output: type
+  let Output: type
   /// Negates `self`.
-  let neg(self)(): output
+  let neg(self)(): Output
 }

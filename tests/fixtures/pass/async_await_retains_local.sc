@@ -1,5 +1,5 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 
 let child() = {
   async { 1 }
@@ -13,8 +13,8 @@ let main(): i32 = {
     copy + second
   }
   match future.poll()
-    { ready(value) -> value }
-    { pending -> 0 }
+    { Ready(value) -> value }
+    { Pending -> 0 }
 }
 
 test("async_await_retains_local.sc") {

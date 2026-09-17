@@ -1,141 +1,141 @@
 // Primitive pointer and layout contracts. The source declarations define the
 // public identities and signatures; the compiler supplies representation,
 // authority checks, and target-specific lowering after validating this module.
-let index = core.ops.index
+let Index = core.ops.Index
 
-/// Fixed-size array type with compile-time element type and length.
-pub let array<comptime t: type>
-  <comptime l: usize>: type = builtin()
+/// Fixed-size Array type with compile-time element type and length.
+pub let Array<T: type>
+  <l: usize>: type = builtin()
 
-/// Dynamically sized contiguous sequence viewed through a borrow.
-pub let slice<comptime t: type>: type = builtin()
+/// Dynamically sized contiguous sequence viewed through a Borrow.
+pub let Slice<T: type>: type = builtin()
 
-/// Routes fixed-size array brackets through the source-defined indexing protocol.
-extend(array<t><l>, index<usize>) {
-  let output = t
-  let index<comptime a: access>
-    (self: borrow<a><self>)
-    (key: usize): borrow<a><t> = builtin()
+/// Routes fixed-size Array brackets through the source-defined indexing protocol.
+extend(Array<T><l>, Index<usize>) {
+  let Output = T
+  let index<a: access>
+    (self: Borrow<a><self>)
+    (key: usize): Borrow<a><T> = builtin()
 }
 
 /// Provides access operations shared with slices and vectors.
-extend(array<t><l>) {
-  /// Borrows all elements as a slice with the same source region.
-  let as_slice<comptime a: access = shared>
-    (self: borrow<a><self>)(): borrow<a><slice<t>> = {
+extend(Array<T><l>) {
+  /// Borrows all elements as a Slice with the same source region.
+  let as_slice<a: access = shared>
+    (self: Borrow<a><self>)(): Borrow<a><Slice<T>> = {
     unsafe {
       raw_array_slice<a>(self)
     }
   }
 
   /// Returns the number of elements.
-  let len(self: borrow<self>)(): u64 = {
+  let len(self: Borrow<self>)(): u64 = {
     let values = self.as_slice()
     values.len()
   }
 
-  /// Returns whether this array contains no elements.
-  let is_empty(self: borrow<self>)(): bool = { self.len() == 0 }
+  /// Returns whether this Array contains no elements.
+  let is_empty(self: Borrow<self>)(): bool = { self.len() == 0 }
 
-  /// Borrows the element at `index`, or returns `none` when out of bounds.
-  let get<comptime a: access = shared>
-    (self: borrow<a><self>)
-    (index: u64): core.option<borrow<a><t>> = {
+  /// Borrows the element at `index`, or returns `None` when out of bounds.
+  let get<a: access = shared>
+    (self: Borrow<a><self>)
+    (index: u64): core.Option<Borrow<a><T>> = {
     let values = self.as_slice<a>()
     values.get<a>(index)
   }
 
   /// Borrows the element at `index`, trapping when out of bounds.
-  let at<comptime a: access = shared>
-    (self: borrow<a><self>)
-    (index: u64): borrow<a><t> = {
+  let at<a: access = shared>
+    (self: Borrow<a><self>)
+    (index: u64): Borrow<a><T> = {
     let values = self.as_slice<a>()
     values.at<a>(index)
   }
 
-  /// Borrows the first element, or returns `none` when empty.
-  let first<comptime a: access = shared>
-    (self: borrow<a><self>)(): core.option<borrow<a><t>> = {
+  /// Borrows the first element, or returns `None` when empty.
+  let first<a: access = shared>
+    (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> = {
     self.get<a>(0)
   }
 
-  /// Borrows the last element, or returns `none` when empty.
-  let last<comptime a: access = shared>
-    (self: borrow<a><self>)(): core.option<borrow<a><t>> = {
+  /// Borrows the last element, or returns `None` when empty.
+  let last<a: access = shared>
+    (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> = {
     let values = self.as_slice<a>()
     values.last<a>()
   }
 
   /// Borrows the first element accepted by `predicate`.
-  let find<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): core.option<borrow<t>> = {
+  let find<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): core.Option<Borrow<T>> = {
     let values = self.as_slice()
     values.find(predicate)
   }
 
   /// Returns the index of the first element accepted by `predicate`.
-  let position<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): core.option<u64> = {
+  let position<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): core.Option<u64> = {
     let values = self.as_slice()
     values.position(predicate)
   }
 
   /// Returns whether any element is accepted by `predicate`.
-  let any<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): bool = {
+  let any<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): bool = {
     let values = self.as_slice()
     values.any(predicate)
   }
 
   /// Returns whether every element is accepted by `predicate`.
-  let all<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): bool = {
+  let all<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): bool = {
     let values = self.as_slice()
     values.all(predicate)
   }
 
   /// Folds elements from left to right into `initial`.
-  let fold<comptime e: effects, comptime accumulator: type>: with<e>(self: borrow<self>)(move initial: accumulator)(move combine: with<e>((accumulator, borrow<t>): accumulator)): accumulator = {
+  let fold<e: effects, Accumulator: type>: with<e>(self: Borrow<self>)(move initial: Accumulator)(move combine: with<e>((Accumulator, Borrow<T>): Accumulator)): Accumulator = {
     let values = self.as_slice()
     values.fold(initial)(combine)
   }
 
   /// Swaps two elements, trapping before mutation when either index is invalid.
-  let swap(self: borrow<mut><self>)(left: u64, right: u64): () = {
+  let swap(self: Borrow<mut><self>)(left: u64, right: u64): () = {
     let values = self.as_slice<mut>()
     values.swap(left, right)
   }
 
   /// Reverses all elements in place.
-  let reverse(self: borrow<mut><self>)(): () = {
+  let reverse(self: Borrow<mut><self>)(): () = {
     let values = self.as_slice<mut>()
     values.reverse()
   }
 }
 
 /// Provides equality-based membership for fixed-size arrays.
-extend(array<t><l>)
-(requires: t is core.marker.copyable && t is core.cmp.eq<t>) {
-  /// Returns whether this array contains an element equal to `needle`.
-  let contains(self: borrow<self>)(copy needle: t): bool = {
+extend(Array<T><l>)
+(requires: T is core.marker.Copyable && T is core.cmp.Eq<T>) {
+  /// Returns whether this Array contains an element equal to `needle`.
+  let contains(self: Borrow<self>)(copy needle: T): bool = {
     let values = self.as_slice()
     values.contains(needle)
   }
 }
 
 /// Provides copy-based mutation for fixed-size arrays.
-extend(array<t><l>)
-(requires: t is core.marker.copyable) {
+extend(Array<T><l>)
+(requires: T is core.marker.Copyable) {
   /// Replaces every element with a copy of `value`.
-  let fill(self: borrow<mut><self>)(copy value: t): () = {
+  let fill(self: Borrow<mut><self>)(copy value: T): () = {
     let values = self.as_slice<mut>()
     values.fill(value)
   }
 
-  /// Copies an equally sized source slice into this array.
-  let copy_from(self: borrow<mut><self>)(source: borrow<slice<t>>): () = {
+  /// Copies an equally sized source Slice into this Array.
+  let copy_from(self: Borrow<mut><self>)(source: Borrow<Slice<T>>): () = {
     let values = self.as_slice<mut>()
     values.copy_from(source)
   }
 
-  /// Copies a source range within this array with overlap-safe semantics.
-  let copy_within(self: borrow<mut><self>)
+  /// Copies a source range within this Array with overlap-safe semantics.
+  let copy_within(self: Borrow<mut><self>)
     (source_start: u64, source_end: u64, destination_start: u64): () = {
     let values = self.as_slice<mut>()
     values.copy_within(source_start, source_end, destination_start)
@@ -143,60 +143,60 @@ extend(array<t><l>)
 }
 
 /// Provides operations on a borrowed contiguous sequence.
-extend(slice<t>) {
-  /// Returns the number of elements in this slice.
-  let len<comptime a: access = shared>(self: borrow<a><self>)(): u64 = {
+extend(Slice<T>) {
+  /// Returns the number of elements in this Slice.
+  let len<a: access = shared>(self: Borrow<a><self>)(): u64 = {
     unsafe {
       raw_slice_len(self)
     }
   }
 
-  /// Returns whether this slice contains no elements.
-  let is_empty<comptime a: access = shared>(self: borrow<a><self>)(): bool = {
+  /// Returns whether this Slice contains no elements.
+  let is_empty<a: access = shared>(self: Borrow<a><self>)(): bool = {
     self.len<a>() == 0
   }
 
-  /// Borrows the element at `index`, or returns `none` when out of bounds.
-  let get<comptime a: access = shared>
-    (self: borrow<a><self>)
-    (index: u64): core.option<borrow<a><t>> = {
+  /// Borrows the element at `index`, or returns `None` when out of bounds.
+  let get<a: access = shared>
+    (self: Borrow<a><self>)
+    (index: u64): core.Option<Borrow<a><T>> = {
     if index >= self.len<a>() {
-      core.option.none
+      core.Option.None
     } else {
-      core.option.some(unsafe {
+      core.Option.Some(unsafe {
         raw_slice_at<a>(self, index)
       })
     }
   }
 
   /// Borrows the element at `index`, trapping if `index` is out of bounds.
-  let at<comptime a: access = shared>
-    (self: borrow<a><self>)
-    (index: u64): borrow<a><t> = {
+  let at<a: access = shared>
+    (self: Borrow<a><self>)
+    (index: u64): Borrow<a><T> = {
     unsafe {
       raw_slice_at<a>(self, index)
     }
   }
 
-  /// Borrows the first element, or returns `none` when empty.
-  let first<comptime a: access = shared>
-    (self: borrow<a><self>)(): core.option<borrow<a><t>> = {
+  /// Borrows the first element, or returns `None` when empty.
+  let first<a: access = shared>
+    (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> = {
     self.get<a>(0)
   }
 
-  /// Borrows the last element, or returns `none` when empty.
-  let last<comptime a: access = shared>
-    (self: borrow<a><self>)(): core.option<borrow<a><t>> = {
+  /// Borrows the last element, or returns `None` when empty.
+  let last<a: access = shared>
+    (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> = {
     let length = self.len<a>()
     if length == 0 {
-      core.option.none
+      core.Option.None
     } else {
       self.get<a>(length - 1)
     }
   }
 
   /// Borrows the first element accepted by `predicate`.
-  let find<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): core.option<borrow<t>> = {
+  let find<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): core.Option<Borrow<T>> = {
     let length = self.len()
     let mut index: u64 = 0
     while { index < length } {
@@ -206,25 +206,25 @@ extend(slice<t>) {
       }
       index = index + 1
     }
-    core.option.none
+    core.Option.None
   }
 
   /// Returns the index of the first element accepted by `predicate`.
-  let position<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): core.option<u64> = {
+  let position<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): core.Option<u64> = {
     let length = self.len()
     let mut index: u64 = 0
     while { index < length } {
       let item = self.at(index)
       if predicate(item) {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       index = index + 1
     }
-    core.option.none
+    core.Option.None
   }
 
   /// Returns whether any element is accepted by `predicate`.
-  let any<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): bool = {
+  let any<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): bool = {
     let length = self.len()
     let mut index: u64 = 0
     while { index < length } {
@@ -238,7 +238,7 @@ extend(slice<t>) {
   }
 
   /// Returns whether every element is accepted by `predicate`.
-  let all<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): bool = {
+  let all<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): bool = {
     let length = self.len()
     let mut index: u64 = 0
     while { index < length } {
@@ -252,7 +252,7 @@ extend(slice<t>) {
   }
 
   /// Folds elements from left to right into `initial`.
-  let fold<comptime e: effects, comptime accumulator: type>: with<e>(self: borrow<self>)(move initial: accumulator)(move combine: with<e>((accumulator, borrow<t>): accumulator)): accumulator = {
+  let fold<e: effects, Accumulator: type>: with<e>(self: Borrow<self>)(move initial: Accumulator)(move combine: with<e>((Accumulator, Borrow<T>): Accumulator)): Accumulator = {
     let length = self.len()
     let mut value = initial
     let mut index: u64 = 0
@@ -265,7 +265,7 @@ extend(slice<t>) {
   }
 
   /// Swaps two elements, trapping before mutation when either index is invalid.
-  let swap(self: borrow<mut><self>)(left: u64, right: u64): () = {
+  let swap(self: Borrow<mut><self>)(left: u64, right: u64): () = {
     let length = self.len<mut>()
     if left >= length || right >= length {
       unsafe {
@@ -275,7 +275,7 @@ extend(slice<t>) {
     if left != right {
       let values = unsafe {
         raw_slice_ptr<mut><self>
-      }
+        }
       let left_pointer = unsafe {
         raw_offset(values, left)
       }
@@ -296,7 +296,7 @@ extend(slice<t>) {
   }
 
   /// Reverses all elements in place.
-  let reverse(self: borrow<mut><self>)(): () = {
+  let reverse(self: Borrow<mut><self>)(): () = {
     let length = self.len<mut>()
     let mut left: u64 = 0
     while { left < length / 2 } {
@@ -307,10 +307,10 @@ extend(slice<t>) {
 }
 
 /// Provides equality-based membership for borrowed slices.
-extend(slice<t>)
-(requires: t is core.marker.copyable && t is core.cmp.eq<t>) {
-  /// Returns whether this slice contains an element equal to `needle`.
-  let contains(self: borrow<self>)(copy needle: t): bool = {
+extend(Slice<T>)
+(requires: T is core.marker.Copyable && T is core.cmp.Eq<T>) {
+  /// Returns whether this Slice contains an element equal to `needle`.
+  let contains(self: Borrow<self>)(copy needle: T): bool = {
     let length = self.len()
     if length > 0 {
       let values = unsafe {
@@ -332,15 +332,15 @@ extend(slice<t>)
 }
 
 /// Provides copy-based mutation for borrowed contiguous sequences.
-extend(slice<t>)
-(requires: t is core.marker.copyable) {
+extend(Slice<T>)
+(requires: T is core.marker.Copyable) {
   /// Replaces every element with a copy of `value`.
-  let fill(self: borrow<mut><self>)(copy value: t): () = {
+  let fill(self: Borrow<mut><self>)(copy value: T): () = {
     let length = self.len<mut>()
     if length > 0 {
       let values = unsafe {
         raw_slice_ptr<mut><self>
-      }
+        }
       let mut index: u64 = 0
       while { index < length } {
         unsafe {
@@ -351,8 +351,8 @@ extend(slice<t>)
     }
   }
 
-  /// Copies `source` into this slice, trapping before mutation on a length mismatch.
-  let copy_from(self: borrow<mut><self>)(source: borrow<slice<t>>): () = {
+  /// Copies `source` into this Slice, trapping before mutation on a length mismatch.
+  let copy_from(self: Borrow<mut><self>)(source: Borrow<Slice<T>>): () = {
     let length = self.len<mut>()
     if source.len() != length {
       unsafe {
@@ -365,7 +365,7 @@ extend(slice<t>)
       }
       let destination_values = unsafe {
         raw_slice_ptr<mut><self>
-      }
+        }
       let mut index: u64 = 0
       while { index < length } {
         unsafe {
@@ -379,7 +379,7 @@ extend(slice<t>)
   /// Copies `[source_start, source_end)` to `destination_start`.
   ///
   /// Overlap is supported. All bounds are validated before the first write.
-  let copy_within(self: borrow<mut><self>)
+  let copy_within(self: Borrow<mut><self>)
     (source_start: u64, source_end: u64, destination_start: u64): () = {
     let length = self.len<mut>()
     if source_start > source_end || source_end > length {
@@ -396,7 +396,7 @@ extend(slice<t>)
     if count > 0 {
       let values = unsafe {
         raw_slice_ptr<mut><self>
-      }
+        }
       if destination_start > source_start {
         let mut remaining = count
         while { remaining > 0 } {
@@ -421,28 +421,28 @@ extend(slice<t>)
 }
 
 /// Routes bracket access through the source-defined indexing protocol.
-extend(slice<t>, index<u64>) {
-  let output = t
-  let index<comptime a: access>
-    (self: borrow<a><self>)
-    (key: u64): borrow<a><t> = {
+extend(Slice<T>, Index<u64>) {
+  let Output = T
+  let index<a: access>
+    (self: Borrow<a><self>)
+    (key: u64): Borrow<a><T> = {
     self.at<a>(key)
   }
 }
 
 /// Raw pointer type with access `A` and pointee `T`.
-pub let ptr<comptime a: access = shared>
-  <comptime t: type>: type = builtin()
+pub let Ptr<a: access = shared>
+  <T: type>: type = builtin()
 
-/// Forms a raw pointer from a borrow with the same access.
-pub let ptr<comptime a: access = shared>
-  <comptime t: type>
-  (value: borrow<a><t>): ptr<a><t> = builtin()
+/// Forms a raw pointer from a Borrow with the same access.
+pub let ptr<a: access = shared>
+  <T: type>
+  (value: Borrow<a><T>): Ptr<a><T> = builtin()
 
 /// Provides operations shared by raw pointers at either access.
-extend(ptr<a><t>) {
+extend(Ptr<a><T>) {
   /// Returns the pointer `index` elements after this pointer.
-  let offset: with<core.unsafe.unsafety>(self)(index: u64): ptr<a><t> = {
+  let offset: with<core.unsafe.unsafety>(self)(index: u64): Ptr<a><T> = {
     unsafe {
       raw_offset(self, index)
     }
@@ -450,16 +450,16 @@ extend(ptr<a><t>) {
 }
 
 /// Provides operations that require mutable raw-pointer access.
-extend(ptr<mut><t>) {
+extend(Ptr<mut><T>) {
   /// Initializes storage that is currently uninitialized.
-  let init: with<core.unsafe.unsafety>(self)(value: t): () = {
+  let init: with<core.unsafe.unsafety>(self)(value: T): () = {
     unsafe {
       raw_init(self, value)
     }
   }
 
   /// Moves a value out and leaves the storage uninitialized.
-  let take: with<core.unsafe.unsafety>(self)(): t = {
+  let take: with<core.unsafe.unsafety>(self)(): T = {
     unsafe {
       raw_take(self)
     }
@@ -467,7 +467,7 @@ extend(ptr<mut><t>) {
 }
 
 /// Returns the target size of `T` in bytes.
-pub let size_of<comptime t: type>: u64 = builtin()
+pub let size_of<T: type>: u64 = builtin()
 
 /// Returns the target alignment of `T` in bytes.
-pub let align_of<comptime t: type>: u64 = builtin()
+pub let align_of<T: type>: u64 = builtin()

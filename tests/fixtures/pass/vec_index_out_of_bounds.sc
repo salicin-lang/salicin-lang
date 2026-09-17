@@ -1,7 +1,7 @@
-let vec = alloc.vec.vec
+let Vec = alloc.Vec
 
 let main(): i32 = {
-  let values = vec.new(t: i32)()
+  let values = Vec.new<T: i32>()
   values[0]
 }
 

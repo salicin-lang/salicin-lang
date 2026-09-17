@@ -1,14 +1,14 @@
 let resource = struct { value: i32 }
 
 extend(resource) {
-  let increment(self: borrow<mut><self>)(): i32 = {
+  let increment(self: Borrow<mut><self>)(): i32 = {
     self.value = self.value + 1
     self.value
   }
 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     let checked = 1 / self.value
     self.value = 0
   }

@@ -3,38 +3,38 @@ let step = effect {
 }
 
 let state = struct {
-  values: array<i32><2>,
-  drops: ptr<mut><i32>,
+  values: Array<i32><2>,
+  drops: Ptr<mut><i32>,
 }
 
-extend(state, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(state, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let mark(calls: ptr<mut><i32>)(digit: i32): i32 = {
+let mark(calls: Ptr<mut><i32>)(digit: i32): i32 = {
   unsafe {
     *calls = *calls * 10 + digit
     0
   }
 }
 
-let next_index(calls: ptr<mut><i32>): usize = {
+let next_index(calls: Ptr<mut><i32>): usize = {
   unsafe {
     *calls = *calls * 10 + 2
     1
   }
 }
 
-let update: with<step>(before: i32)(value: borrow<mut><i32>)(after: i32): () = {
+let update: with<step>(before: i32)(value: Borrow<mut><i32>)(after: i32): () = {
   let delta = step.delta()
   value = value + delta + before + after
 }
 
-let program: with<step>(drops: ptr<mut><i32>)(calls: ptr<mut><i32>): i32 = {
+let program: with<step>(drops: Ptr<mut><i32>)(calls: Ptr<mut><i32>): i32 = {
   let mut state = state{ values: [0, 40], drops: drops }
   update(mark(calls)(1))(state.values[next_index(calls)])(mark(calls)(3))
   state.values[1]

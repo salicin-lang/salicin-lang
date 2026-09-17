@@ -1,9 +1,9 @@
-let option = core.option
-let result = core.result
+let Option = core.Option
+let Result = core.Result
 
 let read = effect {
-  let option_base(present: bool): option<adder>;
-  let result_base(present: bool): result<bool><adder>;
+  let option_base(present: bool): Option<adder>;
+  let result_base(present: bool): Result<bool><adder>;
   let argument(): i32
 }
 
@@ -16,9 +16,9 @@ extend(adder) {
 let main(): i32 = {
   let mut arguments = 0
   let result: i32 = read.handle option_base { (present, resume) ->
-      resume(if present { option.some(adder{ base: 8 }) } else { option.none })
+      resume(if present { Option.Some(adder{ base: 8 }) } else { Option.None })
     } result_base { (present, resume) ->
-      resume(if present { result.ok(adder{ base: 8 }) } else { result.err(true) })
+      resume(if present { Result.Ok(adder{ base: 8 }) } else { Result.Err(true) })
     } argument { (resume) ->
       arguments += 1;
       resume(2)

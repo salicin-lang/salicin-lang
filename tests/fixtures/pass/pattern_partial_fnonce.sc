@@ -8,13 +8,13 @@ let take(move payload: payload): i32 = {
 
 let main(): i32 = {
   let payload = payload{ value: 42 }
-  let choose: (bool): core.control.attempt(bool)(i32) = {
+  let choose: (bool): core.control.Attempt(bool)(i32) = {
     true -> take(payload)
   }
   let attempted = choose(true)
   match attempted
-    { hit(value) -> value }
-    { miss(_) -> 0 }
+    { Hit(value) -> value }
+    { Miss(_) -> 0 }
 }
 
 test("pattern_partial_fnonce.sc") {

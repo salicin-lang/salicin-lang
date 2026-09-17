@@ -1,15 +1,15 @@
-let result = core.result
+let Result = core.Result
 let throwing = core.error.throwing
-let raise = core.flow.raise
+let Raise = core.flow.Raise
 
 let stored = enum {
   value(i32),
   failure(bool),
 }
 
-extend(stored, raise) {
-  let output = i32
-  let error = bool
+extend(stored, Raise) {
+  let Output = i32;
+  let Error = bool;
 
   let raise: with<throwing<bool>>(move self): i32 = {
     match self

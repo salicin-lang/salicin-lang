@@ -4,11 +4,11 @@ let ask = effect {
 
 let resource = struct {
   bias: i32,
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -59,7 +59,7 @@ let outer_input(move action: with<ask>((i32): i32)): i32 = {
     }
 }
 
-let execute(drops: ptr<mut><i32>, abandon: bool): i32 = {
+let execute(drops: Ptr<mut><i32>, abandon: bool): i32 = {
   let resource = resource{ bias: 21, drops: drops }
   let mut action: with<ask>((): i32)  = { () ->
     ask.value() + consume(resource)
@@ -67,7 +67,7 @@ let execute(drops: ptr<mut><i32>, abandon: bool): i32 = {
   outer(action, abandon)
 }
 
-let execute_discard(drops: ptr<mut><i32>): i32 = {
+let execute_discard(drops: Ptr<mut><i32>): i32 = {
   let resource = resource{ bias: 21, drops: drops }
   let action: with<ask>((): i32)  = { () ->
     ask.value() + consume(resource)

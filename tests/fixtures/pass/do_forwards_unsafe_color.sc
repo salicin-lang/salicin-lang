@@ -1,4 +1,4 @@
-let read(pointer: ptr<i32>): i32 = {
+let read(pointer: Ptr<i32>): i32 = {
   unsafe {
     do {
       return(*pointer)

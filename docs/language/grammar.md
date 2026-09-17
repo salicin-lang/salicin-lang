@@ -65,7 +65,7 @@ test_registration =
 A test registration cannot have an attribute or visibility. Its string must be
 non-empty, and the trailing block is the test body. `test` remains an ordinary
 identifier outside this top-level form. The edition-owned
-`pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()`
+`pub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()`
 declaration validates the static name and body contract.
 
 ### 2.0.1 Declaration and guard forms
@@ -75,15 +75,15 @@ These three spellings occupy different grammatical categories:
 - `test("name") { ... }` is a declaration form backed by the source-visible
   `core.test` contract above. Its metadata name is consumed by syntax and its
   body has type
-  `with<core.error.throwing<core.string.string>>((): ())`.
+  `with<core.error.throwing<core.string.String>>((): ())`.
 - `extend(pattern, ...) { ... }` is an implementation declaration. Its
-  optional `(requires: condition)` entry is a compile-time `bool` header
+  optional `<requires: condition>` entry is a compile-time `bool` header
   parameter; `extend` itself has no fake function declaration in `core`.
 - `requires(goals) expression` is an initializer guard. It constrains the
   function body through the source-visible `core.requires` contract, passing
   the compile-time `bool` and delayed body closure.
 
-Trait inheritance uses the same labeled `(requires: condition)` compile-time
+Trait inheritance uses the same labeled `<requires: condition>` compile-time
 `bool` header parameter as `extend`; it does not invoke the function-body
 guard contract.
 
@@ -131,10 +131,10 @@ foreign_initializer =
 ```
 
 `let name: type` declares an opaque nominal type. Compiler-owned sources may declare an abstract
-sort with `let name: sort(2)`; user sources must declare finite sorts. The
+sort with `let name: sort<2>`; user sources must declare finite sorts. The
 edition static-sort registry, rather than a source declaration or open-ended
 name lookup, determines which compiler-owned fragment classifiers are valid.
-`let name = sort(1) { ... }` declares a sort with a known member set. Bare `sort`, `= type`,
+`let name = sort<1> { ... }` declares a sort with a known member set. Bare `sort`, `= type`,
 and `= type { ... }` are not productions.
 
 `builtin()` is a complete initializer available only to the embedded `core`
@@ -146,10 +146,10 @@ contract. It is not an expression initializer available to user packages.
 
 ```ebnf
 compile_parameter_group =
-    delimited_nonempty_group(compile_parameter) ;
+    "<", compile_parameter,
+    { ",", compile_parameter }, [ "," ], ">" ;
 
 compile_parameter =
-    contextual("comptime"),
     [ "..." ], compile_parameter_name, ":", compile_parameter_sort,
     [ "=", compile_parameter_default ] ;
 
@@ -158,7 +158,7 @@ compile_parameter_name = IDENT | REGION ;
 compile_parameter_sort =
     contextual("type")
   | contextual("usize")
-  | contextual("sort"), "(", ( INTEGER | IDENT ), ")"
+  | contextual("sort"), "<", ( INTEGER | IDENT ), ">"
   | contextual("region")
   | contextual("effect")
   | contextual("effects")
@@ -172,27 +172,29 @@ constructor_sort =
     ":", ( contextual("type") | contextual("effect") | contextual("parameters") ) ;
 
 constructor_sort_group =
-    "(", constructor_sort_parameter,
-    { ",", constructor_sort_parameter }, [ "," ], ")" ;
+    "<", constructor_sort_parameter,
+    { ",", constructor_sort_parameter }, [ "," ], ">" ;
 
 constructor_sort_parameter =
-    contextual("comptime"), IDENT, ":", compile_parameter_sort ;
+    IDENT, ":", compile_parameter_sort ;
 ```
 
 `constraint` classifies normalized compiler-produced solver goals. It cannot
 have a default, be supplied as an explicit source argument, or occur as a
 runtime type.
 
-A compile-time parameter is always introduced by `comptime`. Whether a
-declaration group is compile-time or runtime is therefore
-determined by its parameter forms. The two classes cannot be mixed in one
-group.
+Angle brackets exclusively declare compile-time groups. Parentheses, square
+brackets, and braces declare runtime groups. A group therefore has exactly one
+stage; compile-time and runtime parameters cannot be mixed in one group.
 
 ### 2.3 Runtime Parameters
 
 ```ebnf
 runtime_parameter_group =
-    delimited_group(runtime_parameter) ;
+    runtime_delimited_group(runtime_parameter) ;
+
+declaration_group =
+    compile_parameter_group | runtime_parameter_group ;
 
 runtime_parameter =
     { parameter_modifier },
@@ -257,7 +259,7 @@ named_field = [ visibility ], IDENT, ":", type_expr ;
 
 trait_decl =
     "trait",
-    [ "(", self_parameter, ")" ],
+    [ "<", self_parameter, ">" ],
     [ requires_parameter_group ],
     "{", separators,
     { trait_member, separators },
@@ -301,10 +303,10 @@ constraint_guard =
     contextual("requires"), constraint_arguments ;
 
 requires_parameter_group =
-    "(", contextual("requires"), ":",
+    "<", contextual("requires"), ":",
     constraint_expression,
     { ( "&&" | "," ), constraint_expression },
-    [ "," ], ")" ;
+    [ "," ], ">" ;
 
 constraint_arguments =
     "(", constraint_expression,
@@ -333,14 +335,14 @@ corresponding `extend` function or language item.
 An associated type projection equality follows the trait constraint whose
 evidence owns that projection. A generic associated constructor equation
 declares its local binders on the projection, for example
-`t is iterator && t.item<comptime r: region> == borrow(r)(i32)`.
+`T is Iterator && T.Item<r: region> == Borrow<r><i32>`.
 
 An extension requirement group is evaluated after the target pattern binds
 its compile-time parameters. A function applies the same compiler-owned
 `requires` guard to its body:
 
 ```sc fragment
-let duplicate<comptime t: type>(value: t): (t, t) = requires(t is copyable) {
+let duplicate<T: type>(value: T): (T, T) = requires(T is Copyable) {
   (value, value)
 }
 ```
@@ -348,7 +350,7 @@ let duplicate<comptime t: type>(value: t): (t, t) = requires(t is copyable) {
 Both forms lower `is` relations and projection equalities to solver goals. An
 unsatisfied concrete goal is a compile-time error; an abstract goal is
 retained until generic instantiation. Trait prerequisites use the same
-constraint arguments directly, for example `trait(requires: self is movable) {}`.
+constraint arguments directly, for example `trait<requires: self is Movable> {}`.
 
 ### 2.6 Foreign Declarations
 
@@ -385,9 +387,9 @@ Trait requirements, effect operations, and user opaque types remain
 bodyless declarations rather than builtin definitions.
 
 The root `core` module also contains the public overloads
-`pub let foreign<comptime abi: abi>: never = builtin()` and
-`pub let foreign<comptime abi: abi, comptime symbol: string>: never = builtin()`, plus
-`pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()`
+`pub let foreign<abi: abi>: never = builtin()` and
+`pub let foreign<abi: abi, symbol: String>: never = builtin()`, plus
+`pub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()`
 and the generic `requires(condition, body)` contract. They authorize the
 `foreign(c, ...)` initializer, top-level test registration, and function-body
 guard respectively;
@@ -407,7 +409,7 @@ function_type =
     ":", type_expr ;
 
 function_type_group =
-    delimited_group(function_type_parameter) ;
+    runtime_delimited_group(function_type_parameter) ;
 
 function_type_parameter =
     { parameter_modifier }, [ IDENT, ":" ], type_expr ;
@@ -429,33 +431,33 @@ tuple_type =
     ")" ;
 
 borrow_type =
-    contextual("borrow"),
+    contextual("Borrow"),
     [ type_argument_group ],
     [ type_argument_group ],
     type_argument_group ;
 
 array_type =
-    path, "(", type_expr, ")", "(", static_usize_expression, ")" ;
+    path, "<", type_expr, ">", "<", static_usize_expression, ">" ;
 
 static_usize_expression =
     expression ;  (* restricted semantically to the pure static subset *)
 
 type_argument_group =
-    "(", [ type_argument, { ",", type_argument }, [ "," ] ], ")" ;
+    "<", [ type_argument, { ",", type_argument }, [ "," ] ], ">" ;
 
 type_argument = [ IDENT, ":" ], type_expr ;
 
 with_clause =
-    contextual("with"), "(",
+    contextual("with"), "<",
     [ effect_ref, { ",", effect_ref }, [ "," ] ],
-    ")" ;
+    ">" ;
 
 effect_ref = path, [ type_argument_group ] ;
 ```
 
 `()` is unit, while `(t,)` is a one-element tuple. Curried constructor applications retain each
 argument group in the AST. The `array_type` production applies when `path` resolves to the
-edition's validated `array` type form; other constructor arguments remain type expressions.
+edition's validated `Array` type form; other constructor arguments remain type expressions.
 `static_usize_expression` admits literals, static names, checked operators, and calls to eligible
 ordinary pure functions.
 
@@ -525,8 +527,9 @@ arguments preserve currying: `f left right` is `f(left)(right)`, not
 expression. A logical newline does not begin a bare argument.
 
 Every explicit call opener must be byte-adjacent to its callee. Its delimiter
-must match the corresponding declaration or function-type group: `()`, `[]`,
-`<>`, and `{}` are four distinct group conventions. Thus `a < b` is a
+must match the corresponding declaration or function-type group. `<>`
+exclusively supplies a compile-time group; `()`, `[]`, and `{}` supply runtime
+groups. Thus `a < b` is a
 comparison (comparison operators require surrounding whitespace), while
 `a<b>` is an angle call. A postfix square group is the uniform surface form
 for calls and retains bounds-checked indexing/place behavior when its callee
@@ -541,11 +544,10 @@ delimited_group(item) =
   | "<", [ item, { ",", item }, [ "," ] ], ">"
   | "{", [ item, { ",", item }, [ "," ] ], "}" ;
 
-delimited_nonempty_group(item) =
-    "(", item, { ",", item }, [ "," ], ")"
-  | "[", item, { ",", item }, [ "," ], "]"
-  | "<", item, { ",", item }, [ "," ], ">"
-  | "{", item, { ",", item }, [ "," ], "}" ;
+runtime_delimited_group(item) =
+    "(", [ item, { ",", item }, [ "," ] ], ")"
+  | "[", [ item, { ",", item }, [ "," ] ], "]"
+  | "{", [ item, { ",", item }, [ "," ] ], "}" ;
 ```
 
 In an angle-call context, the parser splits a tight `>>` into two closing
@@ -622,8 +624,8 @@ match_case =
 ```
 
 `c` selects the C data representation and may appear at most once. It is
-orthogonal to named options such as `derive: copyable`; for example,
-`struct(c, derive: copyable) { ... }`. Empty option lists retain the ordinary
+orthogonal to named options such as `derive: Copyable`; for example,
+`struct(c, derive: Copyable) { ... }`. Empty option lists retain the ordinary
 Salicin representation.
 
 ```ebnf
@@ -679,16 +681,16 @@ let grouped = (value)
 f
 (x)
 
-let curried = make(t)(value)
+let curried = make(T)(value)
 let field = value.member
 let chained = value?.member
 
 if condition then { left() } else { right() }
 
 match value {
-  some(item) -> item
+  Some(item) -> item
 } {
-  none -> fallback
+  None -> fallback
 }
 ```
 

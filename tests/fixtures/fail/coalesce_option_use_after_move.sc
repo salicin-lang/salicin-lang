@@ -1,9 +1,9 @@
-let option = core.option
+let Option = core.Option
 
 let main(): i32 = {
-  let value = option<i32>.some(42)
+  let value = Option<i32>.Some(42)
   let answer = value ?? 0
   match value
-    { some(item) -> item }
-    { none -> answer }
+    { Some(item) -> item }
+    { None -> answer }
 }

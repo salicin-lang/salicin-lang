@@ -1,34 +1,34 @@
-let bit_and = core.ops.bit_and
-let bit_or = core.ops.bit_or
-let bit_xor = core.ops.bit_xor
-let shl = core.ops.shl
-let shr = core.ops.shr
+let BitAnd = core.ops.BitAnd
+let BitOr = core.ops.BitOr
+let BitXor = core.ops.BitXor
+let Shl = core.ops.Shl
+let Shr = core.ops.Shr
 
 let bits = struct { value: i32 }
 
-extend(bits, bit_and(bits)) {
-  let output = bits
+extend(bits, BitAnd(bits)) {
+  let Output = bits;
   let bit_and(self)(rhs: bits): bits = { bits{ value: self.value & rhs.value } }
 }
-extend(bits, bit_or(bits)) {
-  let output = bits
+extend(bits, BitOr(bits)) {
+  let Output = bits;
   let bit_or(self)(rhs: bits): bits = { bits{ value: self.value | rhs.value } }
 }
-extend(bits, bit_xor(bits)) {
-  let output = bits
+extend(bits, BitXor(bits)) {
+  let Output = bits;
   let bit_xor(self)(rhs: bits): bits = { bits{ value: self.value ^ rhs.value } }
 }
-extend(bits, shl(bits)) {
-  let output = bits
+extend(bits, Shl(bits)) {
+  let Output = bits;
   let shl(self)(rhs: bits): bits = { bits{ value: self.value << rhs.value } }
 }
-extend(bits, shr(bits)) {
-  let output = bits
+extend(bits, Shr(bits)) {
+  let Output = bits;
   let shr(self)(rhs: bits): bits = { bits{ value: self.value >> rhs.value } }
 }
 
-let mask<comptime t: type>(move left: t)(move right: t): t
-= requires(t is bit_and(t) && t.output == t) { left & right }
+let mask<t: type>(move left: t)(move right: t): t
+= requires(t is BitAnd(t) && t.Output == t) { left & right }
 
 let unsigned_shift(value: u32): u32 = { value >> 2 }
 

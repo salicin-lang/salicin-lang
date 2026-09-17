@@ -1,4 +1,4 @@
-let overlap(move action: (): i32)(value: borrow<mut><i32>): i32 = {
+let overlap(move action: (): i32)(value: Borrow<mut><i32>): i32 = {
   action() + *value
 }
 

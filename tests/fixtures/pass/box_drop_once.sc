@@ -1,9 +1,9 @@
-let box = alloc.boxed.box
+let Box = alloc.Box
 
-let resource = struct { counter: ptr<mut><i32> }
+let resource = struct { counter: Ptr<mut><i32> }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -14,7 +14,7 @@ let main(): i32 = {
   let mut count = 0
   do {
     let counter = ptr<mut>(borrow<mut>(count))
-    let first = box.new(t: resource)(resource{ counter: counter })
+    let first = Box.new<T: resource>(resource{ counter: counter })
     let second = first
   }
   41 + count

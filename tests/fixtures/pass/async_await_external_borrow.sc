@@ -1,5 +1,5 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 
 let child() = {
   async { 1 }
@@ -7,14 +7,14 @@ let child() = {
 
 let main(): i32 = {
   let value = 41
-  let reference: borrow<i32> = borrow(value)
+  let reference: Borrow<i32> = borrow(value)
   let mut future = async {
     let awaited = await child()
     reference + awaited
   }
   match future.poll()
-    { ready(result) -> result }
-    { pending -> 0 }
+    { Ready(result) -> result }
+    { Pending -> 0 }
 }
 
 test("async_await_external_borrow.sc") {

@@ -1,6 +1,6 @@
 let pair = struct { left: i32, right: i32 }
 
-let increment_both(left: borrow<mut><i32>, right: borrow<mut><i32>): () = {
+let increment_both(left: Borrow<mut><i32>, right: Borrow<mut><i32>): () = {
   left = left + 1
   right = right + 1
 }

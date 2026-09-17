@@ -1,13 +1,13 @@
-let box = alloc.boxed.box
+let Box = alloc.Box
 
 let resource = struct { value: i32 }
 
 extend(resource) {
-  let read(self: borrow<self>)(): i32 = { self.value }
+  let read(self: Borrow<self>)(): i32 = { self.value }
 }
 
 let main(): i32 = {
-  let mut boxed = box.new(resource{ value: 10 })
+  let mut boxed = Box.new(resource{ value: 10 })
   let first = do {
     let reference = boxed.as_ref()
     reference.read()

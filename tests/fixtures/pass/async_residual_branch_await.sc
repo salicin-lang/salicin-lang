@@ -1,41 +1,41 @@
-let future = core.async.future
-let poll = core.async.poll
+let Future = core.async.Future
+let Poll = core.async.Poll
 
 let ask = effect {
   let ask(): i32
 }
 
 let step = struct {
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
   polls: i32,
   value: i32,
   drop_amount: i32,
 }
 
-extend(step, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(step, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + self.drop_amount
     }
   }
 }
 
-extend(step, future(())) {
-  let output = i32
+extend(step, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll<i32>.pending
+      Poll<i32>.Pending
     } else {
-      poll<i32>.ready(self.value)
+      Poll<i32>.Ready(self.value)
     }
   }
 }
 
-let run(drops: ptr<mut><i32>, first: bool): i32 = {
+let run(drops: Ptr<mut><i32>, first: bool): i32 = {
   let mut future = async {
     if first {
       await step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 10 }
@@ -47,14 +47,14 @@ let run(drops: ptr<mut><i32>, first: bool): i32 = {
       let pending = future.poll()
       let ready = future.poll()
       match pending
-        { pending -> match ready
-          { ready(value) -> value }
-          { pending -> 0 } }
-        { ready(_) -> 0 }
+        { Pending -> match ready
+          { Ready(value) -> value }
+          { Pending -> 0 } }
+        { Ready(_) -> 0 }
     }
 }
 
-let cancel_second(drops: ptr<mut><i32>): i32 = {
+let cancel_second(drops: Ptr<mut><i32>): i32 = {
   ask.handle ask { (resume) -> resume(40) } action {
       let mut future = async {
         if false {
@@ -64,8 +64,8 @@ let cancel_second(drops: ptr<mut><i32>): i32 = {
         }
       }
       match future.poll()
-        { pending -> 42 }
-        { ready(_) -> 0 }
+        { Pending -> 42 }
+        { Ready(_) -> 0 }
     }
 }
 

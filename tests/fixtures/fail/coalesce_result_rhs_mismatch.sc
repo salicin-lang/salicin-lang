@@ -1,3 +1,3 @@
-let result = core.result
+let Result = core.Result
 
-let main(): i32 = { result<bool><i32>.err(false) ?? true }
+let main(): i32 = { Result<bool><i32>.Err(false) ?? true }

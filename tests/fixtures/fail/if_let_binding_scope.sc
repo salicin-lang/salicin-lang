@@ -1,7 +1,7 @@
 let main(): i32 = {
-  let value = some(42)
+  let value = Some(42)
   match value
-    { some(found) -> found }
+    { Some(found) -> found }
     { _ -> 0 }
   found
 }

@@ -4,7 +4,7 @@ let input = enum {
   number( value: i32 ),
   flag( value: bool ),
   pair(pair),
-  empty,
+  Empty,
 }
 
 let classify(value: input): i32 = { match value
@@ -16,7 +16,7 @@ let classify(value: input): i32 = { match value
     { flag( value: _ ) -> 0 }
     { pair(pair(left: 10, flag: true)) -> 11 }
     { pair(_) -> 0 }
-    { empty -> 0 }
+    { Empty -> 0 }
 }
 
 let main(): i32 = {

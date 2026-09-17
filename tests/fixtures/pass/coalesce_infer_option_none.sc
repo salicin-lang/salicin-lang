@@ -1,6 +1,6 @@
-let option = core.option
+let Option = core.Option
 
-let main(): i32 = { option.none ?? 42 }
+let main(): i32 = { Option.None ?? 42 }
 
 test("coalesce_infer_option_none.sc") {
   std.test.assert(main() == 42)

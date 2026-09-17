@@ -1,4 +1,4 @@
-let wrapper<comptime t: type> = struct(c) {
+let wrapper<t: type> = struct(c) {
   value: t,
 }
 

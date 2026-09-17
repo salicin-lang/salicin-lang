@@ -1,24 +1,24 @@
-let view<comptime t: type><comptime a: access><comptime r: region>: type = borrow<a><r><t>;
+let view<t: type><a: access><r: region>: type = Borrow<a><r><t>;
 
 let lend = trait {
-  let item<comptime a: access><comptime r: region>: type
+  let Item<a: access><r: region>: type
 
-  let view<comptime a: access, comptime r: region>
-    (self: borrow<a><r><self>)(): item<a><r>
+  let view<a: access, r: region>
+    (self: Borrow<a><r><self>)(): Item<a><r>
 }
 
 let cell = struct { value: i32 }
 
 extend(cell, lend) {
-  let item = view(i32)
+  let Item = view(i32);
 
-  let view<comptime a: access, comptime r: region>
-    (self: borrow<a><r><self>)(): borrow<a><r><i32> = {
+  let view<a: access, r: region>
+    (self: Borrow<a><r><self>)(): Borrow<a><r><i32> = {
     borrow<a>(self.value)
   }
 }
 
-let read(value: borrow<i32>): i32 = { value }
+let read(value: Borrow<i32>): i32 = { value }
 
 let main(): i32 = {
   let mut cell = cell{ value: 40 }

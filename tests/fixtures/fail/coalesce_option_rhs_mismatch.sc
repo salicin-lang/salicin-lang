@@ -1,3 +1,3 @@
-let option = core.option
+let Option = core.Option
 
-let main(): i32 = { option<i32>.none ?? true }
+let main(): i32 = { Option<i32>.None ?? true }

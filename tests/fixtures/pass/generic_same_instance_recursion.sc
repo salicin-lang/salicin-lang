@@ -1,4 +1,4 @@
-let bounce<comptime t: type>(move value: t)(again: bool): t = {
+let bounce<t: type>(move value: t)(again: bool): t = {
   if again {
     bounce(t)(value)(false)
   } else {

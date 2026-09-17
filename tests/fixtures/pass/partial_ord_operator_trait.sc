@@ -1,14 +1,14 @@
-let partial_ord = core.ops.partial_ord
-let partial_ordering = core.ops.partial_ordering
+let PartialOrd = core.ops.PartialOrd
+let PartialOrdering = core.ops.PartialOrdering
 
 let number = struct { value: i32, unordered: bool }
 
-extend(number, partial_ord(number)) {
-  let partial_cmp(self: borrow<self>)(rhs: borrow<number>): partial_ordering = {
-    if self.unordered || rhs.unordered { unordered }
-    else if self.value < rhs.value { less }
-    else if self.value > rhs.value { greater }
-    else { equal }
+extend(number, PartialOrd(number)) {
+  let partial_cmp(self: Borrow<self>)(rhs: Borrow<number>): PartialOrdering = {
+    if self.unordered || rhs.unordered { Unordered }
+    else if self.value < rhs.value { Less }
+    else if self.value > rhs.value { Greater }
+    else { Equal }
   }
 }
 

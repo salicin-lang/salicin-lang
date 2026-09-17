@@ -1,4 +1,4 @@
-let result = core.result
+let Result = core.Result
 
 let throwing = core.error.throwing
 let unsafety = core.unsafe.unsafety
@@ -24,7 +24,7 @@ let run: with<supply, throwing<bool>>(): i32 = {
 }
 
 let main(): i32 = {
-  let result: result<bool><i32> = try {
+  let result: Result<bool><i32> = try {
     supply.handle seed { (resume) -> resume(0) } action { run() }
   }
   result ?? 0

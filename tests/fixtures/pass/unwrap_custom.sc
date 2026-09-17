@@ -1,11 +1,11 @@
-let unwrap = core.flow.unwrap
+let Unwrap = core.flow.Unwrap
 
 let present = enum {
   value(i32),
 }
 
-extend(present, unwrap) {
-  let output = i32
+extend(present, Unwrap) {
+  let Output = i32;
 
   let unwrap(move self): i32 = {
     match self

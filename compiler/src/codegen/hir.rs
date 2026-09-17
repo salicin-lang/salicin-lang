@@ -245,31 +245,26 @@ impl fmt::Display for Ty {
                 f.write_str(")")
             }
             Self::Pointer { pointee, mutable } => {
-                write!(
-                    f,
-                    "{}({pointee})",
-                    if *mutable { "ptr<mut>" } else { "ptr" }
-                )
+                if *mutable {
+                    write!(f, "Ptr<mut><{pointee}>")
+                } else {
+                    write!(f, "Ptr<{pointee}>")
+                }
             }
             Self::Reference {
                 pointee,
                 mutable,
                 region,
             } => {
-                let qualifier = if *mutable { "borrow<mut>" } else { "borrow" };
-                if let Some(region) = region {
-                    write!(
-                        f,
-                        "{qualifier}({}) {pointee}",
-                        display_region_argument(region)
-                    )
-                } else {
-                    write!(f, "{qualifier} {pointee}")
-                }
+                let access = if *mutable { "<mut>" } else { "" };
+                let region = region.as_ref().map_or_else(String::new, |region| {
+                    format!("<{}>", display_region_argument(region))
+                });
+                write!(f, "Borrow{access}{region}<{pointee}>")
             }
             Self::Str => f.write_str("str"),
-            Self::Slice(element) => write!(f, "slice<{element}>"),
-            Self::Array(element, length) => write!(f, "array<{element}><{length}>"),
+            Self::Slice(element) => write!(f, "Slice<{element}>"),
+            Self::Array(element, length) => write!(f, "Array<{element}><{length}>"),
             Self::Struct(name) | Self::Enum(name) => f.write_str(name),
             Self::Never => f.write_str("never"),
             Self::Error => f.write_str("<error>"),
@@ -305,13 +300,13 @@ impl fmt::Display for Ty {
             }
             Self::Callable(callable) => write!(f, "{}", Ty::Function(callable.signature.clone())),
             Self::Continuation { input, output } => {
-                write!(f, "Continuation({input}, {output})")
+                write!(f, "Continuation<{input}><{output}>")
             }
             Self::EffectCallable {
                 input,
                 output,
                 answer,
-            } => write!(f, "EffectCallable({input}, {output}, {answer})"),
+            } => write!(f, "EffectCallable<{input}><{output}><{answer}>"),
             Self::EffectRow {
                 unsafety,
                 failure_error,
@@ -368,7 +363,7 @@ mod tests {
             region: Some("$function$region$binder$0".to_owned()),
         };
 
-        assert_eq!(ty.to_string(), "borrow('_) i32");
+        assert_eq!(ty.to_string(), "Borrow<'_><i32>");
     }
 }
 

@@ -182,48 +182,48 @@ fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBund
         match &program.items[0] {
             Item::Struct(definition) if valid_box(definition) => {}
             _ => diagnostics.push(
-                "alloc box must have shape `pub let box<T: type> = struct { pointer: ptr<mut><t> }`"
+                "alloc box must have shape `pub let box<T: type> = struct { pointer: Ptr<mut><t> }`"
                     .to_owned(),
             ),
         }
         match &program.items[1] {
             Item::Function(function) if valid_box_new(function) => {}
             _ => diagnostics.push(
-                "alloc box_new must be a generic owning constructor `(value: T): box<t>`"
+                "alloc box_new must be a generic owning constructor `(value: T): Box<T>`"
                     .to_owned(),
             ),
         }
         match &program.items[2] {
             Item::Function(function) if valid_box_into_raw(function) => {}
             _ => diagnostics.push(
-                "alloc box_into_raw must consume `box<t>` and return its owned `ptr<mut><t>`"
+                "alloc box_into_raw must consume `Box<T>` and return its owned `Ptr<mut><T>`"
                     .to_owned(),
             ),
         }
         match &program.items[3] {
             Item::Function(function) if valid_box_read(function) => {}
             _ => diagnostics.push(
-                "alloc box_read must borrow `box<t>`, require `t: copyable`, and return `t`"
+                "alloc box_read must borrow `Box<T>`, require `T: Copyable`, and return `T`"
                     .to_owned(),
             ),
         }
         match &program.items[4] {
             Item::Function(function) if valid_box_write(function) => {}
             _ => diagnostics.push(
-                "alloc box_write must mutably borrow `box<t>`, copy a `t`, require `t: copyable`, and return unit"
+                "alloc box_write must mutably borrow `Box<T>`, copy a `T`, require `T: Copyable`, and return unit"
                     .to_owned(),
             ),
         }
         match &program.items[5] {
             Item::Function(function) if valid_box_into_inner(function) => {}
             _ => diagnostics.push(
-                "alloc box_into_inner must consume `box<t>` and return its owned `t`".to_owned(),
+                "alloc box_into_inner must consume `Box<T>` and return its owned `T`".to_owned(),
             ),
         }
         match &program.items[6] {
             Item::Function(function) if valid_box_replace(function) => {}
             _ => diagnostics.push(
-                "alloc box_replace must mutably borrow `box<t>`, consume a replacement `t`, and return the old `t`"
+                "alloc box_replace must mutably borrow `Box<T>`, consume a replacement `T`, and return the old `T`"
                     .to_owned(),
             ),
         }
@@ -234,14 +234,14 @@ fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBund
         match &program.items[8] {
             Item::Extend(extension) if valid_box_extension(extension) => {}
             _ => diagnostics.push(
-                "alloc box extension must provide new, from_raw, reference access, into_inner, into_raw, and replace"
+                "alloc Box extension must provide new, from_raw, reference access, into_inner, into_raw, and replace"
                     .to_owned(),
             ),
         }
         match &program.items[9] {
             Item::Extend(extension) if valid_copy_box_extension(extension) => {}
             _ => diagnostics.push(
-                "alloc copyable box extension must provide `read` and `write` under a `t: copyable` constraint"
+                "alloc Copyable Box extension must provide `read` and `write` under a `T: Copyable` constraint"
                     .to_owned(),
             ),
         }
@@ -252,14 +252,14 @@ fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBund
         match &program.items[11] {
             Item::Extend(extension) if valid_box_drop_extension(extension) => {}
             _ => diagnostics.push(
-                "alloc box droppable extension must release its owned value and allocation"
+                "alloc Box Droppable extension must release its owned value and allocation"
                     .to_owned(),
             ),
         }
         match &program.items[12] {
             Item::Struct(definition) if valid_vec(definition) => {}
             _ => diagnostics.push(
-                "alloc vec must have private pointer, length, and capacity fields".to_owned(),
+                "alloc Vec must have private pointer, length, and capacity fields".to_owned(),
             ),
         }
         match &program.items[13] {
@@ -360,39 +360,39 @@ fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBund
         }
         match &program.items[37] {
             Item::Extend(extension) if valid_vec_extension(extension) => {}
-            _ => diagnostics.push("alloc vec extension has an invalid shape".to_owned()),
+            _ => diagnostics.push("alloc Vec extension has an invalid shape".to_owned()),
         }
         match &program.items[38] {
             Item::Extend(extension) if valid_copy_vec_extension(extension) => {}
-            _ => diagnostics.push("alloc copyable vec extension has an invalid shape".to_owned()),
+            _ => diagnostics.push("alloc Copyable Vec extension has an invalid shape".to_owned()),
         }
         match &program.items[39] {
             Item::Struct(definition) if valid_vec_into_iter(definition) => {}
-            _ => diagnostics.push("alloc vecIntoIter has an invalid shape".to_owned()),
+            _ => diagnostics.push("alloc VecIntoIter has an invalid shape".to_owned()),
         }
         match &program.items[40] {
             Item::Extend(extension) if valid_vec_index_extension(extension) => {}
-            _ => diagnostics.push("alloc vec Index extension has an invalid shape".to_owned()),
+            _ => diagnostics.push("alloc Vec Index extension has an invalid shape".to_owned()),
         }
         match &program.items[41] {
             Item::Extend(extension) if valid_vec_iterator_extension(extension) => {}
             _ => diagnostics
-                .push("alloc vecIntoIter Iterator extension has an invalid shape".to_owned()),
+                .push("alloc VecIntoIter Iterator extension has an invalid shape".to_owned()),
         }
         match &program.items[42] {
             Item::Extend(extension) if valid_vec_into_iterator_extension(extension) => {}
             _ => {
-                diagnostics.push("alloc vec IntoIterator extension has an invalid shape".to_owned())
+                diagnostics.push("alloc Vec IntoIterator extension has an invalid shape".to_owned())
             }
         }
         match &program.items[43] {
             Item::Extend(extension) if valid_vec_into_iter_drop_extension(extension) => {}
             _ => diagnostics
-                .push("alloc vec_into_iter droppable extension has an invalid shape".to_owned()),
+                .push("alloc VecIntoIter Droppable extension has an invalid shape".to_owned()),
         }
         match &program.items[44] {
             Item::Extend(extension) if valid_vec_drop_extension(extension) => {}
-            _ => diagnostics.push("alloc vec droppable extension has an invalid shape".to_owned()),
+            _ => diagnostics.push("alloc Vec Droppable extension has an invalid shape".to_owned()),
         }
         match &program.items[45] {
             Item::Function(function) if function.name == "vec_from_raw_parts" => {}
@@ -407,7 +407,7 @@ fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBund
             _ => diagnostics.push("alloc equality vec extension has an invalid shape".to_owned()),
         }
         match &program.items[48] {
-            Item::Struct(definition) if definition.name == "from_utf8_error" => {}
+            Item::Struct(definition) if definition.name == "FromUtf8Error" => {}
             _ => diagnostics.push("alloc from_utf8_error has an invalid shape".to_owned()),
         }
         match &program.items[49] {
@@ -415,7 +415,7 @@ fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBund
                 if matches!(
                     &extension.target,
                     Type::Named(name, arguments)
-                        if name == "from_utf8_error" && arguments.is_empty()
+                        if name == "FromUtf8Error" && arguments.is_empty()
                 ) => {}
             _ => diagnostics.push("alloc from_utf8_error extension is missing".to_owned()),
         }
@@ -432,7 +432,7 @@ fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBund
             _ => diagnostics.push("alloc string_into_bytes has an invalid shape".to_owned()),
         }
         match &program.items[53] {
-            Item::Struct(definition) if definition.name == "string_writer" => {}
+            Item::Struct(definition) if definition.name == "StringWriter" => {}
             _ => diagnostics.push("alloc string_writer has an invalid shape".to_owned()),
         }
         match &program.items[54] {
@@ -440,7 +440,7 @@ fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBund
                 if matches!(
                     &extension.target,
                     Type::Named(name, arguments)
-                        if name == "string_writer" && arguments.is_empty()
+                        if name == "StringWriter" && arguments.is_empty()
                 ) => {}
             _ => diagnostics.push("alloc string_writer extension is missing".to_owned()),
         }
@@ -449,7 +449,7 @@ fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBund
                 if matches!(
                     &extension.target,
                     Type::Named(name, arguments)
-                        if name == "string_writer" && arguments.is_empty()
+                        if name == "StringWriter" && arguments.is_empty()
                 ) => {}
             _ => diagnostics
                 .push("alloc string_writer protocol implementation is missing".to_owned()),
@@ -467,7 +467,7 @@ fn generic_t(function: &Function) -> bool {
         function.compile_groups.as_slice(),
         [group]
             if matches!(group.as_slice(), [parameter]
-                if parameter.name == "t" && parameter.kind == Sort::Type)
+                if parameter.name == "T" && parameter.kind == Sort::Type)
     )
 }
 
@@ -480,7 +480,7 @@ fn applied(name: &str, argument: Type) -> Type {
 }
 
 fn mutable_ptr(pointee: Type) -> Type {
-    Type::Named("ptr".to_owned(), vec![named("mut"), pointee])
+    Type::Named("Ptr".to_owned(), vec![named("mut"), pointee])
 }
 
 fn borrow_type(mutable: bool, access: Option<&str>, region: Option<&str>, pointee: Type) -> Type {
@@ -518,19 +518,19 @@ fn parameter_matches(parameter: &crate::ast::Param, name: &str, mode: PassMode, 
 }
 
 fn valid_box(definition: &StructDef) -> bool {
-    definition.name == "box"
+    definition.name == "Box"
         && matches!(
             definition.compile_groups.as_slice(),
             [group]
                 if matches!(group.as_slice(), [parameter]
-                    if parameter.name == "t" && parameter.kind == Sort::Type)
+                    if parameter.name == "T" && parameter.kind == Sort::Type)
         )
         && matches!(
             definition.fields.as_slice(),
             [field]
                 if field.visibility == Visibility::Private
                     && field.name == "pointer"
-                    && field.ty == mutable_ptr(named("t"))
+                    && field.ty == mutable_ptr(named("T"))
         )
 }
 
@@ -543,9 +543,9 @@ fn valid_box_new(function: &Function) -> bool {
                 if matches!(group.as_slice(), [parameter]
                     if parameter.name == "value"
                         && parameter.mode == PassMode::Inferred
-                        && parameter.ty == named("t"))
+                        && parameter.ty == named("T"))
         )
-        && function.return_type == Some(applied("box", named("t")))
+        && function.return_type == Some(applied("Box", named("T")))
         && function.body.is_some()
 }
 
@@ -554,15 +554,15 @@ fn valid_box_into_raw(function: &Function) -> bool {
         && generic_t(function)
         && matches!(
             function.groups.as_slice(),
-            [group] if has_parameter(group, "boxed", PassMode::Move, applied("box", named("t")))
+            [group] if has_parameter(group, "boxed", PassMode::Move, applied("Box", named("T")))
         )
-        && function.return_type == Some(mutable_ptr(named("t")))
+        && function.return_type == Some(mutable_ptr(named("T")))
         && function.body.is_some()
 }
 
 fn is_copy_bound(predicate: &crate::ast::WherePredicate) -> bool {
-    predicate.subject == named("t")
-        && predicate.trait_ref == named("copyable")
+    predicate.subject == named("T")
+        && predicate.trait_ref == named("Copyable")
         && predicate.associated_types.is_empty()
 }
 
@@ -571,10 +571,10 @@ fn valid_box_read(function: &Function) -> bool {
         && generic_t(function)
         && matches!(
             function.groups.as_slice(),
-            [group] if has_parameter(group, "boxed", PassMode::Borrow, applied("box", named("t")))
+            [group] if has_parameter(group, "boxed", PassMode::Borrow, applied("Box", named("T")))
         )
         && matches!(function.where_predicates.as_slice(), [predicate] if is_copy_bound(predicate))
-        && function.return_type == Some(named("t"))
+        && function.return_type == Some(named("T"))
         && function.body.is_some()
 }
 
@@ -584,11 +584,11 @@ fn valid_box_write(function: &Function) -> bool {
         && matches!(
             function.groups.as_slice(),
             [receiver, value]
-                if has_parameter(receiver, "boxed", PassMode::MutBorrow, applied("box", named("t")))
+                if has_parameter(receiver, "boxed", PassMode::MutBorrow, applied("Box", named("T")))
                     && matches!(value.as_slice(), [parameter]
                         if parameter.name == "value"
                             && parameter.mode == PassMode::Copy
-                            && parameter.ty == named("t"))
+                            && parameter.ty == named("T"))
         )
         && matches!(function.where_predicates.as_slice(), [predicate] if is_copy_bound(predicate))
         && function.return_type == Some(Type::Unit)
@@ -604,9 +604,9 @@ fn valid_box_into_inner(function: &Function) -> bool {
                 if matches!(group.as_slice(), [parameter]
                     if parameter.name == "boxed"
                         && parameter.mode == PassMode::Move
-                        && parameter.ty == applied("box", named("t")))
+                        && parameter.ty == applied("Box", named("T")))
         )
-        && function.return_type == Some(named("t"))
+        && function.return_type == Some(named("T"))
         && function.body.is_some()
 }
 
@@ -616,13 +616,13 @@ fn valid_box_replace(function: &Function) -> bool {
         && matches!(
             function.groups.as_slice(),
             [receiver, replacement]
-                if has_parameter(receiver, "boxed", PassMode::MutBorrow, applied("box", named("t")))
+                if has_parameter(receiver, "boxed", PassMode::MutBorrow, applied("Box", named("T")))
                     && matches!(replacement.as_slice(), [parameter]
                         if parameter.name == "value"
                             && parameter.mode == PassMode::Inferred
-                            && parameter.ty == named("t"))
+                            && parameter.ty == named("T"))
         )
-        && function.return_type == Some(named("t"))
+        && function.return_type == Some(named("T"))
         && function.body.is_some()
 }
 
@@ -634,7 +634,7 @@ fn valid_box_borrow(function: &Function) -> bool {
                     && access.kind.is_access()
                     && region.name == "r"
                     && region.kind == Sort::Region
-                    && element.name == "t"
+                    && element.name == "T"
                     && element.kind == Sort::Type))
         && matches!(function.groups.as_slice(), [receiver]
             if matches!(receiver.as_slice(), [parameter]
@@ -643,14 +643,8 @@ fn valid_box_borrow(function: &Function) -> bool {
                     && parameter.access.is_none()
                     && parameter.modifiers.is_empty()
                     && parameter.region.is_none()
-                    && parameter.ty == borrow_type(false, Some("a"), Some("r"), applied("box", named("t")))))
-        && function.return_type
-            == Some(Type::Borrow {
-                mutable: false,
-                access: Some("a".to_owned()),
-                region: Some("r".to_owned()),
-                pointee: Box::new(named("t")),
-            })
+                    && parameter.ty == borrow_type(false, Some("a"), Some("r"), applied("Box", named("T")))))
+        && function.return_type == Some(borrow_type(false, Some("a"), Some("r"), named("T")))
         && function.where_predicates.is_empty()
         && function.body.is_some()
 }
@@ -660,8 +654,8 @@ fn valid_box_extension(extension: &crate::ast::ExtendDef) -> bool {
         extension.compile_groups.as_slice(),
         [group]
             if matches!(group.as_slice(), [parameter]
-                if parameter.name == "t" && parameter.kind == Sort::Type)
-    ) && extension.target == applied("box", named("t"))
+                if parameter.name == "T" && parameter.kind == Sort::Type)
+    ) && extension.target == applied("Box", named("T"))
         && extension.trait_ref.is_none()
         && extension.where_predicates.is_empty()
         && extension.members.len() == 6
@@ -672,24 +666,24 @@ fn valid_box_extension(extension: &crate::ast::ExtendDef) -> bool {
                     if matches!(group.as_slice(), [parameter]
                         if parameter.name == "value"
                             && parameter.mode == PassMode::Inferred
-                            && parameter.ty == named("t")))
-                && function.return_type == Some(applied("box", named("t")))
+                            && parameter.ty == named("T")))
+                && function.return_type == Some(applied("Box", named("T")))
                 && function.body.is_some())
         && matches!(&extension.members[1], crate::ast::ExtendMember::Function(function)
             if valid_box_from_raw_method(function))
         && matches!(&extension.members[2], crate::ast::ExtendMember::Function(function)
             if valid_box_access_method(function))
         && matches!(&extension.members[3], crate::ast::ExtendMember::Function(function)
-            if valid_box_method(function, "into_inner", PassMode::Move, &[], named("t")))
+            if valid_box_method(function, "into_inner", PassMode::Move, &[], named("T")))
         && matches!(&extension.members[4], crate::ast::ExtendMember::Function(function)
-            if valid_box_method(function, "into_raw", PassMode::Move, &[], mutable_ptr(named("t"))))
+            if valid_box_method(function, "into_raw", PassMode::Move, &[], mutable_ptr(named("T"))))
         && matches!(&extension.members[5], crate::ast::ExtendMember::Function(function)
         if valid_box_method(
             function,
             "replace",
             PassMode::MutBorrow,
-            &[("value", PassMode::Inferred, named("t"))],
-            named("t"),
+            &[("value", PassMode::Inferred, named("T"))],
+            named("T"),
         ))
 }
 
@@ -697,8 +691,8 @@ fn valid_box_from_raw_method(function: &Function) -> bool {
     function.name == "from_raw"
         && function.compile_groups.is_empty()
         && matches!(function.groups.as_slice(), [group]
-            if has_parameter(group, "pointer", PassMode::Inferred, mutable_ptr(named("t"))))
-        && function.return_type == Some(applied("box", named("t")))
+            if has_parameter(group, "pointer", PassMode::Inferred, mutable_ptr(named("T"))))
+        && function.return_type == Some(applied("Box", named("T")))
         && function.effects
             == crate::ast::FunctionEffects {
                 custom: vec![Type::Named("core.unsafe.unsafety".to_owned(), Vec::new())],
@@ -722,13 +716,7 @@ fn valid_box_access_method(function: &Function) -> bool {
                         && parameter.modifiers.is_empty()
                         && parameter.region.is_none()
                         && parameter.ty == borrow_type(false, Some("a"), None, named("self"))))
-        && function.return_type
-            == Some(Type::Borrow {
-                mutable: false,
-                access: Some("a".to_owned()),
-                region: None,
-                pointee: Box::new(named("t")),
-            })
+        && function.return_type == Some(borrow_type(false, Some("a"), None, named("T")))
         && function.body.is_some()
 }
 
@@ -737,19 +725,19 @@ fn valid_copy_box_extension(extension: &crate::ast::ExtendDef) -> bool {
         extension.compile_groups.as_slice(),
         [group]
             if matches!(group.as_slice(), [parameter]
-                if parameter.name == "t" && parameter.kind == Sort::Type)
-    ) && extension.target == applied("box", named("t"))
+                if parameter.name == "T" && parameter.kind == Sort::Type)
+    ) && extension.target == applied("Box", named("T"))
         && extension.trait_ref.is_none()
         && matches!(extension.where_predicates.as_slice(), [predicate] if is_copy_bound(predicate))
         && matches!(extension.members.as_slice(), [
             crate::ast::ExtendMember::Function(read),
             crate::ast::ExtendMember::Function(write),
-        ] if valid_box_method(read, "read", PassMode::Borrow, &[], named("t"))
+        ] if valid_box_method(read, "read", PassMode::Borrow, &[], named("T"))
             && valid_box_method(
                 write,
                 "write",
                 PassMode::MutBorrow,
-                &[("value", PassMode::Copy, named("t"))],
+                &[("value", PassMode::Copy, named("T"))],
                 Type::Unit,
             ))
 }
@@ -759,9 +747,9 @@ fn valid_box_drop_extension(extension: &crate::ast::ExtendDef) -> bool {
         extension.compile_groups.as_slice(),
         [group]
             if matches!(group.as_slice(), [parameter]
-                if parameter.name == "t" && parameter.kind == Sort::Type)
-    ) && extension.target == applied("box", named("t"))
-        && extension.trait_ref == Some(named("droppable"))
+                if parameter.name == "T" && parameter.kind == Sort::Type)
+    ) && extension.target == applied("Box", named("T"))
+        && extension.trait_ref == Some(named("Droppable"))
         && extension.where_predicates.is_empty()
         && matches!(extension.members.as_slice(), [crate::ast::ExtendMember::Function(drop)]
             if valid_box_method(drop, "drop", PassMode::MutBorrow, &[], Type::Unit))
@@ -791,19 +779,19 @@ fn valid_box_method(
 }
 
 fn valid_vec(definition: &StructDef) -> bool {
-    definition.name == "vec"
+    definition.name == "Vec"
         && matches!(
             definition.compile_groups.as_slice(),
             [group]
                 if matches!(group.as_slice(), [parameter]
-                    if parameter.name == "t" && parameter.kind == Sort::Type)
+                    if parameter.name == "T" && parameter.kind == Sort::Type)
         )
         && matches!(
             definition.fields.as_slice(),
             [pointer, length, capacity]
                 if pointer.visibility == Visibility::Private
                     && pointer.name == "pointer"
-                    && pointer.ty == mutable_ptr(named("t"))
+                    && pointer.ty == mutable_ptr(named("T"))
                     && length.visibility == Visibility::Private
                     && length.name == "length"
                     && length.ty == Type::U64
@@ -832,7 +820,7 @@ fn valid_vec_allocate(function: &Function) -> bool {
         && generic_t(function)
         && matches!(function.groups.as_slice(), [group]
             if has_parameter(group, "capacity", PassMode::Inferred, Type::U64))
-        && function.return_type == Some(mutable_ptr(named("t")))
+        && function.return_type == Some(mutable_ptr(named("T")))
         && function.where_predicates.is_empty()
         && function.body.is_some()
 }
@@ -844,7 +832,7 @@ fn valid_vec_deallocate(function: &Function) -> bool {
             if matches!(group.as_slice(), [pointer, capacity]
                 if pointer.name == "pointer"
                     && pointer.mode == PassMode::Inferred
-                    && pointer.ty == mutable_ptr(named("t"))
+                    && pointer.ty == mutable_ptr(named("T"))
                     && capacity.name == "capacity"
                     && capacity.mode == PassMode::Inferred
                     && capacity.ty == Type::U64))
@@ -857,7 +845,7 @@ fn valid_vec_new(function: &Function) -> bool {
     function.name == "vec_new"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [group] if group.is_empty())
-        && function.return_type == Some(applied("vec", named("t")))
+        && function.return_type == Some(applied("Vec", named("T")))
         && function.where_predicates.is_empty()
         && function.body.is_some()
 }
@@ -867,7 +855,7 @@ fn valid_vec_with_capacity(function: &Function) -> bool {
         && generic_t(function)
         && matches!(function.groups.as_slice(), [group]
             if has_parameter(group, "capacity", PassMode::Inferred, Type::U64))
-        && function.return_type == Some(applied("vec", named("t")))
+        && function.return_type == Some(applied("Vec", named("T")))
         && function.where_predicates.is_empty()
         && function.body.is_some()
 }
@@ -876,7 +864,7 @@ fn valid_vec_len_or_capacity(function: &Function, name: &str) -> bool {
     function.name == name
         && generic_t(function)
         && matches!(function.groups.as_slice(), [group]
-            if has_parameter(group, "values", PassMode::Borrow, applied("vec", named("t"))))
+            if has_parameter(group, "values", PassMode::Borrow, applied("Vec", named("T"))))
         && function.return_type == Some(Type::U64)
         && function.where_predicates.is_empty()
         && function.body.is_some()
@@ -890,7 +878,7 @@ fn valid_vec_at(function: &Function) -> bool {
                     && access.kind.is_access()
                     && region.name == "r"
                     && region.kind == Sort::Region
-                    && element.name == "t"
+                    && element.name == "T"
                     && element.kind == Sort::Type))
         && matches!(function.groups.as_slice(), [receiver, index]
             if matches!(receiver.as_slice(), [parameter]
@@ -899,15 +887,9 @@ fn valid_vec_at(function: &Function) -> bool {
                     && parameter.access.is_none()
                     && parameter.modifiers.is_empty()
                     && parameter.region.is_none()
-                    && parameter.ty == borrow_type(false, Some("a"), Some("r"), applied("vec", named("t"))))
+                    && parameter.ty == borrow_type(false, Some("a"), Some("r"), applied("Vec", named("T"))))
                 && has_parameter(index, "index", PassMode::Inferred, Type::U64))
-        && function.return_type
-            == Some(Type::Borrow {
-                mutable: false,
-                access: Some("a".to_owned()),
-                region: Some("r".to_owned()),
-                pointee: Box::new(named("t")),
-            })
+        && function.return_type == Some(borrow_type(false, Some("a"), Some("r"), named("T")))
         && function.where_predicates.is_empty()
         && function.body.is_some()
 }
@@ -916,7 +898,7 @@ fn valid_vec_reserve(function: &Function) -> bool {
     function.name == "vec_reserve"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver, additional]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t")))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T")))
                 && has_parameter(additional, "additional", PassMode::Inferred, Type::U64))
         && function.return_type == Some(Type::Unit)
         && function.where_predicates.is_empty()
@@ -927,8 +909,8 @@ fn valid_vec_push(function: &Function) -> bool {
     function.name == "vec_push"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver, value]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t")))
-                && has_parameter(value, "value", PassMode::Inferred, named("t")))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T")))
+                && has_parameter(value, "value", PassMode::Inferred, named("T")))
         && function.return_type == Some(Type::Unit)
         && function.where_predicates.is_empty()
         && function.body.is_some()
@@ -938,10 +920,10 @@ fn valid_vec_replace(function: &Function) -> bool {
     function.name == "vec_replace"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver, index, value]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t")))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T")))
                 && has_parameter(index, "index", PassMode::Inferred, Type::U64)
-                && has_parameter(value, "value", PassMode::Inferred, named("t")))
-        && function.return_type == Some(named("t"))
+                && has_parameter(value, "value", PassMode::Inferred, named("T")))
+        && function.return_type == Some(named("T"))
         && function.where_predicates.is_empty()
         && function.body.is_some()
 }
@@ -950,8 +932,8 @@ fn valid_vec_pop(function: &Function) -> bool {
     function.name == "vec_pop"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t"))))
-        && function.return_type == Some(applied("option", named("t")))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T"))))
+        && function.return_type == Some(applied("Option", named("T")))
         && function.where_predicates.is_empty()
         && function.body.is_some()
 }
@@ -960,7 +942,7 @@ fn valid_vec_truncate(function: &Function) -> bool {
     function.name == "vec_truncate"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver, new_length]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t")))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T")))
                 && has_parameter(new_length, "new_length", PassMode::Inferred, Type::U64))
         && function.return_type == Some(Type::Unit)
         && function.where_predicates.is_empty()
@@ -971,7 +953,7 @@ fn valid_vec_clear(function: &Function) -> bool {
     function.name == "vec_clear"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t"))))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T"))))
         && function.return_type == Some(Type::Unit)
         && function.where_predicates.is_empty()
         && function.body.is_some()
@@ -981,7 +963,7 @@ fn valid_vec_is_empty(function: &Function) -> bool {
     function.name == "vec_is_empty"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver]
-            if has_parameter(receiver, "values", PassMode::Borrow, applied("vec", named("t"))))
+            if has_parameter(receiver, "values", PassMode::Borrow, applied("Vec", named("T"))))
         && function.return_type == Some(Type::Bool)
         && function.where_predicates.is_empty()
         && function.body.is_some()
@@ -991,9 +973,9 @@ fn valid_vec_swap_remove(function: &Function) -> bool {
     function.name == "vec_swap_remove"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver, index]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t")))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T")))
                 && has_parameter(index, "index", PassMode::Inferred, Type::U64))
-        && function.return_type == Some(named("t"))
+        && function.return_type == Some(named("T"))
         && function.where_predicates.is_empty()
         && function.body.is_some()
 }
@@ -1002,7 +984,7 @@ fn valid_vec_swap(function: &Function) -> bool {
     function.name == "vec_swap"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver, indices]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t")))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T")))
                 && matches!(indices.as_slice(), [left, right]
                     if left.name == "left"
                         && left.mode == PassMode::Inferred
@@ -1019,7 +1001,7 @@ fn valid_vec_reverse(function: &Function) -> bool {
     function.name == "vec_reverse"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t"))))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T"))))
         && function.return_type == Some(Type::Unit)
         && function.where_predicates.is_empty()
         && function.body.is_some()
@@ -1029,9 +1011,9 @@ fn valid_vec_insert(function: &Function) -> bool {
     function.name == "vec_insert"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver, index, value]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t")))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T")))
                 && has_parameter(index, "index", PassMode::Inferred, Type::U64)
-                && has_parameter(value, "value", PassMode::Inferred, named("t")))
+                && has_parameter(value, "value", PassMode::Inferred, named("T")))
         && function.return_type == Some(Type::Unit)
         && function.where_predicates.is_empty()
         && function.body.is_some()
@@ -1041,9 +1023,9 @@ fn valid_vec_remove(function: &Function) -> bool {
     function.name == "vec_remove"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver, index]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t")))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T")))
                 && has_parameter(index, "index", PassMode::Inferred, Type::U64))
-        && function.return_type == Some(named("t"))
+        && function.return_type == Some(named("T"))
         && function.where_predicates.is_empty()
         && function.body.is_some()
 }
@@ -1052,8 +1034,8 @@ fn valid_vec_append(function: &Function) -> bool {
     function.name == "vec_append"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver, other]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t")))
-                && has_parameter(other, "other", PassMode::MutBorrow, applied("vec", named("t"))))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T")))
+                && has_parameter(other, "other", PassMode::MutBorrow, applied("Vec", named("T"))))
         && function.return_type == Some(Type::Unit)
         && function.where_predicates.is_empty()
         && function.body.is_some()
@@ -1063,7 +1045,7 @@ fn valid_vec_shrink_to_fit(function: &Function) -> bool {
     function.name == "vec_shrink_to_fit"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t"))))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T"))))
         && function.return_type == Some(Type::Unit)
         && function.where_predicates.is_empty()
         && function.body.is_some()
@@ -1073,9 +1055,9 @@ fn valid_vec_read(function: &Function) -> bool {
     function.name == "vec_read"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver, index]
-            if has_parameter(receiver, "values", PassMode::Borrow, applied("vec", named("t")))
+            if has_parameter(receiver, "values", PassMode::Borrow, applied("Vec", named("T")))
                 && has_parameter(index, "index", PassMode::Inferred, Type::U64))
-        && function.return_type == Some(named("t"))
+        && function.return_type == Some(named("T"))
         && matches!(function.where_predicates.as_slice(), [predicate] if is_copy_bound(predicate))
         && function.body.is_some()
 }
@@ -1084,9 +1066,9 @@ fn valid_vec_write(function: &Function) -> bool {
     function.name == "vec_write"
         && generic_t(function)
         && matches!(function.groups.as_slice(), [receiver, index, value]
-            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("vec", named("t")))
+            if has_parameter(receiver, "values", PassMode::MutBorrow, applied("Vec", named("T")))
                 && has_parameter(index, "index", PassMode::Inferred, Type::U64)
-                && has_parameter(value, "value", PassMode::Copy, named("t")))
+                && has_parameter(value, "value", PassMode::Copy, named("T")))
         && function.return_type == Some(Type::Unit)
         && matches!(function.where_predicates.as_slice(), [predicate] if is_copy_bound(predicate))
         && function.body.is_some()
@@ -1143,14 +1125,9 @@ fn valid_vec_element_access_method(
                     && parameter.ty == borrow_type(false, Some("a"), None, named("self")))
                 && runtime.is_empty())
     };
-    let borrowed = Type::Borrow {
-        mutable: false,
-        access: Some("a".to_owned()),
-        region: None,
-        pointee: Box::new(named("t")),
-    };
+    let borrowed = borrow_type(false, Some("a"), None, named("T"));
     let result = if checked {
-        applied("option", borrowed)
+        applied("Option", borrowed)
     } else {
         borrowed
     };
@@ -1179,12 +1156,12 @@ fn valid_vec_as_slice_method(function: &Function) -> bool {
                     && parameter.ty == borrow_type(false, Some("a"), None, named("self")))
                 && runtime.is_empty())
         && function.return_type
-            == Some(Type::Borrow {
-                mutable: false,
-                access: Some("a".to_owned()),
-                region: None,
-                pointee: Box::new(applied("slice", named("t"))),
-            })
+            == Some(borrow_type(
+                false,
+                Some("a"),
+                None,
+                applied("Slice", named("T")),
+            ))
         && function.where_predicates.is_empty()
         && function.body.is_some()
 }
@@ -1235,7 +1212,7 @@ fn effect_parameter(name: &str) -> crate::ast::FunctionEffects {
 
 fn valid_vec_predicate_method(function: &Function, name: &str, result: Type) -> bool {
     let predicate = Type::Function {
-        groups: vec![vec![borrow_type(false, None, None, named("t"))]],
+        groups: vec![vec![borrow_type(false, None, None, named("T"))]],
         effects: effect_parameter("e"),
         result: Box::new(Type::Bool),
     };
@@ -1257,11 +1234,11 @@ fn valid_vec_predicate_method(function: &Function, name: &str, result: Type) -> 
 fn valid_vec_fold_method(function: &Function) -> bool {
     let combine = Type::Function {
         groups: vec![vec![
-            named("accumulator"),
-            borrow_type(false, None, None, named("t")),
+            named("Accumulator"),
+            borrow_type(false, None, None, named("T")),
         ]],
         effects: effect_parameter("e"),
-        result: Box::new(named("accumulator")),
+        result: Box::new(named("Accumulator")),
     };
     function.name == "fold"
         && matches!(function.compile_groups.as_slice(), [group]
@@ -1269,14 +1246,14 @@ fn valid_vec_fold_method(function: &Function) -> bool {
                 if effect.name == "e"
                     && effect.kind == Sort::Effects
                     && effect.default.is_none()
-                    && accumulator.name == "accumulator"
+                    && accumulator.name == "Accumulator"
                     && accumulator.kind == Sort::Type
                     && accumulator.default.is_none()))
         && matches!(function.groups.as_slice(), [receiver, initial, callback]
             if has_parameter(receiver, "self", PassMode::Borrow, named("self"))
-                && has_parameter(initial, "initial", PassMode::Move, named("accumulator"))
+                && has_parameter(initial, "initial", PassMode::Move, named("Accumulator"))
                 && has_parameter(callback, "combine", PassMode::Move, combine))
-        && function.return_type == Some(named("accumulator"))
+        && function.return_type == Some(named("Accumulator"))
         && function.effects == effect_parameter("e")
         && function.where_predicates.is_empty()
         && function.body.is_some()
@@ -1287,7 +1264,7 @@ fn valid_vec_contains_method(function: &Function) -> bool {
         && function.compile_groups.is_empty()
         && matches!(function.groups.as_slice(), [receiver, needle]
             if has_parameter(receiver, "self", PassMode::Borrow, named("self"))
-                && has_parameter(needle, "needle", PassMode::Copy, named("t")))
+                && has_parameter(needle, "needle", PassMode::Copy, named("T")))
         && function.return_type == Some(Type::Bool)
         && function.effects == crate::ast::FunctionEffects::default()
         && function.where_predicates.is_empty()
@@ -1297,13 +1274,13 @@ fn valid_vec_contains_method(function: &Function) -> bool {
 fn valid_eq_vec_extension(extension: &crate::ast::ExtendDef) -> bool {
     matches!(extension.compile_groups.as_slice(), [group]
         if matches!(group.as_slice(), [parameter]
-            if parameter.name == "t" && parameter.kind == Sort::Type))
-        && extension.target == applied("vec", named("t"))
+            if parameter.name == "T" && parameter.kind == Sort::Type))
+        && extension.target == applied("Vec", named("T"))
         && extension.trait_ref.is_none()
         && matches!(extension.where_predicates.as_slice(), [copy, equality]
             if is_copy_bound(copy)
-                && equality.subject == named("t")
-                && equality.trait_ref == applied("core.cmp.eq", named("t"))
+                && equality.subject == named("T")
+                && equality.trait_ref == applied("core.cmp.Eq", named("T"))
                 && equality.associated_types.is_empty())
         && matches!(extension.members.as_slice(), [
             crate::ast::ExtendMember::Function(contains),
@@ -1313,8 +1290,8 @@ fn valid_eq_vec_extension(extension: &crate::ast::ExtendDef) -> bool {
 fn valid_vec_extension(extension: &crate::ast::ExtendDef) -> bool {
     matches!(extension.compile_groups.as_slice(), [group]
         if matches!(group.as_slice(), [parameter]
-            if parameter.name == "t" && parameter.kind == Sort::Type))
-        && extension.target == applied("vec", named("t"))
+            if parameter.name == "T" && parameter.kind == Sort::Type))
+        && extension.target == applied("Vec", named("T"))
         && extension.trait_ref.is_none()
         && extension.where_predicates.is_empty()
         && matches!(extension.members.as_slice(), [
@@ -1350,13 +1327,13 @@ fn valid_vec_extension(extension: &crate::ast::ExtendDef) -> bool {
         ] if new.name == "new"
             && new.compile_groups.is_empty()
             && matches!(new.groups.as_slice(), [group] if group.is_empty())
-            && new.return_type == Some(applied("vec", named("t")))
+            && new.return_type == Some(applied("Vec", named("T")))
             && new.body.is_some()
             && with_capacity.name == "with_capacity"
             && with_capacity.compile_groups.is_empty()
             && matches!(with_capacity.groups.as_slice(), [group]
                 if has_parameter(group, "capacity", PassMode::Inferred, Type::U64))
-            && with_capacity.return_type == Some(applied("vec", named("t")))
+            && with_capacity.return_type == Some(applied("Vec", named("T")))
             && with_capacity.body.is_some()
             && valid_vec_receiver_method(len, "len", PassMode::Borrow, &[], Type::U64)
             && valid_vec_as_slice_method(as_slice)
@@ -1365,33 +1342,33 @@ fn valid_vec_extension(extension: &crate::ast::ExtendDef) -> bool {
             && valid_vec_element_access_method(at, "at", true, false)
             && valid_vec_element_access_method(first, "first", false, true)
             && valid_vec_element_access_method(last, "last", false, true)
-            && valid_vec_predicate_method(find, "find", applied("option", borrow_type(false, None, None, named("t"))))
-            && valid_vec_predicate_method(position, "position", applied("option", Type::U64))
+            && valid_vec_predicate_method(find, "find", applied("Option", borrow_type(false, None, None, named("T"))))
+            && valid_vec_predicate_method(position, "position", applied("Option", Type::U64))
             && valid_vec_predicate_method(any, "any", Type::Bool)
             && valid_vec_predicate_method(all, "all", Type::Bool)
             && valid_vec_fold_method(fold)
             && valid_vec_receiver_method(reserve, "reserve", PassMode::MutBorrow, &[("additional", PassMode::Inferred, Type::U64)], Type::Unit)
-            && valid_vec_receiver_method(push, "push", PassMode::MutBorrow, &[("value", PassMode::Inferred, named("t"))], Type::Unit)
-            && valid_vec_receiver_method(replace, "replace", PassMode::MutBorrow, &[("index", PassMode::Inferred, Type::U64), ("value", PassMode::Inferred, named("t"))], named("t"))
-            && valid_vec_receiver_method(pop, "pop", PassMode::MutBorrow, &[], applied("option", named("t")))
+            && valid_vec_receiver_method(push, "push", PassMode::MutBorrow, &[("value", PassMode::Inferred, named("T"))], Type::Unit)
+            && valid_vec_receiver_method(replace, "replace", PassMode::MutBorrow, &[("index", PassMode::Inferred, Type::U64), ("value", PassMode::Inferred, named("T"))], named("T"))
+            && valid_vec_receiver_method(pop, "pop", PassMode::MutBorrow, &[], applied("Option", named("T")))
             && valid_vec_receiver_method(truncate, "truncate", PassMode::MutBorrow, &[("new_length", PassMode::Inferred, Type::U64)], Type::Unit)
             && valid_vec_receiver_method(clear, "clear", PassMode::MutBorrow, &[], Type::Unit)
             && valid_vec_receiver_method(is_empty, "is_empty", PassMode::Borrow, &[], Type::Bool)
-            && valid_vec_receiver_method(swap_remove, "swap_remove", PassMode::MutBorrow, &[("index", PassMode::Inferred, Type::U64)], named("t"))
+            && valid_vec_receiver_method(swap_remove, "swap_remove", PassMode::MutBorrow, &[("index", PassMode::Inferred, Type::U64)], named("T"))
             && valid_vec_swap_method(swap)
             && valid_vec_receiver_method(reverse, "reverse", PassMode::MutBorrow, &[], Type::Unit)
-            && valid_vec_receiver_method(insert, "insert", PassMode::MutBorrow, &[("index", PassMode::Inferred, Type::U64), ("value", PassMode::Inferred, named("t"))], Type::Unit)
-            && valid_vec_receiver_method(remove, "remove", PassMode::MutBorrow, &[("index", PassMode::Inferred, Type::U64)], named("t"))
-            && valid_vec_receiver_method(append, "append", PassMode::MutBorrow, &[("other", PassMode::MutBorrow, applied("vec", named("t")))], Type::Unit)
-            && valid_vec_receiver_method(take, "take", PassMode::MutBorrow, &[], applied("vec", named("t")))
+            && valid_vec_receiver_method(insert, "insert", PassMode::MutBorrow, &[("index", PassMode::Inferred, Type::U64), ("value", PassMode::Inferred, named("T"))], Type::Unit)
+            && valid_vec_receiver_method(remove, "remove", PassMode::MutBorrow, &[("index", PassMode::Inferred, Type::U64)], named("T"))
+            && valid_vec_receiver_method(append, "append", PassMode::MutBorrow, &[("other", PassMode::MutBorrow, applied("Vec", named("T")))], Type::Unit)
+            && valid_vec_receiver_method(take, "take", PassMode::MutBorrow, &[], applied("Vec", named("T")))
             && valid_vec_receiver_method(shrink_to_fit, "shrink_to_fit", PassMode::MutBorrow, &[], Type::Unit))
 }
 
 fn valid_copy_vec_extension(extension: &crate::ast::ExtendDef) -> bool {
     matches!(extension.compile_groups.as_slice(), [group]
         if matches!(group.as_slice(), [parameter]
-            if parameter.name == "t" && parameter.kind == Sort::Type))
-        && extension.target == applied("vec", named("t"))
+            if parameter.name == "T" && parameter.kind == Sort::Type))
+        && extension.target == applied("Vec", named("T"))
         && extension.trait_ref.is_none()
         && matches!(extension.where_predicates.as_slice(), [predicate] if is_copy_bound(predicate))
         && matches!(extension.members.as_slice(), [
@@ -1401,20 +1378,20 @@ fn valid_copy_vec_extension(extension: &crate::ast::ExtendDef) -> bool {
             crate::ast::ExtendMember::Function(fill),
             crate::ast::ExtendMember::Function(copy_from),
             crate::ast::ExtendMember::Function(copy_within),
-        ] if valid_vec_receiver_method(extend_from_slice, "extend_from_slice", PassMode::MutBorrow, &[("source", PassMode::Borrow, applied("slice", named("t")))], Type::Unit)
-            && valid_vec_receiver_method(read, "read", PassMode::Borrow, &[("index", PassMode::Inferred, Type::U64)], named("t"))
-            && valid_vec_receiver_method(write, "write", PassMode::MutBorrow, &[("index", PassMode::Inferred, Type::U64), ("value", PassMode::Copy, named("t"))], Type::Unit)
-            && valid_vec_receiver_method(fill, "fill", PassMode::MutBorrow, &[("value", PassMode::Copy, named("t"))], Type::Unit)
-            && valid_vec_receiver_method(copy_from, "copy_from", PassMode::MutBorrow, &[("source", PassMode::Borrow, applied("slice", named("t")))], Type::Unit)
+        ] if valid_vec_receiver_method(extend_from_slice, "extend_from_slice", PassMode::MutBorrow, &[("source", PassMode::Borrow, applied("Slice", named("T")))], Type::Unit)
+            && valid_vec_receiver_method(read, "read", PassMode::Borrow, &[("index", PassMode::Inferred, Type::U64)], named("T"))
+            && valid_vec_receiver_method(write, "write", PassMode::MutBorrow, &[("index", PassMode::Inferred, Type::U64), ("value", PassMode::Copy, named("T"))], Type::Unit)
+            && valid_vec_receiver_method(fill, "fill", PassMode::MutBorrow, &[("value", PassMode::Copy, named("T"))], Type::Unit)
+            && valid_vec_receiver_method(copy_from, "copy_from", PassMode::MutBorrow, &[("source", PassMode::Borrow, applied("Slice", named("T")))], Type::Unit)
             && valid_vec_copy_within_method(copy_within))
 }
 
 fn valid_vec_drop_extension(extension: &crate::ast::ExtendDef) -> bool {
     matches!(extension.compile_groups.as_slice(), [group]
         if matches!(group.as_slice(), [parameter]
-            if parameter.name == "t" && parameter.kind == Sort::Type))
-        && extension.target == applied("vec", named("t"))
-        && extension.trait_ref == Some(named("droppable"))
+            if parameter.name == "T" && parameter.kind == Sort::Type))
+        && extension.target == applied("Vec", named("T"))
+        && extension.trait_ref == Some(named("Droppable"))
         && extension.where_predicates.is_empty()
         && matches!(extension.members.as_slice(), [crate::ast::ExtendMember::Function(drop)]
             if valid_vec_receiver_method(drop, "drop", PassMode::MutBorrow, &[], Type::Unit))
@@ -1423,27 +1400,27 @@ fn valid_vec_drop_extension(extension: &crate::ast::ExtendDef) -> bool {
 fn valid_vec_index_extension(extension: &crate::ast::ExtendDef) -> bool {
     matches!(extension.compile_groups.as_slice(), [group]
         if matches!(group.as_slice(), [parameter]
-            if parameter.name == "t" && parameter.kind == Sort::Type))
-        && extension.target == applied("vec", named("t"))
-        && extension.trait_ref == Some(applied("index", Type::U64))
+            if parameter.name == "T" && parameter.kind == Sort::Type))
+        && extension.target == applied("Vec", named("T"))
+        && extension.trait_ref == Some(applied("Index", Type::U64))
         && extension.where_predicates.is_empty()
         && matches!(extension.members.as_slice(), [
             crate::ast::ExtendMember::Const(output),
             crate::ast::ExtendMember::Function(index),
-        ] if output.name == "output"
-            && output.value == crate::ast::Expr::Name("t".to_owned())
+        ] if output.name == "Output"
+            && output.value == crate::ast::Expr::Name("T".to_owned())
             && index.name == "index")
 }
 
 fn valid_vec_into_iter(definition: &StructDef) -> bool {
-    definition.name == "vec_into_iter"
+    definition.name == "VecIntoIter"
         && matches!(definition.compile_groups.as_slice(), [group]
             if matches!(group.as_slice(), [parameter]
-                if parameter.name == "t" && parameter.kind == Sort::Type))
+                if parameter.name == "T" && parameter.kind == Sort::Type))
         && matches!(definition.fields.as_slice(), [pointer, next_index, length, capacity]
             if pointer.visibility == Visibility::Private
                 && pointer.name == "pointer"
-                && pointer.ty == mutable_ptr(named("t"))
+                && pointer.ty == mutable_ptr(named("T"))
                 && next_index.visibility == Visibility::Private
                 && next_index.name == "next_index"
                 && next_index.ty == Type::U64
@@ -1458,24 +1435,24 @@ fn valid_vec_into_iter(definition: &StructDef) -> bool {
 fn valid_vec_iterator_extension(extension: &crate::ast::ExtendDef) -> bool {
     matches!(extension.compile_groups.as_slice(), [group]
         if matches!(group.as_slice(), [parameter]
-            if parameter.name == "t" && parameter.kind == Sort::Type))
-        && extension.target == applied("vec_into_iter", named("t"))
-        && extension.trait_ref == Some(named("iterator"))
+            if parameter.name == "T" && parameter.kind == Sort::Type))
+        && extension.target == applied("VecIntoIter", named("T"))
+        && extension.trait_ref == Some(named("Iterator"))
         && extension.where_predicates.is_empty()
         && matches!(extension.members.as_slice(), [
             crate::ast::ExtendMember::Const(item),
             crate::ast::ExtendMember::Function(next),
-        ] if item.name == "item"
+        ] if item.name == "Item"
             && matches!(&item.value,
                 crate::ast::Expr::DelimitedCall {
                     callee,
                     delimiter: GroupDelimiter::Angle,
                     arguments,
                 }
-                    if matches!(callee.as_ref(), crate::ast::Expr::Name(name) if name == "owned_item")
+                    if matches!(callee.as_ref(), crate::ast::Expr::Name(name) if name == "OwnedItem")
                         && matches!(arguments.as_slice(), [argument]
                             if argument.label.is_none()
-                                && argument.value == crate::ast::Expr::Name("t".to_owned())))
+                                && argument.value == crate::ast::Expr::Name("T".to_owned())))
             && valid_vec_iterator_next(next))
 }
 
@@ -1490,34 +1467,29 @@ fn valid_vec_iterator_next(function: &Function) -> bool {
                     && parameter.access.is_none()
                     && parameter.modifiers.is_empty()
                     && parameter.region.is_none()
-                    && parameter.ty == Type::Borrow {
-                        mutable: true,
-                        access: None,
-                        region: Some("r".to_owned()),
-                        pointee: Box::new(named("self")),
-                    })
+                    && parameter.ty == borrow_type(true, None, Some("r"), named("self")))
                 && runtime.is_empty())
-        && function.return_type == Some(applied("option", named("t")))
+        && function.return_type == Some(applied("Option", named("T")))
         && function.body.is_some()
 }
 
 fn valid_vec_into_iterator_extension(extension: &crate::ast::ExtendDef) -> bool {
     matches!(extension.compile_groups.as_slice(), [group]
         if matches!(group.as_slice(), [parameter]
-            if parameter.name == "t" && parameter.kind == Sort::Type))
-        && extension.target == applied("vec", named("t"))
-        && extension.trait_ref == Some(named("into_iterator"))
+            if parameter.name == "T" && parameter.kind == Sort::Type))
+        && extension.target == applied("Vec", named("T"))
+        && extension.trait_ref == Some(named("IntoIterator"))
         && extension.where_predicates.is_empty()
         && matches!(extension.members.as_slice(), [
             crate::ast::ExtendMember::Const(iter),
             crate::ast::ExtendMember::Function(method),
-        ] if iter.name == "iter"
+        ] if iter.name == "Iter"
             && iter.value == crate::ast::Expr::DelimitedCall {
-                callee: Box::new(crate::ast::Expr::Name("vec_into_iter".to_owned())),
+                callee: Box::new(crate::ast::Expr::Name("VecIntoIter".to_owned())),
                 delimiter: GroupDelimiter::Angle,
                 arguments: vec![crate::ast::CallArg {
                     label: None,
-                    value: crate::ast::Expr::Name("t".to_owned()),
+                    value: crate::ast::Expr::Name("T".to_owned()),
                 }],
             }
             && valid_vec_receiver_method(
@@ -1525,16 +1497,16 @@ fn valid_vec_into_iterator_extension(extension: &crate::ast::ExtendDef) -> bool 
                 "into_iter",
                 PassMode::Move,
                 &[],
-                applied("vec_into_iter", named("t")),
+                applied("VecIntoIter", named("T")),
             ))
 }
 
 fn valid_vec_into_iter_drop_extension(extension: &crate::ast::ExtendDef) -> bool {
     matches!(extension.compile_groups.as_slice(), [group]
         if matches!(group.as_slice(), [parameter]
-            if parameter.name == "t" && parameter.kind == Sort::Type))
-        && extension.target == applied("vec_into_iter", named("t"))
-        && extension.trait_ref == Some(named("droppable"))
+            if parameter.name == "T" && parameter.kind == Sort::Type))
+        && extension.target == applied("VecIntoIter", named("T"))
+        && extension.trait_ref == Some(named("Droppable"))
         && extension.where_predicates.is_empty()
         && matches!(extension.members.as_slice(), [crate::ast::ExtendMember::Function(drop)]
             if valid_vec_receiver_method(drop, "drop", PassMode::MutBorrow, &[], Type::Unit))
@@ -1583,7 +1555,7 @@ mod tests {
     #[test]
     fn rejects_box_read_without_its_copy_proof() {
         let source = alloc_source().replacen(
-            "= requires(t is copyable) {\n  unsafe {",
+            "= requires(T is Copyable) {\n  unsafe {",
             "= {\n  unsafe {",
             1,
         );
@@ -1595,8 +1567,8 @@ mod tests {
     #[test]
     fn rejects_box_write_without_its_copy_proof() {
         let source = alloc_source().replacen(
-            "let box_write<comptime t: type>(boxed: borrow<mut><box<t>>)(copy value: t): () = requires(t is copyable) {\n  unsafe {",
-            "let box_write<comptime t: type>(boxed: borrow<mut><box<t>>)(copy value: t): () = {\n  unsafe {",
+            "let box_write<T: type>(boxed: Borrow<mut><Box<T>>)(copy value: T): () = requires(T is Copyable) {\n  unsafe {",
+            "let box_write<T: type>(boxed: Borrow<mut><Box<T>>)(copy value: T): () = {\n  unsafe {",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1607,8 +1579,8 @@ mod tests {
     #[test]
     fn rejects_box_from_raw_without_unsafety() {
         let source = alloc_source().replacen(
-            "let from_raw: with<core.unsafe.unsafety>(pointer: ptr<mut><t>): box<t> = {",
-            "let from_raw(pointer: ptr<mut><t>): box<t> = {",
+            "let from_raw: with<core.unsafe.unsafety>(pointer: Ptr<mut><T>): Box<T> = {",
+            "let from_raw(pointer: Ptr<mut><T>): Box<T> = {",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1619,8 +1591,8 @@ mod tests {
     #[test]
     fn rejects_box_into_raw_without_ownership_transfer() {
         let source = alloc_source().replacen(
-            "let box_into_raw<comptime t: type>(move boxed: box<t>): ptr<mut><t>",
-            "let box_into_raw<comptime t: type>(boxed: borrow<box<t>>): ptr<mut><t>",
+            "let box_into_raw<T: type>(move boxed: Box<T>): Ptr<mut><T>",
+            "let box_into_raw<T: type>(boxed: Borrow<Box<T>>): Ptr<mut><T>",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1631,13 +1603,13 @@ mod tests {
     #[test]
     fn rejects_a_malformed_copy_box_extension() {
         let source = alloc_source().replacen(
-            "let read(self: borrow<self>)(): t = { box_read(self) }",
-            "let peek(self: borrow<self>)(): t = { box_read(self) }",
+            "let read(self: Borrow<self>)(): T = { box_read(self) }",
+            "let peek(self: Borrow<self>)(): T = { box_read(self) }",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
             .expect_err("malformed copyable box extension must fail bootstrap validation");
-        assert!(error.to_string().contains("copyable box extension"));
+        assert!(error.to_string().contains("Copyable Box extension"));
     }
 
     #[test]
@@ -1646,42 +1618,42 @@ mod tests {
             alloc_source().replacen("  storage_capacity: u64,", "  exposed_capacity: u64,", 1);
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
             .expect_err("malformed vec representation must fail bootstrap validation");
-        assert!(error.to_string().contains("alloc vec"));
+        assert!(error.to_string().contains("alloc Vec"));
     }
 
     #[test]
     fn rejects_a_malformed_vec_drop_extension() {
         let source = alloc_source().replacen(
-            "extend(vec<t>, droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let drop(self: borrow<mut><self>)(): () = {",
-            "extend(vec<t>, droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let release(self: borrow<mut><self>)(): () = {",
+            "extend(Vec<T>, Droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let drop(self: Borrow<mut><self>)(): () = {",
+            "extend(Vec<T>, Droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let release(self: Borrow<mut><self>)(): () = {",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
             .expect_err("malformed vec droppable must fail bootstrap validation");
-        assert!(error.to_string().contains("vec droppable extension"));
+        assert!(error.to_string().contains("Vec Droppable extension"));
     }
 
     #[test]
     fn rejects_a_malformed_vec_owning_extension() {
         let source = alloc_source().replacen(
-            "let pop(self: borrow<mut><self>)(): option<t> = { vec_pop(self) }",
-            "let take(self: borrow<mut><self>)(): option<t> = { vec_pop(self) }",
+            "let pop(self: Borrow<mut><self>)(): Option<T> = { vec_pop(self) }",
+            "let take(self: Borrow<mut><self>)(): Option<T> = { vec_pop(self) }",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
             .expect_err("malformed vec owning extension must fail bootstrap validation");
-        assert!(error.to_string().contains("alloc vec extension"));
+        assert!(error.to_string().contains("alloc Vec extension"));
     }
 
     #[test]
     fn rejects_a_malformed_copy_vec_extension() {
         let source = alloc_source().replacen(
-            "let read(self: borrow<self>)(index: u64): t = { vec_read(self)(index) }",
-            "let peek(self: borrow<self>)(index: u64): t = { vec_read(self)(index) }",
+            "let read(self: Borrow<self>)(index: u64): T = { vec_read(self)(index) }",
+            "let peek(self: Borrow<self>)(index: u64): T = { vec_read(self)(index) }",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
             .expect_err("malformed copyable vec extension must fail bootstrap validation");
-        assert!(error.to_string().contains("copyable vec extension"));
+        assert!(error.to_string().contains("Copyable Vec extension"));
     }
 }

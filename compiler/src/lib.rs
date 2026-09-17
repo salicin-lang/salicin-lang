@@ -515,9 +515,9 @@ mod tests {
 
     #[test]
     fn access_compile_parameters_select_shared_or_mutable_borrowing() {
-        let source = "let inspect<comptime a: access>(value: borrow(a)(i32)): i32 = { value }\n\
-                      let borrow_value<comptime a: access, comptime r: region, comptime t: type>\n\
-                        (value: borrow(a)(r)(t)): borrow(a)(r)(t) = { borrow(a)(value) }\n\
+        let source = "let inspect<a: access>(value: Borrow<a><i32>): i32 = { value }\n\
+                      let borrow_value<a: access, r: region, t: type>\n\
+                        (value: Borrow<a><r><t>): Borrow<a><r><t> = { borrow(a)(value) }\n\
                       let main(): i32 = {\n\
                         let mut left = 20\n\
                         let right = 22\n\
@@ -533,7 +533,7 @@ mod tests {
     fn closed_types_can_parameterize_compile_time_functions() {
         let source = "let optimization = enum { size, speed }\n\
                       let select_bool(b: bool)(value: i32): i32 = { value }\n\
-                      let select_optimization<comptime o: optimization>(value: i32): i32 = { value }\n\
+                      let select_optimization<o: optimization>(value: i32): i32 = { value }\n\
                       let main(): i32 = {\n\
                         select_bool(true)(20) +\n\
                           select_bool(false)(1) +\n\
@@ -545,7 +545,7 @@ mod tests {
 
     #[test]
     fn closed_compile_time_parameters_use_declared_defaults() {
-        let source = "let select<comptime b: bool = false>(value: i32): i32 = { value }\n\
+        let source = "let select<b: bool = false>(value: i32): i32 = { value }\n\
                       let main(): i32 = { select(42) }\n";
         compile_source(source).expect("closed compile-time defaults should be normalized by type");
     }
@@ -554,7 +554,7 @@ mod tests {
     fn closed_compile_time_defaults_are_checked_against_their_type() {
         let errors = compile_source(
             "let optimization = enum { size, speed }\n\
-             let select<comptime o: optimization = true>(value: i32): i32 = { value }\n\
+             let select<o: optimization = true>(value: i32): i32 = { value }\n\
              let main(): i32 = { select(42) }\n",
         )
         .unwrap_err();
@@ -565,7 +565,7 @@ mod tests {
 
     #[test]
     fn parameter_modifiers_are_type_checked_after_instantiation() {
-        let source = "let decorate<comptime b: bool>(b value: i32): i32 = { value }\n\
+        let source = "let decorate<b: bool>(b value: i32): i32 = { value }\n\
                       let main(): i32 = { decorate(true)(42) }\n";
         let errors = compile_source(source).unwrap_err();
         assert!(errors.iter().any(|error| {
@@ -576,9 +576,9 @@ mod tests {
 
     #[test]
     fn parameter_modifier_functions_can_be_forwarded_generically() {
-        let source = "let modifier_identity(comptime m: <comptime p: parameters>: parameters) = m\n\
-             let apply(comptime m: <comptime p: parameters>: parameters, comptime t: type)(m value: t): t = { value }\n\
-             let forward(comptime m: <comptime p: parameters>: parameters, comptime t: type)(m value: t): t = {\n\
+        let source = "let modifier_identity<m: <p: parameters>: parameters> = m\n\
+             let apply<m: <p: parameters>: parameters, t: type>(m value: t): t = { value }\n\
+             let forward<m: <p: parameters>: parameters, t: type>(m value: t): t = {\n\
                apply(modifier_identity(m), t)(value)\n\
              }\n\
              let main(): i32 = {\n\
@@ -622,11 +622,11 @@ mod tests {
                 let main(): i32 = { missing { value: 42 } + missing { value: 0 } }\n",
                 2,
                 21,
-                "no matching `add` implementation",
+                "no matching `Add` implementation",
             ),
             (
                 "generic",
-                "let identity<comptime t: type>(value: t): t = { value }\n\
+                "let identity<t: type>(value: t): t = { value }\n\
                 let main(): i32 = { identity() }\n",
                 2,
                 21,
@@ -706,15 +706,15 @@ mod tests {
 
     #[test]
     fn alloc_accessors_use_the_access_generic_entry_points() {
-        let source = "let box = alloc.boxed.box\n\
-                      let vec = alloc.vec.vec
+        let source = "let Box = alloc.boxed.Box\n\
+                      let Vec = alloc.vec.Vec
                       let main(): i32 = {\n\
-                        let mut boxed = box.new(20)\n\
+                        let mut boxed = Box.new(20)\n\
                         do {\n\
                           let value = boxed.as_ref(mut)()\n\
                           value = 21\n\
                         }\n\
-                        let mut values: vec<i32> = vec<i32>.new()\n\
+                        let mut values: Vec<i32> = Vec<i32>.new()\n\
                         values.push(20)\n\
                         do {\n\
                           let value = values.at(mut)(0)\n\
@@ -742,14 +742,14 @@ mod tests {
 
     #[test]
     fn alloc_items_require_imports_and_may_be_renamed() {
-        let errors = compile_source("let main(): i32 = { box.new(42).read() }\n").unwrap_err();
+        let errors = compile_source("let main(): i32 = { Box.new(42).read() }\n").unwrap_err();
         assert!(errors.iter().any(|diagnostic| {
-            diagnostic.contains("standard-library item `box` is not in the prelude")
-                && diagnostic.contains("let box = alloc.boxed.box")
+            diagnostic.contains("standard-library item `Box` is not in the prelude")
+                && diagnostic.contains("let Box = alloc.boxed.Box")
         }));
 
-        let source = "use alloc.boxed.box as heap_box\n\
-                      let main(): i32 = { heap_box.new(42).read() }\n";
+        let source = "use alloc.boxed.Box as HeapBox\n\
+                      let main(): i32 = { HeapBox.new(42).read() }\n";
         compile_source(source).expect("renamed alloc import should compile");
     }
 
@@ -764,18 +764,18 @@ mod tests {
     #[test]
     fn operator_traits_require_imports_but_operator_syntax_does_not() {
         let missing = "let number = struct { value: i32 }\n\
-                       extend(number, add(number)) {\n\
-                         let output = number\n\
+                       extend(number, Add<number>) {\n\
+                         let Output = number\n\
                          let add(self)(rhs: number): number = { number { value: self.value + rhs.value } }\n\
                        }\n\
                        let main(): i32 = { 0 }\n";
         let errors = compile_source(missing).unwrap_err();
         assert!(errors.iter().any(|diagnostic| {
-            diagnostic.contains("standard-library item `add` is not in the prelude")
-                && diagnostic.contains("let add = core.ops.add")
+            diagnostic.contains("standard-library item `Add` is not in the prelude")
+                && diagnostic.contains("let Add = core.ops.Add")
         }));
 
-        let imported = format!("use core.ops.add\n{missing}").replace(
+        let imported = format!("use core.ops.Add\n{missing}").replace(
             "let main(): i32 = { 0 }",
             "let main(): i32 = { (number { value: 20 } + number { value: 22 }).value }",
         );
@@ -785,22 +785,22 @@ mod tests {
             .expect("built-in operator syntax should not require importing its protocol");
 
         let missing_order = "let number = struct { value: i32 }\n\
-                             extend(number, partial_ord(number)) {\n\
-                               let partial_cmp(self: borrow(self))(rhs: borrow(number)): core.ops.partial_ordering = {\n\
-                                 core.ops.partial_ordering.equal\n\
+                             extend(number, PartialOrd<number>) {\n\
+                               let partial_cmp(self: Borrow<self>)(rhs: Borrow<number>): core.ops.PartialOrdering = {\n\
+                                 core.ops.PartialOrdering.Equal\n\
                                }\n\
                              }\n\
                              let main(): i32 = { 0 }\n";
         let errors = compile_source(missing_order).unwrap_err();
         assert!(errors.iter().any(|diagnostic| {
-            diagnostic.contains("standard-library item `partial_ord` is not in the prelude")
-                && diagnostic.contains("let partial_ord = core.ops.partial_ord")
+            diagnostic.contains("standard-library item `PartialOrd` is not in the prelude")
+                && diagnostic.contains("let PartialOrd = core.ops.PartialOrd")
         }));
 
         let imported_order = format!(
-            "use core.ops.{{partial_ord, partial_ordering}}\n{missing_order}"
+            "use core.ops.{{PartialOrd, PartialOrdering}}\n{missing_order}"
         )
-        .replace("core.ops.partial_ordering", "partial_ordering")
+        .replace("core.ops.PartialOrdering", "PartialOrdering")
         .replace(
             "let main(): i32 = { 0 }",
             "let main(): i32 = { if number { value: 1 } <= number { value: 2 } { 42 } else { 0 } }",
@@ -809,35 +809,35 @@ mod tests {
             .expect("imported partial_ord should define ordering operators");
 
         let missing_unary = "let number = struct { value: i32 }\n\
-                             extend(number, neg) {\n\
-                               let output = number\n\
+                             extend(number, Neg) {\n\
+                               let Output = number\n\
                                let neg(self)(): number = { self }\n}\n\
                              let main(): i32 = { 0 }\n";
         let errors = compile_source(missing_unary).unwrap_err();
         assert!(errors.iter().any(|diagnostic| {
-            diagnostic.contains("standard-library item `neg` is not in the prelude")
-                && diagnostic.contains("let neg = core.ops.neg")
+            diagnostic.contains("standard-library item `Neg` is not in the prelude")
+                && diagnostic.contains("let Neg = core.ops.Neg")
         }));
 
-        let imported_unary = format!("use core.ops.neg\n{missing_unary}").replace(
+        let imported_unary = format!("use core.ops.Neg\n{missing_unary}").replace(
             "let main(): i32 = { 0 }",
             "let main(): i32 = { (-number { value: 42 }).value }",
         );
         compile_source(&imported_unary).expect("imported neg should define unary `-`");
 
         let missing_bitwise = "let bits = struct { value: i32 }\n\
-                               extend(bits, bit_and(bits)) {\n\
-                                 let output = bits\n\
+                               extend(bits, BitAnd<bits>) {\n\
+                                 let Output = bits\n\
                                  let bit_and(self)(rhs: bits): bits = { bits { value: self.value & rhs.value } }\n\
                                }\n\
                                let main(): i32 = { 0 }\n";
         let errors = compile_source(missing_bitwise).unwrap_err();
         assert!(errors.iter().any(|diagnostic| {
-            diagnostic.contains("standard-library item `bit_and` is not in the prelude")
-                && diagnostic.contains("let bit_and = core.ops.bit_and")
+            diagnostic.contains("standard-library item `BitAnd` is not in the prelude")
+                && diagnostic.contains("let BitAnd = core.ops.BitAnd")
         }));
 
-        let imported_bitwise = format!("use core.ops.bit_and\n{missing_bitwise}").replace(
+        let imported_bitwise = format!("use core.ops.BitAnd\n{missing_bitwise}").replace(
             "let main(): i32 = { 0 }",
             "let main(): i32 = { (bits { value: 6 } & bits { value: 3 }).value }",
         );
@@ -852,12 +852,12 @@ mod tests {
 
     #[test]
     fn generic_inherent_methods_accept_member_compile_parameters() {
-        let source = "let cell<comptime t: type> = struct { value: t }\n\
+        let source = "let cell<t: type> = struct { value: t }\n\
                       extend(cell(t)) {\n\
-                        let make<comptime u: type>(move value: t)(marker: u): cell(t) = {\n\
+                        let make<u: type>(move value: t)(marker: u): cell(t) = {\n\
                           cell(t) { value: value }\n\
                         }\n\
-                        let view<comptime a: access>(self: borrow(a)(self))(): borrow(a)(t) = {\n\
+                        let view<a: access>(self: Borrow<a><self>)(): Borrow<a><t> = {\n\
                           borrow(a)(self.value)\n\
                         }\n\
                       }\n\
@@ -872,7 +872,7 @@ mod tests {
                           reference = 21\n\
                         }\n\
                         do {\n\
-                          let reference: borrow<mut>(i32) = cell.view()\n\
+                          let reference: Borrow<mut><i32> = cell.view()\n\
                           reference = 22\n\
                         }\n\
                         let after = do {\n\
@@ -888,26 +888,26 @@ mod tests {
     #[test]
     fn slice_is_a_non_prelude_unsized_core_type() {
         check_library_source(
-            "let slice = core.memory.slice\n\
-             let inspect<comptime r: region>(values: borrow(r)(slice<i32>)): u64 = { 0 }\n",
+            "let Slice = core.memory.Slice\n\
+             let inspect<r: region>(values: Borrow<r><Slice<i32>>): u64 = { 0 }\n",
         )
         .expect("borrowed slice types should be accepted");
 
         let diagnostics = check_library_source(
-            "let inspect<comptime r: region>(values: borrow(r)(slice<i32>)): u64 = { 0 }\n",
+            "let inspect<r: region>(values: Borrow<r><Slice<i32>>): u64 = { 0 }\n",
         )
         .expect_err("slice must require an ordinary standard-library alias");
         assert!(diagnostics
             .iter()
-            .any(|diagnostic| diagnostic.contains("let slice = core.memory.slice")));
+            .any(|diagnostic| diagnostic.contains("let Slice = core.memory.Slice")));
     }
 
     #[test]
     fn arrays_unsize_to_region_bound_slice_borrows() {
         let ir = compile_source(
-            "let slice = core.memory.slice\n\
-             let view<comptime r: region>\n\
-               (values: borrow(r)(array(i32)(3))): borrow(r)(slice<i32>) = {\n\
+            "let Slice = core.memory.Slice\n\
+             let view<r: region>\n\
+               (values: Borrow<r><Array<i32><3>>): Borrow<r><Slice<i32>> = {\n\
                borrow(values)\n\
              }\n\
              let main(): i32 = {\n\
@@ -924,15 +924,15 @@ mod tests {
     #[test]
     fn slice_methods_preserve_length_and_element_borrow_access() {
         let ir = compile_source(
-            "let slice = core.memory.slice\n\
-             let inspect<comptime r: region>\n\
-               (values: borrow(r)(slice<i32>)): i32 = {\n\
+            "let Slice = core.memory.Slice\n\
+             let inspect<r: region>\n\
+               (values: Borrow<r><Slice<i32>>): i32 = {\n\
                let item = values.at(1)\n\
                if values.len() == 3 { item } else { 0 }\n\
              }\n\
              let main(): i32 = {\n\
                let values = [1, 42, 3]\n\
-               let slice: borrow(slice<i32>) = borrow(values)\n\
+               let slice: Borrow<Slice<i32>> = borrow(values)\n\
                inspect(slice)\n\
              }\n",
         )
@@ -944,9 +944,9 @@ mod tests {
     #[test]
     fn vec_slice_borrows_preserve_mutable_element_access() {
         let ir = compile_source(
-            "let vec = alloc.vec.vec\n\
+            "let Vec = alloc.vec.Vec\n\
              let main(): i32 = {\n\
-               let mut values = vec.new(t: i32)()\n\
+               let mut values = Vec.new(T: i32)()\n\
                values.push(1)\n\
                values.push(2)\n\
                do {\n\
@@ -965,13 +965,13 @@ mod tests {
     #[test]
     fn user_index_protocol_dispatches_bracket_reads() {
         let ir = compile_source(
-            "let index = core.ops.index\n\
+            "let Index = core.ops.Index\n\
              let bag = struct { value: i32 }\n\
-             extend(bag, index(i32)) {\n\
-               let output = i32\n\
-               let index<comptime a: access>\n\
-                 (self: borrow(a)(self))\n\
-                 (key: i32): borrow(a)(i32) = {\n\
+             extend(bag, Index<i32>) {\n\
+               let Output = i32\n\
+               let index<a: access>\n\
+                 (self: Borrow<a><self>)\n\
+                 (key: i32): Borrow<a><i32> = {\n\
                  borrow(a)(self.value)\n\
                }\n\
              }\n\
@@ -988,13 +988,13 @@ mod tests {
     #[test]
     fn user_index_protocol_dispatches_bracket_assignment() {
         let ir = compile_source(
-            "let index = core.ops.index\n\
+            "let Index = core.ops.Index\n\
              let bag = struct { value: i32 }\n\
-             extend(bag, index(i32)) {\n\
-               let output = i32\n\
-               let index<comptime a: access>\n\
-                 (self: borrow(a)(self))\n\
-                 (key: i32): borrow(a)(i32) = {\n\
+             extend(bag, Index<i32>) {\n\
+               let Output = i32\n\
+               let index<a: access>\n\
+                 (self: Borrow<a><self>)\n\
+                 (key: i32): Borrow<a><i32> = {\n\
                  borrow(a)(self.value)\n\
                }\n\
              }\n\
@@ -1011,17 +1011,17 @@ mod tests {
     #[test]
     fn user_index_protocol_preserves_explicit_borrows() {
         compile_source(
-            "let index = core.ops.index\n\
+            "let Index = core.ops.Index\n\
              let bag = struct { value: i32 }\n\
-             extend(bag, index(i32)) {\n\
-               let output = i32\n\
-               let index<comptime a: access>\n\
-                 (self: borrow(a)(self))\n\
-                 (key: i32): borrow(a)(i32) = {\n\
+             extend(bag, Index<i32>) {\n\
+               let Output = i32\n\
+               let index<a: access>\n\
+                 (self: Borrow<a><self>)\n\
+                 (key: i32): Borrow<a><i32> = {\n\
                  borrow(a)(self.value)\n\
                }\n\
              }\n\
-             let read(value: borrow(i32)): i32 = { value }\n\
+             let read(value: Borrow<i32>): i32 = { value }\n\
              let main(): i32 = {\n\
                let mut bag = bag { value: 42 }\n\
                let shared = borrow(bag[0])\n\
@@ -1034,10 +1034,10 @@ mod tests {
     #[test]
     fn vec_index_protocol_supports_read_borrow_and_assignment() {
         compile_source(
-            "let vec = alloc.vec.vec\n\
-             let read(value: borrow(i32)): i32 = { value }\n\
+            "let Vec = alloc.vec.Vec\n\
+             let read(value: Borrow<i32>): i32 = { value }\n\
              let main(): i32 = {\n\
-               let mut values = vec.new(t: i32)()\n\
+               let mut values = Vec.new(T: i32)()\n\
                values.push(1)\n\
                values[0] = 42\n\
                let value = borrow(values[0])\n\
@@ -1050,15 +1050,15 @@ mod tests {
     #[test]
     fn slice_index_protocol_supports_read_borrow_and_assignment() {
         compile_source(
-            "let slice = core.memory.slice\n\
-             let inspect(values: borrow<mut>(slice<i32>)): i32 = {\n\
+            "let Slice = core.memory.Slice\n\
+             let inspect(values: Borrow<mut><Slice<i32>>): i32 = {\n\
                values[1] = 42\n\
                let value = borrow(values[1])\n\
                value\n\
              }\n\
              let main(): i32 = {\n\
-               let mut values: array(i32)(2) = [1, 2]\n\
-               let slice: borrow<mut>(slice<i32>) = borrow<mut>(values)\n\
+               let mut values: Array<i32><2> = [1, 2]\n\
+               let slice: Borrow<mut><Slice<i32>> = borrow<mut>(values)\n\
                inspect(slice)\n\
              }\n",
         )

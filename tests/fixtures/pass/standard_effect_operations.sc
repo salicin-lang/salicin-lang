@@ -1,4 +1,4 @@
-let result = core.result
+let Result = core.Result
 
 let throwing = core.error.throwing
 let suspension = core.async.suspension
@@ -34,21 +34,21 @@ let handled_throw_sugar_action(): i32 = {
 }
 
 let tried_throw_sugar_function(): i32 = {
-  let result: result<i32><i32> = try {
+  let result: Result<i32><i32> = try {
     fail_with_throw_sugar()
   }
   match result
-    { ok(value) -> value }
-    { err(error) -> error }
+    { Ok(value) -> value }
+    { Err(error) -> error }
 }
 
 let tried_throw_sugar_action(): i32 = {
-  let result: result<i32><i32> = try {
+  let result: Result<i32><i32> = try {
     throw(42)
   }
   match result
-    { ok(value) -> value }
-    { err(error) -> error }
+    { Ok(value) -> value }
+    { Err(error) -> error }
 }
 
 let inferred_try_from_throw_sugar_function(): i32 = {
@@ -56,8 +56,8 @@ let inferred_try_from_throw_sugar_function(): i32 = {
     choose_with_throw_sugar(true)
   }
   match result
-    { ok(value) -> value }
-    { err(error) -> error }
+    { Ok(value) -> value }
+    { Err(error) -> error }
 }
 
 let handled_async(): i32 = {

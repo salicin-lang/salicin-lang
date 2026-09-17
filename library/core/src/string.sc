@@ -1,15 +1,15 @@
-let ptr = core.memory.ptr
-let slice = core.memory.slice
+let Ptr = core.memory.Ptr
+let Slice = core.memory.Slice
 
 /// Dynamically sized immutable UTF-8 text.
 ///
-/// Safe code can only use this type through a shared borrow constructed by
-/// checked UTF-8 validation or from an already-valid `string`.
+/// Safe code can only use this type through a shared Borrow constructed by
+/// checked UTF-8 validation or from an already-valid `String`.
 pub let str: type = builtin()
 
-let read_byte(value: borrow<u8>): u8 = { value }
+let read_byte(value: Borrow<u8>): u8 = { value }
 
-let byte_at(bytes: borrow<slice<u8>>, index: u64): u8 = {
+let byte_at(bytes: Borrow<Slice<u8>>, index: u64): u8 = {
   let value = bytes.at(index)
   read_byte(value)
 }
@@ -30,7 +30,7 @@ let is_continuation(byte: u8): bool = {
   byte >= low && byte <= high
 }
 
-let text_equal(left: borrow<str>, right: borrow<str>): bool = {
+let text_equal(left: Borrow<str>, right: Borrow<str>): bool = {
   let left_bytes = left.as_bytes()
   let right_bytes = right.as_bytes()
   let length = left_bytes.len()
@@ -48,9 +48,9 @@ let text_equal(left: borrow<str>, right: borrow<str>): bool = {
 }
 
 let text_compare(
-  left: borrow<str>,
-  right: borrow<str>,
-): core.cmp.partial_ordering = {
+  left: Borrow<str>,
+  right: Borrow<str>,
+): core.cmp.PartialOrdering = {
   let left_bytes = left.as_bytes()
   let right_bytes = right.as_bytes()
   let shared_length = left_bytes.len().min(right_bytes.len())
@@ -59,25 +59,25 @@ let text_compare(
     let left_byte = byte_at(left_bytes, index)
     let right_byte = byte_at(right_bytes, index)
     if left_byte < right_byte {
-      return(less)
+      return(Less)
     }
     if left_byte > right_byte {
-      return(greater)
+      return(Greater)
     }
     index = index + 1
   }
   if left_bytes.len() < right_bytes.len() {
-    less
+    Less
   } else if left_bytes.len() > right_bytes.len() {
-    greater
+    Greater
   } else {
-    equal
+    Equal
   }
 }
 
 let text_matches_at(
-  value: borrow<str>,
-  needle: borrow<str>,
+  value: Borrow<str>,
+  needle: Borrow<str>,
   start: u64,
 ): bool = {
   let value_bytes = value.as_bytes()
@@ -96,31 +96,31 @@ let text_matches_at(
   true
 }
 
-let text_find(value: borrow<str>, needle: borrow<str>): core.option<u64> = {
+let text_find(value: Borrow<str>, needle: Borrow<str>): core.Option<u64> = {
   let value_length = value.len()
   let needle_length = needle.len()
   if needle_length == 0 {
-    return(core.option.some(0))
+    return(core.Option.Some(0))
   }
   if needle_length > value_length {
-    return(core.option.none)
+    return(core.Option.None)
   }
   let last_start = value_length - needle_length
   let mut start: u64 = 0
   while { start <= last_start } {
     if value.is_char_boundary(start) &&
       text_matches_at(value, needle, start) {
-      return(core.option.some(start))
+      return(core.Option.Some(start))
     }
     start = start + 1
   }
-  core.option.none
+  core.Option.None
 }
 
 /// Validates the exact well-formed UTF-8 byte sequences from Unicode Table
 /// 3-7. The implementation is allocation-free and reads each byte at most a
 /// constant number of times.
-let utf8_error_offset(bytes: borrow<slice<u8>>): core.option<u64> = {
+let utf8_error_offset(bytes: Borrow<Slice<u8>>): core.Option<u64> = {
   let length = bytes.len()
   let mut index: u64 = 0
   let one: u64 = 1
@@ -153,52 +153,52 @@ let utf8_error_offset(bytes: borrow<slice<u8>>): core.option<u64> = {
     } else if first >= two_min && first <= two_max {
       if index + one >= length ||
         !is_continuation(byte_at(bytes, index + one)) {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       index = index + two
     } else if first == e0 {
       if index + two >= length {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       let second: u8 = byte_at(bytes, index + one)
       if second < e0_second_min || second > continuation_max ||
         !is_continuation(byte_at(bytes, index + two)) {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       index = index + three
     } else if first >= e1 && first <= ec {
       if index + two >= length ||
         !is_continuation(byte_at(bytes, index + one)) ||
         !is_continuation(byte_at(bytes, index + two)) {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       index = index + three
     } else if first == ed {
       if index + two >= length {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       let second: u8 = byte_at(bytes, index + one)
       if second < continuation_min || second > ed_second_max ||
         !is_continuation(byte_at(bytes, index + two)) {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       index = index + three
     } else if first >= ee && first <= ef {
       if index + two >= length ||
         !is_continuation(byte_at(bytes, index + one)) ||
         !is_continuation(byte_at(bytes, index + two)) {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       index = index + three
     } else if first == f0 {
       if index + three >= length {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       let second: u8 = byte_at(bytes, index + one)
       if second < f0_second_min || second > continuation_max ||
         !is_continuation(byte_at(bytes, index + two)) ||
         !is_continuation(byte_at(bytes, index + three)) {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       index = index + four
     } else if first >= f1 && first <= f3 {
@@ -206,76 +206,76 @@ let utf8_error_offset(bytes: borrow<slice<u8>>): core.option<u64> = {
         !is_continuation(byte_at(bytes, index + one)) ||
         !is_continuation(byte_at(bytes, index + two)) ||
         !is_continuation(byte_at(bytes, index + three)) {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       index = index + four
     } else if first == f4 {
       if index + three >= length {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       let second: u8 = byte_at(bytes, index + one)
       if second < continuation_min || second > f4_second_max ||
         !is_continuation(byte_at(bytes, index + two)) ||
         !is_continuation(byte_at(bytes, index + three)) {
-        return(core.option.some(index))
+        return(core.Option.Some(index))
       }
       index = index + four
     } else {
-      return(core.option.some(index))
+      return(core.Option.Some(index))
     }
   }
-  core.option.none
+  core.Option.None
 }
 
-let is_valid_utf8(bytes: borrow<slice<u8>>): bool = {
+let is_valid_utf8(bytes: Borrow<Slice<u8>>): bool = {
   utf8_error_offset(bytes).is_none()
 }
 
 /// Copies UTF-8 bytes while retaining a shared loan on the source text.
-pub let str_bytes = struct {
-  value: borrow<str>,
+pub let StrBytes = struct {
+  value: Borrow<str>,
   next_index: u64,
 }
 
 /// Decodes Unicode scalars while retaining a shared loan on the source text.
-pub let str_scalars = struct {
-  value: borrow<str>,
+pub let StrScalars = struct {
+  value: Borrow<str>,
   next_index: u64,
 }
 
-extend(str_bytes, core.iter.iterator) {
-  let item = core.iter.owned_item<u8>;
-  let next<comptime r: region>
-    (self: borrow<mut><r><self>)(): core.option<u8> = {
+extend(StrBytes, core.iter.Iterator) {
+  let Item = core.iter.OwnedItem<u8>;
+  let next<r: region>
+    (self: Borrow<mut><r><self>)(): core.Option<u8> = {
     let bytes = unsafe { raw_str_bytes(self.value) }
     if self.next_index == bytes.len() {
-      core.option.none
+      core.Option.None
     } else {
       let byte = byte_at(bytes, self.next_index)
       self.next_index = self.next_index + 1
-      core.option.some(byte)
+      core.Option.Some(byte)
     }
   }
 }
 
-extend(str_bytes, core.iter.into_iterator) {
-  let iter = str_bytes
-  let into_iter(move self)(): str_bytes = { self }
+extend(StrBytes, core.iter.IntoIterator) {
+  let Iter = StrBytes
+  let into_iter(move self)(): StrBytes = { self }
 }
 
-extend(str_scalars, core.iter.iterator) {
-  let item = core.iter.owned_item<unicode_scalar>;
-  let next<comptime r: region>
-    (self: borrow<mut><r><self>)(): core.option<unicode_scalar> = {
+extend(StrScalars, core.iter.Iterator) {
+  let Item = core.iter.OwnedItem<UnicodeScalar>;
+  let next<r: region>
+    (self: Borrow<mut><r><self>)(): core.Option<UnicodeScalar> = {
     let bytes = unsafe { raw_str_bytes(self.value) }
     if self.next_index == bytes.len() {
-      return(core.option.none)
+      return(core.Option.None)
     }
     let first = byte_at(bytes, self.next_index)
     let width: u64 = if first <= 127 { 1 }
-      else if first <= 223 { 2 }
-      else if first <= 239 { 3 }
-      else { 4 }
+    else if first <= 223 { 2 }
+    else if first <= 239 { 3 }
+    else { 4 }
     let mut code = if width == 1 {
       byte_u32(first)
     } else if width == 2 {
@@ -292,51 +292,51 @@ extend(str_scalars, core.iter.iterator) {
         byte_u32(byte_at(bytes, self.next_index + 3) & 63)
     }
     self.next_index = self.next_index + width
-    core.option.some(unicode_scalar{ value: code })
+    core.Option.Some(UnicodeScalar{ value: code })
   }
 }
 
-extend(str_scalars, core.iter.into_iterator) {
-  let iter = str_scalars
-  let into_iter(move self)(): str_scalars = { self }
+extend(StrScalars, core.iter.IntoIterator) {
+  let Iter = StrScalars
+  let into_iter(move self)(): StrScalars = { self }
 }
 
 extend(str) {
   /// Validates borrowed bytes and returns a text view with the same region.
-  let from_utf8<comptime r: region>
-    (bytes: borrow<r><slice<u8>>): core.option<borrow<r><str>> = {
+  let from_utf8<r: region>
+    (bytes: Borrow<r><Slice<u8>>): core.Option<Borrow<r><str>> = {
     if is_valid_utf8(bytes) {
-      core.option.some(unsafe { raw_str(bytes) })
+      core.Option.Some(unsafe { raw_str(bytes) })
     } else {
-      core.option.none
+      core.Option.None
     }
   }
 
-  /// Returns the length of the valid UTF-8 prefix, or `none` when all bytes
+  /// Returns the length of the valid UTF-8 prefix, or `None` when all bytes
   /// are valid. For a truncated sequence this is the leading-byte offset.
-  let first_invalid_utf8(bytes: borrow<slice<u8>>): core.option<u64> = {
+  let first_invalid_utf8(bytes: Borrow<Slice<u8>>): core.Option<u64> = {
     utf8_error_offset(bytes)
   }
 
   /// Returns the number of UTF-8 bytes.
-  let len(self: borrow<self>)(): u64 = {
+  let len(self: Borrow<self>)(): u64 = {
     let bytes = unsafe { raw_str_bytes(self) }
     bytes.len()
   }
 
   /// Returns whether this view contains no bytes.
-  let is_empty(self: borrow<self>)(): bool = { self.len() == 0 }
+  let is_empty(self: Borrow<self>)(): bool = { self.len() == 0 }
 
   /// Exposes the validated bytes with the same source region.
-  let as_bytes<comptime r: region>
-    (self: borrow<r><self>)(): borrow<r><slice<u8>> = {
+  let as_bytes<r: region>
+    (self: Borrow<r><self>)(): Borrow<r><Slice<u8>> = {
     unsafe {
       raw_str_bytes(self)
     }
   }
 
   /// Returns whether `index` is a UTF-8 code-point boundary.
-  let is_char_boundary(self: borrow<self>)(index: u64): bool = {
+  let is_char_boundary(self: Borrow<self>)(index: u64): bool = {
     let length = self.len()
     if index == 0 || index == length {
       true
@@ -350,25 +350,25 @@ extend(str) {
 
   /// Returns the byte range as a view when both endpoints are UTF-8
   /// boundaries. The returned view retains this view's source region.
-  let get<comptime r: region>
-    (self: borrow<r><self>)
-    (start: u64, end: u64): core.option<borrow<r><str>> = {
+  let get<r: region>
+    (self: Borrow<r><self>)
+    (start: u64, end: u64): core.Option<Borrow<r><str>> = {
     if start > end ||
       !self.is_char_boundary(start) ||
       !self.is_char_boundary(end) {
-      core.option.none
+      core.Option.None
     } else {
-      core.option.some(unsafe { raw_subview(self, start, end - start) })
+      core.Option.Some(unsafe { raw_subview(self, start, end - start) })
     }
   }
 
   /// Returns whether this text begins with `prefix`.
-  let starts_with(self: borrow<self>)(prefix: borrow<str>): bool = {
+  let starts_with(self: Borrow<self>)(prefix: Borrow<str>): bool = {
     text_matches_at(self, prefix, 0)
   }
 
   /// Returns whether this text ends with `suffix`.
-  let ends_with(self: borrow<self>)(suffix: borrow<str>): bool = {
+  let ends_with(self: Borrow<self>)(suffix: Borrow<str>): bool = {
     if suffix.len() > self.len() {
       false
     } else {
@@ -380,28 +380,28 @@ extend(str) {
   ///
   /// The empty needle matches at zero. Every returned offset is a scalar
   /// boundary in this text.
-  let find(self: borrow<self>)(needle: borrow<str>): core.option<u64> = {
+  let find(self: Borrow<self>)(needle: Borrow<str>): core.Option<u64> = {
     text_find(self, needle)
   }
 
   /// Returns whether `needle` occurs in this text.
-  let contains(self: borrow<self>)(needle: borrow<str>): bool = {
+  let contains(self: Borrow<self>)(needle: Borrow<str>): bool = {
     self.find(needle).is_some()
   }
 
   /// Iterates over copied UTF-8 bytes while retaining this source loan.
-  let bytes(self: borrow<self>)(): str_bytes = {
-    str_bytes{ value: self, next_index: 0 }
+  let bytes(self: Borrow<self>)(): StrBytes = {
+    StrBytes{ value: self, next_index: 0 }
   }
 
   /// Iterates over copied Unicode scalar values while retaining this source
   /// loan.
-  let scalars(self: borrow<self>)(): str_scalars = {
-    str_scalars{ value: self, next_index: 0 }
+  let scalars(self: Borrow<self>)(): StrScalars = {
+    StrScalars{ value: self, next_index: 0 }
   }
 
   /// Returns the number of Unicode scalar values.
-  let scalar_count(self: borrow<self>)(): u64 = {
+  let scalar_count(self: Borrow<self>)(): u64 = {
     let mut values = self.scalars()
     let mut count: u64 = 0
     while { values.next().is_some() } {
@@ -410,13 +410,13 @@ extend(str) {
     count
   }
 
-  /// Returns the scalar at `index`, or `none` when out of range.
-  let scalar_at(self: borrow<self>)(index: u64): core.option<unicode_scalar> = {
+  /// Returns the scalar at `index`, or `None` when out of range.
+  let scalar_at(self: Borrow<self>)(index: u64): core.Option<UnicodeScalar> = {
     let mut values = self.scalars()
     let mut current: u64 = 0
     while { current < index } {
       if values.next().is_none() {
-        return(core.option.none)
+        return(core.Option.None)
       }
       current = current + 1
     }
@@ -424,16 +424,16 @@ extend(str) {
   }
 }
 
-extend(str, core.cmp.eq<str>) {
-  let eq(self: borrow<self>)(other: borrow<str>): bool = {
+extend(str, core.cmp.Eq<str>) {
+  let eq(self: Borrow<self>)(other: Borrow<str>): bool = {
     text_equal(self, other)
   }
 }
 
-extend(str, core.cmp.partial_ord<str>) {
+extend(str, core.cmp.PartialOrd<str>) {
   let partial_cmp(
-    self: borrow<self>,
-  )(other: borrow<str>): core.cmp.partial_ordering = {
+    self: Borrow<self>,
+  )(other: Borrow<str>): core.cmp.PartialOrdering = {
     text_compare(self, other)
   }
 }
@@ -442,35 +442,35 @@ extend(str, core.cmp.partial_ord<str>) {
 ///
 /// The private representation prevents safe source from constructing a
 /// surrogate or a value above U+10FFFF.
-pub let unicode_scalar = struct {
+pub let UnicodeScalar = struct {
   value: u32,
 }
 
-extend(unicode_scalar, core.marker.copyable) {}
+extend(UnicodeScalar, core.marker.Copyable) {}
 
-extend(unicode_scalar, core.cmp.eq<unicode_scalar>) {
+extend(UnicodeScalar, core.cmp.Eq<UnicodeScalar>) {
   /// Compares scalar values by numeric code point.
-  let eq(self: borrow<self>)(other: borrow<unicode_scalar>): bool = {
+  let eq(self: Borrow<self>)(other: Borrow<UnicodeScalar>): bool = {
     self.value == other.value
   }
 }
 
-extend(unicode_scalar) {
+extend(UnicodeScalar) {
   /// Constructs a scalar from its numeric value, rejecting surrogates and
   /// values above the Unicode codespace.
-  let from_u32(value: u32): core.option<unicode_scalar> = {
+  let from_u32(value: u32): core.Option<UnicodeScalar> = {
     if value > 1114111 || value >= 55296 && value <= 57343 {
-      core.option.none
+      core.Option.None
     } else {
-      core.option.some(unicode_scalar{ value: value })
+      core.Option.Some(UnicodeScalar{ value: value })
     }
   }
 
   /// Returns this scalar's numeric code point.
-  let to_u32(self: borrow<self>)(): u32 = { self.value }
+  let to_u32(self: Borrow<self>)(): u32 = { self.value }
 
   /// Returns the number of bytes in this scalar's canonical UTF-8 encoding.
-  let len_utf8(self: borrow<self>)(): u64 = {
+  let len_utf8(self: Borrow<self>)(): u64 = {
     if self.value <= 127 {
       1
     } else if self.value <= 2047 {
@@ -488,25 +488,25 @@ extend(unicode_scalar) {
 /// `capacity` is representation metadata. A value whose capacity is zero
 /// borrows static literal storage; non-zero capacity is reserved for owned
 /// storage supplied by the allocation package.
-pub let string = struct {
-  data: ptr<mut><u8>,
+pub let String = struct {
+  data: Ptr<mut><u8>,
   length: u64,
   storage_capacity: u64,
 }
 
-let string_allocate(capacity: u64): ptr<mut><u8> = {
+let string_allocate(capacity: u64): Ptr<mut><u8> = {
   unsafe {
     raw_alloc<u8>(capacity, 1)
   }
 }
 
-let string_deallocate(data: ptr<mut><u8>, capacity: u64): () = {
+let string_deallocate(data: Ptr<mut><u8>, capacity: u64): () = {
   unsafe {
     raw_dealloc<u8>(data, capacity, 1)
   }
 }
 
-let string_reserve(value: borrow<mut><string>, additional: u64): () = {
+let string_reserve(value: Borrow<mut><String>, additional: u64): () = {
   if additional > 18446744073709551615 - value.length {
     unsafe {
       raw_trap()
@@ -545,7 +545,7 @@ let string_reserve(value: borrow<mut><string>, additional: u64): () = {
   }
 }
 
-let string_copy_from_str<comptime r: region>(value: borrow<r><str>): string = {
+let string_copy_from_str<r: region>(value: Borrow<r><str>): String = {
   let length = value.len()
   if length == 0 {
     ""
@@ -559,7 +559,7 @@ let string_copy_from_str<comptime r: region>(value: borrow<r><str>): string = {
       }
       index = index + 1
     }
-    string{ data: data, length: length, storage_capacity: length }
+    String{ data: data, length: length, storage_capacity: length }
   }
 }
 
@@ -573,14 +573,14 @@ let scalar_byte(value: u32): u8 = {
   byte
 }
 
-let string_push_byte(value: borrow<mut><string>, byte: u8): () = {
+let string_push_byte(value: Borrow<mut><String>, byte: u8): () = {
   unsafe {
     raw_init(raw_offset(value.data, value.length), byte)
   }
   value.length = value.length + 1
 }
 
-let string_is_char_boundary(value: borrow<string>, index: u64): bool = {
+let string_is_char_boundary(value: Borrow<String>, index: u64): bool = {
   if index == 0 || index == value.length {
     true
   } else if index > value.length {
@@ -593,74 +593,74 @@ let string_is_char_boundary(value: borrow<string>, index: u64): bool = {
   }
 }
 
-/// Rebuilds unique string ownership from validated initialized byte storage.
+/// Rebuilds unique String ownership from validated initialized byte storage.
 pub let string_from_raw_parts: with<core.unsafe.unsafety>(
-  data: ptr<mut><u8>,
+  data: Ptr<mut><u8>,
   length: u64,
   capacity: u64,
-): string = {
-  string{ data: data, length: length, storage_capacity: capacity }
+): String = {
+  String{ data: data, length: length, storage_capacity: capacity }
 }
 
-/// Consumes a string into its representation. Capacity zero means borrowed
+/// Consumes a String into its representation. Capacity zero means borrowed
 /// static storage and must be copied before constructing an owned byte vector.
 pub let string_into_raw_parts: with<core.unsafe.unsafety>(
-  move value: string,
-): (ptr<mut><u8>, u64, u64) = {
+  move value: String,
+): (Ptr<mut><u8>, u64, u64) = {
   let parts = (value.data, value.length, value.storage_capacity)
   forget(value)
   parts
 }
 
-extend(string, core.literal.string_literal) {
-  let output = string
+extend(String, core.literal.StringLiteral) {
+  let Output = String
 
-  let from_string_literal<comptime length: usize>
-    (move utf8: array<u8><length>): output = builtin()
+  let from_string_literal<length: usize>
+    (move utf8: Array<u8><length>): Output = builtin()
 }
 
-extend(string) {
-  /// Creates an empty string without allocating.
-  let new(): string = { "" }
+extend(String) {
+  /// Creates an empty String without allocating.
+  let new(): String = { "" }
 
-  /// Creates an empty string with space for at least `capacity` bytes.
-  let with_capacity(capacity: u64): string = {
+  /// Creates an empty String with space for at least `capacity` bytes.
+  let with_capacity(capacity: u64): String = {
     if capacity == 0 {
       ""
     } else {
-      string{ data: string_allocate(capacity), length: 0, storage_capacity: capacity }
+      String{ data: string_allocate(capacity), length: 0, storage_capacity: capacity }
     }
   }
 
-  /// Copies borrowed validated text into a new owning string.
-  let from_str<comptime r: region>(value: borrow<r><str>): string = {
+  /// Copies borrowed validated text into a new owning String.
+  let from_str<r: region>(value: Borrow<r><str>): String = {
     string_copy_from_str(value)
   }
 
-  /// Encodes one Unicode scalar into a new owning string.
-  let from_unicode_scalar(value: unicode_scalar): string = {
-    let mut text = string.with_capacity(value.len_utf8())
+  /// Encodes one Unicode scalar into a new owning String.
+  let from_unicode_scalar(value: UnicodeScalar): String = {
+    let mut text = String.with_capacity(value.len_utf8())
     text.push(value)
     text
   }
 
   /// Returns the number of UTF-8 bytes.
-  let len_bytes(self: borrow<self>)(): u64 = { self.length }
+  let len_bytes(self: Borrow<self>)(): u64 = { self.length }
 
-  /// Returns whether the string contains no bytes.
-  let is_empty(self: borrow<self>)(): bool = { self.length == 0 }
+  /// Returns whether the String contains no bytes.
+  let is_empty(self: Borrow<self>)(): bool = { self.length == 0 }
 
   /// Returns the number of bytes that fit without reallocating.
-  let capacity(self: borrow<self>)(): u64 = { self.storage_capacity }
+  let capacity(self: Borrow<self>)(): u64 = { self.storage_capacity }
 
   /// Ensures space for at least `additional` more UTF-8 bytes.
-  let reserve(self: borrow<mut><self>)(additional: u64): () = {
+  let reserve(self: Borrow<mut><self>)(additional: u64): () = {
     string_reserve(self, additional)
   }
 
-  /// Borrows this string as immutable validated UTF-8.
-  let as_str<comptime r: region>
-    (self: borrow<r><self>)(): borrow<r><str> = {
+  /// Borrows this String as immutable validated UTF-8.
+  let as_str<r: region>
+    (self: Borrow<r><self>)(): Borrow<r><str> = {
     unsafe {
       let bytes = raw_slice(self.data, self.length, borrow(self))
       raw_str(bytes)
@@ -668,9 +668,9 @@ extend(string) {
   }
 
   /// Appends borrowed validated UTF-8 text.
-  let push_str<comptime r: region>
-    (self: borrow<mut><self>)
-    (value: borrow<r><str>): () = {
+  let push_str<r: region>
+    (self: Borrow<mut><self>)
+    (value: Borrow<r><str>): () = {
     let bytes = value.as_bytes()
     let length = bytes.len()
     string_reserve(self, length)
@@ -682,7 +682,7 @@ extend(string) {
   }
 
   /// Appends one Unicode scalar in its canonical UTF-8 encoding.
-  let push(self: borrow<mut><self>)(value: unicode_scalar): () = {
+  let push(self: Borrow<mut><self>)(value: UnicodeScalar): () = {
     let code = value.to_u32()
     string_reserve(self, value.len_utf8())
     if code <= 127 {
@@ -705,7 +705,7 @@ extend(string) {
   /// Truncates to `new_length` bytes when it is a UTF-8 boundary.
   ///
   /// Returns false without mutation for an out-of-bounds or interior offset.
-  let truncate(self: borrow<mut><self>)(new_length: u64): bool = {
+  let truncate(self: Borrow<mut><self>)(new_length: u64): bool = {
     if !string_is_char_boundary(self, new_length) {
       false
     } else {
@@ -715,62 +715,62 @@ extend(string) {
   }
 
   /// Removes all text while retaining owned capacity.
-  let clear(self: borrow<mut><self>)(): () = {
+  let clear(self: Borrow<mut><self>)(): () = {
     self.length = 0
   }
 
-  /// Copies a checked UTF-8 byte range into a new owning string.
-  let substring(self: borrow<self>)(start: u64, end: u64): core.option<string> = {
+  /// Copies a checked UTF-8 byte range into a new owning String.
+  let substring(self: Borrow<self>)(start: u64, end: u64): core.Option<String> = {
     let view = self.as_str()
     match view.get(start, end)
-      { some(part) -> core.option.some(string_copy_from_str(part)) }
-      { none -> core.option.none }
+      { Some(part) -> core.Option.Some(string_copy_from_str(part)) }
+      { None -> core.Option.None }
   }
 
-  /// Returns whether this string begins with `prefix`.
-  let starts_with(self: borrow<self>)(prefix: borrow<str>): bool = {
+  /// Returns whether this String begins with `prefix`.
+  let starts_with(self: Borrow<self>)(prefix: Borrow<str>): bool = {
     let view = self.as_str()
     view.starts_with(prefix)
   }
 
-  /// Returns whether this string ends with `suffix`.
-  let ends_with(self: borrow<self>)(suffix: borrow<str>): bool = {
+  /// Returns whether this String ends with `suffix`.
+  let ends_with(self: Borrow<self>)(suffix: Borrow<str>): bool = {
     let view = self.as_str()
     view.ends_with(suffix)
   }
 
   /// Returns the first matching UTF-8 byte offset.
-  let find(self: borrow<self>)(needle: borrow<str>): core.option<u64> = {
+  let find(self: Borrow<self>)(needle: Borrow<str>): core.Option<u64> = {
     let view = self.as_str()
     view.find(needle)
   }
 
-  /// Returns whether `needle` occurs in this string.
-  let contains(self: borrow<self>)(needle: borrow<str>): bool = {
+  /// Returns whether `needle` occurs in this String.
+  let contains(self: Borrow<self>)(needle: Borrow<str>): bool = {
     self.find(needle).is_some()
   }
 }
 
-extend(string, core.cmp.eq<string>) {
-  let eq(self: borrow<self>)(other: borrow<string>): bool = {
+extend(String, core.cmp.Eq<String>) {
+  let eq(self: Borrow<self>)(other: Borrow<String>): bool = {
     let left = self.as_str()
     let right = other.as_str()
     text_equal(left, right)
   }
 }
 
-extend(string, core.cmp.partial_ord<string>) {
+extend(String, core.cmp.PartialOrd<String>) {
   let partial_cmp(
-    self: borrow<self>,
-  )(other: borrow<string>): core.cmp.partial_ordering = {
+    self: Borrow<self>,
+  )(other: Borrow<String>): core.cmp.PartialOrdering = {
     let left = self.as_str()
     let right = other.as_str()
     text_compare(left, right)
   }
 }
 
-extend(string, core.marker.droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(String, core.marker.Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     if self.storage_capacity != 0 {
       string_deallocate(self.data, self.storage_capacity)
     }

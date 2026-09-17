@@ -157,7 +157,7 @@ fn raw_pointer_intrinsic_errors_report_their_cause() {
         ("raw_offset_safe.sc", "requires an `unsafe` block"),
         (
             "raw_offset_non_pointer.sc",
-            "requires `ptr(t)` or `ptr<mut>(t)`",
+            "requires `Ptr<T>` or `Ptr<mut><T>`",
         ),
         ("raw_trap_safe.sc", "requires an `unsafe` block"),
         (
@@ -180,7 +180,7 @@ fn raw_pointer_intrinsic_errors_report_their_cause() {
         ),
         (
             "raw_borrow_mut_immutable_pointer.sc",
-            "requires a `ptr<mut>(t)`",
+            "requires a `Ptr<mut><T>`",
         ),
         ("raw_borrow_anchor_conflict.sc", "borrowed"),
         (
@@ -189,11 +189,11 @@ fn raw_pointer_intrinsic_errors_report_their_cause() {
         ),
         (
             "raw_pointer_mut_method_shared.sc",
-            "unknown method `take` on `ptr<i32>`",
+            "unknown method `take` on `Ptr<i32>`",
         ),
         (
             "raw_pointer_foreign_extension.sc",
-            "inherent extension for `ptr` must be declared in the package that defines the type",
+            "inherent extension for `Ptr` must be declared in the package that defines the type",
         ),
     ] {
         let output = salic()
@@ -687,7 +687,7 @@ fn parameter_modifier_generics_select_copy_and_move() {
         .expect("reject copy passing for a resource");
     assert!(!output.status.success(), "{}", output_text(&output));
     assert!(
-        String::from_utf8_lossy(&output.stderr).contains("does not implement copyable"),
+        String::from_utf8_lossy(&output.stderr).contains("does not implement `Copyable`"),
         "{}",
         output_text(&output)
     );
@@ -886,7 +886,7 @@ edition = "2026"
     );
     project.write(
         "src/api.sc",
-        "pub(package) let cell<comptime t: type> = struct { value: t }\n\
+        "pub(package) let cell<t: type> = struct { value: t }\n\
          extend(cell(t)) {\n\
            let new(move value: t): cell(t) = { cell { value: value } }\n\
            let take(move self)(): t = { self.value }\n\
@@ -919,11 +919,11 @@ edition = "2026"
     project.write(
         "src/api.sc",
         "pub(package) let choose = trait {\n\
-           let choose<comptime value_type: type>(self: borrow(self))(move value: value_type): value_type\n\
+           let choose<value_type: type>(self: Borrow<self>)(move value: value_type): value_type\n\
          }\n\
          pub(package) let cell = struct {}\n\
          extend(cell, choose) {\n\
-           let choose<comptime result: type>(self: borrow(self))(move value: result): result = {\n\
+           let choose<result: type>(self: Borrow<self>)(move value: result): result = {\n\
              value\n\
            }\n\
          }\n\
@@ -956,7 +956,7 @@ path = "src/lib.sc"
     );
     project.write(
         "dep/src/lib.sc",
-        "pub let cell<comptime t: type> = struct { pub value: t }\n",
+        "pub let cell<t: type> = struct { pub value: t }\n",
     );
     project.write(
         "app/salicin.toml",
@@ -1053,7 +1053,7 @@ fn vec_drop_releases_its_allocation_through_the_allocator_abi() {
     let directory = TestDirectory::new();
     let source = directory.write(
         "main.sc",
-        "use alloc.vec.vec\n\nlet main(): i32 = {\n  let values: vec<i32> = vec<i32>.new()\n  values.len()\n  0\n}\n",
+        "use alloc.Vec\n\nlet main(): i32 = {\n  let values: Vec<i32> = Vec<i32>.new()\n  values.len()\n  0\n}\n",
     );
     let ir = directory.join("main.ll");
     let executable = directory.join("main");
@@ -1096,13 +1096,13 @@ fn standard_library_acceptance_balances_allocations_on_return_and_throw() {
         "main.sc",
         r#"let live_allocations(): i64 = foreign(c, "live_allocations")
 
-let exercise: with<core.error.throwing<core.string.string>>(fail: bool): () = {
-  let mut writer = alloc.string.string_writer.new()
+let exercise: with<core.error.throwing<core.string.String>>(fail: bool): () = {
+  let mut writer = alloc.string.StringWriter.new()
   "柳".display(writer)
   let number: i64 = 42
   number.display(writer)
   let text = writer.finish()
-  let mut values = alloc.vec.vec<core.string.string>.new()
+  let mut values = alloc.Vec<core.string.String>.new()
   values.push(text)
   values.push("done")
   if fail {
@@ -1111,17 +1111,17 @@ let exercise: with<core.error.throwing<core.string.string>>(fail: bool): () = {
 }
 
 let main(): i32 = {
-  let success: core.result(core.string.string)(()) = try { exercise(false) }
+  let success: core.Result<core.string.String><()> = try { exercise(false) }
   match success
-    { err(_) -> return(1) }
-    { ok(_) -> () }
+    { Err(_) -> return(1) }
+    { Ok(_) -> () }
   if unsafe { live_allocations() } != 0 { return(2) }
 
-  let failure: core.result(core.string.string)(()) = try { exercise(true) }
+  let failure: core.Result<core.string.String><()> = try { exercise(true) }
   match failure
-    { ok(_) -> return(3) }
-    { err(message) ->
-      let expected: string = "stop"
+    { Ok(_) -> return(3) }
+    { Err(message) ->
+      let expected: String = "stop"
       if message != expected { return(4) }
     }
   if unsafe { live_allocations() } == 0 { 42 } else { 5 }
@@ -1241,9 +1241,9 @@ fn type_constructor_aliases_cross_module_boundaries() {
     );
     project.write(
         "src/types.sc",
-        "pub(package) let cell<comptime t: type> = struct { pub(package) value: t }\n\
-         pub(package) let family<comptime t: type>: type = cell(t)\n\
-         pub(package) let constructor: <comptime t: type>: type = cell\n\
+        "pub(package) let cell<t: type> = struct { pub(package) value: t }\n\
+         pub(package) let family<t: type>: type = cell(t)\n\
+         pub(package) let constructor: <t: type>: type = cell\n\
          pub(package) let scalar = i32\n",
     );
     project.write(
@@ -1418,7 +1418,7 @@ fn m1_ownership_errors_report_their_cause() {
         ("use_after_explicit_move_i32.sc", &["moved"][..]),
         (
             "copy_non_copy.sc",
-            &["requires `copyable`", "does not implement copyable"][..],
+            &["requires `Copyable`", "does not implement `Copyable`"][..],
         ),
         (
             "double_mut_borrow.sc",
@@ -1512,7 +1512,7 @@ fn region_frontend_errors_report_their_cause() {
         ),
         (
             "region_plain_name.sc",
-            "standard-library item `region` is not in the prelude",
+            "runtime parameter groups cannot contain compile-time binders",
         ),
     ] {
         let output = salic()
@@ -1572,7 +1572,7 @@ fn borrow_value_parameter_errors_report_their_cause() {
     for (name, expected) in [
         ("borrow_value_mut_moved.sc", "moved"),
         ("borrow_value_explicit_move.sc", "moved"),
-        ("borrow_value_copy_mut.sc", "requires `copyable`"),
+        ("borrow_value_copy_mut.sc", "requires `Copyable`"),
         ("borrow_value_block_escape_conflict.sc", "already borrowed"),
         ("borrow_value_partial.sc", "partial application"),
         (
@@ -1978,33 +1978,33 @@ fn source_backed_copy_errors_report_their_cause() {
     for (name, expected) in [
         (
             "copy_non_copy.sc",
-            &["requires `copyable`", "does not implement copyable"][..],
+            &["requires `Copyable`", "does not implement `Copyable`"][..],
         ),
         (
             "copy_nominal_invalid_struct_impl.sc",
-            &["container", "cannot implement `copyable`", "payload"][..],
+            &["container", "cannot implement `Copyable`", "payload"][..],
         ),
         (
             "copy_nominal_invalid_enum_impl.sc",
-            &["message", "cannot implement `copyable`", "payload"][..],
+            &["message", "cannot implement `Copyable`", "payload"][..],
         ),
         (
             "copy_nominal_transitive_invalid_impl.sc",
-            &["branch", "tree", "cannot implement `copyable`"][..],
+            &["branch", "tree", "cannot implement `Copyable`"][..],
         ),
         ("copy_nominal_explicit_move_reuse.sc", &["moved"][..]),
         (
             "copy_nominal_concrete_generic_impl.sc",
             &[
                 "function `read`",
-                "requires `copyable`",
+                "requires `Copyable`",
                 "cell(i64)",
-                "does not implement copyable",
+                "does not implement `Copyable`",
             ][..],
         ),
         (
             "copy_generic_blanket_unproven.sc",
-            &["blanket `copyable`", "not structurally valid"][..],
+            &["blanket `Copyable`", "not structurally valid"][..],
         ),
     ] {
         let output = salic()

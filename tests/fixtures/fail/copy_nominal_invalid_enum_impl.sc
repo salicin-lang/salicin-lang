@@ -2,9 +2,9 @@ let payload = struct { value: i32 }
 
 let message = enum {
   data(payload),
-  empty,
+  Empty,
 }
 
-extend(message, copyable) {}
+extend(message, Copyable) {}
 
 let main(): i32 = { 42 }

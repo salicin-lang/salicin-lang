@@ -1,24 +1,24 @@
-let option = core.option
-let result = core.result
+let Option = core.Option
+let Result = core.Result
 
 let main(): i32 = {
-  let option_number = option<i32>.some(20)
-  let option_flag = option<bool>.some(true)
-  let result_ok = result<bool><i32>.ok(7)
-  let result_err = result<i32><bool>.err(5)
+  let option_number = Option<i32>.Some(20)
+  let option_flag = Option<bool>.Some(true)
+  let result_ok = Result<bool><i32>.Ok(7)
+  let result_err = Result<i32><bool>.Err(5)
 
   let first = match option_number
-    { some(value) -> value }
-    { none -> 0 }
+    { Some(value) -> value }
+    { None -> 0 }
   let second = match option_flag
-    { some(value) -> if value { 10 } else { 0 } }
-    { none -> 0 }
+    { Some(value) -> if value { 10 } else { 0 } }
+    { None -> 0 }
   let third = match result_ok
-    { ok(value) -> value }
-    { err(_) -> 0 }
+    { Ok(value) -> value }
+    { Err(_) -> 0 }
   let fourth = match result_err
-    { ok(_) -> 0 }
-    { err(value) -> value }
+    { Ok(_) -> 0 }
+    { Err(value) -> value }
   first + second + third + fourth
 }
 

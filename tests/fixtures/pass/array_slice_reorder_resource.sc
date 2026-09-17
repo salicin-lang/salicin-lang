@@ -1,16 +1,16 @@
-let slice = core.memory.slice
+let Slice = core.memory.Slice
 
 let resource = struct {
-  counter: ptr<mut><i32>,
+  counter: Ptr<mut><i32>,
   value: i32,
 }
 
 extend(resource) {
-  let read(self: borrow<self>)(): i32 = { self.value }
+  let read(self: Borrow<self>)(): i32 = { self.value }
 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -27,7 +27,7 @@ let main(): i32 = {
 
   let mut score = 0
   do {
-    let mut values: array<resource><4> = [
+    let mut values: Array<resource><4> = [
       resource{ counter: counter, value: 1 },
       resource{ counter: counter, value: 2 },
       resource{ counter: counter, value: 3 },
@@ -36,7 +36,7 @@ let main(): i32 = {
     values.swap(0, 3)
     values.swap(1, 1)
     do {
-      let view: borrow<mut><slice<resource>> = borrow<mut>(values)
+      let view: Borrow<mut><Slice<resource>> = borrow<mut>(values)
       view.reverse()
     }
     let no_drops = unsafe {

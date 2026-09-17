@@ -1,7 +1,7 @@
 let counter = struct { value: i32 }
 
 extend(counter) {
-  let set(self: borrow<mut><self>)(value: i32)(extra: i32): i32 = {
+  let set(self: Borrow<mut><self>)(value: i32)(extra: i32): i32 = {
     self.value = value
     self.value + extra
   }

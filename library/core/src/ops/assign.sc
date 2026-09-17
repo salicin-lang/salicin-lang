@@ -1,69 +1,69 @@
 /// Trait backing compound `+=`.
-pub let add_assign<comptime rhs: type> = trait {
+pub let AddAssign<Rhs: type> = trait {
   /// Adds `rhs` into `self` in place.
-  let add_assign(self: borrow<mut><self>)
-    (rhs: rhs): ()
+  let add_assign(self: Borrow<mut><self>)
+    (rhs: Rhs): ()
 }
 
 /// Trait backing compound `-=`.
-pub let sub_assign<comptime rhs: type> = trait {
+pub let SubAssign<Rhs: type> = trait {
   /// Subtracts `rhs` from `self` in place.
-  let sub_assign(self: borrow<mut><self>)
-    (rhs: rhs): ()
+  let sub_assign(self: Borrow<mut><self>)
+    (rhs: Rhs): ()
 }
 
 /// Trait backing compound `*=`.
-pub let mul_assign<comptime rhs: type> = trait {
+pub let MulAssign<Rhs: type> = trait {
   /// Multiplies `self` by `rhs` in place.
-  let mul_assign(self: borrow<mut><self>)
-    (rhs: rhs): ()
+  let mul_assign(self: Borrow<mut><self>)
+    (rhs: Rhs): ()
 }
 
 /// Trait backing compound `/=`.
-pub let div_assign<comptime rhs: type> = trait {
+pub let DivAssign<Rhs: type> = trait {
   /// Divides `self` by `rhs` in place.
-  let div_assign(self: borrow<mut><self>)
-    (rhs: rhs): ()
+  let div_assign(self: Borrow<mut><self>)
+    (rhs: Rhs): ()
 }
 
 /// Trait backing compound `%=`.
-pub let rem_assign<comptime rhs: type> = trait {
+pub let RemAssign<Rhs: type> = trait {
   /// Replaces `self` with its remainder after division by `rhs`.
-  let rem_assign(self: borrow<mut><self>)
-    (rhs: rhs): ()
+  let rem_assign(self: Borrow<mut><self>)
+    (rhs: Rhs): ()
 }
 
 /// Trait backing compound `&=`.
-pub let bit_and_assign<comptime rhs: type> = trait {
+pub let BitAndAssign<Rhs: type> = trait {
   /// Applies bitwise and with `rhs` in place.
-  let bit_and_assign(self: borrow<mut><self>)
-    (rhs: rhs): ()
+  let bit_and_assign(self: Borrow<mut><self>)
+    (rhs: Rhs): ()
 }
 
 /// Trait backing compound `|=`.
-pub let bit_or_assign<comptime rhs: type> = trait {
+pub let BitOrAssign<Rhs: type> = trait {
   /// Applies bitwise or with `rhs` in place.
-  let bit_or_assign(self: borrow<mut><self>)
-    (rhs: rhs): ()
+  let bit_or_assign(self: Borrow<mut><self>)
+    (rhs: Rhs): ()
 }
 
 /// Trait backing compound `^=`.
-pub let bit_xor_assign<comptime rhs: type> = trait {
+pub let BitXorAssign<Rhs: type> = trait {
   /// Applies bitwise xor with `rhs` in place.
-  let bit_xor_assign(self: borrow<mut><self>)
-    (rhs: rhs): ()
+  let bit_xor_assign(self: Borrow<mut><self>)
+    (rhs: Rhs): ()
 }
 
 /// Trait backing compound `<<=`.
-pub let shl_assign<comptime rhs: type> = trait {
+pub let ShlAssign<Rhs: type> = trait {
   /// Shifts `self` left by `rhs` in place.
-  let shl_assign(self: borrow<mut><self>)
-    (rhs: rhs): ()
+  let shl_assign(self: Borrow<mut><self>)
+    (rhs: Rhs): ()
 }
 
 /// Trait backing compound `>>=`.
-pub let shr_assign<comptime rhs: type> = trait {
+pub let ShrAssign<Rhs: type> = trait {
   /// Shifts `self` right by `rhs` in place.
-  let shr_assign(self: borrow<mut><self>)
-    (rhs: rhs): ()
+  let shr_assign(self: Borrow<mut><self>)
+    (rhs: Rhs): ()
 }

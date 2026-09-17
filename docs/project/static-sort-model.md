@@ -36,7 +36,7 @@ Edition 2026 currently registers exactly one fragment sort: `constraint`.
 
 ## Constraint Contract
 
-`constraint: sort(2)` is produced only by syntax elaboration and immediately
+`constraint: sort<2>` is produced only by syntax elaboration and immediately
 normalizes into solver-owned `Constraint`/`Goal` IR. Its contract is:
 
 - phase: elaboration;
@@ -61,7 +61,7 @@ and unbounded recursion are forbidden.
 
 Fragment values are erased compiler facts, not CTFE values and not runtime
 types. The static model rejects runtime lowering requests and wrong-phase
-consumption. Ordinary runtime values accepted by CTFE, including `string`,
+consumption. Ordinary runtime values accepted by CTFE, including `String`,
 closed enums, and composite values, remain outside this fragment registry.
 Likewise `type`, `region`, `effect`, `effects`, and `parameters` retain their
 existing dedicated normalization rules.

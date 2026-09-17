@@ -124,7 +124,7 @@ impl Analyzer {
                 })
             {
                 self.error(format!(
-                    "async local `{}` borrows `{}` stored in the same future across `await`; the generated state would be self-referential and cannot implement `movable`",
+                    "async local `{}` borrows `{}` stored in the same future across `await`; the generated state would be self-referential and cannot implement `Movable`",
                     retained.name,
                     retained.referent.as_deref().expect("checked retained referent")
                 ));
@@ -904,10 +904,10 @@ impl Analyzer {
             .collect::<Vec<_>>();
         if candidates.len() != 1 {
             self.error(if candidates.is_empty() {
-                format!("await operand of type `{ty}` does not implement `future`")
+                format!("await operand of type `{ty}` does not implement `Future`")
             } else {
                 format!(
-                    "await operand of type `{ty}` has multiple `future` implementations; the residual effect row is ambiguous"
+                    "await operand of type `{ty}` has multiple `Future` implementations; the residual effect row is ambiguous"
                 )
             });
             return None;
@@ -921,7 +921,7 @@ impl Analyzer {
             .expect("trait method candidate has an implementation");
         let output = implementation
             .associated_types
-            .get("output")
+            .get("Output")
             .cloned()
             .expect("validated Future implementation has Output");
         let poll_function = implementation
@@ -1002,7 +1002,7 @@ impl Analyzer {
             .collect::<Option<Vec<_>>>()?;
         let output = futures.first()?.output.clone();
         if futures.iter().any(|future| future.output != output) {
-            self.error("control-flow await branches must produce the same `future.output` type");
+            self.error("control-flow await branches must produce the same `Future.Output` type");
             return None;
         }
         let poll_ty = futures.first()?.poll_ty.clone();
@@ -1105,8 +1105,8 @@ impl Analyzer {
             trait_key.clone(),
             TraitImplInfo {
                 key: trait_key,
-                associated_types: HashMap::from([("output".to_owned(), output.clone())]),
-                associated_type_sources: HashMap::from([("output".to_owned(), output_source)]),
+                associated_types: HashMap::from([("Output".to_owned(), output.clone())]),
+                associated_type_sources: HashMap::from([("Output".to_owned(), output_source)]),
                 methods: HashMap::from([("poll".to_owned(), poll_function.clone())]),
                 access,
             },
@@ -1226,7 +1226,7 @@ impl Analyzer {
                     VariantLayout {
                         name: "loop_exit".to_owned(),
                         fields: vec![FieldLayout {
-                            name: "output".to_owned(),
+                            name: "Output".to_owned(),
                             ty: output.clone(),
                             access: access.clone(),
                         }],
@@ -1379,8 +1379,8 @@ impl Analyzer {
             trait_key.clone(),
             TraitImplInfo {
                 key: trait_key,
-                associated_types: HashMap::from([("output".to_owned(), future.output.clone())]),
-                associated_type_sources: HashMap::from([("output".to_owned(), output_source)]),
+                associated_types: HashMap::from([("Output".to_owned(), future.output.clone())]),
+                associated_type_sources: HashMap::from([("Output".to_owned(), output_source)]),
                 methods: HashMap::from([("poll".to_owned(), poll_function.clone())]),
                 access: self.collection.nominal_accesses[name].clone(),
             },
@@ -1617,7 +1617,7 @@ impl Analyzer {
             }],
         );
         let ready = Expr::Call(
-            Box::new(Expr::Member(Box::new(poll_type), "ready".to_owned())),
+            Box::new(Expr::Member(Box::new(poll_type), "Ready".to_owned())),
             vec![CallArg {
                 label: None,
                 value: resume,
@@ -3363,7 +3363,7 @@ impl Analyzer {
                 arms: vec![
                     crate::ast::MatchArm {
                         pattern: crate::ast::Pattern::Constructor {
-                            path: vec!["pending".to_owned()],
+                            path: vec!["Pending".to_owned()],
                             fields: crate::ast::PatternFields::Unit,
                         },
                         guard: None,
@@ -3384,13 +3384,13 @@ impl Analyzer {
                                         value: source_type_expression(&output_source),
                                     }],
                                 )),
-                                "pending".to_owned(),
+                                "Pending".to_owned(),
                             ))),
                         },
                     },
                     crate::ast::MatchArm {
                         pattern: crate::ast::Pattern::Constructor {
-                            path: vec!["ready".to_owned()],
+                            path: vec!["Ready".to_owned()],
                             fields: crate::ast::PatternFields::Positional(vec![
                                 crate::ast::Pattern::Binding(loop_output.clone()),
                             ]),
@@ -3407,7 +3407,7 @@ impl Analyzer {
                                         value: source_type_expression(&output_source),
                                     }],
                                 )),
-                                "ready".to_owned(),
+                                "Ready".to_owned(),
                             )),
                             vec![CallArg {
                                 label: None,
@@ -3486,9 +3486,9 @@ impl Analyzer {
                     value: source_type_expression(&output_source),
                 }],
             );
-            let pending = Expr::Member(Box::new(parent_poll_type.clone()), "pending".to_owned());
+            let pending = Expr::Member(Box::new(parent_poll_type.clone()), "Pending".to_owned());
             let ready = Expr::Call(
-                Box::new(Expr::Member(Box::new(parent_poll_type), "ready".to_owned())),
+                Box::new(Expr::Member(Box::new(parent_poll_type), "Ready".to_owned())),
                 vec![CallArg {
                     label: None,
                     value: continuation,
@@ -3500,7 +3500,7 @@ impl Analyzer {
                 arms: vec![
                     crate::ast::MatchArm {
                         pattern: crate::ast::Pattern::Constructor {
-                            path: vec!["pending".to_owned()],
+                            path: vec!["Pending".to_owned()],
                             fields: crate::ast::PatternFields::Unit,
                         },
                         guard: None,
@@ -3508,7 +3508,7 @@ impl Analyzer {
                     },
                     crate::ast::MatchArm {
                         pattern: crate::ast::Pattern::Constructor {
-                            path: vec!["ready".to_owned()],
+                            path: vec!["Ready".to_owned()],
                             fields: crate::ast::PatternFields::Positional(vec![
                                 crate::ast::Pattern::Tuple(
                                     bindings
@@ -3539,12 +3539,12 @@ impl Analyzer {
                     value: source_type_expression(&output_source),
                 }],
             );
-            let pending = Expr::Member(Box::new(parent_poll_type.clone()), "pending".to_owned());
+            let pending = Expr::Member(Box::new(parent_poll_type.clone()), "Pending".to_owned());
             let ready_value = |value| {
                 Expr::Call(
                     Box::new(Expr::Member(
                         Box::new(parent_poll_type.clone()),
-                        "ready".to_owned(),
+                        "Ready".to_owned(),
                     )),
                     vec![CallArg { label: None, value }],
                 )
@@ -3584,7 +3584,7 @@ impl Analyzer {
                             arms: vec![
                                 crate::ast::MatchArm {
                                     pattern: crate::ast::Pattern::Constructor {
-                                        path: vec!["pending".to_owned()],
+                                        path: vec!["Pending".to_owned()],
                                         fields: crate::ast::PatternFields::Unit,
                                     },
                                     guard: None,
@@ -3601,7 +3601,7 @@ impl Analyzer {
                                 },
                                 crate::ast::MatchArm {
                                     pattern: crate::ast::Pattern::Constructor {
-                                        path: vec!["ready".to_owned()],
+                                        path: vec!["Ready".to_owned()],
                                         fields: crate::ast::PatternFields::Positional(vec![
                                             crate::ast::Pattern::Binding(output.clone()),
                                         ]),
@@ -3626,7 +3626,7 @@ impl Analyzer {
                 arms: vec![
                     crate::ast::MatchArm {
                         pattern: crate::ast::Pattern::Constructor {
-                            path: vec!["pending".to_owned()],
+                            path: vec!["Pending".to_owned()],
                             fields: crate::ast::PatternFields::Unit,
                         },
                         guard: None,
@@ -3642,7 +3642,7 @@ impl Analyzer {
                     },
                     crate::ast::MatchArm {
                         pattern: crate::ast::Pattern::Constructor {
-                            path: vec!["ready".to_owned()],
+                            path: vec!["Ready".to_owned()],
                             fields: crate::ast::PatternFields::Positional(vec![
                                 crate::ast::Pattern::Binding(machine_output.clone()),
                             ]),

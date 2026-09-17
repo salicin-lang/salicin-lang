@@ -1380,7 +1380,7 @@ pub(super) fn substitute_function_types(
                 return;
             };
             function.return_type = Some(Type::Named(
-                "core::result::result".to_owned(),
+                "core::result::Result".to_owned(),
                 vec![error.clone(), result],
             ));
         }
@@ -2259,7 +2259,7 @@ pub(super) fn source_type_expression(source: &Type) -> Expr {
         Type::Borrow { .. } | Type::Tuple(_) | Type::Function { .. } => Expr::Type(source.clone()),
         Type::Array(element, length) => Expr::Call(
             Box::new(Expr::Call(
-                Box::new(Expr::Name("array".to_owned())),
+                Box::new(Expr::Name("Array".to_owned())),
                 vec![CallArg {
                     label: None,
                     value: source_type_expression(element),
@@ -2454,7 +2454,7 @@ pub(super) fn substitute_type_parameters(ty: &mut Type, substitutions: &HashMap<
                 if let Some(error) = effects.failure.as_deref() {
                     let logical_result = std::mem::replace(result.as_mut(), Type::Unit);
                     **result = Type::Named(
-                        "core::result::result".to_owned(),
+                        "core::result::Result".to_owned(),
                         vec![error.clone(), logical_result],
                     );
                 }

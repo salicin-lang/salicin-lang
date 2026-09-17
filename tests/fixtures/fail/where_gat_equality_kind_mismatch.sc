@@ -1,8 +1,8 @@
 let lend = trait {
-  let item<comptime a: access>: type
+  let Item<a: access>: type
 }
 
-let require<comptime t: type>(move value: t): ()
-= requires(t is lend && t.item<comptime r: region> == i32) {}
+let require<t: type>(move value: t): ()
+= requires(t is lend && t.Item<r: region> == i32) {}
 
 let main(): () = {}

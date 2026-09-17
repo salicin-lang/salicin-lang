@@ -27,7 +27,7 @@ The following foreign parameter and result mappings are accepted:
 | `u8`, `u16`, `u32`, `u64` | `uint8_t`, `uint16_t`, `uint32_t`, `uint64_t` |
 | `i128`, `u128` | Clang `__int128`, `unsigned __int128` extension |
 | `isize`, `usize` | `intptr_t`, `uintptr_t` |
-| `ptr(a)(t)` | a C object pointer with compatible pointee use |
+| `Ptr<a><T>` | a C object pointer with compatible pointee use |
 | result `()` | C `void` |
 
 `i128` and `u128` are supported because the current boundary is explicitly a
@@ -58,9 +58,9 @@ function values, closures, continuations, and effect callables are rejected
 as by-value foreign parameters and results.
 
 C array parameters decay to pointers and must therefore be declared as
-`ptr<t>` or `ptr<mut><t>`. C aggregates must likewise cross the current
+`Ptr<T>` or `Ptr<mut><T>`. C aggregates must likewise cross the current
 function boundary behind a raw pointer. Typed C function pointers are not yet
-part of the foreign surface; an opaque address may be stored in `ptr`, but
+part of the foreign surface; an opaque address may be stored in `Ptr`, but
 Salicin does not infer a callable C signature from it.
 
 ## C Data Layout
@@ -88,7 +88,7 @@ Target C ABIs do not pass aggregates using their in-memory LLVM struct type in
 all cases. For example, the current AArch64 Darwin Clang ABI coerces some
 small records to integer arrays and lowers larger returns through `sret`.
 Salicin therefore rejects by-value aggregate signatures until it has an
-explicit target ABI classifier. Passing a `struct(c)` behind `ptr` preserves
+explicit target ABI classifier. Passing a `struct(c)` behind `Ptr` preserves
 the verified data layout without pretending that ordinary Salicin aggregate
 calling convention matches C.
 

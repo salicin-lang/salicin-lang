@@ -57,29 +57,168 @@ const CATEGORY_SUFFIXES: &[&str] = &[
 ];
 
 pub(crate) fn naming_diagnostics(program: &Program, layer: &str) -> Vec<String> {
-    program
-        .items
-        .iter()
-        .zip(&program.item_visibilities)
-        .filter(|(_, visibility)| **visibility == Visibility::Public)
-        .filter_map(|(item, _)| {
-            let (name, category) = match item {
-                Item::Function(definition) => (&definition.name, "function"),
-                Item::Global(definition) => (&definition.name, "value"),
-                Item::Struct(definition) => (&definition.name, "struct"),
-                Item::Enum(definition) => (&definition.name, "enum"),
-                Item::Effect(definition) => (&definition.name, "effect"),
-                Item::Sort(definition) => (&definition.name, "sort"),
-                Item::TypeForm(definition) => (&definition.name, "type"),
-                Item::TypeAlias(definition) => (&definition.name, "type alias"),
-                Item::Trait(definition) => (&definition.name, "trait"),
-                Item::Extend(_) => return None,
-            };
-            validate_standard_name(name, category).map(|reason| {
-                format!("public {layer} {category} `{name}` violates standard naming: {reason}")
-            })
-        })
-        .collect()
+    let mut diagnostics = Vec::new();
+    let mut check = |name: &str, category: &str, style: StandardNameStyle| {
+        if let Some(reason) = validate_standard_name(name, category, style) {
+            diagnostics.push(format!(
+                "public {layer} {category} `{name}` violates standard naming: {reason}"
+            ));
+        }
+    };
+    for (item, visibility) in program.items.iter().zip(&program.item_visibilities) {
+        if *visibility != Visibility::Public {
+            continue;
+        }
+        match item {
+            Item::Function(definition) => {
+                check_function(definition, &mut check);
+            }
+            Item::Global(definition) => {
+                check(&definition.name, "value", StandardNameStyle::SnakeCase)
+            }
+            Item::Struct(definition) => {
+                check(
+                    &definition.name,
+                    "struct",
+                    StandardNameStyle::PascalCase,
+                );
+                check_compile_parameters(&definition.compile_groups, &mut check);
+            }
+            Item::Enum(definition) => {
+                let style = if matches!(definition.name.as_str(), "bool" | "never") {
+                    StandardNameStyle::Primitive
+                } else {
+                    StandardNameStyle::PascalCase
+                };
+                check(&definition.name, "enum", style);
+                check_compile_parameters(&definition.compile_groups, &mut check);
+                for variant in &definition.variants {
+                    let style = if definition.name == "bool"
+                        && matches!(variant.name.as_str(), "false" | "true")
+                    {
+                        StandardNameStyle::Primitive
+                    } else {
+                        StandardNameStyle::PascalCase
+                    };
+                    check(&variant.name, "enum variant", style);
+                }
+            }
+            Item::Effect(definition) => {
+                check(&definition.name, "effect", StandardNameStyle::SnakeCase);
+                check_compile_parameters(&definition.compile_groups, &mut check);
+                for operation in &definition.operations {
+                    check_function(operation, &mut check);
+                }
+            }
+            Item::Sort(definition) => {
+                check(&definition.name, "sort", StandardNameStyle::SnakeCase)
+            }
+            Item::TypeForm(definition) => {
+                let style = if matches!(
+                    definition.name.as_str(),
+                    "str"
+                        | "i8"
+                        | "i16"
+                        | "i32"
+                        | "i64"
+                        | "i128"
+                        | "isize"
+                        | "u8"
+                        | "u16"
+                        | "u32"
+                        | "u64"
+                        | "u128"
+                        | "usize"
+                ) {
+                    StandardNameStyle::Primitive
+                } else {
+                    StandardNameStyle::PascalCase
+                };
+                check(&definition.name, "type", style);
+                check_compile_parameters(&definition.compile_groups, &mut check);
+            }
+            Item::TypeAlias(definition) => {
+                check(
+                    &definition.name,
+                    "type alias",
+                    StandardNameStyle::PascalCase,
+                );
+                check_compile_parameters(&definition.compile_groups, &mut check);
+            }
+            Item::Trait(definition) => {
+                check(
+                    &definition.name,
+                    "trait",
+                    StandardNameStyle::PascalCase,
+                );
+                check_compile_parameters(&definition.compile_groups, &mut check);
+                for member in &definition.members {
+                    match member {
+                        TraitMember::AssociatedType {
+                            name,
+                            compile_groups,
+                            kind,
+                            ..
+                        } => {
+                            let style = match kind {
+                                crate::ast::AssociatedKind::Type => StandardNameStyle::PascalCase,
+                                crate::ast::AssociatedKind::Parameters => {
+                                    StandardNameStyle::SnakeCase
+                                }
+                            };
+                            check(name, "associated type", style);
+                            check_compile_parameters(compile_groups, &mut check);
+                        }
+                        TraitMember::Function(function) => {
+                            check_function(function, &mut check)
+                        }
+                    }
+                }
+            }
+            Item::Extend(definition) => {
+                check_compile_parameters(&definition.compile_groups, &mut check);
+                for member in &definition.members {
+                    match member {
+                        ExtendMember::Const(definition) => check(
+                                &definition.name,
+                                "associated type",
+                                StandardNameStyle::PascalCase,
+                        ),
+                        ExtendMember::Function(function) => {
+                            check_function(function, &mut check)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    diagnostics
+}
+
+fn check_function(
+    function: &crate::ast::Function,
+    check: &mut impl FnMut(&str, &str, StandardNameStyle),
+) {
+    check(
+        &function.name,
+        "function",
+        StandardNameStyle::SnakeCase,
+    );
+    check_compile_parameters(&function.compile_groups, check);
+}
+
+fn check_compile_parameters(
+    groups: &[Vec<crate::ast::CompileParam>],
+    check: &mut impl FnMut(&str, &str, StandardNameStyle),
+) {
+    for parameter in groups.iter().flatten() {
+        let style = if parameter.kind == crate::ast::Sort::Type {
+            StandardNameStyle::PascalCase
+        } else {
+            StandardNameStyle::SnakeCase
+        };
+        check(&parameter.name, "compile-time parameter", style);
+    }
 }
 
 pub(crate) fn delimiter_diagnostics(program: &Program, layer: &str) -> Vec<String> {
@@ -129,7 +268,30 @@ pub(crate) fn delimiter_diagnostics(program: &Program, layer: &str) -> Vec<Strin
     diagnostics
 }
 
-fn validate_standard_name(name: &str, category: &str) -> Option<String> {
+#[derive(Clone, Copy)]
+enum StandardNameStyle {
+    PascalCase,
+    SnakeCase,
+    Primitive,
+}
+
+fn validate_standard_name(
+    name: &str,
+    category: &str,
+    style: StandardNameStyle,
+) -> Option<String> {
+    if matches!(style, StandardNameStyle::Primitive) {
+        return None;
+    }
+    if matches!(style, StandardNameStyle::PascalCase) {
+        let mut bytes = name.bytes();
+        let pascal_case = bytes.next().is_some_and(|byte| byte.is_ascii_uppercase())
+            && bytes.all(|byte| byte.is_ascii_alphanumeric());
+        return (!pascal_case).then(|| {
+            "use ASCII `PascalCase` beginning with an uppercase letter and without underscores"
+                .into()
+        });
+    }
     let ascii_snake_case = !name.is_empty()
         && !name.starts_with('_')
         && !name.ends_with('_')
@@ -224,15 +386,6 @@ impl StdBundle {
                         )],
                     ));
                 };
-                if let Some(reason) = validate_standard_name(&name, "alias") {
-                    return Err(StdBundleError::new(
-                        edition,
-                        vec![format!(
-                            "embedded std alias `{}` violates standard naming: {reason}",
-                            display_export(module, &name)
-                        )],
-                    ));
-                }
                 if !matches!(
                     import.path.first().map(String::as_str),
                     Some("core" | "alloc" | "std")
@@ -395,21 +548,21 @@ mod tests {
         assert_eq!(bundle.exports().len(), 42);
         assert!(bundle.exports().iter().any(|export| {
             export.module == "algebra"
-                && export.name == "semigroup"
-                && export.target == ["std", "algebra", "semigroup"]
+                && export.name == "Semigroup"
+                && export.target == ["std", "algebra", "Semigroup"]
         }));
         assert!(bundle.exports().iter().any(|export| {
             export.module == "async"
-                && export.name == "spin"
-                && export.target == ["std", "async", "spin"]
+                && export.name == "Spin"
+                && export.target == ["std", "async", "Spin"]
         }));
         assert!(bundle.exports().iter().any(|export| {
             export.module == "io" && export.name == "io" && export.target == ["std", "io", "io"]
         }));
         assert!(bundle.exports().iter().any(|export| {
             export.module == "io"
-                && export.name == "io_error"
-                && export.target == ["std", "io", "io_error"]
+                && export.name == "IoError"
+                && export.target == ["std", "io", "IoError"]
         }));
         assert!(bundle.exports().iter().any(|export| {
             export.module == "test"
@@ -438,12 +591,12 @@ mod tests {
             .items
             .iter()
             .find_map(|item| match item {
-                Item::Enum(definition) if definition.name == "std::io::io_error_kind" => {
+                Item::Enum(definition) if definition.name == "std::io::IoErrorKind" => {
                     Some(definition)
                 }
                 _ => None,
             })
-            .expect("std.io.io_error_kind must be embedded")
+            .expect("std.io.IoErrorKind must be embedded")
             .variants
             .iter()
             .map(|variant| variant.name.as_str())
@@ -451,19 +604,19 @@ mod tests {
         assert_eq!(
             kinds,
             [
-                "not_found",
-                "permission_denied",
-                "already_exists",
-                "invalid_input",
-                "invalid_data",
-                "interrupted",
-                "would_block",
-                "write_zero",
-                "unexpected_eof",
-                "broken_pipe",
-                "unsupported",
-                "out_of_memory",
-                "other",
+                "NotFound",
+                "PermissionDenied",
+                "AlreadyExists",
+                "InvalidInput",
+                "InvalidData",
+                "Interrupted",
+                "WouldBlock",
+                "WriteZero",
+                "UnexpectedEof",
+                "BrokenPipe",
+                "Unsupported",
+                "OutOfMemory",
+                "Other",
             ]
         );
     }
@@ -472,16 +625,16 @@ mod tests {
     fn std_bundle_accepts_definitions_and_rejects_mirror_aliases() {
         StdBundle::from_modules(
             Edition::Edition2026,
-            &[("owned", "pub let service = trait {}\n")],
+            &[("owned", "pub let Service = trait {}\n")],
         )
         .unwrap();
         for (source, expected) in [
             (
-                "let option = core.option.option",
+                "let Option = core.Option.Option",
                 "mirrors another canonical path",
             ),
             (
-                "pub let option = core.option.option",
+                "pub let Option = core.Option.Option",
                 "mirrors another canonical path",
             ),
             (
@@ -514,8 +667,8 @@ mod tests {
     #[test]
     fn standard_names_encode_semantics_instead_of_declaration_categories() {
         let valid = parser::parse(
-            "pub let option<comptime t: type> = enum { some(t), none }\n\
-             pub let copyable = trait {}\n\
+            "pub let Option<T: type> = enum { Some(T), None }\n\
+             pub let Copyable = trait {}\n\
              pub let suspension = effect { let suspend(): () }\n",
         )
         .unwrap();
@@ -523,8 +676,14 @@ mod tests {
 
         for (source, expected) in [
             ("pub let network_effect = effect {}\n", "`_effect`"),
-            ("pub let iterator_trait = trait {}\n", "`_trait`"),
-            ("pub let message_type = struct {}\n", "`_type`"),
+            ("pub let Iterator_trait = trait {}\n", "PascalCase"),
+            ("pub let message_type = struct {}\n", "PascalCase"),
+            ("pub let State = enum { ready }\n", "enum variant"),
+            (
+                "pub let Iterator = trait { let item: type }\n",
+                "associated type",
+            ),
+            ("pub let Service(): () = {}\n", "snake_case"),
         ] {
             let program = parser::parse(source).unwrap();
             let diagnostics = naming_diagnostics(&program, "test");

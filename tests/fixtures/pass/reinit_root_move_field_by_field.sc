@@ -1,7 +1,7 @@
 let payload = struct { value: i32 }
 let pair = struct { left: payload, right: payload }
 
-let inspect(pair: borrow<pair>): i32 = { pair.right.value }
+let inspect(pair: Borrow<pair>): i32 = { pair.right.value }
 let consume_pair(move pair: pair): i32 = { pair.left.value + pair.right.value }
 
 let main(): i32 = {

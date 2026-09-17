@@ -1,54 +1,54 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 let unsafety = core.unsafe.unsafety
 
 let step = struct {
-  counter: ptr<mut><i32>,
+  counter: Ptr<mut><i32>,
   polls: i32,
   value: i32
 }
-let resource = struct { counter: ptr<mut><i32> }
+let resource = struct { counter: Ptr<mut><i32> }
 
-extend(step, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(step, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
   }
 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
   }
 }
 
-extend(step, future(())) {
-  let output = i32
+extend(step, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll<i32>.pending
+      Poll<i32>.Pending
     } else {
-      poll<i32>.ready(self.value)
+      Poll<i32>.Ready(self.value)
     }
   }
 }
 
 let consume(move resource: resource): () = { () }
 
-let allocate: with<unsafety>(): ptr<mut><i32> = {
+let allocate: with<unsafety>(): Ptr<mut><i32> = {
   unsafe {
     raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
 }
 
-let release: with<unsafety>(counter: ptr<mut><i32>): () = {
+let release: with<unsafety>(counter: Ptr<mut><i32>): () = {
   unsafe {
     raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
@@ -68,11 +68,11 @@ let main(): i32 = {
         first + second
       }
       match future.poll()
-        { pending -> () }
-        { ready(_) -> () }
+        { Pending -> () }
+        { Ready(_) -> () }
       match future.poll()
-        { pending -> () }
-        { ready(_) -> () }
+        { Pending -> () }
+        { Ready(_) -> () }
     }
 
     let drops = *counter

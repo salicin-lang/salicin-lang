@@ -1,59 +1,59 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 
 let left_step = struct {
   polled: bool,
-  remaining: ptr<mut><i32>
+  remaining: Ptr<mut><i32>
 }
 
 let right_step = struct {
   polled: bool,
-  remaining: ptr<mut><i32>
+  remaining: Ptr<mut><i32>
 }
 
-extend(left_step, future(())) {
-  let output = bool
+extend(left_step, Future(())) {
+  let Output = bool;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<bool> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
     if self.polled {
       let done = unsafe {
         *self.remaining = *self.remaining - 1
         *self.remaining == 0
       }
-      poll<bool>.ready(done)
+      Poll<bool>.Ready(done)
     } else {
       self.polled = true
-      poll<bool>.pending
+      Poll<bool>.Pending
     }
   }
 }
 
-extend(right_step, future(())) {
-  let output = bool
+extend(right_step, Future(())) {
+  let Output = bool;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<bool> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
     if self.polled {
       let done = unsafe {
         *self.remaining = *self.remaining - 1
         *self.remaining == 0
       }
-      poll<bool>.ready(done)
+      Poll<bool>.Ready(done)
     } else {
       self.polled = true
-      poll<bool>.pending
+      Poll<bool>.Pending
     }
   }
 }
 
-let left(remaining: ptr<mut><i32>): left_step = {
+let left(remaining: Ptr<mut><i32>): left_step = {
   left_step{ polled: false, remaining: remaining }
 }
 
-let right(remaining: ptr<mut><i32>): right_step = {
+let right(remaining: Ptr<mut><i32>): right_step = {
   right_step{ polled: false, remaining: remaining }
 }
 
@@ -81,17 +81,17 @@ let main(): i32 = {
   }
 
   let first = match future.poll()
-    { pending -> 1 }
-    { ready(_) -> 0 }
+    { Pending -> 1 }
+    { Ready(_) -> 0 }
   let second = match future.poll()
-    { pending -> 1 }
-    { ready(_) -> 0 }
+    { Pending -> 1 }
+    { Ready(_) -> 0 }
   let third = match future.poll()
-    { pending -> 1 }
-    { ready(_) -> 0 }
+    { Pending -> 1 }
+    { Ready(_) -> 0 }
   let fourth = match future.poll()
-    { pending -> 0 }
-    { ready(_) -> 18 }
+    { Pending -> 0 }
+    { Ready(_) -> 18 }
   let conditional = first + second + third + fourth
 
   let mut matched_remaining = 2
@@ -110,14 +110,14 @@ let main(): i32 = {
     }
   }
   let matched_first = match matched.poll()
-    { pending -> 1 }
-    { ready(_) -> 0 }
+    { Pending -> 1 }
+    { Ready(_) -> 0 }
   let matched_second = match matched.poll()
-    { pending -> 1 }
-    { ready(_) -> 0 }
+    { Pending -> 1 }
+    { Ready(_) -> 0 }
   let matched_third = match matched.poll()
-    { pending -> 0 }
-    { ready(_) -> 19 }
+    { Pending -> 0 }
+    { Ready(_) -> 19 }
 
   conditional + matched_first + matched_second + matched_third
 }

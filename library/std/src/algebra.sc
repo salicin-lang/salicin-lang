@@ -1,9 +1,9 @@
 /// Values with an associative combination operation.
-pub let semigroup = trait {
+pub let Semigroup = trait {
   let combine(move left: self, move right: self): self
 }
 
-/// A semigroup with an identity value.
-pub let monoid = trait(requires: self is semigroup) {
+/// A Semigroup with an identity value.
+pub let Monoid = trait(requires: self is Semigroup) {
   let empty(): self
 }

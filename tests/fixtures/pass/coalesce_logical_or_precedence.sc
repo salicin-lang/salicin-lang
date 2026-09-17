@@ -1,7 +1,7 @@
-let option = core.option
+let Option = core.Option
 
 let main(): i32 = {
-  let present = option<bool>.some(false)
+  let present = Option<bool>.Some(false)
   if present ?? false || true { 0 } else { 42 }
 }
 

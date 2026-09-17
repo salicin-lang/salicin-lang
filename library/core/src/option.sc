@@ -1,116 +1,116 @@
 /// Represents either a present value or the absence of one.
-pub let option<comptime t: type> = enum {
+pub let Option<T: type> = enum {
   /// Contains a value of type `T`.
-  some(t),
+  Some(T),
   /// Contains no value.
-  none,
+  None,
 }
 
 /// Common inspection, borrowing, transformation, fallback, and conversion
 /// operations for optional values.
-extend(option<t>) {
-  /// Returns whether this option contains a value.
-  let is_some(self: borrow<self>)(): bool = {
+extend(Option<T>) {
+  /// Returns whether this Option contains a value.
+  let is_some(self: Borrow<self>)(): bool = {
     match self
-      { some(_) -> true }
-      { none -> false }
+      { Some(_) -> true }
+      { None -> false }
   }
 
-  /// Returns whether this option is empty.
-  let is_none(self: borrow<self>)(): bool = {
+  /// Returns whether this Option is empty.
+  let is_none(self: Borrow<self>)(): bool = {
     match self
-      { some(_) -> false }
-      { none -> true }
+      { Some(_) -> false }
+      { None -> true }
   }
 
-  /// Projects this borrowed option into an option of a payload borrow.
-  let as_ref<comptime a: access, comptime r: region>
-    (self: borrow<a><r><self>)(): option<borrow<a><r><t>> = {
+  /// Projects this borrowed Option into an Option of a payload Borrow.
+  let as_ref<a: access, r: region>
+    (self: Borrow<a><r><self>)(): Option<Borrow<a><r><T>> = {
     match self
-      { some(value) -> option.some(borrow<a>(value)) }
-      { none -> option.none }
+      { Some(value) -> Option.Some(borrow<a>(value)) }
+      { None -> Option.None }
   }
 
-  /// Transforms `some` once and preserves `none`.
-  let map<comptime e: effects, comptime u: type>: with<e>(move self)(move transform: with<e>((t): u)): option<u> = {
+  /// Transforms `Some` once and preserves `None`.
+  let map<e: effects, U: type>: with<e>(move self)(move transform: with<e>((T): U)): Option<U> = {
     match self
-      { some(value) -> option.some(transform(value)) }
-      { none -> option.none }
+      { Some(value) -> Option.Some(transform(value)) }
+      { None -> Option.None }
   }
 
-  /// Runs `next` once for `some` and preserves `none`.
-  let and_then<comptime e: effects, comptime u: type>: with<e>(move self)(move next: with<e>((t): option<u>)): option<u> = {
+  /// Runs `next` once for `Some` and preserves `None`.
+  let and_then<e: effects, U: type>: with<e>(move self)(move next: with<e>((T): Option<U>)): Option<U> = {
     match self
-      { some(value) -> next(value) }
-      { none -> option.none }
+      { Some(value) -> next(value) }
+      { None -> Option.None }
   }
 
-  /// Extracts `some` or returns the eagerly evaluated fallback.
-  let unwrap_or(move self)(move fallback: t): t = {
+  /// Extracts `Some` or returns the eagerly evaluated fallback.
+  let unwrap_or(move self)(move fallback: T): T = {
     match self
-      { some(value) -> value }
-      { none -> fallback }
+      { Some(value) -> value }
+      { None -> fallback }
   }
 
-  /// Extracts `some` or evaluates `fallback` exactly once for `none`.
-  let unwrap_or_else<comptime e: effects>: with<e>(move self)(move fallback: with<e>((): t)): t = {
+  /// Extracts `Some` or evaluates `fallback` exactly once for `None`.
+  let unwrap_or_else<e: effects>: with<e>(move self)(move fallback: with<e>((): T)): T = {
     match self
-      { some(value) -> value }
-      { none -> fallback() }
+      { Some(value) -> value }
+      { None -> fallback() }
   }
 
-  /// Converts `some` to `ok` and `none` to the eagerly evaluated error.
-  let ok_or<comptime error: type>
+  /// Converts `Some` to `Ok` and `None` to the eagerly evaluated error.
+  let ok_or<Error: type>
     (move self)
-    (move error: error): core.result<error><t> = {
+    (move error: Error): core.Result<Error><T> = {
     match self
-      { some(value) -> core.result.ok(value) }
-      { none -> core.result.err(error) }
+      { Some(value) -> core.Result.Ok(value) }
+      { None -> core.Result.Err(error) }
   }
 
-  /// Converts `some` to `ok` and lazily constructs the error for `none`.
-  let ok_or_else<comptime e: effects, comptime error: type>: with<e>(move self)(move error: with<e>((): error)): core.result<error><t> = {
+  /// Converts `Some` to `Ok` and lazily constructs the error for `None`.
+  let ok_or_else<e: effects, Error: type>: with<e>(move self)(move error: with<e>((): Error)): core.Result<Error><T> = {
     match self
-      { some(value) -> core.result.ok(value) }
-      { none -> core.result.err(error()) }
+      { Some(value) -> core.Result.Ok(value) }
+      { None -> core.Result.Err(error()) }
   }
 }
 
 /// Provides `?.` chaining for `Option`.
-extend(option<t>, core.flow.chain) {
-  /// The payload type produced by a successful option.
-  let item = t
+extend(Option<T>, core.flow.Chain) {
+  /// The payload type produced by a successful Option.
+  let Item = T
   /// Rebuilds `Option` around a transformed payload type.
-  let rebind = option
+  let Rebind = Option
 
   /// Applies `transform` to `Some` and propagates `None`.
-  let chain<comptime e: effects, comptime u: type>: with<e>(self)(transform: with<e>((t): u)): option<u> = {
+  let chain<e: effects, U: type>: with<e>(self)(transform: with<e>((T): U)): Option<U> = {
     match self
-      { some(value) -> option.some(transform(value)) }
-      { none -> option.none }
+      { Some(value) -> Option.Some(transform(value)) }
+      { None -> Option.None }
   }
 }
 
 /// Provides `??` fallback evaluation for `Option`.
-extend(option<t>, core.flow.coalesce) {
+extend(Option<T>, core.flow.Coalesce) {
   /// The value type returned by coalescing.
-  let item = t
+  let Item = T
 
   /// Extracts `Some` or evaluates `fallback` for `None`.
-  let coalesce<comptime e: effects>: with<e>(self)(fallback: with<e>((): t)): t = {
+  let coalesce<e: effects>: with<e>(self)(fallback: with<e>((): T)): T = {
     match self
-      { some(value) -> value }
-      { none -> fallback() }
+      { Some(value) -> value }
+      { None -> fallback() }
   }
 }
 
 /// Provides postfix `!` extraction for `Option`.
-extend(option<t>, core.flow.unwrap) {
-  let output = t
+extend(Option<T>, core.flow.Unwrap) {
+  let Output = T
 
-  let unwrap(move self): t = {
+  let unwrap(move self): T = {
     match self
-      { some(value) -> value }
-      { none -> unsafe { raw_trap() } }
+      { Some(value) -> value }
+      { None -> unsafe { raw_trap() } }
   }
 }

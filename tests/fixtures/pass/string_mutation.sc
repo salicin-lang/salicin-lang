@@ -1,7 +1,7 @@
-let scalar(value: u32): core.string.unicode_scalar = {
-  match core.string.unicode_scalar.from_u32(value)
-    { some(value) -> value }
-    { none ->
+let scalar(value: u32): core.string.UnicodeScalar = {
+  match core.string.UnicodeScalar.from_u32(value)
+    { Some(value) -> value }
+    { None ->
       unsafe {
         raw_trap()
       }
@@ -9,13 +9,13 @@ let scalar(value: u32): core.string.unicode_scalar = {
 }
 
 let construction_checks(): bool = {
-  let source: string = "柳A"
+  let source: String = "柳A"
   let source_view = source.as_str()
-  let copied = string.from_str(source_view)
-  let from_scalar = string.from_unicode_scalar(scalar(128578))
-  let expected_scalar: string = "🙂"
-  let empty = string.new()
-  let reserved = string.with_capacity(12)
+  let copied = String.from_str(source_view)
+  let from_scalar = String.from_unicode_scalar(scalar(128578))
+  let expected_scalar: String = "🙂"
+  let empty = String.new()
+  let reserved = String.with_capacity(12)
   copied == source &&
     copied.capacity() == 4 &&
     from_scalar == expected_scalar &&
@@ -27,14 +27,14 @@ let construction_checks(): bool = {
 }
 
 let append_checks(): bool = {
-  let mut text: string = "A"
+  let mut text: String = "A"
   text.reserve(7)
   let reserved = text.capacity() >= 8
   text.push(scalar(26611))
-  let suffix: string = "🙂"
+  let suffix: String = "🙂"
   let suffix_view = suffix.as_str()
   text.push_str(suffix_view)
-  let expected: string = "A柳🙂"
+  let expected: String = "A柳🙂"
   let view = text.as_str()
   let boundary = view.is_char_boundary(4)
   reserved &&
@@ -45,12 +45,12 @@ let append_checks(): bool = {
 }
 
 let truncation_checks(): bool = {
-  let source: string = "A柳🙂"
+  let source: String = "A柳🙂"
   let source_view = source.as_str()
-  let mut text = string.from_str(source_view)
+  let mut text = String.from_str(source_view)
   let invalid = !text.truncate(2) && text.len_bytes() == 8
   let valid = text.truncate(4)
-  let expected: string = "A柳"
+  let expected: String = "A柳"
   let unchanged = !text.truncate(9) && text == expected
   text.clear()
   invalid &&

@@ -1,9 +1,9 @@
 let resource = struct { value: i32 }
-let cell<comptime t: type> = struct { value: t }
+let cell<t: type> = struct { value: t }
 
 extend(cell(t))
-(requires: t is copyable) {
-  let duplicate(self: borrow<self>)(): t = { self.value }
+(requires: t is Copyable) {
+  let duplicate(self: Borrow<self>)(): t = { self.value }
 }
 
 let main(): i32 = {

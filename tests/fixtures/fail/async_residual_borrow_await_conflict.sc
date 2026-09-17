@@ -1,5 +1,5 @@
-let future = core.async.future
-let poll = core.async.poll
+let Future = core.async.Future
+let Poll = core.async.Poll
 
 let ask = effect {
   let ask(): i32
@@ -9,13 +9,13 @@ let step = struct {
   value: i32,
 }
 
-extend(step, future(())) {
-  let output = i32
+extend(step, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
-    poll<i32>.ready(self.value)
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
+    Poll<i32>.Ready(self.value)
   }
 }
 
@@ -23,7 +23,7 @@ let make_step: with<ask>(): step = {
   step{ value: ask.ask() }
 }
 
-let program(value: borrow<mut><i32>): i32 = {
+let program(value: Borrow<mut><i32>): i32 = {
   let future = async {
     let amount = await make_step()
     value = value + amount

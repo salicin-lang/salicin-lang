@@ -1,52 +1,52 @@
 /// Trait backing unary logical or bitwise not.
-pub let not = trait {
+pub let Not = trait {
   /// Result type produced by not.
-  let output: type
+  let Output: type
   /// Inverts `self`.
-  let not(self)(): output
+  let not(self)(): Output
 }
 
 /// Trait backing binary `&`.
-pub let bit_and<comptime rhs: type> = trait {
+pub let BitAnd<Rhs: type> = trait {
   /// Result type produced by bitwise and.
-  let output: type
+  let Output: type
   /// Computes bitwise and with `rhs`.
   let bit_and(self)
-    (rhs: rhs): output
+    (rhs: Rhs): Output
 }
 
 /// Trait backing binary `|`.
-pub let bit_or<comptime rhs: type> = trait {
+pub let BitOr<Rhs: type> = trait {
   /// Result type produced by bitwise or.
-  let output: type
+  let Output: type
   /// Computes bitwise or with `rhs`.
   let bit_or(self)
-    (rhs: rhs): output
+    (rhs: Rhs): Output
 }
 
 /// Trait backing binary `^`.
-pub let bit_xor<comptime rhs: type> = trait {
+pub let BitXor<Rhs: type> = trait {
   /// Result type produced by bitwise xor.
-  let output: type
+  let Output: type
   /// Computes bitwise xor with `rhs`.
   let bit_xor(self)
-    (rhs: rhs): output
+    (rhs: Rhs): Output
 }
 
 /// Trait backing binary `<<`.
-pub let shl<comptime rhs: type> = trait {
+pub let Shl<Rhs: type> = trait {
   /// Result type produced by left shift.
-  let output: type
+  let Output: type
   /// Shifts `self` left by `rhs`.
   let shl(self)
-    (rhs: rhs): output
+    (rhs: Rhs): Output
 }
 
 /// Trait backing binary `>>`.
-pub let shr<comptime rhs: type> = trait {
+pub let Shr<Rhs: type> = trait {
   /// Result type produced by right shift.
-  let output: type
+  let Output: type
   /// Shifts `self` right by `rhs`.
   let shr(self)
-    (rhs: rhs): output
+    (rhs: Rhs): Output
 }

@@ -1,7 +1,7 @@
-let result = core.result
+let Result = core.Result
 let throwing = core.error.throwing
 
-let make_error(count: borrow<mut><i32>): bool = {
+let make_error(count: Borrow<mut><i32>): bool = {
   count = count + 1
   true
 }
@@ -12,10 +12,10 @@ let fail: with<throwing<bool>>(): i32 = {
 }
 
 let main(): i32 = {
-  let result: result<bool><i32> = try { fail() }
+  let result: Result<bool><i32> = try { fail() }
   match result
-    { ok(_) -> 0 }
-    { err(error) -> if error { 42 } else { 0 } }
+    { Ok(_) -> 0 }
+    { Err(error) -> if error { 42 } else { 0 } }
 }
 
 test("throw_error_once.sc") {

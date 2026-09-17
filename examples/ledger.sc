@@ -1,75 +1,75 @@
 // A complete effectful batch-processing program over the frozen M0 core. The
 // process exits with 42 after applying four valid transactions, or 1 on overdraft.
 
-let option = core.option
-let iterator = core.iter.iterator
-let into_iterator = core.iter.into_iterator
-let owned_item = core.iter.owned_item
+let Option = core.Option
+let Iterator = core.iter.Iterator
+let IntoIterator = core.iter.IntoIterator
+let OwnedItem = core.iter.OwnedItem
 
-let transaction = enum {
-  credit(i32),
-  debit(i32),
+let Transaction = enum {
+  Credit(i32),
+  Debit(i32),
 }
 
 let overdraft = effect {
   let reject(): never
 }
 
-let ledger = struct {
+let Ledger = struct {
   balance: i32,
   processed: i32,
 }
 
-let account = trait {
-  let credit(self: borrow<mut><self>)(amount: i32): ()
-  let debit(self: borrow<mut><self>)(amount: i32): ()
-  let snapshot(self: borrow(self))(): i32
+let Account = trait {
+  let credit(self: Borrow<mut><self>)(amount: i32): ()
+  let debit(self: Borrow<mut><self>)(amount: i32): ()
+  let snapshot(self: Borrow<self>)(): i32
 }
 
-extend(ledger, account) {
-  let credit(self: borrow<mut><self>)(amount: i32): () = {
+extend(Ledger, Account) {
+  let credit(self: Borrow<mut><self>)(amount: i32): () = {
     self.balance = self.balance + amount
     self.processed = self.processed + 1
   }
 
-  let debit(self: borrow<mut><self>)(amount: i32): () = {
+  let debit(self: Borrow<mut><self>)(amount: i32): () = {
     self.balance = self.balance - amount
     self.processed = self.processed + 1
   }
 
-  let snapshot(self: borrow(self))(): i32 = {
+  let snapshot(self: Borrow<self>)(): i32 = {
     if self.processed == 4 { self.balance } else { 0 }
   }
 }
 
-let batch = struct {
+let Batch = struct {
   index: i32,
 }
 
-extend(batch, iterator) {
-  let item = owned_item<transaction>
+extend(Batch, Iterator) {
+  let Item = OwnedItem<Transaction>;
 
-  let next<comptime r: region>(self: borrow<mut><r><self>)(): option<transaction> = {
-    let transaction: option<transaction> = match self.index
-      { 0 -> some(transaction.credit(30)) }
-      { 1 -> some(transaction.debit(8)) }
-      { 2 -> some(transaction.credit(25)) }
-      { 3 -> some(transaction.debit(5)) }
-      { _ -> none }
+  let next<r: region>(self: Borrow<mut><r><self>)(): Option<Transaction> = {
+    let transaction: Option<Transaction> = match self.index
+      { 0 -> Some(Transaction.Credit(30)) }
+      { 1 -> Some(Transaction.Debit(8)) }
+      { 2 -> Some(Transaction.Credit(25)) }
+      { 3 -> Some(Transaction.Debit(5)) }
+      { _ -> None }
     self.index = self.index + 1
     transaction
   }
 }
 
-extend(batch, into_iterator) {
-  let iter = batch
+extend(Batch, IntoIterator) {
+  let Iter = Batch;
 
-  let into_iter(move self)(): batch = {
+  let into_iter(move self)(): Batch = {
     self
   }
 }
 
-let count_batch(move batch: batch): i32 = {
+let count_batch(move batch: Batch): i32 = {
   let mut count = 0
   for batch { _ ->
     count = count + 1
@@ -77,10 +77,10 @@ let count_batch(move batch: batch): i32 = {
   count
 }
 
-let apply: with<overdraft>(ledger: borrow<mut><ledger>)(move transaction: transaction): () = {
+let apply: with<overdraft>(ledger: Borrow<mut><Ledger>)(move transaction: Transaction): () = {
   match transaction
-    { credit(amount) -> ledger.credit(amount) }
-    { debit(amount) ->
+    { Credit(amount) -> ledger.credit(amount) }
+    { Debit(amount) ->
       if amount > ledger.balance {
         overdraft.reject()
       } else {
@@ -89,8 +89,8 @@ let apply: with<overdraft>(ledger: borrow<mut><ledger>)(move transaction: transa
     }
 }
 
-let process: with<overdraft>(move batch: batch): i32 = {
-  let mut ledger = ledger{ balance: 0, processed: 0 }
+let process: with<overdraft>(move batch: Batch): i32 = {
+  let mut ledger = Ledger{ balance: 0, processed: 0 }
   for batch { transaction ->
     apply(ledger)(transaction)
   }
@@ -99,8 +99,8 @@ let process: with<overdraft>(move batch: batch): i32 = {
 
 let main(): i32 = {
   let balance = overdraft.handle reject { () -> 1 } action {
-    process(batch{ index: 0 })
+    process(Batch{ index: 0 })
   }
-  let count = count_batch(batch{ index: 0 })
+  let count = count_batch(Batch{ index: 0 })
   if balance == 42 && count == 4 { 42 } else { 1 }
 }

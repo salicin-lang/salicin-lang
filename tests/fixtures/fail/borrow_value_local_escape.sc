@@ -1,8 +1,8 @@
-let pass<comptime r: region>(value: borrow<r><i32>): borrow<r><i32> = { value }
+let pass<r: region>(value: Borrow<r><i32>): Borrow<r><i32> = { value }
 
-let bad<comptime r: region>(seed: borrow<r><i32>): borrow<r><i32> = {
+let bad<r: region>(seed: Borrow<r><i32>): Borrow<r><i32> = {
   let local = seed
-  let reference: borrow<i32> = borrow(local)
+  let reference: Borrow<i32> = borrow(local)
   pass(reference)
 }
 

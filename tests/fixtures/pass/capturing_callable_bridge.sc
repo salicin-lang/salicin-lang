@@ -5,12 +5,12 @@ let ask = effect {
 }
 
 let resource = struct {
-  counter: ptr<mut><i32>,
+  counter: Ptr<mut><i32>,
   value: i32,
 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -28,7 +28,7 @@ let repeat(move action: (): ()): () = {
   action()
 }
 
-let effect_once<comptime e: effects>: with<e>(move action: with<e>((): i32)): i32 = {
+let effect_once<e: effects>: with<e>(move action: with<e>((): i32)): i32 = {
   action()
 }
 

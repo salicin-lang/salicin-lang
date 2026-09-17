@@ -1,8 +1,8 @@
-let option = core.option
+let Option = core.Option
 
 let main(): i32 = {
-  let value: option<bool> = option<i32>.some(42)
+  let value: Option<bool> = Option<i32>.Some(42)
   match value
-    { some(flag) -> if flag { 42 } else { 0 } }
-    { none -> 0 }
+    { Some(flag) -> if flag { 42 } else { 0 } }
+    { None -> 0 }
 }

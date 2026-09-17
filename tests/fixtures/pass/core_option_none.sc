@@ -1,10 +1,10 @@
-let option = core.option
+let Option = core.Option
 
 let main(): i32 = {
-  let value: option<i32> = option.none
+  let value: Option<i32> = Option.None
   match value
-    { some(_) -> 0 }
-    { none -> 42 }
+    { Some(_) -> 0 }
+    { None -> 42 }
 }
 
 test("core_option_none.sc") {

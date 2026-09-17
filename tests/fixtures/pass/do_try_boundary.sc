@@ -1,4 +1,4 @@
-let result = core.result
+let Result = core.Result
 let throwing = core.error.throwing
 
 let read: with<throwing<bool>>(fail: bool): i32 = {
@@ -6,24 +6,24 @@ let read: with<throwing<bool>>(fail: bool): i32 = {
 }
 
 let main(): i32 = {
-  let propagated: result<bool><i32> = try {
+  let propagated: Result<bool><i32> = try {
     read(true) + 2
   }
-  let thrown: result<bool><i32> = try {
+  let thrown: Result<bool><i32> = try {
     throw(true)
   }
-  let success: result<bool><i32> = try {
+  let success: Result<bool><i32> = try {
     read(false) + 2
   }
   let propagation_ok = match propagated
-    { ok(_) -> false }
-    { err(error) -> error }
+    { Ok(_) -> false }
+    { Err(error) -> error }
   let throw_ok = match thrown
-    { ok(_) -> false }
-    { err(error) -> error }
+    { Ok(_) -> false }
+    { Err(error) -> error }
   let value = match success
-    { ok(value) -> value }
-    { err(_) -> 0 }
+    { Ok(value) -> value }
+    { Err(_) -> 0 }
   if propagation_ok && throw_ok && value == 42 { 42 } else { 0 }
 }
 

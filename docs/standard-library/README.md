@@ -52,14 +52,14 @@ library/
 
 ## Prelude policy
 
-The edition prelude must stay small. It contains the universal `never`, `copyable`, and `droppable`
-contracts, primitive type names, and the `array`, `ptr`, `size_of`, and `align_of`
+The edition prelude must stay small. It contains the universal `never`, `Copyable`, and `Droppable`
+contracts, primitive type names, and the `Array`, `Ptr`, `size_of`, and `align_of`
 memory contracts that compiler-generated types and low-level library code routinely need.
-`option` and `result` are fundamental `core` declarations:
+`Option` and `Result` are fundamental `core` declarations:
 
 ```sc fragment
-let option = core.option
-let result = core.result
+let Option = core.Option
+let Result = core.Result
 ```
 
 Operator traits are aliased from the `core.ops` facade, `?.`/`??` protocols from `core.flow`, generic
@@ -72,9 +72,9 @@ Declarations should be named through their canonical layer or given
 transparent aliases with ordinary `let`; for example:
 
 ```sc fragment
-let box = alloc.boxed.box
-let vec = alloc.vec.vec
-let string = core.string.string
+let Box = alloc.boxed.Box
+let Vec = alloc.vec.Vec
+let String = core.string.String
 ```
 
 The compiler validates and embeds the matching `library/std` source bundle
@@ -89,31 +89,33 @@ shape.
 Unsupported hosts are rejected before semantic analysis. The initial
 supported pairs are Linux/x86-64 and macOS/arm64.
 Non-prelude declarations have qualified internal identities, so a user declaration without such an alias may
-still be named `add`, `box`, or `vec`. A project dependency or top-level file module cannot claim
+still be named `add`, `Box`, or `Vec`. A project dependency or top-level file module cannot claim
 any of these standard namespaces.
-`core.ops` uses the same rule: `add`, `sub`, `mul`, `div`, `rem`, `eq`, `partial_ordering`,
-`partial_ord`, `neg`, `not`, `bit_and`, `bit_or`, `bit_xor`, `shl`, `shr`, and their `_assign` mutation
+`core.ops` uses the same rule: `Add`, `Sub`, `Mul`, `Div`, `Rem`, `Eq`, `PartialOrdering`,
+`PartialOrd`, `Neg`, `Not`, `BitAnd`, `BitOr`, `BitXor`, `Shl`, `Shr`, and their `*Assign` mutation
 traits require ordinary aliases when
 named. Merely writing the corresponding operator token does not require importing its protocol.
-`core.flow.chain` and `core.flow.coalesce` require ordinary aliases when named directly.
-`throwing<e>`, `unsafety`, and `suspension` are ordinary standard effect declarations in `core.error`,
+`core.flow.Chain` and `core.flow.Coalesce` require ordinary aliases when named directly.
+`throwing<E>`, `unsafety`, and `suspension` are ordinary standard effect declarations in `core.error`,
 `core.unsafe`, and `core.async`. Source that names them binds them normally. `try` and `throw` target
 `core.error`; `unsafe` targets `core.unsafe`; structural control spellings such as `do` and `loop`
 target `core.control`. These contextual spellings do not inject module exports as ordinary
 unqualified names.
-Effect identities and row parameters use the same `snake_case` convention as every other source
-identifier; for example, `comptime e: effects`.
+Effect identities and row parameters use `snake_case`; for example,
+`<e: effects>`.
 Standard declaration names describe semantics rather than encoding their
 kind: types use entity/state nouns, traits use capability/role/operation
 names, and effects use abstract behavior or capability nouns such as
-`throwing`, `suspension`, and `unsafety`. Embedded public names are ASCII
-`snake_case` and may not use category suffixes such as `_type`, `_trait`, or
-`_effect`; ordinary user declarations are not subject to this library gate.
+`throwing`, `suspension`, and `unsafety`. Embedded public types, type parameters, type forms,
+traits, variants, and associated types use ASCII `PascalCase`; functions,
+methods, values, fields, modules, effects, and sorts use ASCII `snake_case`.
+Names may not use category suffixes such as `_type`, `_trait`, or `_effect`;
+ordinary user declarations are not subject to this library gate.
 The `effect` identity sort, `effects` row sort, finite `access` sort, and parameter modifier functions use
 contextual names such as `pure`, `shared`, `mut`, `copy`, and `move` in parameter positions.
-`semigroup` and `monoid` require aliases from `std.algebra` when named.
-`functor`, `applicative`, and `monad` require aliases from `std.functional` when named.
-`iterator` and `into_iterator` require ordinary aliases from `core.iter` when named in an implementation
+`Semigroup` and `Monoid` require aliases from `std.algebra` when named.
+`Functor`, `Applicative`, and `Monad` require aliases from `std.functional` when named.
+`Iterator` and `IntoIterator` require ordinary aliases from `core.iter` when named in an implementation
 or bound. Writing `for value { pattern -> ... }` binds to their validated lang-item identities
 without aliasing them and cannot be redirected by same-named inherent methods or traits.
 
@@ -124,7 +126,7 @@ dependencies.
 
 The complete [`examples/inventory`](../../examples/inventory) package exercises
 file modules, canonical runtime string literals across module boundaries, a
-vector of non-`copyable` values, consuming iteration, and user trait dispatch.
+vector of non-`Copyable` values, consuming iteration, and user trait dispatch.
 
 The accepted [initial surface contract](../project/standard-library-surface.md) defines the next
 modules, host boundary, failure policy, and minimum API matrix.

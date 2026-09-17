@@ -1,7 +1,7 @@
-let box = alloc.boxed.box
+let Box = alloc.Box
 
 let main(): i32 = {
-  box.new(42).read()
+  Box.new(42).read()
 }
 
 test("box_i32.sc") {

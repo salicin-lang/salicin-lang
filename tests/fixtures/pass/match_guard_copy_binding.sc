@@ -1,10 +1,10 @@
 let payload = struct { value: i32 }
 
-extend(payload, copyable) {}
+extend(payload, Copyable) {}
 
 let event = enum {
   value( value: payload ),
-  empty,
+  Empty,
 }
 
 let is_answer(payload: payload): bool = { payload.value == 42 }
@@ -12,7 +12,7 @@ let is_answer(payload: payload): bool = { payload.value == 42 }
 let classify(event: event): i32 = { match event
     { event.value( value: payload ) if is_answer(payload) -> payload.value }
     { event.value( value: _ ) -> 0 }
-    { event.empty -> 0 }
+    { event.Empty -> 0 }
 }
 
 let main(): i32 = { classify(event.value( value: payload{ value: 42 } )) }

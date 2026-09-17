@@ -1,9 +1,9 @@
-let vec = alloc.vec.vec
+let Vec = alloc.Vec
 
-let read(value: borrow<i32>): i32 = { value }
+let read(value: Borrow<i32>): i32 = { value }
 
 let main(): i32 = {
-  let mut values = vec.new(t: i32)()
+  let mut values = Vec.new<T: i32>()
   values.push(20)
   values.push(0)
   do {

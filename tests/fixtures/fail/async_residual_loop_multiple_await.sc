@@ -1,5 +1,5 @@
-let future = core.async.future
-let poll = core.async.poll
+let Future = core.async.Future
+let Poll = core.async.Poll
 
 let ask = effect {
   let ask(): bool
@@ -9,13 +9,13 @@ let step = struct {
   done: bool,
 }
 
-extend(step, future(())) {
-  let output = bool
+extend(step, Future(())) {
+  let Output = bool;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<bool> = {
-    poll<bool>.ready(self.done)
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
+    Poll<bool>.Ready(self.done)
   }
 }
 
@@ -37,7 +37,7 @@ let main(): i32 = {
         }
       }
       match future.poll()
-        { ready(value) -> value }
-        { pending -> 0 }
+        { Ready(value) -> value }
+        { Pending -> 0 }
     }
 }

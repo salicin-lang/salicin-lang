@@ -1,12 +1,12 @@
 /// Auto marker for types whose owning value may be safely relocated.
-pub let movable = trait {}
+pub let Movable = trait {}
 
 /// Marker trait for types that may be duplicated by implicit copy.
-pub let copyable = trait(requires: self is movable) {}
+pub let Copyable = trait(requires: self is Movable) {}
 
 /// Trait for types that need cleanup when their owning value leaves scope.
-pub let droppable = trait {
+pub let Droppable = trait {
   /// Releases resources owned by `self`.
-  let drop(self: borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): ()
 }

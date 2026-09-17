@@ -1,12 +1,12 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 
 let marker = struct {
-  drops: ptr<mut><i32>
+  drops: Ptr<mut><i32>
 }
 
-extend(marker, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(marker, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -14,20 +14,20 @@ extend(marker, droppable) {
 }
 
 let step = struct {
-  drops: ptr<mut><i32>
+  drops: Ptr<mut><i32>
 }
 
-extend(step, future(())) {
-  let output = marker
+extend(step, Future(())) {
+  let Output = marker;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<marker> = {
-    poll<marker>.ready(marker{ drops: self.drops })
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<marker> = {
+    Poll<marker>.Ready(marker{ drops: self.drops })
   }
 }
 
-let step(drops: ptr<mut><i32>): step = {
+let step(drops: Ptr<mut><i32>): step = {
   step{ drops: drops }
 }
 
@@ -51,8 +51,8 @@ let main(): i32 = {
   }
 
   match future.poll()
-    { pending -> () }
-    { ready(marker) -> () }
+    { Pending -> () }
+    { Ready(marker) -> () }
   40 + unsafe { *drops_ptr }
 }
 

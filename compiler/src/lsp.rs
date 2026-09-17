@@ -892,7 +892,6 @@ fn semantic_token_type(kind: &TokenKind) -> Option<u32> {
         | TokenKind::Mut
         | TokenKind::Copy
         | TokenKind::Move
-        | TokenKind::Comptime
         | TokenKind::Borrow
         | TokenKind::Type
         | TokenKind::Region

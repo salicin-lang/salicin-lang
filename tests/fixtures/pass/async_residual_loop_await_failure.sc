@@ -1,32 +1,32 @@
-let future = core.async.future
-let poll = core.async.poll
-let result = core.result
+let Future = core.async.Future
+let Poll = core.async.Poll
+let Result = core.Result
 let throwing = core.error.throwing
 
 let step = struct {
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
   done: bool,
 }
 
-extend(step, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(step, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-extend(step, future(())) {
-  let output = bool
+extend(step, Future(())) {
+  let Output = bool;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<bool> = {
-    poll<bool>.ready(self.done)
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
+    Poll<bool>.Ready(self.done)
   }
 }
 
-let increment(calls: ptr<mut><i32>): i32 = {
+let increment(calls: Ptr<mut><i32>): i32 = {
   unsafe {
     *calls = *calls + 1
     *calls
@@ -34,8 +34,8 @@ let increment(calls: ptr<mut><i32>): i32 = {
 }
 
 let make_step: with<throwing<bool>>(
-  drops: ptr<mut><i32>,
-  calls: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
+  calls: Ptr<mut><i32>,
   fail_at: i32,
 ): step = {
   let call = increment(calls)
@@ -47,11 +47,11 @@ let make_step: with<throwing<bool>>(
 }
 
 let run(
-  drops: ptr<mut><i32>,
-  calls: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
+  calls: Ptr<mut><i32>,
   fail_at: i32,
 ): i32 = {
-  let result: result<bool><i32> = try {
+  let result: Result<bool><i32> = try {
     let mut future = async {
       loop {
         let done = await make_step(drops, calls, fail_at)
@@ -66,17 +66,17 @@ let run(
     if fail_at == 0 {
       let second = future.poll()
       match first
-        { pending -> match second
-          { ready(value) -> value }
-          { pending -> 0 } }
-        { ready(_) -> 0 }
+        { Pending -> match second
+          { Ready(value) -> value }
+          { Pending -> 0 } }
+        { Ready(_) -> 0 }
     } else {
       0
     }
   }
   match result
-    { ok(value) -> value }
-    { err(error) -> if error { 42 } else { 0 } }
+    { Ok(value) -> value }
+    { Err(error) -> if error { 42 } else { 0 } }
 }
 
 let main(): i32 = {

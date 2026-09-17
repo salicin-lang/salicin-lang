@@ -1,8 +1,8 @@
-let slice = core.memory.slice
+let Slice = core.memory.Slice
 
 let main(): i32 = {
-  let values: array<i32><1> = [42]
-  let view: borrow<slice<i32>> = borrow(values)
+  let values: Array<i32><1> = [42]
+  let view: Borrow<Slice<i32>> = borrow(values)
   let pointer = unsafe {
     raw_slice_ptr(mut)(view)
   }

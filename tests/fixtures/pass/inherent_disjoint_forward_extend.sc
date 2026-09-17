@@ -1,5 +1,5 @@
 extend(number) {
-  let read(self: borrow<self>)(): i32 = { self.value }
+  let read(self: Borrow<self>)(): i32 = { self.value }
 }
 
 let number = struct { value: i32 }

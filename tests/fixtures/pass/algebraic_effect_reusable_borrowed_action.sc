@@ -5,11 +5,11 @@ let ask = effect {
 let state = struct {
   left: i32,
   right: i32,
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
 }
 
-extend(state, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(state, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -17,8 +17,8 @@ extend(state, droppable) {
 }
 
 let run(
-  left: borrow<i32>,
-  right: borrow<mut><i32>,
+  left: Borrow<i32>,
+  right: Borrow<mut><i32>,
   abandon: bool,
 )(move action: with<ask>((): i32)): i32 = {
   ask.handle value { (resume) ->
@@ -29,7 +29,7 @@ let run(
     }
 }
 
-let execute(drops: ptr<mut><i32>, abandon: bool): i32 = {
+let execute(drops: Ptr<mut><i32>, abandon: bool): i32 = {
   let mut state = state{ left: 10, right: 20, drops: drops }
   let mut order = 1
   let result = run(state.left, state.right, abandon) { () ->

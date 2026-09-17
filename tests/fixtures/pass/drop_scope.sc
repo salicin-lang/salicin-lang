@@ -1,11 +1,11 @@
 let resource = struct { value: i32 }
 let choice = enum {
-  some(resource),
-  none,
+  Some(resource),
+  None,
 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     let checked = 1 / self.value
     self.value = 0
   }
@@ -19,8 +19,8 @@ let conditional(flag: bool): () = {
 }
 
 let inspect(move choice: choice): i32 = { match choice
-    { some(_) -> 1 }
-    { none -> 0 }
+    { Some(_) -> 1 }
+    { None -> 0 }
 }
 
 let early(): i32 = {
@@ -45,7 +45,7 @@ let main(): i32 = {
   resource{ value: 1 }
   let mut replaced = resource{ value: 1 }
   replaced = resource{ value: 1 }
-  early() + looped() + inspect(choice.some(resource{ value: 1 })) + 39
+  early() + looped() + inspect(choice.Some(resource{ value: 1 })) + 39
 }
 
 test("drop_scope.sc") {

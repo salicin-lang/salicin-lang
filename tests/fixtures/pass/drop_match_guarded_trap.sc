@@ -1,8 +1,8 @@
 let resource = struct { value: i32 }
-let choice = enum { pair(resource, resource), none }
+let choice = enum { pair(resource, resource), None }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     let trapped = 1 / self.value
   }
 }
@@ -20,7 +20,7 @@ let main(): i32 = { match choice.pair(resource{ value: 1 }, resource{ value: 0 }
         0
       }
     }
-    { none -> 0 }
+    { None -> 0 }
 }
 
 test("drop_match_guarded_trap.sc") {

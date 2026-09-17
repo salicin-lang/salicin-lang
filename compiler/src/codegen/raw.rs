@@ -77,7 +77,7 @@ impl Analyzer {
                 }) = expected
                 else {
                     self.error(
-                        "cannot infer `raw_alloc` pointee type; use `raw_alloc(t)(size, align)` or provide an expected `ptr<mut>(t)` type",
+                        "cannot infer `raw_alloc` pointee type; use `raw_alloc<T>(size, align)` or provide an expected `Ptr<mut><T>` type",
                     );
                     return error_expr();
                 };
@@ -154,7 +154,7 @@ impl Analyzer {
         } = &pointer.ty
         else {
             self.error(format!(
-                "`raw_dealloc` requires a `ptr<mut>(t)`, found `{}`",
+                "`raw_dealloc` requires a `Ptr<mut><T>`, found `{}`",
                 pointer.ty
             ));
             return error_expr();
@@ -204,7 +204,7 @@ impl Analyzer {
         } = &pointer.ty
         else {
             self.error(format!(
-                "`raw_init` requires a `ptr<mut>(t)`, found `{}`",
+                "`raw_init` requires a `Ptr<mut><T>`, found `{}`",
                 pointer.ty
             ));
             return error_expr();
@@ -261,7 +261,7 @@ impl Analyzer {
         } = &pointer.ty
         else {
             self.error(format!(
-                "`raw_take` requires a `ptr<mut>(t)`, found `{}`",
+                "`raw_take` requires a `Ptr<mut><T>`, found `{}`",
                 pointer.ty
             ));
             return error_expr();
@@ -299,7 +299,7 @@ impl Analyzer {
         let pointer = self.lower_expr(&arguments[0].value, None, context);
         let Ty::Pointer { pointee, .. } = &pointer.ty else {
             self.error(format!(
-                "`raw_offset` requires `ptr(t)` or `ptr<mut>(t)`, found `{}`",
+                "`raw_offset` requires `Ptr<T>` or `Ptr<mut><T>`, found `{}`",
                 pointer.ty
             ));
             return error_expr();
@@ -364,13 +364,13 @@ impl Analyzer {
         let pointer = self.lower_expr(&arguments[0].value, None, context);
         let Ty::Pointer { pointee, mutable } = &pointer.ty else {
             self.error(format!(
-                "`{name}` requires `ptr(t)` or `ptr<mut>(t)`, found `{}`",
+                "`{name}` requires `Ptr<T>` or `Ptr<mut><T>`, found `{}`",
                 pointer.ty
             ));
             return error_expr();
         };
         if required_mutable && !mutable {
-            self.error("mutable `raw_borrow` requires a `ptr<mut>(t)`");
+            self.error("mutable `raw_borrow` requires a `Ptr<mut><T>`");
             return error_expr();
         }
         if matches!(pointee.as_ref(), Ty::Never | Ty::Function(_) | Ty::Error) {
@@ -498,13 +498,13 @@ impl Analyzer {
         let pointer = self.lower_expr(&arguments[0].value, None, context);
         let Ty::Pointer { pointee, mutable } = &pointer.ty else {
             self.error(format!(
-                "`raw_slice` requires `ptr(t)` or `ptr<mut>(t)`, found `{}`",
+                "`raw_slice` requires `Ptr<T>` or `Ptr<mut><T>`, found `{}`",
                 pointer.ty
             ));
             return error_expr();
         };
         if required_mutable && !mutable {
-            self.error("mutable `raw_slice` requires a `ptr<mut>(t)`");
+            self.error("mutable `raw_slice` requires a `Ptr<mut><T>`");
             return error_expr();
         }
         if matches!(
@@ -1198,7 +1198,7 @@ impl Analyzer {
                 "`ptr({})` requires an explicit `{}` argument",
                 if required_mutable { "mut" } else { "shared" },
                 if required_mutable {
-                    "borrow<mut>"
+                    "Borrow<mut>"
                 } else {
                     "borrow"
                 }
@@ -1210,7 +1210,7 @@ impl Analyzer {
                 "`ptr({})` requires `{}` borrowing",
                 if required_mutable { "mut" } else { "shared" },
                 if required_mutable {
-                    "borrow<mut>"
+                    "Borrow<mut>"
                 } else {
                     "borrow"
                 }

@@ -1,6 +1,6 @@
-let read(value: borrow<i32>): i32 = { value }
+let read(value: Borrow<i32>): i32 = { value }
 
-let set(value: borrow<mut><i32>): () = {
+let set(value: Borrow<mut><i32>): () = {
   value = 22
 }
 

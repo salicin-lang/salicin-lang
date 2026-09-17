@@ -1,13 +1,13 @@
-let vec = alloc.vec.vec
+let Vec = alloc.Vec
 
-let resource = struct { counter: ptr<mut><i32>, value: i32 }
+let resource = struct { counter: Ptr<mut><i32>, value: i32 }
 
 extend(resource) {
-  let read(self: borrow<self>)(): i32 = { self.value }
+  let read(self: Borrow<self>)(): i32 = { self.value }
 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -23,12 +23,12 @@ let main(): i32 = {
   }
   let mut score = 0
   do {
-    let mut values: vec<resource> = vec<resource>.new()
+    let mut values: Vec<resource> = Vec<resource>.new()
     values.push(resource{ counter: counter, value: 1 })
     values.push(resource{ counter: counter, value: 3 })
     values.insert(1)(resource{ counter: counter, value: 2 })
 
-    let mut other: vec<resource> = vec<resource>.new()
+    let mut other: Vec<resource> = Vec<resource>.new()
     other.push(resource{ counter: counter, value: 4 })
     other.push(resource{ counter: counter, value: 5 })
     values.append(other)

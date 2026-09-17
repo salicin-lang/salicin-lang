@@ -1,4 +1,4 @@
-let state<comptime s: type> = effect {
+let state<s: type> = effect {
   let get(): s
 }
 

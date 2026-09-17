@@ -1,9 +1,9 @@
-let option = core.option
-let result = core.result
+let Option = core.Option
+let Result = core.Result
 
 let main(): i32 = {
-  let option = option.some(20)
-  let result = result<e: bool>.ok(22)
+  let option = Option.Some(20)
+  let result = Result<bool>.Ok(22)
   option!! + result!!
 }
 

@@ -8,23 +8,23 @@ let counter = struct {
 
 let state = struct {
   counter: counter,
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
 }
 
-extend(state, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(state, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let update: with<step>(value: borrow<mut><i32>): () = {
+let update: with<step>(value: Borrow<mut><i32>): () = {
   let delta = step.delta()
   value = value + delta
 }
 
-let program: with<step>(drops: ptr<mut><i32>): i32 = {
+let program: with<step>(drops: Ptr<mut><i32>): i32 = {
   let mut state = state{ counter: counter{ value: 40 }, drops: drops }
   update(state.counter.value)
   update(state.counter.value)

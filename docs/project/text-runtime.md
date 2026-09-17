@@ -9,19 +9,19 @@ surface remains the authority for module placement and minimum API names.
 
 ## Values and invariants
 
-`unicode_scalar` is a copyable nominal value containing exactly one Unicode
+`UnicodeScalar` is a `Copyable` nominal value containing exactly one Unicode
 scalar value. Safe construction accepts `0..U+D7FF` and `U+E000..U+10FFFF`;
 it rejects the surrogate range and values above `U+10FFFF`. Noncharacters and
 currently unassigned code points remain valid scalar values. Its canonical
 UTF-8 encoding is one to four bytes.
 
 `str` is an immutable dynamically sized UTF-8 view. A value is usable only
-through `borrow(str)`. Its representation is a data address and a byte length,
+through `Borrow<str>`. Its representation is a data address and a byte length,
 but safe source cannot construct either field, detach the view from its source
 loan, mutate its bytes, or observe a trailing sentinel. The empty view may use
 any aligned non-null dangling address because no byte is accessed.
 
-`string` is the existing owning UTF-8 value. Its data address and length cover
+`String` is the existing owning UTF-8 value. Its data address and length cover
 exactly the initialized UTF-8 bytes. A zero capacity denotes immutable static
 literal storage; non-zero capacity denotes allocator-owned storage and is at
 least the length. Empty values may use the allocator's accepted zero-size
@@ -37,10 +37,10 @@ identity or equality.
 
 The 2026 literal escape set is `\\`, `\"`, `\n`, `\r`, and `\t`. Raw source
 newlines and unknown escapes are diagnostics. The literal length passed to
-`core.literal.string_literal.from_string_literal` is the decoded UTF-8 byte
+`core.literal.StringLiteral.from_string_literal` is the decoded UTF-8 byte
 length, not source-token length or scalar count.
 
-A literal defaulting to `string` contains the global address, decoded byte
+A literal defaulting to `String` contains the global address, decoded byte
 length, and zero capacity without allocation. A target-typed byte array
 receives the exact bytes. A target-typed slice or later `str` view borrows
 compiler-owned literal storage for the enclosing use and cannot expose mutable
@@ -50,8 +50,8 @@ runtime literals.
 
 ## Borrowed views and regions
 
-`string.as_str` returns a shared `borrow(r)(str)` tied to the receiver borrow
-region `r`. Checked UTF-8 conversion from `borrow(r)(slice<u8>)` returns a
+`String.as_str` returns a shared `Borrow<r><str>` tied to the receiver borrow
+region `r`. Checked UTF-8 conversion from `Borrow<r><Slice<u8>>` returns a
 view with the same region. A successful subview is tied to its source view's
 region. No safe conversion from a mutable byte slice yields a mutable text
 view; callers retain the byte loan while the shared view exists.
@@ -60,7 +60,7 @@ The implemented `str.from_utf8` conversion validates before entering the
 unsafe representation boundary. The internal `raw_str`/`raw_str_bytes` casts
 change only the view invariant and pointee type: they preserve the original
 fat pointer, region, reference origin, and source loan. Composite values such
-as `option(borrow(r)(str))` retain that origin through construction and match
+as `Option<Borrow<r><str>>` retain that origin through construction and match
 payload binding.
 
 `str.as_bytes` returns a shared byte slice with the same region. It never
@@ -79,15 +79,15 @@ and performs no allocation.
 Byte offsets `0` and `len` are boundaries. An interior offset is a boundary
 exactly when its byte is not a UTF-8 continuation byte. An offset above `len`
 is never a boundary. Checked slicing validates both bounds and both boundaries
-before forming a view; failure returns `none` and forms no borrow.
+before forming a view; failure returns `None` and forms no borrow.
 
 ## Equality, conversion, and failure
 
 Text equality compares byte lengths and then bytes. This is exact Unicode
 scalar-sequence equality; it does not normalize, case-fold, collate, or compare
-grapheme clusters. `string` and `str` comparisons use the same rule.
+grapheme clusters. `String` and `str` comparisons use the same rule.
 
-Borrowed byte-to-text conversion returns `option(borrow(r)(str))`. Owned
+Borrowed byte-to-text conversion returns `Option<Borrow<r><str>>`. Owned
 byte-to-string conversion returns a result whose error retains the original
 byte vector and the valid-prefix length, which is also the leading-byte offset
 of the first ill-formed subsequence. Allocation failure remains the allocator
@@ -96,16 +96,16 @@ discards owned bytes.
 
 The implemented owned conversion reports `valid_up_to`, the byte length of
 the valid prefix and the leading-byte offset of an ill-formed or truncated
-subsequence. Success transfers non-empty vector storage into `string`; failure
-stores the unchanged vector in `from_utf8_error`. Consuming conversion back to
+subsequence. Success transfers non-empty vector storage into `String`; failure
+stores the unchanged vector in `FromUtf8Error`. Consuming conversion back to
 bytes transfers heap storage and copies immutable static literal storage.
 
 ## Construction and mutation
 
-`string.new` and zero-capacity construction reuse the immutable empty literal;
+`String.new` and zero-capacity construction reuse the immutable empty literal;
 positive capacity allocates owned uninitialized tail storage. Construction
 from `str` copies exactly its validated bytes, while construction and `push`
-from `unicode_scalar` write only the scalar's canonical UTF-8 encoding.
+from `UnicodeScalar` write only the scalar's canonical UTF-8 encoding.
 `push_str` accepts only a validated shared view. A static literal detaches into
 uniquely owned storage before its first append.
 
@@ -116,17 +116,17 @@ exposes the uninitialized tail or a mutable byte view.
 
 ## Ordering and search
 
-`str` and `string` ordering is lexicographic over their canonical UTF-8 bytes,
+`str` and `String` ordering is lexicographic over their canonical UTF-8 bytes,
 which preserves Unicode scalar-value order. Prefix, suffix, containment, and
 first-match search operate on exact bytes without normalization or locale
 rules. Search reports the first UTF-8 byte offset, returns zero for an empty
-needle, and only considers scalar boundaries. `string.substring` applies the
+needle, and only considers scalar boundaries. `String.substring` applies the
 same checked endpoint contract as `str.get` before copying a new owner.
 
 ## Iteration
 
 Byte iteration yields copied `u8` values. Scalar iteration decodes forward and
-yields copied `unicode_scalar` values. Both iterators retain a shared source
+yields copied `UnicodeScalar` values. Both iterators retain a shared source
 loan until they are destroyed. Safe iteration over a valid `str` has no
 invalid-input branch; internal decode failure is an invariant violation and
 traps. Early exit releases the loan exactly once.
@@ -150,8 +150,8 @@ is not. Swift's separate UTF-8 and Unicode-scalar views reinforce keeping byte
 and scalar iteration explicit rather than treating user-perceived characters
 as fixed-width values. The 2025 Place Capability Graph model makes stored
 borrows and their place/capability relationships explicit; Salicin therefore
-propagates the byte-source loan through the `slice`/`str` view cast and through
-an `option` payload rather than treating validation as a new ownership origin.
+propagates the byte-source loan through the `Slice`/`str` view cast and through
+an `Option` payload rather than treating validation as a new ownership origin.
 The 2025 *From Linearity to Borrowing* calculus derives borrowing as a
 temporary restriction of owner permissions; correspondingly, a live `str`
 view blocks mutation of its underlying byte place and cannot escape a local
@@ -165,19 +165,19 @@ then carries the source loan without repeating those checks at each access.
 The 2025 work on linear effects, exceptions, and destructors proves
 resource-safety properties in which allocations are released exactly once
 even on error paths. The owned conversion mirrors that discipline directly:
-the input allocation moves into exactly one `result` payload, either the
-successful `string` or the recoverable error, and normal drop glue handles
+the input allocation moves into exactly one `Result` payload, either the
+successful `String` or the recoverable error, and normal drop glue handles
 whichever branch the caller abandons.
 The 2026 revision of *Typestate via Revocable Capabilities* shows how a
 flow-sensitive capability may authorize a state transition while preventing
 aliases from observing an invalid intermediate state. Salicin applies the
-same boundary at a smaller scale: a unique mutable `string` borrow can reserve
+same boundary at a smaller scale: a unique mutable `String` borrow can reserve
 and initialize storage, but the safe surface accepts only already-valid `str`
-or `unicode_scalar` inputs and returns with the UTF-8 typestate restored.
+or `UnicodeScalar` inputs and returns with the UTF-8 typestate restored.
 The PLDI 2026 work on verification modulo tested library contracts treats
 small modular method contracts, checked against tests, as the bridge for
 reasoning about clients of complex libraries. Salicin therefore defines
-ordering, matching, and search once over `str`; owning `string` methods borrow
+ordering, matching, and search once over `str`; owning `String` methods borrow
 that view, and fixtures test boundary, empty-needle, and delegation contracts
 independently.
 Pure Borrow (PLDI 2026) demonstrates that non-local borrowers may be split and

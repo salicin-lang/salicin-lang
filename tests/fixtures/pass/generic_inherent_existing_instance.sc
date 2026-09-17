@@ -1,4 +1,4 @@
-let cell<comptime t: type> = struct { value: t }
+let cell<t: type> = struct { value: t }
 let holder = struct { cell: cell(i32) }
 
 extend(cell(t)) {

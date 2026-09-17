@@ -1,13 +1,13 @@
 let resource = struct { value: i32 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     let checked = 1 / self.value
     self.value = 0
   }
 }
 
-let inspect(resource: borrow<resource>): i32 = { resource.value }
+let inspect(resource: Borrow<resource>): i32 = { resource.value }
 
 let main(): i32 = { inspect(resource{ value: 42 }) }
 

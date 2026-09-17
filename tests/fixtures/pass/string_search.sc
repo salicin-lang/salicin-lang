@@ -1,16 +1,16 @@
-let option_is(value: core.option<u64>, expected: u64): bool = {
+let option_is(value: core.Option<u64>, expected: u64): bool = {
   match value
-    { some(value) -> value == expected }
-    { none -> false }
+    { Some(value) -> value == expected }
+    { None -> false }
 }
 
 let borrowed_checks(): bool = {
-  let text: string = "A柳B🙂"
-  let prefix: string = "A柳"
-  let suffix: string = "B🙂"
-  let needle: string = "柳B"
-  let missing: string = "C"
-  let empty: string = ""
+  let text: String = "A柳B🙂"
+  let prefix: String = "A柳"
+  let suffix: String = "B🙂"
+  let needle: String = "柳B"
+  let missing: String = "C"
+  let empty: String = ""
   let view = text.as_str()
   let prefix_view = prefix.as_str()
   let suffix_view = suffix.as_str()
@@ -26,22 +26,22 @@ let borrowed_checks(): bool = {
 }
 
 let owning_checks(): bool = {
-  let text: string = "A柳B🙂"
-  let prefix: string = "A"
-  let suffix: string = "🙂"
-  let needle: string = "B🙂"
+  let text: String = "A柳B🙂"
+  let prefix: String = "A"
+  let suffix: String = "🙂"
+  let needle: String = "B🙂"
   let prefix_view = prefix.as_str()
   let suffix_view = suffix.as_str()
   let needle_view = needle.as_str()
   let selected = match text.substring(1, 4)
-    { some(value) ->
-      let expected: string = "柳"
+    { Some(value) ->
+      let expected: String = "柳"
       value == expected && value.capacity() == 3
     }
-    { none -> false }
+    { None -> false }
   let invalid = match text.substring(2, 4)
-    { some(_) -> false }
-    { none -> true }
+    { Some(_) -> false }
+    { None -> true }
   selected &&
     invalid &&
     text.starts_with(prefix_view) &&
@@ -50,10 +50,10 @@ let owning_checks(): bool = {
 }
 
 let ordering_checks(): bool = {
-  let ascii: string = "A"
-  let latin: string = "é"
-  let cjk: string = "柳"
-  let emoji: string = "🙂"
+  let ascii: String = "A"
+  let latin: String = "é"
+  let cjk: String = "柳"
+  let emoji: String = "🙂"
   let ascii_view = ascii.as_str()
   let latin_view = latin.as_str()
   let cjk_view = cjk.as_str()

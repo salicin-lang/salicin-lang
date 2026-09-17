@@ -1,22 +1,22 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 
 let step = struct {
   polled: bool,
   value: i32
 }
 
-extend(step, future(())) {
-  let output = i32
+extend(step, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if self.polled {
-      poll<i32>.ready(self.value)
+      Poll<i32>.Ready(self.value)
     } else {
       self.polled = true
-      poll<i32>.pending
+      Poll<i32>.Pending
     }
   }
 }
@@ -26,17 +26,17 @@ let other_step = struct {
   value: i32
 }
 
-extend(other_step, future(())) {
-  let output = i32
+extend(other_step, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if self.polled {
-      poll<i32>.ready(self.value)
+      Poll<i32>.Ready(self.value)
     } else {
       self.polled = true
-      poll<i32>.pending
+      Poll<i32>.Pending
     }
   }
 }
@@ -66,11 +66,11 @@ let main(): i32 = {
     value
   }
   match conditional.poll()
-    { pending -> () }
-    { ready(_) -> () }
+    { Pending -> () }
+    { Ready(_) -> () }
   let first = match conditional.poll()
-    { ready(value) -> value }
-    { pending -> 0 }
+    { Ready(value) -> value }
+    { Pending -> 0 }
 
   let mut matched = async {
     let value = match choice.left
@@ -79,11 +79,11 @@ let main(): i32 = {
     value
   }
   match matched.poll()
-    { pending -> () }
-    { ready(_) -> () }
+    { Pending -> () }
+    { Ready(_) -> () }
   let second = match matched.poll()
-    { ready(value) -> value }
-    { pending -> 0 }
+    { Ready(value) -> value }
+    { Pending -> 0 }
 
   first + second
 }

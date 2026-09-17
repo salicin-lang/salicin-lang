@@ -2,7 +2,7 @@ let ask = effect {
   let ask(): i32
 }
 
-let program(value: borrow<mut><i32>): i32 = {
+let program(value: Borrow<mut><i32>): i32 = {
   let future = async {
     value = value + ask.ask()
     value

@@ -1,8 +1,8 @@
-let result = core.result
+let Result = core.Result
 
-let result<e: type><comptime t: type> = enum {
-  ok(t),
-  err(e),
+let Result<E: type><t: type> = enum {
+  Ok(t),
+  Err(e),
 }
 
 let main(): i32 = { 42 }

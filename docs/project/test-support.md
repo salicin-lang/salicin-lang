@@ -17,8 +17,8 @@ test("parses a count") {
 ```
 
 Its body has the conceptual callable type
-`with<core.error.throwing<core.string.string>>((): ())`. Normal return of `()`
-passes. A failure throws an owned UTF-8 `string`, normally through a
+`with<core.error.throwing<core.string.String>>((): ())`. Normal return of `()`
+passes. A failure throws an owned UTF-8 `String`, normally through a
 `std.test` assertion or `std.test.fail`. Every other effect must be handled
 inside the body; the registration boundary does not grant I/O, allocation,
 unsafety, or arbitrary user effects. Boolean-returning registrations are
@@ -29,34 +29,34 @@ rejected rather than maintained as a compatibility model.
 The source-backed `core.testing` contract has these shapes:
 
 ```salicin
-let outcome = enum {
-  passed,
-  failed(string),
+let Outcome = enum {
+  Passed,
+  Failed(String),
 }
 
 let run(
-  move action: with<core.error.throwing<string>>((): ()),
-): outcome
+  move action: with<core.error.throwing<String>>((): ()),
+): Outcome
 ```
 
 `run` is an ordinary one-shot handler:
 
-- `throw(message)` becomes `failed(message)`; and
-- normal return becomes `passed`.
+- `throw(message)` becomes `Failed(message)`; and
+- normal return becomes `Passed`.
 
-The message is an owned, validated UTF-8 `string`. This permits construction
+The message is an owned, validated UTF-8 `String`. This permits construction
 through the existing source-backed formatting writer and makes its lifetime
 independent of assertion operands and the registration stack. Every failure
 has a message; an empty message remains an exact, valid message.
 
 `std.test` exposes `fail`, `assert`, `assert_eq`, `assert_ne`, `expect_some`,
 `expect_none`, `expect_ok`, and `expect_err` over this contract. Equality
-helpers evaluate each operand once and require both `core.cmp.eq(t)` and the
-static `std.test.assertion_debug` formatting contract. Expectations consume
-their `option` or `result`, return the selected payload, and format only an
+helpers evaluate each operand once and require both `core.cmp.Eq(T)` and the
+static `std.test.AssertionDebug` formatting contract. Expectations consume
+their `Option` or `Result`, return the selected payload, and format only an
 unexpected payload.
 
-`assertion_debug` returns owned diagnostic text. Standard implementations
+`AssertionDebug.assertion_debug` returns owned diagnostic text. Standard implementations
 cover the core diagnostic scalar and owned-text types; user types opt in with
 an ordinary extension. This keeps formatting selection static, makes the
 writer choice private to `std.test`, and avoids reflection or generated
@@ -154,7 +154,7 @@ for invalid CLI, package, or target selection.
 ## Diagnostics and Migration
 
 - A test body whose normal result is not `()` receives a source diagnostic.
-- An effect other than `core.error.throwing<core.string.string>` that escapes the body is diagnosed
+- An effect other than `core.error.throwing<core.string.String>` that escapes the body is diagnosed
   at the registration.
 - A failure is reported with the source registration name and exact message.
   Compiler-generated `$test$...` names are never printed.

@@ -1,3 +1,3 @@
-pub let box = alloc.boxed.box
-pub let vec = alloc.vec.vec
-pub let string = core.string.string
+pub let Box = alloc.boxed.Box
+pub let Vec = alloc.vec.Vec
+pub let String = core.string.String

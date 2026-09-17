@@ -1,19 +1,19 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 
 let step = struct { polls: i32 }
 
-extend(step, future(())) {
-  let output = i32
+extend(step, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll<i32>.pending
+      Poll<i32>.Pending
     } else {
-      poll<i32>.ready(41)
+      Poll<i32>.Ready(41)
     }
   }
 }
@@ -25,11 +25,11 @@ let main(): i32 = {
     value + offset
   }
   let first = match future.poll()
-    { pending -> 1 }
-    { ready(_) -> 0 }
+    { Pending -> 1 }
+    { Ready(_) -> 0 }
   let second = match future.poll()
-    { pending -> 0 }
-    { ready(value) -> value }
+    { Pending -> 0 }
+    { Ready(value) -> value }
   first + second - 1
 }
 

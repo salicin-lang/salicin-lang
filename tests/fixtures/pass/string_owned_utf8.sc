@@ -1,14 +1,14 @@
-let vec = alloc.vec.vec
+let Vec = alloc.Vec
 
 let valid_conversion(): bool = {
-  let mut bytes = vec<u8>.with_capacity(8)
+  let mut bytes = Vec<u8>.with_capacity(8)
   bytes.push(65)
   bytes.push(230)
   bytes.push(159)
   bytes.push(179)
   match alloc.string.string_from_utf8(bytes)
-    { ok(text) ->
-      let expected: string = "A柳"
+    { Ok(text) ->
+      let expected: String = "A柳"
       let equal = text == expected
       let recovered = alloc.string.string_into_bytes(text)
       equal &&
@@ -19,18 +19,18 @@ let valid_conversion(): bool = {
         recovered.read(2) == 159 &&
         recovered.read(3) == 179
     }
-    { err(_) -> false }
+    { Err(_) -> false }
 }
 
 let invalid_conversion(): bool = {
-  let mut bytes = vec<u8>.with_capacity(7)
+  let mut bytes = Vec<u8>.with_capacity(7)
   bytes.push(65)
   bytes.push(226)
   bytes.push(40)
   bytes.push(161)
   match alloc.string.string_from_utf8(bytes)
-    { ok(_) -> false }
-    { err(error) ->
+    { Ok(_) -> false }
+    { Err(error) ->
       let valid_up_to = error.valid_up_to()
       let recovered = error.into_bytes()
       valid_up_to == 1 &&
@@ -44,23 +44,23 @@ let invalid_conversion(): bool = {
 }
 
 let truncated_conversion(): bool = {
-  let mut bytes = vec<u8>.new()
+  let mut bytes = Vec<u8>.new()
   bytes.push(65)
   bytes.push(226)
   bytes.push(130)
   match alloc.string.string_from_utf8(bytes)
-    { ok(_) -> false }
-    { err(error) ->
+    { Ok(_) -> false }
+    { Err(error) ->
       error.valid_up_to() == 1 && error.into_bytes().len() == 3
     }
 }
 
 let edge_conversion(): bool = {
-  let empty = vec<u8>.new()
+  let empty = Vec<u8>.new()
   let empty_ok = match alloc.string.string_from_utf8(empty)
-    { ok(text) -> text.is_empty() }
-    { err(_) -> false }
-  let literal: string = "柳"
+    { Ok(text) -> text.is_empty() }
+    { Err(_) -> false }
+  let literal: String = "柳"
   let literal_bytes = alloc.string.string_into_bytes(literal)
   empty_ok &&
     literal_bytes.len() == 3 &&

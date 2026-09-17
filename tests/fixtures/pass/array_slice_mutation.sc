@@ -1,38 +1,38 @@
-let slice = core.memory.slice
+let Slice = core.memory.Slice
 
 let main(): i32 = {
-  let mut order: array<i32><5> = [1, 2, 3, 4, 5]
+  let mut order: Array<i32><5> = [1, 2, 3, 4, 5]
   order.swap(0, 4)
   order.swap(2, 2)
   order.reverse()
 
-  let mut overlap_right: array<i32><5> = [1, 2, 3, 4, 5]
+  let mut overlap_right: Array<i32><5> = [1, 2, 3, 4, 5]
   overlap_right.copy_within(0, 4, 1)
 
-  let mut overlap_left: array<i32><5> = [1, 2, 3, 4, 5]
+  let mut overlap_left: Array<i32><5> = [1, 2, 3, 4, 5]
   do {
-    let values: borrow<mut><slice<i32>> = borrow<mut>(overlap_left)
+    let values: Borrow<mut><Slice<i32>> = borrow<mut>(overlap_left)
     values.copy_within(1, 5, 0)
     values.copy_within(5, 5, 5)
   }
 
-  let mut filled: array<i32><3> = [1, 2, 3]
+  let mut filled: Array<i32><3> = [1, 2, 3]
   filled.fill(14)
 
-  let source: array<i32><3> = [12, 14, 16]
-  let mut copied: array<i32><3> = [0, 0, 0]
+  let source: Array<i32><3> = [12, 14, 16]
+  let mut copied: Array<i32><3> = [0, 0, 0]
   do {
-    let source_values: borrow<slice<i32>> = borrow(source)
+    let source_values: Borrow<Slice<i32>> = borrow(source)
     copied.copy_from(source_values)
   }
 
-  let empty_source: array<i32><0> = []
-  let mut empty: array<i32><0> = []
+  let empty_source: Array<i32><0> = []
+  let mut empty: Array<i32><0> = []
   empty.reverse()
   empty.fill(42)
   empty.copy_within(0, 0, 0)
   do {
-    let source_values: borrow<slice<i32>> = borrow(empty_source)
+    let source_values: Borrow<Slice<i32>> = borrow(empty_source)
     empty.copy_from(source_values)
   }
 

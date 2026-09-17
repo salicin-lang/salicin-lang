@@ -1,7 +1,7 @@
-let option = core.option
+let Option = core.Option
 
 let main(): i32 = {
-  let answer = option.none ?? 42
+  let answer = Option.None ?? 42
   answer
 }
 

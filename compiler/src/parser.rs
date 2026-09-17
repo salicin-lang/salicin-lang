@@ -248,7 +248,7 @@ impl Parser {
             effects: FunctionEffects {
                 custom: vec![Type::Named(
                     "core.error.throwing".to_owned(),
-                    vec![Type::Named("core.string.string".to_owned(), Vec::new())],
+                    vec![Type::Named("core.string.String".to_owned(), Vec::new())],
                 )],
                 ..FunctionEffects::default()
             },
@@ -960,14 +960,13 @@ impl Parser {
 
     fn type_constructor_signature_follows(&self) -> bool {
         self.at(&TokenKind::Colon)
-            && self.at_offset(1, &TokenKind::LParen)
-            && self.at_offset(2, &TokenKind::Comptime)
+            && self.at_offset(1, &TokenKind::Less)
             && matches!(
-                self.tokens.get(self.index + 3).map(|token| &token.kind),
+                self.tokens.get(self.index + 2).map(|token| &token.kind),
                 Some(TokenKind::Ident(_))
             )
-            && self.at_offset(4, &TokenKind::Colon)
-            && self.at_offset(5, &TokenKind::Type)
+            && self.at_offset(3, &TokenKind::Colon)
+            && self.at_offset(4, &TokenKind::Type)
     }
 
     fn type_alias(
@@ -1437,7 +1436,7 @@ impl Parser {
             let (trait_ref, associated_types) = self.where_trait_ref()?;
             if !associated_types.is_empty() {
                 return Err(self.error_here(
-                    "associated type constraints are separate projection equalities; write `t is trait && t.item == type`",
+                    "associated type constraints are separate projection equalities; write `T is Trait && T.Item == Type`",
                 ));
             }
             predicates.push(WherePredicate {
@@ -1500,16 +1499,12 @@ impl Parser {
             loop {
                 let starts_associated_binding = matches!(self.current().kind, TokenKind::Ident(_))
                     && (self.at_offset(1, &TokenKind::Equal)
-                        || (matches!(
-                                self.tokens.get(self.index + 1).map(|token| &token.kind),
-                                Some(TokenKind::LParen | TokenKind::Less)
-                            )
-                            && self.at_offset(2, &TokenKind::Comptime)
+                        || (self.at_offset(1, &TokenKind::Less)
                             && matches!(
-                                self.tokens.get(self.index + 3).map(|token| &token.kind),
+                                self.tokens.get(self.index + 2).map(|token| &token.kind),
                                 Some(TokenKind::Ident(_)) | Some(TokenKind::RegionName(_))
                             )
-                            && self.at_offset(4, &TokenKind::Colon)));
+                            && self.at_offset(3, &TokenKind::Colon)));
                 if starts_associated_binding {
                     saw_associated = true;
                     let binding = self.expect_ident("an associated type name")?;
@@ -1606,8 +1601,8 @@ impl Parser {
             ]);
         }
 
-        while self.current_group_delimiter().is_some() {
-            runtime_group_delimiters.push(self.current_group_delimiter().unwrap());
+        while self.current_runtime_group_delimiter().is_some() {
+            runtime_group_delimiters.push(self.current_runtime_group_delimiter().unwrap());
             runtime_groups.push(
                 self.runtime_parameter_group(
                     allow_receiver,
@@ -1625,6 +1620,11 @@ impl Parser {
                 TokenKind::Colon,
                 TokenKind::Equal,
             ]);
+        }
+        if self.at(&TokenKind::Less) {
+            return Err(self.error_here(
+                "compile-time parameter groups must precede runtime parameter groups",
+            ));
         }
         if !runtime_groups.is_empty() {
             return Ok((
@@ -1674,13 +1674,13 @@ impl Parser {
             .flatten()
             .map(|parameter| parameter.name.clone())
             .collect::<HashSet<_>>();
-        while self.current_group_delimiter().is_some() {
+        while self.current_runtime_group_delimiter().is_some() {
             if self.group_starts_with_compile_parameter() {
                 return Err(self.error_here(
                     "compile-time parameter groups must precede the callable-type/body boundary",
                 ));
             }
-            runtime_group_delimiters.push(self.current_group_delimiter().unwrap());
+            runtime_group_delimiters.push(self.current_runtime_group_delimiter().unwrap());
             runtime_groups.push(self.runtime_parameter_group(
                 allow_receiver,
                 &modifier_parameters,
@@ -1730,7 +1730,7 @@ impl Parser {
                 TokenKind::Colon,
                 TokenKind::Equal,
             ]);
-            while self.current_group_delimiter().is_some() {
+            while self.current_runtime_group_delimiter().is_some() {
                 if self.group_starts_with_compile_parameter() {
                     return Err(self.error_here(
                         "compile-time parameter groups must precede repeated runtime parameter groups",
@@ -1742,7 +1742,7 @@ impl Parser {
                     .filter(|parameter| parameter.kind.is_parameter_modifier())
                     .map(|parameter| parameter.name.clone())
                     .collect::<HashSet<_>>();
-                runtime_group_delimiters.push(self.current_group_delimiter().unwrap());
+                runtime_group_delimiters.push(self.current_runtime_group_delimiter().unwrap());
                 runtime_groups.push(self.runtime_parameter_group(
                     allow_receiver,
                     &passing_parameters,
@@ -1795,24 +1795,7 @@ impl Parser {
     }
 
     fn group_starts_with_compile_parameter(&self) -> bool {
-        self.current_group_delimiter().is_some()
-            && self.at_offset(1, &TokenKind::Comptime)
-            && if self.at_offset(2, &TokenKind::Ellipsis) {
-                matches!(
-                    self.tokens.get(self.index + 3).map(|token| &token.kind),
-                    Some(TokenKind::Ident(_))
-                ) && self.at_offset(4, &TokenKind::Colon)
-                    && matches!(
-                        self.tokens.get(self.index + 5).map(|token| &token.kind),
-                        Some(TokenKind::Ident(kind)) if kind == "parameters"
-                    )
-            } else {
-                matches!(
-                    self.tokens.get(self.index + 2).map(|token| &token.kind),
-                    Some(TokenKind::Ident(_)) | Some(TokenKind::RegionName(_))
-                ) && self.at_offset(3, &TokenKind::Colon)
-                    && self.compile_parameter_sort_starts_at(4)
-            }
+        self.at(&TokenKind::Less)
     }
 
     fn current_group_delimiter(&self) -> Option<GroupDelimiter> {
@@ -1820,6 +1803,15 @@ impl Parser {
             TokenKind::LParen => Some(GroupDelimiter::Parenthesis),
             TokenKind::LBracket => Some(GroupDelimiter::Square),
             TokenKind::Less => Some(GroupDelimiter::Angle),
+            TokenKind::LBrace => Some(GroupDelimiter::Brace),
+            _ => None,
+        }
+    }
+
+    fn current_runtime_group_delimiter(&self) -> Option<GroupDelimiter> {
+        match self.current().kind {
+            TokenKind::LParen => Some(GroupDelimiter::Parenthesis),
+            TokenKind::LBracket => Some(GroupDelimiter::Square),
             TokenKind::LBrace => Some(GroupDelimiter::Brace),
             _ => None,
         }
@@ -1865,21 +1857,10 @@ impl Parser {
         self.tokens.insert(self.index + 1, second);
     }
 
-    fn current_starts_compile_parameter(&self) -> bool {
-        self.at(&TokenKind::Comptime)
-            && matches!(
-                self.tokens.get(self.index + 1).map(|token| &token.kind),
-                Some(TokenKind::Ident(_)) | Some(TokenKind::RegionName(_))
-            )
-            && self.at_offset(2, &TokenKind::Colon)
-            && self.compile_parameter_sort_starts_at(3)
-    }
-
     fn compile_parameter_sort_starts_at(&self, offset: usize) -> bool {
         self.at_offset(offset, &TokenKind::Type)
             || self.at_offset(offset, &TokenKind::Region)
-            || (self.at_offset(offset, &TokenKind::Less)
-                && self.at_offset(offset + 1, &TokenKind::Comptime))
+            || self.at_offset(offset, &TokenKind::Less)
             || self.constructor_compile_parameter_sort_starts_at(offset)
             || matches!(
                 self.tokens
@@ -1894,15 +1875,11 @@ impl Parser {
         let mut groups = 0;
         while matches!(
             self.tokens.get(index).map(|token| &token.kind),
-            Some(TokenKind::LParen)
+            Some(TokenKind::Less)
         ) {
             groups += 1;
             index += 1;
             loop {
-                if !self.kind_at(index, &TokenKind::Comptime) {
-                    return false;
-                }
-                index += 1;
                 if !matches!(
                     self.tokens.get(index).map(|token| &token.kind),
                     Some(TokenKind::Ident(_))
@@ -1934,7 +1911,7 @@ impl Parser {
                     index += 1;
                     if matches!(
                         self.tokens.get(index).map(|token| &token.kind),
-                        Some(TokenKind::RParen)
+                        Some(TokenKind::Greater)
                     ) {
                         break;
                     }
@@ -1944,7 +1921,7 @@ impl Parser {
             }
             if !matches!(
                 self.tokens.get(index).map(|token| &token.kind),
-                Some(TokenKind::RParen)
+                Some(TokenKind::Greater)
             ) {
                 return false;
             }
@@ -1976,7 +1953,7 @@ impl Parser {
         if region_name {
             return Err(self.error_at(
                 name_token,
-                "region literals cannot be compile-time parameter names; write `comptime r: region` for a region parameter",
+                "region literals cannot be compile-time parameter names; write `r: region` for a region parameter",
             ));
         }
 
@@ -2100,24 +2077,21 @@ impl Parser {
                 return Ok(Sort::ParameterModifier);
             }
             return Err(self.error_here(
-                "parameter modifier sorts must have the exact shape `(P: parameters): parameters`",
+                "parameter modifier sorts must have the exact shape `<P: parameters>: parameters`",
             ));
         }
         Err(self.error_here("expected constructor result sort `type`, `effect`, or `parameters`"))
     }
 
     fn constructor_sort_parameter_group(&mut self) -> Result<Vec<Sort>, ParseError> {
-        let (_, close) = self.open_group("in constructor sort")?;
+        self.expect(&TokenKind::Less, "`<` before constructor sort parameters")?;
+        let close = TokenKind::Greater;
         if self.take(&close) {
             return Err(self.error_here("constructor sort parameter groups cannot be empty"));
         }
 
         let mut parameter_kinds = Vec::new();
         loop {
-            self.expect(
-                &TokenKind::Comptime,
-                "`comptime` before constructor sort parameter",
-            )?;
             let name_token = self.current().clone();
             let name = self.expect_ident("a constructor sort parameter name")?;
             if matches!(
@@ -2165,14 +2139,11 @@ impl Parser {
 
     fn compile_parameter_group(&mut self) -> Result<Vec<CompileParam>, ParseError> {
         self.layout.parameter_groups.push(self.current().start_byte);
-        let (_, close) = self.open_group("for compile-time parameters")?;
+        self.expect(&TokenKind::Less, "`<` before compile-time parameters")?;
+        let close = TokenKind::Greater;
         let mut params = Vec::new();
 
         loop {
-            self.expect(
-                &TokenKind::Comptime,
-                "`comptime` before compile-time parameter",
-            )?;
             let variadic = self.take(&TokenKind::Ellipsis);
             if variadic {
                 let name = self.expect_ident("a parameter-pack name")?;
@@ -2199,7 +2170,7 @@ impl Parser {
                 || !self.compile_parameter_sort_starts_at(2)
             {
                 return Err(self.error_here(
-                    "compile-time and runtime parameters cannot be mixed in one group",
+                    "compile-time parameter groups require `name: sort` binders",
                 ));
             }
             let name_token = self.current().clone();
@@ -2393,17 +2364,11 @@ impl Parser {
             });
             let (mode, access, region) = if self.at(&TokenKind::Borrow) {
                 return Err(self.error_here(
-                    "borrow parameter mode was removed; write `name: borrow(T)` and pass `borrow(value)` at the call site",
+                    "borrow parameter mode was removed; write `name: Borrow<T>` and pass `borrow(value)` at the call site",
                 ));
             } else {
                 (mode, None, None)
             };
-
-            if self.current_starts_compile_parameter() {
-                return Err(self.error_here(
-                    "compile-time and runtime parameters cannot be mixed in one group",
-                ));
-            }
 
             let name = self.expect_ident(if allow_receiver {
                 "a parameter name or `self`"
@@ -2423,6 +2388,23 @@ impl Parser {
                 }
             } else {
                 self.expect(&TokenKind::Colon, "`:` after parameter name")?;
+                if self.at(&TokenKind::Type)
+                    || self.at(&TokenKind::Region)
+                    || matches!(
+                        &self.current().kind,
+                        TokenKind::Ident(sort)
+                            if matches!(
+                                sort.as_str(),
+                                "sort" | "access" | "effect" | "effects" | "parameters"
+                            ) || crate::static_semantics::StaticSortModel::edition_2026()
+                                .fragment_kind(sort)
+                                .is_some()
+                    )
+                {
+                    return Err(self.error_here(
+                        "runtime parameter groups cannot contain compile-time binders; use `<name: sort>`",
+                    ));
+                }
                 self.type_expr()?
             };
             params.push(Param {
@@ -2581,9 +2563,9 @@ impl Parser {
             if self.take(&TokenKind::Colon) {
                 if option == "derive" {
                     let derive = self.expect_ident("a derive name")?;
-                    if derive != "copyable" {
+                    if derive != "Copyable" {
                         return Err(self.error_here(format!(
-                            "unsupported struct derive `{derive}`; only `copyable` is supported"
+                            "unsupported struct derive `{derive}`; only `Copyable` is supported"
                         )));
                     }
                     if derives.iter().any(|existing| existing == &derive) {
@@ -3022,7 +3004,7 @@ impl Parser {
     fn apply_failure_effect(output: Type, failure_error: Option<Type>) -> Type {
         match failure_error {
             None => output,
-            Some(error) => Type::Named("result".to_owned(), vec![error, output]),
+            Some(error) => Type::Named("Result".to_owned(), vec![error, output]),
         }
     }
 
@@ -3219,7 +3201,7 @@ impl Parser {
             return self.function_type_or_unit(delimiter);
         }
 
-        if self.at(&TokenKind::Borrow) {
+        if self.at_context_ident("Borrow") {
             return self.borrow_type();
         }
 
@@ -3235,7 +3217,9 @@ impl Parser {
             path.push(segment);
         }
         let name = path.join(".");
-        if name.split('.').next_back() == Some("array") && self.type_argument_delimiter().is_some() {
+        if name.split('.').next_back() == Some("Array")
+            && self.type_argument_delimiter().is_some()
+        {
             let first = self.type_argument_delimiter().unwrap();
             let first_close = Self::group_close(first);
             self.advance();
@@ -3438,10 +3422,11 @@ impl Parser {
     }
 
     fn borrow_type(&mut self) -> Result<Type, ParseError> {
-        self.expect(&TokenKind::Borrow, "`borrow`")?;
+        debug_assert!(self.at_context_ident("Borrow"));
+        self.advance();
         if self.type_argument_delimiter().is_none() {
             return Err(self.error_here(
-                "borrow types are written as `borrow<T>`; borrow values are written as `borrow(value)`",
+                "borrow types are written as `Borrow<T>`; borrow values are written as `borrow(value)`",
             ));
         }
 
@@ -4996,7 +4981,7 @@ impl Parser {
             arms: vec![
                 MatchArm {
                     pattern: Pattern::Constructor {
-                        path: vec!["some".to_owned()],
+                        path: vec!["Some".to_owned()],
                         fields: PatternFields::Positional(vec![pattern]),
                     },
                     guard: None,
@@ -5004,7 +4989,7 @@ impl Parser {
                 },
                 MatchArm {
                     pattern: Pattern::Constructor {
-                        path: vec!["none".to_owned()],
+                        path: vec!["None".to_owned()],
                         fields: PatternFields::Unit,
                     },
                     guard: None,
@@ -5530,7 +5515,6 @@ fn contextual_spelling(kind: &TokenKind) -> Option<&'static str> {
         TokenKind::Mut => "mut",
         TokenKind::Copy => "copy",
         TokenKind::Move => "move",
-        TokenKind::Comptime => "comptime",
         TokenKind::Borrow => "borrow",
         TokenKind::Type => "type",
         TokenKind::Region => "region",
@@ -5578,7 +5562,6 @@ fn describe(kind: &TokenKind) -> &'static str {
         TokenKind::Mut => "`mut`",
         TokenKind::Copy => "`copy`",
         TokenKind::Move => "`move`",
-        TokenKind::Comptime => "`comptime`",
         TokenKind::Borrow => "`borrow`",
         TokenKind::Type => "`type`",
         TokenKind::Region => "`region`",

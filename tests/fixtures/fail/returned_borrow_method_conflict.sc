@@ -1,7 +1,7 @@
 let cell = struct { value: i32 }
 
 extend(cell) {
-  let get<comptime r: region>(self: borrow<r><self>)(): borrow<r><i32> = { borrow(self.value) }
+  let get<r: region>(self: Borrow<r><self>)(): Borrow<r><i32> = { borrow(self.value) }
 }
 
 let main(): i32 = {

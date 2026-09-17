@@ -1,4 +1,4 @@
-let pair = struct { values: array<i32><2> }
+let pair = struct { values: Array<i32><2> }
 
 let main(): i32 = {
   let mut pair = pair{ values: [0, 2] }

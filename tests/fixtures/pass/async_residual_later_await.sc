@@ -1,43 +1,43 @@
-let future = core.async.future
-let poll = core.async.poll
+let Future = core.async.Future
+let Poll = core.async.Poll
 
 let ask = effect {
   let ask(): i32
 }
 
 let step = struct {
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
   polls: i32,
   value: i32,
   drop_amount: i32,
 }
 
-extend(step, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(step, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + self.drop_amount
     }
   }
 }
 
-extend(step, future(())) {
-  let output = i32
+extend(step, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll<i32>.pending
+      Poll<i32>.Pending
     } else {
-      poll<i32>.ready(self.value)
+      Poll<i32>.Ready(self.value)
     }
   }
 }
 
 let make_second: with<ask>(
-  drops: ptr<mut><i32>,
-  calls: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
+  calls: Ptr<mut><i32>,
   first: i32,
 ): step = {
   unsafe {
@@ -46,14 +46,14 @@ let make_second: with<ask>(
   step{ drops: drops, polls: 0, value: first + ask.ask(), drop_amount: 1 }
 }
 
-let abandon(calls: ptr<mut><i32>): i32 = {
+let abandon(calls: Ptr<mut><i32>): i32 = {
   unsafe {
     *calls = *calls + 1
   }
   42
 }
 
-let run_success(drops: ptr<mut><i32>, calls: ptr<mut><i32>): i32 = {
+let run_success(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   let mut future = async {
     let first = await step{ drops: drops, polls: 0, value: 2, drop_amount: 10 }
     let second = await make_second(drops, calls, first)
@@ -64,16 +64,16 @@ let run_success(drops: ptr<mut><i32>, calls: ptr<mut><i32>): i32 = {
       let second = future.poll()
       let third = future.poll()
       match first
-        { pending -> match second
-          { pending -> match third
-            { ready(value) -> value }
-            { pending -> 0 } }
-          { ready(_) -> 0 } }
-        { ready(_) -> 0 }
+        { Pending -> match second
+          { Pending -> match third
+            { Ready(value) -> value }
+            { Pending -> 0 } }
+          { Ready(_) -> 0 } }
+        { Ready(_) -> 0 }
     }
 }
 
-let run_cancelled(drops: ptr<mut><i32>, calls: ptr<mut><i32>): i32 = {
+let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   ask.handle ask { (resume) -> resume(40) } action {
       let mut future = async {
         let first = await step{ drops: drops, polls: 0, value: 2, drop_amount: 10 }
@@ -83,14 +83,14 @@ let run_cancelled(drops: ptr<mut><i32>, calls: ptr<mut><i32>): i32 = {
       let first = future.poll()
       let second = future.poll()
       match first
-        { pending -> match second
-          { pending -> 42 }
-          { ready(_) -> 0 } }
-        { ready(_) -> 0 }
+        { Pending -> match second
+          { Pending -> 42 }
+          { Ready(_) -> 0 } }
+        { Ready(_) -> 0 }
     }
 }
 
-let run_abandoned(drops: ptr<mut><i32>, calls: ptr<mut><i32>): i32 = {
+let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   ask.handle ask { (_) -> abandon(calls) } action {
       let mut future = async {
         let first = await step{ drops: drops, polls: 0, value: 2, drop_amount: 10 }
@@ -100,10 +100,10 @@ let run_abandoned(drops: ptr<mut><i32>, calls: ptr<mut><i32>): i32 = {
       let first = future.poll()
       let second = future.poll()
       match first
-        { pending -> match second
-          { pending -> 0 }
-          { ready(_) -> 0 } }
-        { ready(_) -> 0 }
+        { Pending -> match second
+          { Pending -> 0 }
+          { Ready(_) -> 0 } }
+        { Ready(_) -> 0 }
     }
 }
 

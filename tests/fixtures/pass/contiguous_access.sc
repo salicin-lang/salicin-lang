@@ -1,19 +1,19 @@
-let option = core.option
-let vec = alloc.vec.vec
+let Option = core.Option
+let Vec = alloc.Vec
 
-let read(value: borrow<i32>): i32 = { value }
+let read(value: Borrow<i32>): i32 = { value }
 
 let main(): i32 = {
   let mut fixed = [10, 20, 12]
   let fixed_middle = do {
     match fixed.get(1)
-      { option.some(value) -> read(value) }
-      { option.none -> 0 }
+      { Option.Some(value) -> read(value) }
+      { Option.None -> 0 }
   }
   let fixed_missing = do {
     match fixed.get(99)
-      { option.some(value) -> read(value) }
-      { option.none -> 10 }
+      { Option.Some(value) -> read(value) }
+      { Option.None -> 10 }
   }
   let fixed_at = do {
     let value = fixed.at(0)
@@ -27,36 +27,36 @@ let main(): i32 = {
 
   let fixed_view = fixed.as_slice()
   let slice_first = match fixed_view.first()
-    { option.some(value) -> read(value) }
-    { option.none -> 0 }
+    { Option.Some(value) -> read(value) }
+    { Option.None -> 0 }
   let slice_last = match fixed_view.last()
-    { option.some(value) -> read(value) }
-    { option.none -> 0 }
+    { Option.Some(value) -> read(value) }
+    { Option.None -> 0 }
 
-  let mut dynamic = vec.new(t: i32)()
+  let mut dynamic = Vec.new<T: i32>()
   let empty_before_push = dynamic.is_empty()
   let missing_before_push = do {
     match dynamic.first()
-      { option.some(value) -> read(value) }
-      { option.none -> 10 }
+      { Option.Some(value) -> read(value) }
+      { Option.None -> 10 }
   }
   dynamic.push(10)
   dynamic.push(12)
   do {
     let last = dynamic.last(mut)()
     match last
-      { option.some(value) -> value = 22 }
-      { option.none -> () }
+      { Option.Some(value) -> value = 22 }
+      { Option.None -> () }
   }
   let dynamic_middle = do {
     match dynamic.get(1)
-      { option.some(value) -> read(value) }
-      { option.none -> 0 }
+      { Option.Some(value) -> read(value) }
+      { Option.None -> 0 }
   }
   let dynamic_missing = do {
     match dynamic.get(99)
-      { option.some(value) -> read(value) }
-      { option.none -> 10 }
+      { Option.Some(value) -> read(value) }
+      { Option.None -> 10 }
   }
   let dynamic_at = do {
     let value = dynamic.at(0)

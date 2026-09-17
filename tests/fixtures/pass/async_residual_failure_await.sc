@@ -1,6 +1,6 @@
-let future = core.async.future
-let poll = core.async.poll
-let result = core.result
+let Future = core.async.Future
+let Poll = core.async.Poll
+let Result = core.Result
 let throwing = core.error.throwing
 
 let step = struct {
@@ -8,17 +8,17 @@ let step = struct {
   value: i32,
 }
 
-extend(step, future(())) {
-  let output = i32
+extend(step, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll<i32>.pending
+      Poll<i32>.Pending
     } else {
-      poll<i32>.ready(self.value)
+      Poll<i32>.Ready(self.value)
     }
   }
 }
@@ -32,7 +32,7 @@ let make_step: with<throwing<bool>>(fail: bool): step = {
 }
 
 let run(fail: bool): i32 = {
-  let result: result<bool><i32> = try {
+  let result: Result<bool><i32> = try {
     let mut future = async {
       let value = await make_step(fail)
       value + 2
@@ -40,15 +40,15 @@ let run(fail: bool): i32 = {
     let first = future.poll()
     let second = future.poll()
     match first
-      { pending -> match second
-        { ready(value) -> value }
-        { pending -> 0 } }
-      { ready(_) -> 0 }
+      { Pending -> match second
+        { Ready(value) -> value }
+        { Pending -> 0 } }
+      { Ready(_) -> 0 }
   }
 
   match result
-    { ok(value) -> value }
-    { err(error) -> if error { 42 } else { 0 } }
+    { Ok(value) -> value }
+    { Err(error) -> if error { 42 } else { 0 } }
 }
 
 let main(): i32 = {

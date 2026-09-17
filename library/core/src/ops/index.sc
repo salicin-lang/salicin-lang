@@ -1,10 +1,10 @@
 /// Protocol used by indexed place syntax.
-pub let index<comptime key: type> = trait {
+pub let Index<Key: type> = trait {
   /// Element type selected by the key.
-  let output: type
+  let Output: type
 
   /// Borrows the selected element with the receiver's access.
-  let index<comptime a: access>
-    (self: borrow<a><self>)
-    (key: key): borrow<a><output>
-}
+  let index<a: access>
+    (self: Borrow<a><self>)
+    (key: Key): Borrow<a><Output>
+  }

@@ -1,13 +1,13 @@
 let convert = trait {
-  let output: type
-  let convert(self: borrow<self>)(): output
+  let Output: type
+  let convert(self: Borrow<self>)(): Output
 }
 
 let number = struct { value: i32 }
 
 extend(number, convert) {
-  let output = i32
-  let convert(self: borrow<self>)(): i32 = { self.value }}
+  let Output = i32;
+  let convert(self: Borrow<self>)(): i32 = { self.value }}
 
 let main(): i32 = {
   let number = number{ value: 42 }

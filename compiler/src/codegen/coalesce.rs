@@ -119,7 +119,7 @@ impl Analyzer {
         }
         let Some(info) = self.standard_fallible_info_for_ty(&scrutinee.ty) else {
             self.error(format!(
-                "operator `??` requires `option<t>` or `result<e><t>` on the left, found `{}`",
+                "operator `??` requires `Option<T>` or `Result<E><T>` on the left, found `{}`",
                 scrutinee.ty
             ));
             return error_expr();
@@ -146,12 +146,12 @@ impl Analyzer {
         };
         let arms = match info.kind {
             StandardFallibleKind::Option => vec![
-                payload_arm("some"),
-                fallback_arm("none", PatternFields::Unit),
+                payload_arm("Some"),
+                fallback_arm("None", PatternFields::Unit),
             ],
             StandardFallibleKind::Result => vec![
-                payload_arm("ok"),
-                fallback_arm("err", PatternFields::Positional(vec![Pattern::Wildcard])),
+                payload_arm("Ok"),
+                fallback_arm("Err", PatternFields::Positional(vec![Pattern::Wildcard])),
             ],
         };
         self.lower_match_with_scrutinee(scrutinee, &arms, Some(&info.payload), context, false)
@@ -208,7 +208,7 @@ impl Analyzer {
         }
         let Some(info) = self.standard_fallible_info_for_ty(&scrutinee.ty) else {
             self.error(format!(
-                "operator `??` requires `option<t>` or `result<e><t>` on the left, found `{}`",
+                "operator `??` requires `Option<T>` or `Result<E><T>` on the left, found `{}`",
                 scrutinee.ty
             ));
             return error_expr();
@@ -231,12 +231,12 @@ impl Analyzer {
         };
         let arms = match info.kind {
             StandardFallibleKind::Option => vec![
-                payload_arm("some"),
-                fallback_arm("none", PatternFields::Unit),
+                payload_arm("Some"),
+                fallback_arm("None", PatternFields::Unit),
             ],
             StandardFallibleKind::Result => vec![
-                payload_arm("ok"),
-                fallback_arm("err", PatternFields::Positional(vec![Pattern::Wildcard])),
+                payload_arm("Ok"),
+                fallback_arm("Err", PatternFields::Positional(vec![Pattern::Wildcard])),
             ],
         };
         self.lower_match_with_scrutinee(scrutinee, &arms, expected, context, false)

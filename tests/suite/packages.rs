@@ -1262,18 +1262,18 @@ dep = { path = "../dep" }
     );
     workspace.write(
         "dep/src/lib.sc",
-        r#"use core.option
+        r#"use core.Option
 
 pub let number = struct { value: i32 }
 let secret = trait {
-  let reveal(self: borrow(self))(): i32
+  let reveal(self: Borrow<self>)(): i32
 }
 extend(number, secret) {
-  let reveal(self: borrow(self))(): i32 = { self.value }
+  let reveal(self: Borrow<self>)(): i32 = { self.value }
 }
 pub let make(): number = { number { value: 21 } }
-pub let maybe(): option<number> = { option<number>.some(make()) }
-pub let reveal<comptime t: type>(move number: number): i32 = { number.reveal() }
+pub let maybe(): Option<number> = { Option<number>.Some(make()) }
+pub let reveal<t: type>(move number: number): i32 = { number.reveal() }
 pub let answer(): i32 = {
   let number = make()
   number.reveal()
@@ -1363,17 +1363,17 @@ dep = { path = "../dep" }
     );
     workspace.write(
         "dep/src/lib.sc",
-        r#"use core.option
-let add = core.ops.add
+        r#"use core.Option
+let Add = core.ops.Add
 
 pub let number = struct { value: i32 }
-extend(number, add(number)) {
-  let output = number
+extend(number, Add(number)) {
+  let Output = number;
   let add(self)(rhs: number): number = { number { value: self.value + rhs.value } }
 }
 pub let make(value: i32): number = { number { value: value } }
 pub let value(move number: number): i32 = { number.value }
-pub let maybe(value: i32): option<i32> = { option<i32>.some(value) }
+pub let maybe(value: i32): Option<i32> = { Option<i32>.Some(value) }
 "#,
     );
     workspace.write(
@@ -1395,27 +1395,27 @@ pub let maybe(value: i32): option<i32> = { option<i32>.some(value) }
 
     workspace.write(
         "app/src/fake.sc",
-        r#"pub let option<comptime t: type> = enum { some(t), none }
-pub let make_option(): option<i32> = { option<i32>.some(42) }
+        r#"pub let Option<T: type> = enum { Some(T), None }
+pub let make_option(): Option<i32> = { Option<i32>.Some(42) }
 
-pub let add<comptime rhs: type> = trait {
-  let output: type
-  let add(move self)(move rhs: rhs): output
+pub let Add<Rhs: type> = trait {
+  let Output: type
+  let add(move self)(move rhs: Rhs): Output
 }
-pub let sub<comptime rhs: type> = trait {
-  let output: type
-  let sub(move self)(move rhs: rhs): output
+pub let Sub<Rhs: type> = trait {
+  let Output: type
+  let sub(move self)(move rhs: Rhs): Output
 }
-pub let number = struct { value: i32 }
-extend(number, add(number)) {
-  let output = number
-  let add(move self)(move rhs: number): number = { number { value: self.value + rhs.value } }
+pub let Number = struct { value: i32 }
+extend(Number, Add(Number)) {
+  let Output = Number;
+  let add(move self)(move rhs: Number): Number = { Number { value: self.value + rhs.value } }
 }
-extend(number, sub(number)) {
-  let output = number
-  let sub(move self)(move rhs: number): number = { number { value: self.value - rhs.value } }
+extend(Number, Sub(Number)) {
+  let Output = Number;
+  let sub(move self)(move rhs: Number): Number = { Number { value: self.value - rhs.value } }
 }
-pub let make_number(value: i32): number = { number { value: value } }
+pub let make_number(value: i32): Number = { Number { value: value } }
 "#,
     );
     workspace.write(
@@ -1435,7 +1435,7 @@ pub let make_number(value: i32): number = { number { value: value } }
     );
     assert!(
         String::from_utf8_lossy(&fake_option.stderr)
-            .contains("type `fake::option<i32>` does not implement `coalesce`"),
+            .contains("type `fake::Option(i32)` does not implement `Coalesce`"),
         "{}",
         output_text(&fake_option)
     );
@@ -1456,7 +1456,7 @@ pub let make_number(value: i32): number = { number { value: value } }
         output_text(&fake_add)
     );
     assert!(
-        String::from_utf8_lossy(&fake_add.stderr).contains("no matching `add` implementation"),
+        String::from_utf8_lossy(&fake_add.stderr).contains("no matching `Add` implementation"),
         "{}",
         output_text(&fake_add)
     );
@@ -1477,7 +1477,7 @@ pub let make_number(value: i32): number = { number { value: value } }
         output_text(&fake_sub)
     );
     assert!(
-        String::from_utf8_lossy(&fake_sub.stderr).contains("no matching `sub` implementation"),
+        String::from_utf8_lossy(&fake_sub.stderr).contains("no matching `Sub` implementation"),
         "{}",
         output_text(&fake_sub)
     );
@@ -1499,7 +1499,7 @@ pub let make_number(value: i32): number = { number { value: value } }
     );
     assert!(
         String::from_utf8_lossy(&module_option.stderr)
-            .contains("module `option` cannot be used as a value or callable"),
+            .contains("module `option` cannot be used as a type or compile-time argument"),
         "{}",
         output_text(&module_option)
     );
@@ -1509,7 +1509,7 @@ pub let make_number(value: i32): number = { number { value: value } }
         r#"use root.fake as add
 let number = struct { value: i32 }
 extend(number, add(number)) {
-  let output = i32
+  let Output = i32;
   let add(move self)(move rhs: number): i32 = { self.value + rhs.value }
 }
 let main(): i32 = { number { value: 20 } + number { value: 22 } }
@@ -1582,7 +1582,7 @@ pub let make(value: i32): Token = { Token { value: value } }
     );
     workspace.write(
         "app/src/main.sc",
-        r#"extend(dep.Token, copyable) {}
+        r#"extend(dep.Token, Copyable) {}
 let main(): i32 = { 42 }
 "#,
     );
@@ -1596,7 +1596,7 @@ let main(): i32 = { 42 }
     assert_eq!(orphan.status.code(), Some(1), "{}", output_text(&orphan));
     let stderr = String::from_utf8_lossy(&orphan.stderr);
     assert!(
-        stderr.contains("`copyable` for") && stderr.contains("package that defines the type"),
+        stderr.contains("`Copyable` for") && stderr.contains("package that defines the type"),
         "{}",
         output_text(&orphan)
     );
@@ -1604,7 +1604,7 @@ let main(): i32 = { 42 }
     workspace.write(
         "dep/src/lib.sc",
         r#"pub let Token = struct { value: i32 }
-extend(Token, copyable) {}
+extend(Token, Copyable) {}
 pub let make(value: i32): Token = { Token { value: value } }
 pub let read(copy token: Token): i32 = { token.value }
 "#,
@@ -1631,10 +1631,10 @@ pub let read(copy token: Token): i32 = { token.value }
         output_text(&owner_impl)
     );
 
-    workspace.write("app/src/fake.sc", "pub let copyable = trait {}\n");
+    workspace.write("app/src/fake.sc", "pub let Copyable = trait {}\n");
     workspace.write(
         "app/src/main.sc",
-        r#"use root.fake.copyable as fake_copy
+        r#"use root.fake.Copyable as fake_copy
 let local_type = struct { value: i32 }
 extend(local_type, fake_copy) {}
 let read(copy local: local_type): i32 = { local.value }
@@ -1655,17 +1655,18 @@ let main(): i32 = { read(local_type { value: 42 }) }
     );
     let stderr = String::from_utf8_lossy(&alias_spoof.stderr);
     assert!(
-        stderr.contains("requires `copyable`") && stderr.contains("does not implement copyable"),
+        stderr.contains("requires `Copyable`")
+            && stderr.contains("does not implement `Copyable`"),
         "{}",
         output_text(&alias_spoof)
     );
 
     workspace.write(
         "app/src/fake.sc",
-        r#"pub let copyable = trait {}
+        r#"pub let Copyable = trait {}
 pub let Token = struct { value: i32 }
 
-extend(Token, copyable) {}
+extend(Token, Copyable) {}
 
 pub let make(value: i32): Token = { Token { value: value } }
 pub let read(copy token: Token): i32 = { token.value }
@@ -1684,7 +1685,8 @@ pub let read(copy token: Token): i32 = { token.value }
     assert_eq!(spoof.status.code(), Some(1), "{}", output_text(&spoof));
     let stderr = String::from_utf8_lossy(&spoof.stderr);
     assert!(
-        stderr.contains("requires `copyable`") && stderr.contains("does not implement copyable"),
+        stderr.contains("requires `Copyable`")
+            && stderr.contains("does not implement `Copyable`"),
         "{}",
         output_text(&spoof)
     );
@@ -1855,13 +1857,14 @@ fn prelude_never_coerces_through_diverging_calls() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "never.sc",
-        r#"use core.result
+        r#"use core.Result
 let throwing = core.error.throwing
 let stop(): never = { loop {} }
 let absurd(move value: never): i32 = { value }
-let propagate(move value: never): result(())(i32) = { value }
-let raise_unit(): never with(throwing(())) = { throw(error: ())(()) }
-let throw_never(): i32 with(throwing(())) = { raise_unit() }
+let propagate(move value: never): Result<()><i32> = { value }
+let throw = core.error.throw
+let raise_unit: with<throwing<()>>(): never = { throw<Error: ()>(()) }
+let throw_never: with<throwing<()>>(): i32 = { raise_unit() }
 let empty = enum {}
 let holder = struct { value: empty }
 let project(move holder: holder): i32 = { holder.value }
@@ -1893,10 +1896,10 @@ edition = "2026"
         "src/main.sc",
         r#"let main(): i32 = {
   let reply: net.http.reply = net.http.reply()
-  let status: net.http.status = net.http.status.ok(2)
+  let status: net.http.status = net.http.status.Ok(2)
   let extra = status match {
-    net.http.status.ok(value) => value,
-    net.http.status.err => 0
+    net.http.status.Ok(value) => value,
+    net.http.status.Err => 0
   }
   math.answer() + reply.value + extra
 }
@@ -1906,10 +1909,10 @@ edition = "2026"
         "src/math.sc",
         r#"pub(package) let number = struct { value: i32 }
 let read = trait {
-  let read(self: borrow(self))(): i32
+  let read(self: Borrow<self>)(): i32
 }
 extend(number, read) {
-  let read(self: borrow(self))(): i32 = { self.value }
+  let read(self: Borrow<self>)(): i32 = { self.value }
 }
 pub(package) let answer(): i32 = {
   let number = number { value: 40 }
@@ -1921,8 +1924,8 @@ pub(package) let answer(): i32 = {
         "src/net/http.sc",
         r#"pub(package) let reply = struct { pub(package) value: i32 }
 pub(package) let status = enum {
-  ok(i32),
-  err,
+  Ok(i32),
+  Err,
 }
 pub(package) let reply(): reply = { reply { value: 0 } }
 "#,
@@ -1946,7 +1949,7 @@ fn field_visibility_controls_cross_module_and_cross_package_data_access() {
     private_project.write(
         "src/data.sc",
         r#"pub(package) let Record = struct { secret: i32, pub(package) open: i32 }
-pub(package) let Event = enum { Named(secret: i32), empty }
+pub(package) let Event = enum { Named(secret: i32), Empty }
 pub(package) let record(): Record = { Record { secret: 20, open: 22 } }
 pub(package) let event(): Event = { Event.Named(secret: 42) }
 "#,
@@ -1957,7 +1960,7 @@ pub(package) let event(): Event = { Event.Named(secret: 42) }
 let build(): data.Record = { data.Record { secret: 20, open: 22 } }
 let unpack(): i32 = { data.event() match {
   data.Event.Named(secret: value) => value,
-  data.Event.empty => 0,
+  data.Event.Empty => 0,
 } }
 let main(): i32 = { 0 }
 "#,
@@ -1983,7 +1986,7 @@ let main(): i32 = { 0 }
     workspace.write(
         "dep/src/lib.sc",
         r#"pub let Record = struct { pub value: i32 }
-pub let Event = enum { Named(pub value: i32), empty }
+pub let Event = enum { Named(pub value: i32), Empty }
 "#,
     );
     workspace.write(
@@ -2004,7 +2007,7 @@ dep = { path = "../dep" }
   let event = dep.Event.Named(value: 22)
   let extra = event match {
     dep.Event.Named(value: value) => value,
-    dep.Event.empty => 0,
+    dep.Event.Empty => 0,
   }
   record.value + extra
 }
@@ -2158,8 +2161,8 @@ let main(): i32 = { nested.deep.answer() }
         "src/kit.sc",
         r#"pub(package) let number = struct { pub(package) value: i32 }
 pub(package) let outcome = enum {
-  ready(i32),
-  empty,
+  Ready(i32),
+  Empty,
 }
 pub(package) let zero(): i32 = { 0 }
 pub(package) let increment(value: i32): i32 = { value + 1 }
@@ -2180,10 +2183,10 @@ let local_bonus(): i32 = { 1 }
 
 pub(package) let answer(): i32 = {
   let number: number = make(35)
-  let outcome: outcome = outcome.ready(increment(number.value))
+  let outcome: outcome = outcome.Ready(increment(number.value))
   let value = outcome match {
-    outcome.ready(value) => value,
-    outcome.empty => 0
+    outcome.Ready(value) => value,
+    outcome.Empty => 0
   }
   value + utilities.zero() + local() + parent() + from_root()
 }

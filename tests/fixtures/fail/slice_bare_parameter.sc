@@ -1,5 +1,5 @@
-let slice = core.memory.slice
+let Slice = core.memory.Slice
 
-let consume(value: slice<i32>): () = {}
+let consume(value: Slice<i32>): () = {}
 
 let main(): i32 = { 42 }

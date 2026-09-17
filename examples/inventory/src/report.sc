@@ -1,8 +1,8 @@
-let string_writer = alloc.string.string_writer
+let StringWriter = alloc.string.StringWriter
 
 /// Formats the stable output consumed by both the CLI and its acceptance test.
-pub let render(value: catalog.summary): core.string.string = {
-  let mut writer = string_writer.new()
+pub let render(value: catalog.Summary): core.string.String = {
+  let mut writer = StringWriter.new()
   "items=".display(writer)
   value.count.display(writer)
   "\ntotal=".display(writer)
@@ -14,8 +14,8 @@ pub let render(value: catalog.summary): core.string.string = {
 }
 
 test("report output is deterministic") {
-  let value = catalog.summary{ count: 2, total: 41, name_bytes: 4 }
+  let value = catalog.Summary{ count: 2, total: 41, name_bytes: 4 }
   let actual = render(value)
-  let expected: string = "items=2\ntotal=41\nname_bytes=4\n"
+  let expected: String = "items=2\ntotal=41\nname_bytes=4\n"
   std.test.assert(actual == expected)
 }

@@ -1,10 +1,10 @@
-let result = core.result
+let Result = core.Result
 
 let main(): i32 = {
-  let value = result<bool><i32>.err(true)
+  let value = Result<bool><i32>.Err(true)
   match value
-    { ok(_) -> 0 }
-    { err(failed) -> if failed { 42 } else { 0 } }
+    { Ok(_) -> 0 }
+    { Err(failed) -> if failed { 42 } else { 0 } }
 }
 
 test("core_result_err.sc") {

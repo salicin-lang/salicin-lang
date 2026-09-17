@@ -46,56 +46,56 @@ defines it.
 Host failures are ordinary values:
 
 ```salicin
-pub let io_error = struct {
-  failure: io_error_kind,
-  host_code: core.option<i32>,
+pub let IoError = struct {
+  failure: IoErrorKind,
+  host_code: core.Option<i32>,
 }
 ```
 
 `kind()` is portable control-flow information. `raw_code()` is optional,
 signed diagnostic data in the host's native error-code domain. It may be
 absent, reused by the host, or mean something different on another target.
-Unknown native errors map to `other` while retaining a representable raw
+Unknown native errors map to `Other` while retaining a representable raw
 code. No error formatting or construction requires allocation.
 
-The initial closed `io_error_kind` set is:
+The initial closed `IoErrorKind` set is:
 
-- `not_found`, `permission_denied`, `already_exists`;
-- `invalid_input`, `invalid_data`;
-- `interrupted`, `would_block`, `write_zero`, `unexpected_eof`,
-  `broken_pipe`;
-- `unsupported`, `out_of_memory`, and `other`.
+- `NotFound`, `PermissionDenied`, `AlreadyExists`;
+- `InvalidInput`, `InvalidData`;
+- `Interrupted`, `WouldBlock`, `WriteZero`, `UnexpectedEof`,
+  `BrokenPipe`;
+- `Unsupported`, `OutOfMemory`, and `Other`.
 
 IO-2 and IO-3 map native failures into this set through target-specific
 tables. Adding portable distinctions is an
-edition-visible API change; callers must retain an `other` branch.
+edition-visible API change; callers must retain an `Other` branch.
 
 ## Bytes, text, and paths
 
 Primitive I/O is byte-oriented. A read writes initialized `u8` storage; a
 write borrows initialized bytes. Neither primitive validates UTF-8.
 
-Text output accepts `borrow(str)` and writes its existing UTF-8 bytes exactly.
+Text output accepts `Borrow<str>` and writes its existing UTF-8 bytes exactly.
 Text input first collects bytes, then validates them. Invalid UTF-8 returns
-`invalid_data`; it is never replaced, normalized, or decoded lossily.
+`InvalidData`; it is never replaced, normalized, or decoded lossily.
 Newline helpers append exactly byte `0x0a`; they do not translate to a native
 line ending.
 
-The first filesystem API accepts `borrow(str)` paths. On the supported Unix
+The first filesystem API accepts `Borrow<str>` paths. On the supported Unix
 targets it passes the UTF-8 bytes unchanged, rejects an embedded NUL as
-`invalid_input`, and performs no Unicode or lexical normalization. This is a
+`InvalidInput`, and performs no Unicode or lexical normalization. This is a
 deliberate initial restriction: paths not representable as Salicin text require
 a later byte-path API.
 
 Process arguments have a lossless byte view and a checked text view. The text
-view reports `invalid_data` for a non-UTF-8 host argument rather than replacing
+view reports `InvalidData` for a non-UTF-8 host argument rather than replacing
 bytes. Standard input/output/error are byte streams; text helpers are adapters.
 
 The implemented console/process surface includes `read_stdin`,
 `read_stdin_exact`, `read_line`, one-attempt and all-byte stdout/stderr writes,
 `print`/`println` and stderr counterparts, explicit flush points,
 `argument_count`, `argument_bytes`, `arguments_bytes`, and `arguments`.
-Bulk lossless arguments use the nominal `process_argument` wrapper; each value
+Bulk lossless arguments use the nominal `ProcessArgument` wrapper; each value
 can be consumed into its byte vector. Direct descriptor writes are unbuffered,
 so flush is an explicit successful synchronization point.
 
@@ -110,11 +110,11 @@ so flush is an explicit successful synchronization point.
 - zero from a non-empty read is EOF for that attempt;
 - zero from a non-empty write is allowed at the primitive layer.
 
-Primitive operations preserve `interrupted` and `would_block`. They never spin.
+Primitive operations preserve `Interrupted` and `WouldBlock`. They never spin.
 `read_exact`, `write_all`, line reading, and bounded whole-input helpers retry
-`interrupted`. `write_all` converts a successful zero write with remaining
-input to `write_zero`; `read_exact` converts EOF before completion to
-`unexpected_eof`. They preserve the first other error. Mutation already
+`Interrupted`. `write_all` converts a successful zero write with remaining
+input to `WriteZero`; `read_exact` converts EOF before completion to
+`UnexpectedEof`. They preserve the first other error. Mutation already
 completed before a later helper error remains visible in the caller-owned
 buffer; an error never claims that the whole operation was atomic.
 
@@ -124,15 +124,15 @@ trap before safe code can observe an out-of-bounds length.
 
 ## Resource ownership and close
 
-An opened `file` is a non-copyable, non-forgeable owner of one native handle.
+An opened `File` is a non-copyable, non-forgeable owner of one native handle.
 Operations borrow it; they neither duplicate nor transfer it. Opening requires
-`io` and returns `result(io_error)(file)`.
+`io` and returns `Result<IoError><File>`.
 
-`file.close(move self)`:
+`File.close(move self)`:
 
 1. makes at most one native close attempt;
 2. consumes and invalidates the logical owner before reporting the outcome;
-3. returns `result(io_error)(())`;
+3. returns `Result<IoError><()>`;
 4. never retries an interrupted close, because the native descriptor may
    already have been released and reused.
 
@@ -142,24 +142,24 @@ closing again, including when close reports an error. Every early return,
 effect transfer, handler abort, and ordinary scope exit must run this cleanup
 exactly once.
 
-The implemented `file` stores its descriptor behind private uniquely owned
+The implemented `File` stores its descriptor behind private uniquely owned
 state. `close(move self)` invalidates that state before its one host close
 attempt; its subsequent destructor only releases the state allocation.
 Implicit destruction performs the same invalidation and ignores the close
 result. Neither path retries `EINTR`.
 
-`open_options` exposes validated presets and consuming option modifiers.
+`OpenOptions` exposes validated presets and consuming option modifiers.
 Reading or writing without the matching access, `create_new` without create,
-and append combined with truncate are `invalid_input`. `open` rejects embedded
-NUL before crossing the native boundary. `file` provides short `read`/`write`,
+and append combined with truncate are `InvalidInput`. `open` rejects embedded
+NUL before crossing the native boundary. `File` provides short `read`/`write`,
 exact/all helpers, `flush`, and start/current/end seek. `read_file(path)(limit)`
-never grows beyond the caller's limit; exceeding it is `invalid_data`.
+never grows beyond the caller's limit; exceeding it is `InvalidData`.
 `write_file` creates or truncates, writes all bytes, and reports close failure.
 
 ## Blocking and target matrix
 
 The API is synchronous and may block the current native thread. An inherited
-nonblocking stream or file reports `would_block`; synchronous helpers do not
+nonblocking stream or file reports `WouldBlock`; synchronous helpers do not
 poll or busy-wait. Async integration and cancellation are outside this
 contract.
 
@@ -216,7 +216,7 @@ The contract combines static effect authority with runtime resource handles:
   distinguishes link-time host services from unforgeable runtime handles.
 - [Rust `Read`](https://doc.rust-lang.org/std/io/trait.Read.html) and
   [Rust `Write`](https://doc.rust-lang.org/std/io/trait.Write.html) define the
-  partial-progress, EOF, interruption, `write_all`, and `write_zero` behavior
+  partial-progress, EOF, interruption, `write_all`, and `WriteZero` behavior
   used here.
 - [POSIX.1-2024](https://standards.ieee.org/ieee/1003.1/7700/) defines the
   active Unix system interfaces and error-recovery domain lowered here.

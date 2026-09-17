@@ -1,21 +1,21 @@
-let identity<comptime t: type>: type = t
+let identity<t: type>: type = t
 
 let factory = trait {
-  let item<comptime t: type>: type
+  let Item<t: type>: type
 
-  let make(self: borrow<self>)(value: i32): item(i32)
+  let make(self: Borrow<self>)(value: i32): Item(i32)
 }
 
 let cell = struct {}
 
 extend(cell, factory) {
-  let item = identity
+  let Item = identity;
 
-  let make(self: borrow<self>)(value: i32): i32 = { value }
+  let make(self: Borrow<self>)(value: i32): i32 = { value }
 }
 
-let make_i32<comptime t: type>(value: borrow<t>): i32
-= requires(t is factory && t.item<comptime u: type> == u) {
+let make_i32<t: type>(value: Borrow<t>): i32
+= requires(t is factory && t.Item<u: type> == u) {
   value.make(42)
 }
 

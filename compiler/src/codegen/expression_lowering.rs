@@ -99,7 +99,7 @@ impl Analyzer {
             },
             Expr::String(value) => {
                 let Some(default_ty) = self.string_ty() else {
-                    self.error("the core `string` type is unavailable");
+                    self.error("the core `String` type is unavailable");
                     return error_expr();
                 };
                 let ty = expected
@@ -109,7 +109,7 @@ impl Analyzer {
                 if ty == default_ty {
                     let backing = Ty::Array(Box::new(Ty::U8), value.len() as u64);
                     self.require_literal_protocol_impl(
-                        "core::literal::string_literal",
+                        "core::literal::StringLiteral",
                         "from_string_literal",
                         &backing,
                         &ty,
@@ -137,7 +137,7 @@ impl Analyzer {
                 };
                 if ty == backing.ty {
                     self.require_literal_protocol_impl(
-                        "core::literal::string_literal",
+                        "core::literal::StringLiteral",
                         "from_string_literal",
                         &backing.ty,
                         &backing.ty,
@@ -145,7 +145,7 @@ impl Analyzer {
                     return backing;
                 }
                 self.lower_literal_protocol_call(
-                    "core::literal::string_literal",
+                    "core::literal::StringLiteral",
                     "from_string_literal",
                     backing,
                     &ty,
@@ -399,7 +399,7 @@ impl Analyzer {
                     let pointee = (**pointee).clone();
                     if !self.is_copy_type(&pointee) {
                         self.error(format!(
-                            "raw pointer reads require a copyable pointee in the first version, found `{}`",
+                            "raw pointer reads require a `Copyable` pointee in the first version, found `{}`",
                             self.diagnostic_type_name(&pointee)
                         ));
                         return error_expr();
@@ -551,19 +551,19 @@ impl Analyzer {
                     }
                     let Ty::Pointer { pointee, mutable } = &pointer.ty else {
                         self.error(format!(
-                            "raw pointer assignment requires `ptr<mut>(T)`, found `{}`",
+                            "raw pointer assignment requires `Ptr<mut><T>`, found `{}`",
                             pointer.ty
                         ));
                         return error_expr();
                     };
                     if !*mutable {
-                        self.error("cannot assign through an immutable `ptr(T)`");
+                        self.error("cannot assign through an immutable `Ptr<T>`");
                         return error_expr();
                     }
                     let pointee = (**pointee).clone();
                     if !self.is_copy_type(&pointee) {
                         self.error(format!(
-                            "raw pointer writes require a copyable pointee in the first version, found `{}`",
+                            "raw pointer writes require a `Copyable` pointee in the first version, found `{}`",
                             self.diagnostic_type_name(&pointee)
                         ));
                         return error_expr();
@@ -627,7 +627,7 @@ impl Analyzer {
                     && self.projected_place_crosses_custom_drop(&place)
                 {
                     self.error(
-                        "reinitializing a field through a type with custom droppable is not allowed because its destructor requires a complete value",
+                        "reinitializing a field through a type with custom `Droppable` is not allowed because its destructor requires a complete value",
                     );
                 }
                 HirExpr {
@@ -1492,11 +1492,11 @@ impl Analyzer {
                         || name.starts_with("$handler$match$inspect$input$")
                     {
                         self.error(
-                            "an effectful match guard currently requires its match input to implement copyable",
+                            "an effectful match guard currently requires its match input to implement `Copyable`",
                         );
                     } else {
                         self.error(format!(
-                            "closure capture `{name}` must implement copyable for this capture mode"
+                            "closure capture `{name}` must implement `Copyable` for this capture mode"
                         ));
                     }
                     continue;
@@ -1850,7 +1850,7 @@ impl Analyzer {
             return error_expr();
         };
         let Ty::Enum(attempt_name) = function.result.as_ref() else {
-            self.error("pattern closure result must be `attempt(input)(output)`");
+            self.error("pattern closure result must be `Attempt<Input><Output>`");
             return error_expr();
         };
         let attempt_template = self.lang_item_name(LangItemKind::Attempt);
@@ -1866,17 +1866,17 @@ impl Analyzer {
         let Some(layout) = self.enum_layout_or_diagnostic(attempt_name) else {
             return error_expr();
         };
-        let hit = layout.variants.iter().find(|variant| variant.name == "hit");
+        let hit = layout.variants.iter().find(|variant| variant.name == "Hit");
         let miss = layout
             .variants
             .iter()
-            .find(|variant| variant.name == "miss");
+            .find(|variant| variant.name == "Miss");
         let (Some(hit), Some(miss)) = (hit, miss) else {
-            self.error("pattern closure result must provide `hit(output)` and `miss(input)`");
+            self.error("pattern closure result must provide `Hit(Output)` and `Miss(Input)`");
             return error_expr();
         };
         if hit.fields.len() != 1 || miss.fields.len() != 1 || miss.fields[0].ty != *input {
-            self.error("pattern closure result must be `attempt(input)(output)`");
+            self.error("pattern closure result must be `Attempt<Input><Output>`");
             return error_expr();
         }
 
@@ -1903,12 +1903,12 @@ impl Analyzer {
                 MatchArm {
                     pattern: pattern.clone(),
                     guard: guard.cloned(),
-                    body: variant("hit", body.clone()),
+                    body: variant("Hit", body.clone()),
                 },
                 MatchArm {
                     pattern: Pattern::Binding(missed_input.clone()),
                     guard: None,
-                    body: variant("miss", Expr::Name(missed_input)),
+                    body: variant("Miss", Expr::Name(missed_input)),
                 },
             ],
         };
@@ -2600,7 +2600,7 @@ impl Analyzer {
                                 record_closure_capture(captures, name, ClosureCaptureMode::Shared);
                             } else {
                                 self.error(format!(
-                                    "closure call capture `{name}` must match a copyable parameter or a nominal move parameter"
+                                    "closure call capture `{name}` must match a `Copyable` parameter or a nominal move parameter"
                                 ));
                                 valid = false;
                             }

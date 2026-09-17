@@ -1,8 +1,8 @@
-let slice = core.memory.slice
+let Slice = core.memory.Slice
 
 let main(): i32 = {
   let values = [1, 2]
-  let slice: borrow<slice<i32>> = borrow(values)
+  let slice: Borrow<Slice<i32>> = borrow(values)
   slice[2]
 }
 

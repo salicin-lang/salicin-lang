@@ -1,8 +1,8 @@
-let option = core.option
+let Option = core.Option
 
 let main(): i32 = {
-  let value = option<i32>.some(true)
+  let value = Option<i32>.Some(true)
   match value
-    { some(item) -> item }
-    { none -> 0 }
+    { Some(item) -> item }
+    { None -> 0 }
 }

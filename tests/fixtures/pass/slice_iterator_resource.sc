@@ -1,19 +1,19 @@
-let slice = core.memory.slice
+let Slice = core.memory.Slice
 
 let resource = struct {
   value: i32,
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let read(value: borrow<resource>): i32 = { value.value }
+let read(value: Borrow<resource>): i32 = { value.value }
 
 let main(): i32 = {
   let drops = unsafe {
@@ -22,12 +22,12 @@ let main(): i32 = {
   unsafe { *drops = 0 }
 
   let total = do {
-    let values: array<resource><3> = [
+    let values: Array<resource><3> = [
       resource{ value: 9, drops: drops },
       resource{ value: 12, drops: drops },
       resource{ value: 21, drops: drops },
     ]
-    let slice: borrow<slice<resource>> = borrow(values)
+    let slice: Borrow<Slice<resource>> = borrow(values)
     let mut sum = 0
     for slice.iter() { value ->
       sum = sum + read(value)

@@ -1,8 +1,8 @@
 let resource = struct { value: i32 }
-let choice = enum { pair(resource, i32), none }
+let choice = enum { pair(resource, i32), None }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     let checked = 1 / self.value
     self.value = 0
   }
@@ -21,7 +21,7 @@ let choose(move choice: choice): i32 = { match choice
         21
       }
     }
-    { none -> 0 }
+    { None -> 0 }
 }
 
 let main(): i32 = {

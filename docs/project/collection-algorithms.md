@@ -8,7 +8,7 @@ surface for contiguous collections.
 
 ## Shared kernel and order
 
-Borrowed `slice<t>` is the semantic kernel. Fixed arrays and `alloc.vec.vec<t>`
+Borrowed `Slice<T>` is the semantic kernel. Fixed arrays and `alloc.vec.Vec<T>`
 expose the same operations by creating a shared slice view and delegating to
 that kernel:
 
@@ -24,13 +24,13 @@ Every operation observes elements in increasing index order. `find`,
 the first rejected element. `fold` invokes its callback exactly once for every
 element unless the callback transfers control through an effect.
 
-For an empty collection, `find` and `position` return `none`, `contains` and
+For an empty collection, `find` and `position` return `None`, `contains` and
 `any` return `false`, `all` returns `true`, and `fold` returns its initial
 accumulator without invoking the callback.
 
 ## Ownership and borrows
 
-Predicate and fold callbacks receive `borrow(t)`. Searching therefore does not
+Predicate and fold callbacks receive `Borrow<T>`. Searching therefore does not
 copy, move, replace, or destroy collection elements, including move-only
 resources. A borrow returned by `find` retains the source collection loan:
 it cannot escape a local owner or overlap mutation of that owner.
@@ -41,7 +41,7 @@ the next step. Normal completion returns that owner to the caller; early
 effect transfer destroys any in-flight owned state exactly once under the
 language cleanup rules.
 
-`contains` currently requires `t is copyable && t is eq(t)`. The slice kernel
+`contains` currently requires `T is Copyable && T is Eq(T)`. The slice kernel
 copies each element value before equality dispatch, so membership does not
 pretend that the present equality protocol accepts two source-tied borrows.
 Move-only collections can express membership with `any` and a borrowing
@@ -51,7 +51,7 @@ predicate.
 
 `find`, `position`, `any`, `all`, and `fold` infer and forward the callback's
 exact effect row. A pure callback keeps the operation pure. A callback with
-`throwing<error>`, a user effect, or `unsafety` requires the same handler or
+`throwing<Error>`, a user effect, or `unsafety` requires the same handler or
 authority at the collection call. The algorithms introduce no additional
 effect or allocation.
 

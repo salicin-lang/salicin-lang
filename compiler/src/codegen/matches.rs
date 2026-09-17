@@ -307,7 +307,7 @@ impl Analyzer {
                     .any(|binding| binding.moves && !binding.path.is_empty())
             {
                 self.error(format!(
-                    "cannot move a pattern binding out of `{}` because it implements `droppable`",
+                    "cannot move a pattern binding out of `{}` because it implements `Droppable`",
                     scrutinee.ty
                 ));
             }
@@ -860,7 +860,7 @@ impl Analyzer {
                         .any(|binding| binding.moves)
                 {
                     self.error(format!(
-                        "cannot move a nested pattern binding through `{ty}` because it implements `droppable`"
+                        "cannot move a nested pattern binding through `{ty}` because it implements `Droppable`"
                     ));
                 }
             }

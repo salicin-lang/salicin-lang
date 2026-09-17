@@ -1545,12 +1545,12 @@ impl<'a> FunctionEmitter<'a> {
             self.emit_integer_intrinsic_operand(arguments, "checked integer conversion")?;
         let Ty::Enum(option_name) = result else {
             return Err(Diagnostic::new(format!(
-                "internal error: checked integer conversion returns `{result}`, expected option"
+                "internal error: checked integer conversion returns `{result}`, expected `Option`"
             )));
         };
         let layout = self.program.enum_layout(option_name).ok_or_else(|| {
             Diagnostic::new(format!(
-                "internal error: missing option layout `{option_name}`"
+                "internal error: missing `Option` layout `{option_name}`"
             ))
         })?;
         let (some_index, some) = layout
@@ -1558,20 +1558,20 @@ impl<'a> FunctionEmitter<'a> {
             .iter()
             .enumerate()
             .find(|(_, variant)| {
-                variant.name == "some"
+                variant.name == "Some"
                     && variant.fields.len() == 1
                     && variant.fields[0].ty.is_integer()
             })
             .ok_or_else(|| {
-                Diagnostic::new("internal error: checked conversion option lacks `some(integer)`")
+                Diagnostic::new("internal error: checked conversion `Option` lacks `Some(integer)`")
             })?;
         let target = &some.fields[0].ty;
         let none_index = layout
             .variants
             .iter()
-            .position(|variant| variant.name == "none" && variant.fields.is_empty())
+            .position(|variant| variant.name == "None" && variant.fields.is_empty())
             .ok_or_else(|| {
-                Diagnostic::new("internal error: checked conversion option lacks `none`")
+                Diagnostic::new("internal error: checked conversion `Option` lacks `None`")
             })?;
         let source_width = NATIVE_TARGET
             .integer_width(&operand.ty)
@@ -1920,7 +1920,7 @@ impl<'a> FunctionEmitter<'a> {
                     "{in_bounds} = icmp ult i64 {}, {length}",
                     index.value()?
                 ));
-                let ok_label = self.fresh_label("slice.index.ok");
+                let ok_label = self.fresh_label("slice.index.Ok");
                 let trap_label = self.fresh_label("slice.index.trap");
                 self.terminate(format!(
                     "br i1 {in_bounds}, label %{ok_label}, label %{trap_label}"
@@ -3473,7 +3473,7 @@ impl<'a> FunctionEmitter<'a> {
                 let wide_index = index.value()?.to_owned();
                 let in_bounds = self.fresh_register();
                 self.instruction(format!("{in_bounds} = icmp ult i64 {wide_index}, {length}"));
-                let ok_label = self.fresh_label("index.ok");
+                let ok_label = self.fresh_label("index.Ok");
                 let trap_label = self.fresh_label("index.trap");
                 self.terminate(format!(
                     "br i1 {in_bounds}, label %{ok_label}, label %{trap_label}"
@@ -3532,7 +3532,7 @@ impl<'a> FunctionEmitter<'a> {
             is_zero
         };
 
-        let ok_label = self.fresh_label("arithmetic.ok");
+        let ok_label = self.fresh_label("arithmetic.Ok");
         let trap_label = self.fresh_label("arithmetic.trap");
         self.terminate(format!(
             "br i1 {invalid}, label %{trap_label}, label %{ok_label}"
@@ -3553,7 +3553,7 @@ impl<'a> FunctionEmitter<'a> {
             right.value()?,
             integer_bit_width(&right.ty)
         ));
-        let ok_label = self.fresh_label("shift.ok");
+        let ok_label = self.fresh_label("shift.Ok");
         let trap_label = self.fresh_label("shift.trap");
         self.terminate(format!(
             "br i1 {invalid}, label %{trap_label}, label %{ok_label}"
@@ -4049,7 +4049,7 @@ impl<'a> FunctionEmitter<'a> {
         }
         if self.program.drop_methods.contains_key(ty) {
             return Err(Diagnostic::new(format!(
-                "internal error: match split custom droppable type `{ty}`"
+                "internal error: match split custom `Droppable` type `{ty}`"
             )));
         }
         if let Ty::Tuple(fields) = ty {
@@ -4366,7 +4366,7 @@ impl<'a> FunctionEmitter<'a> {
             "{in_bounds} = icmp ult i64 {wide_index}, {}",
             index.length
         ));
-        let ok_label = self.fresh_label("index.place.ok");
+        let ok_label = self.fresh_label("index.place.Ok");
         let trap_label = self.fresh_label("index.place.trap");
         self.terminate(format!(
             "br i1 {in_bounds}, label %{ok_label}, label %{trap_label}"

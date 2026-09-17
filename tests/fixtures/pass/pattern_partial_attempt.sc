@@ -1,19 +1,19 @@
-let option = core.option
+let Option = core.Option
 
 let main(): i32 = {
-  let choose: (option<i32>): core.control.attempt(option<i32>)(i32) = {
-    some(value) -> value + 1
+  let choose: (Option<i32>): core.control.Attempt(Option<i32>)(i32) = {
+    Some(value) -> value + 1
   }
-  let hit = choose(option.some(40))
-  let miss = choose(option.none)
+  let hit = choose(Option.Some(40))
+  let miss = choose(Option.None)
   let left = match hit
-    { hit(value) -> value }
-    { miss(_) -> 0 }
+    { Hit(value) -> value }
+    { Miss(_) -> 0 }
   let right = match miss
-    { hit(_) -> 0 }
-    { miss(remaining) -> match remaining
-      { some(_) -> 0 }
-      { none -> 1 }
+    { Hit(_) -> 0 }
+    { Miss(remaining) -> match remaining
+      { Some(_) -> 0 }
+      { None -> 1 }
     }
   left + right
 }

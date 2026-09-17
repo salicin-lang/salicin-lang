@@ -2079,7 +2079,7 @@ mod tests {
     #[test]
     fn semantic_index_covers_source_identities_references_and_ambiguity() {
         let module = Vec::new();
-        let source = "let option = core.option\nlet read = trait {\n  let read(self: borrow(self))(): i32\n}\n\nlet cell = struct { value: i32 }\nlet event = enum { value( value: i32 ), empty }\n\nlet choose(value: i32): i32 = { value }\nlet choose(other: u64): u64 = { other }\n\nextend(cell, read) {\n  let read(self: borrow(self))(): i32 = { self.value }\n}\n\nlet answer(value: cell): i32 = {\n  choose(value: value.read())\n}\n";
+        let source = "let Option = core.Option\nlet read = trait {\n  let read(self: Borrow<self>)(): i32\n}\n\nlet cell = struct { value: i32 }\nlet event = enum { value( value: i32 ), empty }\n\nlet choose(value: i32): i32 = { value }\nlet choose(other: u64): u64 = { other }\n\nextend(cell, read) {\n  let read(self: Borrow<self>)(): i32 = { self.value }\n}\n\nlet answer(value: cell): i32 = {\n  choose(value: value.read())\n}\n";
         let analysis = analyze_workspace(
             &[EditorSource {
                 path: "src/lib.sc",
@@ -2127,7 +2127,7 @@ mod tests {
             .expect("source alias");
         assert_eq!(
             &source[alias.range.start.byte..alias.range.end.byte],
-            "option"
+            "Option"
         );
         assert_eq!(alias.range.start.byte, 4);
         assert_eq!(
@@ -2492,7 +2492,7 @@ mod tests {
     fn rename_handles_aliases_and_selected_overloads_without_textual_overreach() {
         let module = Vec::new();
         let alias_source =
-            "let option = core.option\nlet make(): option<i32> = { option.some(1) }\n";
+            "let Option = core.Option\nlet make(): Option<i32> = { Option.Some(1) }\n";
         let alias_session = WorkspaceSession::new(
             &[EditorSource {
                 path: "src/lib.sc",

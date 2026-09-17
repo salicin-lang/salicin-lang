@@ -127,7 +127,7 @@ The implementation lives under `compiler/src`:
   - `effects.rs` owns source-level support state, effect identity helpers, call-site effect
     requirements and diagnostics, effect-forwarding `do` lowering, effect operation lowering,
     and handler entry lowering.
-  - `fallible.rs` defines standard `option`/`result` short-circuit container metadata, inference
+  - `fallible.rs` defines standard `Option`/`Result` short-circuit container metadata, inference
     helpers, and failure-result return-boundary lowering shared by `??`, `?.`, `try`, and `throw`.
   - `flow.rs` tracks local scopes, move initialization alternatives, lexical loans, and lowering
     context state used by ownership and borrow checks.
@@ -180,7 +180,7 @@ The implementation lives under `compiler/src`:
   - `trait_collection.rs` collects top-level items and trait schemas, validates source trait
     contracts and Copy implementations, and normalizes trait implementation targets.
   - `failure.rs` probes custom-effect call rows to identify dedicated and standard failure sources,
-    infers context-free `try { ... }` `result(e)(t)` types, and lowers `try { ... }`, `throw`, and
+    infers context-free `try { ... }` `Result<E><T>` types, and lowers `try { ... }`, `throw`, and
     automatic failure propagation return-boundary wrappers.
   - `types.rs` lowers and renders source-level type syntax, enforces type compatibility and
     unification, recognizes uninhabited types, and owns compile-time type arguments plus

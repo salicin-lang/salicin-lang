@@ -1,15 +1,15 @@
-let future = core.async.future
-let poll = core.async.poll
-let result = core.result
+let Future = core.async.Future
+let Poll = core.async.Poll
+let Result = core.Result
 let throwing = core.error.throwing
 
 let resource = struct {
   value: i32,
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -28,7 +28,7 @@ let consume_or_throw: with<throwing<bool>>(move resource: resource): i32 = {
   choose(true, resource.value)
 }
 
-let poll_once<comptime e: effects, comptime f: type, comptime t: type>: with<e>(future: borrow<mut><f>): poll<t> = requires(f is future<e> && f.output == t) {
+let poll_once<e: effects, f: type, t: type>: with<e>(future: Borrow<mut><f>): Poll<t> = requires(f is Future<e> && f.Output == t) {
   future.poll()
 }
 
@@ -37,14 +37,14 @@ let main(): i32 = {
   let mut success = async {
     choose(false, offset)
   }
-  let success_result: result<bool><poll<i32>> = try {
+  let success_result: Result<bool><Poll<i32>> = try {
     success.poll()
   }
   let success_value = match success_result
-    { ok(polled) -> match polled
-      { ready(value) -> value }
-      { pending -> 0 } }
-    { err(_) -> 0 }
+    { Ok(polled) -> match polled
+      { Ready(value) -> value }
+      { Pending -> 0 } }
+    { Err(_) -> 0 }
 
   let drops = unsafe {
     raw_alloc(i32)(size_of<i32>, align_of<i32>)
@@ -56,12 +56,12 @@ let main(): i32 = {
   let mut failure = async {
     consume_or_throw(resource)
   }
-  let failure_result: result<bool><poll<i32>> = try {
+  let failure_result: Result<bool><Poll<i32>> = try {
     failure.poll()
   }
   let failed = match failure_result
-    { ok(_) -> false }
-    { err(error) -> error }
+    { Ok(_) -> false }
+    { Err(error) -> error }
   let drop_count = unsafe {
     *drops
   }

@@ -117,10 +117,10 @@ impl Analyzer {
             return None;
         };
         let implementation = self.collection.trait_impls.get(key)?;
-        let item_ty = implementation.associated_types.get("item")?;
+        let item_ty = implementation.associated_types.get("Item")?;
         let item_source = implementation
             .associated_type_sources
-            .get("item")
+            .get("Item")
             .cloned()
             .or_else(|| self.source_type_for_ty(item_ty))?;
         let output_ty = self.probe_chain_access_ty(item_ty, member, groups, origin)?;
@@ -129,7 +129,7 @@ impl Analyzer {
         }
         let output_source = self.source_type_for_ty(&output_ty)?;
         let Type::Named(rebind, arguments) =
-            implementation.associated_type_sources.get("rebind")?
+            implementation.associated_type_sources.get("Rebind")?
         else {
             return None;
         };
@@ -317,7 +317,7 @@ impl Analyzer {
             match candidates.as_slice() {
                 [(candidate, _)] if self.is_drop_impl(candidate) => {
                     self.error(
-                        "`droppable.drop` cannot be called directly; destruction is automatic",
+                        "`Droppable.drop` cannot be called directly; destruction is automatic",
                     );
                     return None;
                 }
@@ -423,7 +423,7 @@ impl Analyzer {
                 .is_some_and(|local| local.capability != LocalCapability::Owned);
         let scrutinee = self.lower_expr(source_scrutinee, None, context);
         if borrowed {
-            self.error("optional chaining requires an owned `option` or `result` value");
+            self.error("optional chaining requires an owned `Option` or `Result` value");
             return error_expr();
         }
         if scrutinee.ty == Ty::Error {
@@ -431,7 +431,7 @@ impl Analyzer {
         }
         let Some(info) = self.standard_fallible_info_for_ty(&scrutinee.ty) else {
             self.error(format!(
-                "operator `?.` requires an owned `option<t>` or `result<e><t>`, found `{}`",
+                "operator `?.` requires an owned `Option<T>` or `Result<E><T>`, found `{}`",
                 scrutinee.ty
             ));
             return error_expr();
@@ -468,8 +468,8 @@ impl Analyzer {
             return error_expr();
         };
         let success_variant = match info.kind {
-            StandardFallibleKind::Option => "some",
-            StandardFallibleKind::Result => "ok",
+            StandardFallibleKind::Option => "Some",
+            StandardFallibleKind::Result => "Ok",
         };
         let mut success = source_success.clone();
         rewrite_handler_chain_wrappers(
@@ -477,8 +477,8 @@ impl Analyzer {
             &canonical,
             success_variant,
             match info.kind {
-                StandardFallibleKind::Option => "none",
-                StandardFallibleKind::Result => "err",
+                StandardFallibleKind::Option => "None",
+                StandardFallibleKind::Result => "Err",
             },
         );
         let mut residual = source_residual.clone();
@@ -487,8 +487,8 @@ impl Analyzer {
             &canonical,
             success_variant,
             match info.kind {
-                StandardFallibleKind::Option => "none",
-                StandardFallibleKind::Result => "err",
+                StandardFallibleKind::Option => "None",
+                StandardFallibleKind::Result => "Err",
             },
         );
         let mut arms = vec![MatchArm {
@@ -502,7 +502,7 @@ impl Analyzer {
         arms.push(match info.kind {
             StandardFallibleKind::Option => MatchArm {
                 pattern: Pattern::Constructor {
-                    path: vec!["none".to_owned()],
+                    path: vec!["None".to_owned()],
                     fields: PatternFields::Unit,
                 },
                 guard: None,
@@ -510,7 +510,7 @@ impl Analyzer {
             },
             StandardFallibleKind::Result => MatchArm {
                 pattern: Pattern::Constructor {
-                    path: vec!["err".to_owned()],
+                    path: vec!["Err".to_owned()],
                     fields: PatternFields::Positional(vec![Pattern::Binding(error.to_owned())]),
                 },
                 guard: None,
@@ -533,7 +533,7 @@ impl Analyzer {
                 .and_then(|name| context.lookup(name))
                 .is_some_and(|local| local.capability != LocalCapability::Owned);
         if borrowed {
-            self.error("optional chaining requires an owned `option`, `result`, or `chain` value");
+            self.error("optional chaining requires an owned `Option`, `Result`, or `Chain` value");
             return error_expr();
         }
         let base_probe = self.probe_expr_ty(base, None, context);
@@ -587,7 +587,7 @@ impl Analyzer {
         }
         let Some(info) = self.standard_fallible_info_for_ty(&scrutinee.ty) else {
             self.error(format!(
-                "operator `?.` requires an owned `option<t>`, `result<e><t>`, or `chain` value, found `{}`",
+                "operator `?.` requires an owned `Option<T>`, `Result<E><T>`, or `Chain` value, found `{}`",
                 scrutinee.ty
             ));
             return error_expr();
@@ -640,8 +640,8 @@ impl Analyzer {
             })
         };
         let success_variant = match info.kind {
-            StandardFallibleKind::Option => "some",
-            StandardFallibleKind::Result => "ok",
+            StandardFallibleKind::Option => "Some",
+            StandardFallibleKind::Result => "Ok",
         };
         let mut arms = vec![MatchArm {
             pattern: Pattern::Constructor {
@@ -656,21 +656,21 @@ impl Analyzer {
         arms.push(match info.kind {
             StandardFallibleKind::Option => MatchArm {
                 pattern: Pattern::Constructor {
-                    path: vec!["none".to_owned()],
+                    path: vec!["None".to_owned()],
                     fields: PatternFields::Unit,
                 },
                 guard: None,
-                body: wrap("none", None),
+                body: wrap("None", None),
             },
             StandardFallibleKind::Result => MatchArm {
                 pattern: Pattern::Constructor {
-                    path: vec!["err".to_owned()],
+                    path: vec!["Err".to_owned()],
                     fields: PatternFields::Positional(vec![Pattern::Binding(
                         ERROR_BINDING.to_owned(),
                     )]),
                 },
                 guard: None,
-                body: wrap("err", Some(Expr::Name(ERROR_BINDING.to_owned()))),
+                body: wrap("Err", Some(Expr::Name(ERROR_BINDING.to_owned()))),
             },
         });
         self.lower_match_with_scrutinee(

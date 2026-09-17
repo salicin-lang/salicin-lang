@@ -1,25 +1,25 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 
 let step = struct {
-  remaining: ptr<mut><i32>
+  remaining: Ptr<mut><i32>
 }
 
-extend(step, future(())) {
-  let output = bool
+extend(step, Future(())) {
+  let Output = bool;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<bool> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
     let done = unsafe {
       *self.remaining = *self.remaining - 1
       *self.remaining == 0
     }
-    poll<bool>.ready(done)
+    Poll<bool>.Ready(done)
   }
 }
 
-let step(remaining: ptr<mut><i32>): step = {
+let step(remaining: Ptr<mut><i32>): step = {
   step{ remaining: remaining }
 }
 
@@ -47,8 +47,8 @@ let main(): i32 = {
   }
 
   match future.poll()
-    { pending -> 0 }
-    { ready(_) -> 42 }
+    { Pending -> 0 }
+    { Ready(_) -> 42 }
 }
 
 test("async_await_loop_nested_control.sc") {

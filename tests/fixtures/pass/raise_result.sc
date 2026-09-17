@@ -1,16 +1,16 @@
-let result = core.result
+let Result = core.Result
 let throwing = core.error.throwing
 
-let extract: with<throwing<bool>>(move result: result<bool><i32>): i32 = {
+let extract: with<throwing<bool>>(move result: Result<bool><i32>): i32 = {
   result!
 }
 
 let main(): i32 = {
   let success = try {
-    extract(result.ok(42))
+    extract(Result.Ok(42))
   }!!
   let failure = try {
-    extract(result.err(false))
+    extract(Result.Err(false))
   } ?? 0
   success + failure
 }

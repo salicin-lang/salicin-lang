@@ -2,10 +2,10 @@ let check = effect {
   let accept(): bool
 }
 
-let resource = struct { counter: ptr<mut><i32> }
+let resource = struct { counter: Ptr<mut><i32> }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -14,18 +14,18 @@ extend(resource, droppable) {
 
 let event = enum {
   value( value: resource ),
-  empty,
+  Empty,
 }
 
 let consume(move resource: resource): i32 = { 20 }
 
-let evaluate(counter: ptr<mut><i32>, accepted: bool): i32 = {
+let evaluate(counter: Ptr<mut><i32>, accepted: bool): i32 = {
   check.handle accept { (resume) -> resume(accepted) } action {
       let event = event.value( value: resource{ counter: counter } )
       match event
         { event.value( value: resource ) if check.accept() -> consume(resource) }
         { event.value( value: resource ) -> consume(resource) }
-        { event.empty -> 0 }
+        { event.Empty -> 0 }
     }
 }
 

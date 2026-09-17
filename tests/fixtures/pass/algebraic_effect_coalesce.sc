@@ -1,9 +1,9 @@
-let option = core.option
-let result = core.result
+let Option = core.Option
+let Result = core.Result
 
 let query = effect {
-  let option(present: bool): option<bool>;
-  let result(present: bool): result<()><bool>;
+  let option(present: bool): Option<bool>;
+  let result(present: bool): Result<()><bool>;
   let fallback(): bool
 }
 
@@ -18,9 +18,9 @@ let program: with<query>(): i32 = {
 let main(): i32 = {
   let mut fallbacks = 0
   let result = query.handle option { (present, resume) ->
-      resume(if present { option.some(true) } else { option.none })
+      resume(if present { Option.Some(true) } else { Option.None })
     } result { (present, resume) ->
-      resume(if present { result.ok(true) } else { result.err(()) })
+      resume(if present { Result.Ok(true) } else { Result.Err(()) })
     } fallback { (resume) ->
       fallbacks += 1;
       resume(true)

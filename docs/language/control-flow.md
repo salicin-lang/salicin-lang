@@ -22,10 +22,10 @@ requires it.
 Conceptually, `if` has this shape:
 
 ```sc fragment
-let if<comptime e: effects, comptime t: type>: with<e>
+let if<e: effects, T: type>: with<e>
   (condition: bool)
-  (move then: with<e>((): t))
-  (move else: with<e>((): t)): t
+  (move then: with<e>((): T))
+  (move else: with<e>((): T)): T
 ```
 
 The ordinary surface form:
@@ -96,11 +96,11 @@ optimization must preserve ordinary ownership, borrowing, effect, and cleanup se
 
 ```sc fragment
 match option {
-  some(value) if value > 0 -> value
+  Some(value) if value > 0 -> value
 } {
-  some(_) -> 0
+  Some(_) -> 0
 } {
-  none -> -1
+  None -> -1
 }
 ```
 
@@ -118,12 +118,12 @@ Compiler-generated internal match names must never appear in user diagnostics.
 
 ## For
 
-`for pattern in iterable { body }` is governed by `into_iterator` and `iterator`:
+`for pattern in iterable { body }` is governed by `IntoIterator` and `Iterator`:
 
 ```sc fragment
-let iterator = trait {
-  let item<comptime r: region>: type
-  let next<comptime r: region>(self: borrow<mut><r><self>): core.option<item<r>>
+let Iterator = trait {
+  let Item<r: region>: type
+  let next<r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>>
 }
 ```
 

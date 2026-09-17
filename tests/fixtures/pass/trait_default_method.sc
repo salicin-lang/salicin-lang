@@ -1,38 +1,38 @@
 let read = trait {
-  let read(self: borrow<self>)(): i32
-  let doubled(self: borrow<self>)(): i32 = { self.read() + self.read() }
+  let read(self: Borrow<self>)(): i32
+  let doubled(self: Borrow<self>)(): i32 = { self.read() + self.read() }
 }
 
 let number = struct { value: i32 }
 
 extend(number, read) {
-  let read(self: borrow<self>)(): i32 = { self.value }
+  let read(self: Borrow<self>)(): i32 = { self.value }
 }
 
 let override = struct {}
 
 extend(override, read) {
-  let read(self: borrow<self>)(): i32 = { 0 }
-  let doubled(self: borrow<self>)(): i32 = { 42 }
+  let read(self: Borrow<self>)(): i32 = { 0 }
+  let doubled(self: Borrow<self>)(): i32 = { 42 }
 }
 
-let cell<comptime t: type> = struct { value: t }
+let cell<t: type> = struct { value: t }
 
 extend(cell(t), read)
 (requires: t is read) {
-  let read(self: borrow<self>)(): i32 = { self.value.read() }
+  let read(self: Borrow<self>)(): i32 = { self.value.read() }
 }
 
 let take = trait {
-  let item: type
-  let take(move self)(): item
-  let forward(move self)(): item = { self.take() }
+  let Item: type
+  let take(move self)(): Item
+  let forward(move self)(): Item = { self.take() }
 }
 
 let boxed = struct { value: i32 }
 
 extend(boxed, take) {
-  let item = i32
+  let Item = i32;
   let take(move self)(): i32 = { self.value }
 }
 

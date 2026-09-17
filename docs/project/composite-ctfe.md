@@ -81,7 +81,7 @@ or arm is evaluated.
 The first composite milestone does not admit mutation, mutable locals,
 assignment, loops, borrowing, raw pointers, slices, function values, closures,
 async, algebraic handlers, effects, foreign or builtin bodies, allocation, or
-runtime `string`, `vec`, or `box` values. Unselected control-flow branches may
+runtime `String`, `Vec`, or `Box` values. Unselected control-flow branches may
 contain rejected constructs because CTFE validates executed behavior at the
 required use site; declaration checking still validates their ordinary
 runtime types.
@@ -101,14 +101,14 @@ A source function may execute during CTFE when:
   separately specified CTFE rule.
 
 Eligibility is checked at the static call site. Ordinary pure functions do
-not receive a second `const` or `comptime` declaration modifier, and rejecting
+not receive a second declaration modifier such as `const`, and rejecting
 one static call does not make the function invalid for runtime use.
 
 ## Resource Exclusion
 
 Before constructing a composite value, the evaluator recursively rejects
 unsized fields; references, pointers, slices, callable values, continuations,
-or address-dependent layout values; types with an applicable `droppable`
+or address-dependent layout values; types with an applicable `Droppable`
 implementation; fields whose type recursively requires destruction;
 allocation-backed values; and recursive nominal layouts without a finite
 value representation.
@@ -207,7 +207,7 @@ values require a later contract rather than an implementation shortcut.
 Completion requires positive and rejection coverage for every scalar and
 composite family, exact-width arithmetic, target pointer widths, construction,
 projection, indexing, patterns, control flow, generic and cross-module calls,
-nominal identity, `option`/`result`, resource exclusion, cycles, every budget,
+nominal identity, `Option`/`Result`, resource exclusion, cycles, every budget,
 stable diagnostics, deterministic IR, and native global values. Dependent
 arrays and globals must share the evaluator in tests rather than merely
 produce equal-looking results through separate implementations.

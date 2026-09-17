@@ -1,9 +1,9 @@
-let vec = alloc.vec.vec
+let Vec = alloc.Vec
 
 let bomb = struct {}
 
-extend(bomb, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(bomb, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       raw_trap()
     }
@@ -11,7 +11,7 @@ extend(bomb, droppable) {
 }
 
 let main(): i32 = {
-  let mut values: vec<bomb> = vec<bomb>.new()
+  let mut values: Vec<bomb> = Vec<bomb>.new()
   values.push(bomb{})
   0
 }

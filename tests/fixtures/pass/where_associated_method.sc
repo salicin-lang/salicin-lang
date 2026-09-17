@@ -1,20 +1,20 @@
 let produce = trait {
-  let item: type
-  let produce(self: borrow<self>)(): item
+  let Item: type
+  let produce(self: Borrow<self>)(): Item
 }
 
 let value = struct { value: i32 }
 
 extend(value, produce) {
-  let item = i32
-  let produce(self: borrow<self>)(): i32 = { self.value }
+  let Item = i32;
+  let produce(self: Borrow<self>)(): i32 = { self.value }
 }
 
-let produce<comptime t: type>(value: borrow<t>): i32
-= requires(t is produce && t.item == i32) { value.produce() }
+let produce<t: type>(value: Borrow<t>): i32
+= requires(t is produce && t.Item == i32) { value.produce() }
 
-let forward<comptime t: type>(value: borrow<t>): i32
-= requires(t is produce && t.item == i32) { produce(value) }
+let forward<t: type>(value: Borrow<t>): i32
+= requires(t is produce && t.Item == i32) { produce(value) }
 
 let main(): i32 = {
   let value = value{ value: 42 }

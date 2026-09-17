@@ -1,12 +1,12 @@
-let slice = core.memory.slice
+let Slice = core.memory.Slice
 
-let escape(): borrow<i32> = {
-  let values: array<i32><1> = [42]
-  let slice: borrow<slice<i32>> = borrow(values)
-  let mut iterator = slice.iter()
+let escape(): Borrow<i32> = {
+  let values: Array<i32><1> = [42]
+  let slice: Borrow<Slice<i32>> = borrow(values)
+  let mut iterator = Slice.iter()
   match iterator.next()
-    { some(value) -> value }
-    { none -> unsafe { raw_trap() } }
+    { Some(value) -> value }
+    { None -> unsafe { raw_trap() } }
 }
 
 let main(): i32 = { 0 }

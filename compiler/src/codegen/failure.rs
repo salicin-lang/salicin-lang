@@ -30,7 +30,7 @@ impl Analyzer {
                         Some((payload, _)) => payload,
                         None => {
                             self.error(
-                                "cannot infer the success type of `try { ... }`; add a contextual `result<e><t>` type",
+                                "cannot infer the success type of `try { ... }`; add a contextual `Result<E><T>` type",
                             );
                             return None;
                         }
@@ -40,7 +40,7 @@ impl Analyzer {
                     Some((payload, _)) => payload,
                     None => {
                         self.error(
-                            "cannot infer the success type of `try { ... }`; add a contextual `result<e><t>` type",
+                            "cannot infer the success type of `try { ... }`; add a contextual `Result<E><T>` type",
                         );
                         return None;
                     }
@@ -48,7 +48,7 @@ impl Analyzer {
                 Expr::Throw(_) => Ty::Never,
                 _ => {
                     self.error(
-                        "cannot infer the success type of `try { ... }`; add a contextual `result<e><t>` type",
+                        "cannot infer the success type of `try { ... }`; add a contextual `Result<E><T>` type",
                     );
                     return None;
                 }
@@ -59,7 +59,7 @@ impl Analyzer {
         let error = match errors.len() {
             0 => {
                 self.error(
-                    "cannot infer `try { ... }` because its body has no escaping failure source; add a contextual `result<e><t>` type",
+                    "cannot infer `try { ... }` because its body has no escaping failure source; add a contextual `Result<E><T>` type",
                 );
                 return None;
             }
@@ -71,7 +71,7 @@ impl Analyzer {
                     .collect::<Vec<_>>();
                 names.sort();
                 self.error(format!(
-                    "cannot infer `try {{ ... }}` from multiple escaping error types: {}; convert them to one type or add a contextual `result<e><t>` type",
+                    "cannot infer `try {{ ... }}` from multiple escaping error types: {}; convert them to one type or add a contextual `Result<E><T>` type",
                     names
                         .iter()
                         .map(|name| format!("`{name}`"))
@@ -275,13 +275,13 @@ impl Analyzer {
         let Some(info) = self.standard_fallible_info_for_ty(&expected) else {
             let _ = self.lower_expr(body, None, context);
             self.error(format!(
-                "`try {{ ... }}` produces `result<e><t>`, but this context expects `{expected}`"
+                "`try {{ ... }}` produces `Result<E><T>`, but this context expects `{expected}`"
             ));
             return error_expr();
         };
         if info.kind != StandardFallibleKind::Result {
             let _ = self.lower_expr(body, None, context);
-            self.error("`try { ... }` requires `result<e><t>`, not `option<t>`");
+            self.error("`try { ... }` requires `Result<E><T>`, not `Option<T>`");
             return error_expr();
         }
         let error = info.error.expect("Result has an error type");
@@ -392,7 +392,7 @@ impl Analyzer {
                     Box::new(Expr::Call(
                         Box::new(Expr::Member(
                             Box::new(Expr::Name(result_name.clone())),
-                            "ok".to_owned(),
+                            "Ok".to_owned(),
                         )),
                         vec![CallArg {
                             label: None,
@@ -415,7 +415,7 @@ impl Analyzer {
                     Box::new(Expr::Call(
                         Box::new(Expr::Member(
                             Box::new(Expr::Name(result_name)),
-                            "err".to_owned(),
+                            "Err".to_owned(),
                         )),
                         vec![CallArg {
                             label: None,
@@ -1092,7 +1092,7 @@ impl Analyzer {
         let arms = vec![
             MatchArm {
                 pattern: Pattern::Constructor {
-                    path: vec!["ok".to_owned()],
+                    path: vec!["Ok".to_owned()],
                     fields: PatternFields::Positional(vec![Pattern::Binding(
                         OUTPUT_BINDING.to_owned(),
                     )]),
@@ -1102,7 +1102,7 @@ impl Analyzer {
             },
             MatchArm {
                 pattern: Pattern::Constructor {
-                    path: vec!["err".to_owned()],
+                    path: vec!["Err".to_owned()],
                     fields: PatternFields::Positional(vec![Pattern::Binding(
                         ERROR_BINDING.to_owned(),
                     )]),
@@ -1225,7 +1225,7 @@ impl Analyzer {
     fn standard_throw_effect_source(&self, error_source: Type) -> Option<Type> {
         let throw_name = self.lang_item_name(LangItemKind::Throw);
         let mut function = self.collection.function_templates.get(throw_name)?.clone();
-        let substitutions = HashMap::from([("error".to_owned(), error_source)]);
+        let substitutions = HashMap::from([("Error".to_owned(), error_source)]);
         substitute_function_types(&mut function, &substitutions);
         if !function.effects.parameters.is_empty()
             || function.effects.unsafety

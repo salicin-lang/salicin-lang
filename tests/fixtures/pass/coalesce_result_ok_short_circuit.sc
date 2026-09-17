@@ -1,13 +1,13 @@
-let result = core.result
+let Result = core.Result
 
-let fallback(count: borrow<mut><i32>): i32 = {
+let fallback(count: Borrow<mut><i32>): i32 = {
   count = count + 1
   0
 }
 
 let main(): i32 = {
   let mut count = 0
-  let answer = result<bool><i32>.ok(42) ?? fallback(count)
+  let answer = Result<bool><i32>.Ok(42) ?? fallback(count)
   if count == 0 { answer } else { 0 }
 }
 

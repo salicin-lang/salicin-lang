@@ -1,13 +1,13 @@
 /// Minimal allocation-free executor that polls one future until completion.
-pub let spin = struct {}
+pub let Spin = struct {}
 
-extend(spin, core.async.executor) {
-  let run<comptime e: effects, comptime f: type, comptime t: type>: with<e>(self: borrow<mut><self>)(move future: f): t = requires(f is core.async.future<e> && f.output == t) {
+extend(Spin, core.async.Executor) {
+  let run<e: effects, F: type, T: type>: with<e>(self: Borrow<mut><self>)(move future: F): T = requires(F is core.async.Future<e> && F.Output == T) {
     let mut current = future
     loop {
       match current.poll()
-        { ready(value) -> break(value) }
-        { pending -> continue() }
+        { Ready(value) -> break(value) }
+        { Pending -> continue() }
     }
   }
 }

@@ -1,7 +1,7 @@
-let vec = alloc.vec.vec
+let Vec = alloc.Vec
 
 let main(): i32 = {
-  let mut values: vec<i32> = vec<i32>.new()
+  let mut values: Vec<i32> = Vec<i32>.new()
   values.push(42)
   values.append(values)
   0

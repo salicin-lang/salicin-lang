@@ -19,7 +19,7 @@ current capability inventory. It does not record release history; see the
   unit-returning `throwing<string>` bodies, owned UTF-8 failure messages,
   all-failure reporting,
   a dedicated framed parent channel, and `std.test` failure, boolean,
-  equality, inequality, and `option`/`result` expectation helpers with static
+  equality, inequality, and `Option`/`Result` expectation helpers with static
   comparison/diagnostic-formatting bounds and single operand evaluation;
   source-order `--list`, case-sensitive UTF-8 `--filter`, package-wide
   duplicate-name diagnostics, one-runner selected execution, and stable
@@ -127,7 +127,8 @@ artifact caching, and eviction policy remain outside the implemented
 whole-graph cache.
 
 The initial [standard-library usability surface](standard-library-surface.md)
-is accepted. It fixes the `core`/`alloc`/host-`std` layers, all-`snake_case`
+is accepted. It fixes the `core`/`alloc`/host-`std` layers, category-aware
+`PascalCase`/`snake_case`
 public naming, prelude exclusions, ownership modes, failure policy, error
 families, explicit `io` authority, initial native target matrix, and minimum
 text, collection, conversion, I/O, and test APIs. Its source-backed canonical
@@ -139,7 +140,7 @@ Native `std.io` now provides single-attempt and exact/all stdin/stdout/stderr
 operations, byte-exact text helpers, line input with checked UTF-8, explicit
 flush points, and lossless-byte plus checked-text process arguments. The
 launcher captures `argc`/`argv`, ignores `SIGPIPE`, and maps native failures
-to portable `io_error_kind` values without exposing raw FFI authority.
+to portable `IoErrorKind` values without exposing raw FFI authority.
 Filesystem support provides validated open/create options, unique
 deterministically dropped file owners, consuming close, short and exact/all
 reads and writes, `fsync`, three-origin seek, and bounded whole-file helpers.
@@ -179,14 +180,14 @@ Implemented lexical and declaration features include:
 - prefix effect callable types `with<E>(F)` and effectful declaration
   boundaries, with compact boundary-free syntax retained for pure functions;
 - the compiler-validated `std.io.io` authority identity, accepted only at the
-  native `main` boundary, plus source-defined `io_error_kind` and `io_error`;
+  native `main` boundary, plus source-defined `IoErrorKind` and `IoError`;
 - private, package, and public visibility;
 - contextual control, passing, sort, and borrow words;
-- compiler-owned abstract sorts written `let name: sort(2)`;
+- compiler-owned abstract sorts written `let name: sort<2>`;
 - a dedicated erased `constraint` fragment sort, rejected as a runtime type,
   explicit source argument, defaulted parameter, runtime storage, and
   user-comparable value; no `declaration` sort is present;
-- defined sorts written `let name = sort(1) { ... }`, including empty sorts;
+- defined sorts written `let name = sort<1> { ... }`, including empty sorts;
 - ordinary closed enums usable as compile-time value types;
 - explicit core-private `builtin()` initializers for compiler-owned
   functions, types, type constructors, and extension methods.
@@ -195,7 +196,7 @@ Implemented lexical and declaration features include:
 - explicit erased inputs for those syntax declarations:
   the one- and two-argument `foreign` overloads select the finite
   `abi.c` value, while
-  `pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()`
+  `pub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()`
   receives the UTF-8 name and unit-returning throwing body;
   `core.requires` receives a compile-time boolean and delayed function body.
   Trait and extension requirements remain labeled boolean header parameters,
@@ -220,7 +221,7 @@ Implemented type-system features include:
 - all fixed-width signed and unsigned integers plus pointer-width `isize` and `usize`;
 - tuples, arrays, borrows, raw pointers, function types, structs, and enums;
 - transparent type aliases and partially applied type constructors;
-- compile-time `type`, `usize`, `string`, `region`, `effect`, `effects`, `access`,
+- compile-time `type`, `usize`, `String`, `region`, `effect`, `effects`, `access`,
   closed-value, constructor, and
   parameter-schema arguments;
 - source-level compile-time diagnostics that identify binder, sort, owner, and parameter group;
@@ -239,7 +240,7 @@ Implemented type-system features include:
 - static specialization of capturing callables passed to known higher-order callees.
 
 Generic associated constructors preserve parameter sorts and groups in trait declarations and
-implementations. Standard iterator contracts use `item<comptime r: region>: type`, allowing an item type to
+implementations. Standard iterator contracts use `item<r: region>: type`, allowing an item type to
 depend on the receiver-borrow region.
 
 Ordinary pure scalar functions can be evaluated in dependent array-length
@@ -256,7 +257,7 @@ Every primitive integer has source-declared `min`, `max`, `clamp`, and `sign`
 methods. Signed integers expose a total same-width unsigned `magnitude`, so
 the signed minimum is representable. Explicit
 `checked_into(output: target)()` conversion accepts only integer targets and
-returns `option<target>` without truncating on failure. CTFE and LLVM lowering
+returns `Option<Target>` without truncating on failure. CTFE and LLVM lowering
 share the same signed and width boundaries; LLVM uses defined comparisons,
 extensions, and truncations without overflow flags or backend undefined
 behavior.
@@ -290,7 +291,7 @@ nested labeled destructuring patterns retain canonical nominal identity.
 Struct patterns now travel through ordinary runtime `match` lowering and LLVM
 emission as well as through CTFE. Before construction, recursive type
 validation rejects slices and other unsized storage, pointers and borrows,
-allocation-backed or custom-`droppable` fields, callable/address-dependent
+allocation-backed or custom-`Droppable` fields, callable/address-dependent
 values, recursive nominal layouts, and the existing aggregate budgets.
 
 Closed enums are intermediate dependent-expression values too. Unit,
@@ -299,8 +300,8 @@ variant position, and declaration-order payload fields rather than inspecting
 an LLVM tag or padding. Generic enum instances are materialized on first CTFE
 use even when they occur only in a function-body local. Exhaustive matches
 support payload binding, nested tuple/struct/enum patterns, literal tests,
-guards, unit short patterns, and structural equality. Standard `option` and
-`result` construction and matching execute through the same path. Resource
+guards, unit short patterns, and structural equality. Standard `Option` and
+`Result` construction and matching execute through the same path. Resource
 exclusion recursively checks every possible variant before constructing even
 a resource-free unit variant.
 
@@ -337,7 +338,7 @@ The semantic analyzer implements:
 
 - explicit `copy`, `move`, shared borrow, and mutable borrow parameter modes;
 - type-directed default copy or move behavior;
-- source-backed structural `movable`, with `copyable` inheriting relocation capability;
+- source-backed structural `Movable`, with `Copyable` inheriting relocation capability;
 - relocation checks at owned place reads while preserving direct in-place initialization;
 - whole-value and field-sensitive move tracking;
 - shared-loan overlap and mutable-loan exclusion;
@@ -371,21 +372,21 @@ Implemented data and control features include:
 - `if`, `loop`, `while`, post-test loops, and `for`;
 - `break`, `continue`, and `return`;
 - lexical `defer` with LIFO execution on normal, loop, return, and error exits;
-- cold compiler-generated futures with a typed pure `future` implementation, one-shot
-  `poll.ready` transition, inferred residual `unsafety`, state-aware capture transfer, cancellation
+- cold compiler-generated futures with a typed pure `Future` implementation, one-shot
+  `Poll.Ready` transition, inferred residual `unsafety`, state-aware capture transfer, cancellation
   cleanup, completed-state repoll traps, and one tail-position child suspension;
 - a direct intrinsic `core.async.async` entry point for anonymous future state
   and a source-defined `core.async.await` over the ordinary
   `poll`/`suspension.suspend` protocol;
 - the explicit allocation-free `std.async.spin` executor for one owned future;
 - handler specialization for non-suspending futures with a custom residual
-  effect, including standard `throwing<error>`, and by-value `copyable`, move-only,
+  effect, including standard `throwing<Error>`, and by-value `Copyable`, move-only,
   shared-borrow, or mutable-borrow captures, including exact once-only
-  move/drop behavior, retained borrow exclusion, `future<e>` where-predicate
+  move/drop behavior, retained borrow exclusion, `Future<e>` where-predicate
   inference, and effectful trait-method inlining;
 - handler specialization for a suspended await with a finite sequence of pure
   linear continuation segments and a residual effect in the first segment,
-  including standard `throwing<error>`, by-value `copyable`, move-only,
+  including standard `throwing<Error>`, by-value `Copyable`, move-only,
   shared-borrow, and mutable-borrow captures and retained locals, pending
   repoll without replaying earlier transitions, and exact completion, error,
   and cancellation cleanup;
@@ -411,22 +412,22 @@ Implemented algebraic-effect support includes:
 - cleanup on resumption and abandonment;
 - captured effectful closures;
 - capturing callable arguments specialized after generic custom-effect rows become concrete;
-- source-backed `throwing<error>`, `throw`, and `try`;
+- source-backed `throwing<Error>`, `throw`, and `try`;
 - composition of standard error and unsafe effects.
 
 `unsafety` is an authority effect used by raw memory and foreign operations. It does not disable
 typing, ownership, or cleanup checks.
 
 Cold `async` blocks without suspension materialize compiler-generated nominal state containing an
-explicit state word and their captured fields. The generated state satisfies structural `movable`;
+explicit state word and their captured fields. The generated state satisfies structural `Movable`;
 relocating or cancelling an unpolled future transfers or drops owned captures exactly once.
-The no-suspension polling transition returns `poll.ready` once, traps on repoll, and enforces an
-inferred residual `unsafety` requirement. Standard residual `throwing<error>` polling specializes
+The no-suspension polling transition returns `Poll.Ready` once, traps on repoll, and enforces an
+inferred residual `unsafety` requirement. Standard residual `throwing<Error>` polling specializes
 through `try` or its underlying handler; success, error, and move-capture cleanup paths run
 natively. An await may retain custom residual effects when the cold segment
-and its finite linear continuation segments capture by-value `copyable`,
+and its finite linear continuation segments capture by-value `Copyable`,
 move-only, or region-checked shared or mutable references, retained state
-remains structural `movable`, and later child poll rows have no custom effect or
+remains structural `Movable`, and later child poll rows have no custom effect or
 `throwing`. Its handler-specialized
 first poll transfers factory captures before evaluating the child factory. A
 distinct starting state retains move-only continuation captures if the
@@ -456,7 +457,7 @@ Multiple sequential awaits compose while retaining earlier outputs and dropping 
 segment on cancellation. Ordinary locals live across a sequential await are stored in generated
 state and transferred into the continuation; owned resources are dropped exactly once on ready or
 cancellation. Borrow chains whose referent would be stored in the same future are rejected because
-the generated state could not implement `movable`, while region-checked borrows of external storage
+the generated state could not implement `Movable`, while region-checked borrows of external storage
 remain valid. An `if` or `match` whose every branch is a single tail await can suspend when all
 branch futures have the same output; child types may differ. Selection is evaluated once and a
 private active-variant future polls or cancels only the selected child. Branch-local linear
@@ -495,8 +496,8 @@ uninhabited `never` as its output.
 For unit-valued general iteration bodies, the compiler rewrites control exits at the current loop
 depth into early iteration-future step returns and distributes normal fallthrough across nested
 `if` and `match` exits. Nested loops and nested async blocks remain separate control boundaries.
-`std.async.spin` is an ordinary zero-field library value implementing `executor`; it repeatedly
-polls one owned future until `ready` and introduces no implicit allocation or runtime selection.
+`std.async.spin` is an ordinary zero-field library value implementing `Executor`; it repeatedly
+polls one owned future until `Ready` and introduces no implicit allocation or runtime selection.
 
 ## Modules, Packages, and FFI
 
@@ -527,7 +528,7 @@ The experimental native [ABI representation audit](abi-review.md) specifies
 the current 64-bit host-target mapping for every emitted first-class value.
 Unit parameters are erased, borrows are pointers, owned values and aggregates
 pass directly, effect rows are specialized out of direct calls, `throwing` uses
-its `result` return boundary, and compiler-owned continuation records contain
+its `Result` return boundary, and compiler-owned continuation records contain
 entry, drop, environment, and active-flag pointers. Native calling agreement
 is implemented.
 
@@ -535,7 +536,7 @@ The experimental [native calling convention](native-calling-convention.md)
 defines flattened runtime groups, erased Unit and borrowed-Unit parameters,
 direct value or pointer passing, owned argument and return transfer, cleanup
 on every exit, static effect authority, algebraic continuation lowering, and
-`result`-based `throwing` propagation. Unsized value parameters and returns are
+`Result`-based `throwing` propagation. Unsized value parameters and returns are
 rejected at source declarations.
 
 The experimental [native linkage contract](native-linkage.md) exports concrete
@@ -566,16 +567,16 @@ Linux/x86-64 and macOS/arm64; other host pairs receive a target-specific
 diagnostic.
 
 The enforced dependency order is `core ← alloc ← std`. Algebraic and
-higher-kinded functional protocols plus their `option`/`result`
+higher-kinded functional protocols plus their `Option`/`Result`
 implementations are owned by `std`; the concrete `spin` executor is likewise
 in `std.async`. Freestanding data types, operator/iteration/control
 protocols, cold futures, and the executor protocol remain in `core`.
 
-Public embedded-library declarations use strict ASCII `snake_case` and
-semantic category vocabulary: value types use entity or state nouns, traits
-use capability, role, or operation names, and effects use behavior or
-capability nouns. Category suffixes such as `_type`, `_trait`, and `_effect`
-are rejected. The standard effect identities are `throwing`, `suspension`,
+Public embedded-library declarations use category-aware ASCII names and
+semantic vocabulary: types, type parameters, type forms, traits, variants, and associated types
+use `PascalCase`; functions, methods, values, fields, modules, effects, and
+sorts use `snake_case`. Category suffixes such as `_type`, `_trait`, and
+`_effect` are rejected. The standard effect identities are `throwing`, `suspension`,
 `unsafety`, `loop_exit`, `iteration_skip`, and `function_exit`; user packages
 are not subjected to this library-only naming gate.
 
@@ -584,8 +585,8 @@ Implemented `core` facilities include:
 - primitive declarations and compile-time sorts;
 - primitive integer bounds, sign and total magnitude helpers, and checked
   conversions in `core.numeric`;
-- `borrow`, `ptr`, `array`, `slice`, `size_of`, and `align_of`;
-- consistent `array` and `slice` length, emptiness, checked `get`,
+- `Borrow`, `Ptr`, `Array`, `Slice`, `size_of`, and `align_of`;
+- consistent `Array` and `Slice` length, emptiness, checked `get`,
   trapping `at`/index, first/last, and access-preserving array-to-slice views.
   Checked misses test bounds before forming a borrow, and mutable views retain
   the original array loan;
@@ -594,7 +595,7 @@ Implemented `core` facilities include:
   elements and forward their exact effect row; source-returning search retains
   the collection loan;
 - ownership markers and operator traits;
-- `option` and `result`, including inspection, region-preserving views,
+- `Option` and `Result`, including inspection, region-preserving views,
   transformations, fallback, and extraction helpers;
 - iteration, indexing, and flow protocols;
 - source-backed `parse`, effect-parameterized scalar/ASCII text writers, strict
@@ -602,59 +603,59 @@ Implemented `core` facilities include:
   and statically dispatched display/debug formatting for 64-bit and 128-bit
   integers, booleans, Unicode scalars, and text in `core.fmt`;
 - zero-allocation runtime UTF-8 string literals backed by immutable private
-  globals and owning `string` values that distinguish literal from allocated
+  globals and owning `String` values that distinguish literal from allocated
   storage;
 - dynamically sized immutable `str` views represented through the same
   `{address, byte length}` borrowed-view ABI as slices; checked
-  `borrow(slice<u8>)` validation rejects malformed, truncated, overlong,
-  surrogate, and out-of-range UTF-8, while `string.as_str` and `str.as_bytes`
+  `Borrow<Slice<u8>>` validation rejects malformed, truncated, overlong,
+  surrogate, and out-of-range UTF-8, while `String.as_str` and `str.as_bytes`
   retain the source region and loan;
 - UTF-8 byte-boundary queries and checked `str` subviews, including empty
   one-past-end views; the internal subview projection is shared with slices
   while the safe text wrapper alone enforces UTF-8 endpoints;
-- exact allocation-free byte equality for `str` views and owning `string`
+- exact allocation-free byte equality for `str` views and owning `String`
   values, with borrowed dynamically sized operands dispatched through the
   source-defined equality protocol;
-- owning `string` construction from empty capacity, borrowed `str`, and
-  `unicode_scalar`; capacity reservation; scalar and text append; checked
+- owning `String` construction from empty capacity, borrowed `str`, and
+  `UnicodeScalar`; capacity reservation; scalar and text append; checked
   boundary-preserving truncation; and clearing without releasing capacity.
   Growing static literal storage first copies it into a uniquely owned
   allocation, and safe mutation never exposes writable bytes;
-- checked owning substring copies, lexicographic `str` and `string` ordering,
+- checked owning substring copies, lexicographic `str` and `String` ordering,
   prefix and suffix checks, containment, and first-match search. All range and
   search positions are UTF-8 byte offsets; substring endpoints and returned
   match offsets are scalar boundaries;
 - borrowed byte and Unicode-scalar iterators that retain the source text loan
   and yield copied values, plus scalar counting and checked scalar lookup;
-- copyable `unicode_scalar` values with checked `u32` construction, numeric
+- `Copyable` `UnicodeScalar` values with checked `u32` construction, numeric
   projection, code-point equality, and exact canonical UTF-8 byte length;
 - effects, handlers, and control contracts.
 
 Implemented `alloc` facilities include:
 
-- `box<t>`;
-- `vec<t>` with consistent checked/trapping shared or mutable access,
+- `Box<T>`;
+- `Vec<T>` with consistent checked/trapping shared or mutable access,
   first/last, slice conversion, copyable slice extension, equal-length and
   overlap-safe copy mutation, resource-preserving owned append, and consuming
   iteration, plus the common slice-backed search and fold vocabulary;
-- ownership-preserving `vec<u8>`/`string` conversion: success transfers the
+- ownership-preserving `Vec<u8>`/`String` conversion: success transfers the
   allocation, failure retains the original vector and its valid-prefix length,
   and static strings copy into owned bytes;
-- `string_writer`, an allocation-backed pure formatting sink whose empty state
-  and ordered scalar/ASCII appends finish as one owning `string`;
+- `StringWriter`, an allocation-backed pure formatting sink whose empty state
+  and ordered scalar/ASCII appends finish as one owning `String`;
 
-Safe `string` and `str` APIs preserve valid UTF-8 and do not expose mutable
+Safe `String` and `str` APIs preserve valid UTF-8 and do not expose mutable
 bytes. Borrowed-view
 escape analysis follows reference loans through raw view casts, calls,
-`option` payloads, and matches, so a view cannot outlive local bytes or overlap
+`Option` payloads, and matches, so a view cannot outlive local bytes or overlap
 a mutable write. Broader Unicode algorithms and host I/O are not yet library
 features.
 
-Borrowed `array.iter` and `slice.iter` both produce `slice_iter<a><t>` without
-a `copyable` element bound. The iterator preserves shared or mutable source
-access and yields `borrow<a><r><t>` tied to one mutable `next` borrow, so a
+Borrowed `Array.iter` and `Slice.iter` both produce `SliceIter<a><T>` without
+a `Copyable` element bound. The iterator preserves shared or mutable source
+access and yields `Borrow<a><r><T>` tied to one mutable `next` borrow, so a
 yielded mutable element must end before the iterator advances. Resource
-elements remain in place and are dropped by their owner. `vec` iteration
+elements remain in place and are dropped by their owner. `Vec` iteration
 consumes elements and drops an unyielded suffix exactly once on early exit.
 
 Arrays and slices expose in-place `swap` and `reverse` for concrete sized

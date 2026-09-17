@@ -1,4 +1,4 @@
-let identity<comptime t: type>(value: t): t
-= requires(t is copyable && t is copyable) { value }
+let identity<t: type>(value: t): t
+= requires(t is Copyable && t is Copyable) { value }
 
 let main(): i32 = { identity(42) }

@@ -1,40 +1,40 @@
-let option = core.option
-let result = core.result
+let Option = core.Option
+let Result = core.Result
 let throwing = core.error.throwing
-let iterator = core.iter.iterator
-let into_iterator = core.iter.into_iterator
-let owned_item = core.iter.owned_item
+let Iterator = core.iter.Iterator
+let IntoIterator = core.iter.IntoIterator
+let OwnedItem = core.iter.OwnedItem
 
 let counter = struct {
   current: i32,
   end: i32,
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
 }
 
-extend(counter, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(counter, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-extend(counter, iterator) {
-  let item = owned_item<i32>;
+extend(counter, Iterator) {
+  let Item = OwnedItem<i32>;
 
-  let next<comptime r: region>(self: borrow<mut><r><self>)(): option<i32> = {
+  let next<r: region>(self: Borrow<mut><r><self>)(): Option<i32> = {
     if self.current < self.end {
       let value = self.current
       self.current = self.current + 1
-      some(value)
+      Some(value)
     } else {
-      none
+      None
     }
   }
 }
 
-extend(counter, into_iterator) {
-  let iter = counter
+extend(counter, IntoIterator) {
+  let Iter = counter;
 
   let into_iter(move self)(): counter = {
     self
@@ -58,10 +58,10 @@ let main(): i32 = {
   }
   unsafe { *drops = 0 }
 
-  let success: result<bool><i32> = try {
+  let success: Result<bool><i32> = try {
     visit(counter{ current: 0, end: 2, drops: drops })
   }
-  let failure: result<bool><i32> = try {
+  let failure: Result<bool><i32> = try {
     visit(counter{ current: -1, end: 2, drops: drops })
   }
   let drop_count = unsafe { *drops }

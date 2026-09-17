@@ -107,53 +107,53 @@ pub(crate) fn incremental_sources(
 
 #[cfg(test)]
 const TEST_ASSIGNMENT_OPS: &str = r#"
-pub let add_assign<comptime rhs: type> = trait { let add_assign(self: borrow<mut><self>)
-  (rhs: rhs): () }
-pub let sub_assign<comptime rhs: type> = trait { let sub_assign(self: borrow<mut><self>)
-  (rhs: rhs): () }
-pub let mul_assign<comptime rhs: type> = trait { let mul_assign(self: borrow<mut><self>)
-  (rhs: rhs): () }
-pub let div_assign<comptime rhs: type> = trait { let div_assign(self: borrow<mut><self>)
-  (rhs: rhs): () }
-pub let rem_assign<comptime rhs: type> = trait { let rem_assign(self: borrow<mut><self>)
-  (rhs: rhs): () }
-pub let bit_and_assign<comptime rhs: type> = trait { let bit_and_assign(self: borrow<mut><self>)
-  (rhs: rhs): () }
-pub let bit_or_assign<comptime rhs: type> = trait { let bit_or_assign(self: borrow<mut><self>)
-  (rhs: rhs): () }
-pub let bit_xor_assign<comptime rhs: type> = trait { let bit_xor_assign(self: borrow<mut><self>)
-  (rhs: rhs): () }
-pub let shl_assign<comptime rhs: type> = trait { let shl_assign(self: borrow<mut><self>)
-  (rhs: rhs): () }
-pub let shr_assign<comptime rhs: type> = trait { let shr_assign(self: borrow<mut><self>)
-  (rhs: rhs): () }
+pub let AddAssign<Rhs: type> = trait { let add_assign(self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let SubAssign<Rhs: type> = trait { let sub_assign(self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let MulAssign<Rhs: type> = trait { let mul_assign(self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let DivAssign<Rhs: type> = trait { let div_assign(self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let RemAssign<Rhs: type> = trait { let rem_assign(self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let BitAndAssign<Rhs: type> = trait { let bit_and_assign(self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let BitOrAssign<Rhs: type> = trait { let bit_or_assign(self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let BitXorAssign<Rhs: type> = trait { let bit_xor_assign(self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let ShlAssign<Rhs: type> = trait { let shl_assign(self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let ShrAssign<Rhs: type> = trait { let shr_assign(self: Borrow<mut><self>)
+  (rhs: Rhs): () }
 "#;
 
 #[cfg(test)]
 const TEST_CHAIN_OPS: &str = r#"
-pub let chain = trait {
-  let item: type
-  let rebind<comptime value: type>: type
+pub let Chain = trait {
+  let Item: type
+  let Rebind<Value: type>: type
 
-  let chain<comptime e: effects, comptime u: type>
+  let chain<e: effects, U: type>
     (self)
-    (transform: (item): u with<e>): rebind(u) with<e>
+    (transform: (Item): U with<e>): Rebind(U) with<e>
 }
-pub let coalesce = trait {
-  let item: type
+pub let Coalesce = trait {
+  let Item: type
 
-  let coalesce<comptime e: effects>
+  let coalesce<e: effects>
     (self)
-    (fallback: (): item with<e>): item with<e>
+    (fallback: (): Item with<e>): Item with<e>
 }
-pub let unwrap = trait {
-  let output: type
-  let unwrap(move self): output
+pub let Unwrap = trait {
+  let Output: type
+  let unwrap(move self): Output
 }
-pub let raise = trait {
-  let output: type
-  let error: type
-  let raise(move self): output with<throwing<error>>
+pub let Raise = trait {
+  let Output: type
+  let Error: type
+  let raise(move self): Output with<throwing<Error>>
 }
 "#;
 
@@ -231,7 +231,6 @@ pub enum LangItemKind {
     AbiSort,
     CopyParameters,
     MoveParameters,
-    ComptimeParameters,
     BorrowTypeForm,
     BorrowValueForm,
     ArrayTypeForm,
@@ -269,7 +268,7 @@ pub enum LangItemKind {
 }
 
 impl LangItemKind {
-    const ALL: [Self; 105] = [
+    const ALL: [Self; 104] = [
         Self::Builtin,
         Self::Foreign,
         Self::Test,
@@ -340,7 +339,6 @@ impl LangItemKind {
         Self::AbiSort,
         Self::CopyParameters,
         Self::MoveParameters,
-        Self::ComptimeParameters,
         Self::BorrowTypeForm,
         Self::BorrowValueForm,
         Self::ArrayTypeForm,
@@ -383,8 +381,8 @@ impl LangItemKind {
             Self::Foreign => "foreign",
             Self::Test => "test",
             Self::Requires => "requires",
-            Self::Option => "option",
-            Self::Result => "result",
+            Self::Option => "Option",
+            Self::Result => "Result",
             Self::Never => "never",
             Self::Bool => "bool",
             Self::I8 => "i8",
@@ -399,44 +397,44 @@ impl LangItemKind {
             Self::U64 => "u64",
             Self::U128 => "u128",
             Self::USize => "usize",
-            Self::Move => "movable",
-            Self::Copy => "copyable",
-            Self::Drop => "droppable",
-            Self::Poll => "poll",
-            Self::Future => "future",
-            Self::Executor => "executor",
+            Self::Move => "Movable",
+            Self::Copy => "Copyable",
+            Self::Drop => "Droppable",
+            Self::Poll => "Poll",
+            Self::Future => "Future",
+            Self::Executor => "Executor",
             Self::AsyncFunction => "async",
             Self::AwaitFunction => "await",
-            Self::Add => "add",
-            Self::Sub => "sub",
-            Self::Mul => "mul",
-            Self::Div => "div",
-            Self::Rem => "rem",
-            Self::AddAssign => "add_assign",
-            Self::SubAssign => "sub_assign",
-            Self::MulAssign => "mul_assign",
-            Self::DivAssign => "div_assign",
-            Self::RemAssign => "rem_assign",
-            Self::BitAndAssign => "bit_and_assign",
-            Self::BitOrAssign => "bit_or_assign",
-            Self::BitXorAssign => "bit_xor_assign",
-            Self::ShlAssign => "shl_assign",
-            Self::ShrAssign => "shr_assign",
-            Self::Eq => "eq",
-            Self::PartialOrdering => "partial_ordering",
-            Self::PartialOrd => "partial_ord",
-            Self::Index => "index",
-            Self::Neg => "neg",
-            Self::Not => "not",
-            Self::BitAnd => "bit_and",
-            Self::BitOr => "bit_or",
-            Self::BitXor => "bit_xor",
-            Self::Shl => "shl",
-            Self::Shr => "shr",
-            Self::Chain => "chain",
-            Self::Coalesce => "coalesce",
-            Self::Unwrap => "unwrap",
-            Self::Raise => "raise",
+            Self::Add => "Add",
+            Self::Sub => "Sub",
+            Self::Mul => "Mul",
+            Self::Div => "Div",
+            Self::Rem => "Rem",
+            Self::AddAssign => "AddAssign",
+            Self::SubAssign => "SubAssign",
+            Self::MulAssign => "MulAssign",
+            Self::DivAssign => "DivAssign",
+            Self::RemAssign => "RemAssign",
+            Self::BitAndAssign => "BitAndAssign",
+            Self::BitOrAssign => "BitOrAssign",
+            Self::BitXorAssign => "BitXorAssign",
+            Self::ShlAssign => "ShlAssign",
+            Self::ShrAssign => "ShrAssign",
+            Self::Eq => "Eq",
+            Self::PartialOrdering => "PartialOrdering",
+            Self::PartialOrd => "PartialOrd",
+            Self::Index => "Index",
+            Self::Neg => "Neg",
+            Self::Not => "Not",
+            Self::BitAnd => "BitAnd",
+            Self::BitOr => "BitOr",
+            Self::BitXor => "BitXor",
+            Self::Shl => "Shl",
+            Self::Shr => "Shr",
+            Self::Chain => "Chain",
+            Self::Coalesce => "Coalesce",
+            Self::Unwrap => "Unwrap",
+            Self::Raise => "Raise",
             Self::UnsafeEffect => "unsafety",
             Self::ThrowsEffect => "throwing",
             Self::AsyncEffect => "suspension",
@@ -449,22 +447,22 @@ impl LangItemKind {
             Self::AbiSort => "abi",
             Self::CopyParameters => "copy",
             Self::MoveParameters => "move",
-            Self::ComptimeParameters => "comptime",
-            Self::BorrowTypeForm => "borrow",
+            Self::BorrowTypeForm => "Borrow",
             Self::BorrowValueForm => "borrow",
-            Self::ArrayTypeForm => "array",
-            Self::SliceTypeForm => "slice",
+            Self::ArrayTypeForm => "Array",
+            Self::SliceTypeForm => "Slice",
             Self::StrTypeForm => "str",
-            Self::PtrTypeForm | Self::PtrValueForm => "ptr",
+            Self::PtrTypeForm => "Ptr",
+            Self::PtrValueForm => "ptr",
             Self::SizeOf => "size_of",
             Self::AlignOf => "align_of",
-            Self::Continuation => "continuation",
-            Self::EffectCallable => "effect_callable",
-            Self::Handle => "handle",
+            Self::Continuation => "Continuation",
+            Self::EffectCallable => "EffectCallable",
+            Self::Handle => "Handle",
             Self::BreakEffect => "loop_exit",
             Self::ContinueEffect => "iteration_skip",
             Self::ReturnEffect => "function_exit",
-            Self::Attempt => "attempt",
+            Self::Attempt => "Attempt",
             Self::Break | Self::BreakUnit => "break",
             Self::Continue => "continue",
             Self::Return | Self::ReturnUnit => "return",
@@ -479,8 +477,8 @@ impl LangItemKind {
             Self::Match => "match",
             Self::For => "for",
             Self::Defer => "defer",
-            Self::Iterator => "iterator",
-            Self::IntoIterator => "into_iterator",
+            Self::Iterator => "Iterator",
+            Self::IntoIterator => "IntoIterator",
         }
     }
 
@@ -531,7 +529,6 @@ impl LangItemKind {
             | Self::Requires
             | Self::CopyParameters
             | Self::MoveParameters
-            | Self::ComptimeParameters
             | Self::BorrowValueForm
             | Self::PtrValueForm
             | Self::SizeOf
@@ -665,7 +662,6 @@ impl LangItemKind {
             | Self::AbiSort
             | Self::CopyParameters
             | Self::MoveParameters
-            | Self::ComptimeParameters
             | Self::BorrowTypeForm
             | Self::BorrowValueForm
             | Self::ArrayTypeForm
@@ -1113,7 +1109,6 @@ impl LangItems {
             | LangItemKind::Requires
             | LangItemKind::CopyParameters
             | LangItemKind::MoveParameters
-            | LangItemKind::ComptimeParameters
             | LangItemKind::BreakEffect
             | LangItemKind::ContinueEffect
             | LangItemKind::ReturnEffect
@@ -1261,7 +1256,7 @@ impl CoreBundle {
         // Most contract tests isolate one prelude/operator declaration. Keep
         // independently tested capability modules present in those fixtures.
         let source = format!(
-            "{source}\n{TEST_ASSIGNMENT_OPS}\n{TEST_CHAIN_OPS}\n{EDITION_2026_EFFECT}\n{EDITION_2026_ERROR}\n{EDITION_2026_UNSAFE}\n{EDITION_2026_ASYNC}\n{EDITION_2026_PRIMITIVES}\n{EDITION_2026_SORTS}\n{EDITION_2026_FOREIGN}\n{EDITION_2026_PASSING}\n{EDITION_2026_BORROW}\n{EDITION_2026_CONTROL}\n{EDITION_2026_ITER}\n{EDITION_2026_MEMORY}\nlet builtin() = builtin()\npub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()\npub let requires<comptime condition: bool, comptime e: effects, comptime result: type>: with<e>(move body: with<e>((): result)): result = builtin()"
+            "{source}\n{TEST_ASSIGNMENT_OPS}\n{TEST_CHAIN_OPS}\n{EDITION_2026_EFFECT}\n{EDITION_2026_ERROR}\n{EDITION_2026_UNSAFE}\n{EDITION_2026_ASYNC}\n{EDITION_2026_PRIMITIVES}\n{EDITION_2026_SORTS}\n{EDITION_2026_FOREIGN}\n{EDITION_2026_PASSING}\n{EDITION_2026_BORROW}\n{EDITION_2026_CONTROL}\n{EDITION_2026_ITER}\n{EDITION_2026_MEMORY}\nlet builtin() = builtin()\npub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()\npub let requires<condition: bool, e: effects, Result: type>: with<e>(move body: with<e>((): Result)): Result = builtin()"
         );
         let mut program = parser::parse(&source).map_err(|error| {
             CoreBundleError::new(
@@ -1740,7 +1735,6 @@ fn validate_program(edition: Edition, program: &Program) -> Result<LangItems, Co
         LangItemKind::Requires,
         LangItemKind::CopyParameters,
         LangItemKind::MoveParameters,
-        LangItemKind::ComptimeParameters,
         LangItemKind::BreakEffect,
         LangItemKind::ContinueEffect,
         LangItemKind::ReturnEffect,
@@ -1885,7 +1879,7 @@ fn validate_constraint_query_contract(program: &Program, diagnostics: &mut Vec<S
         .items
         .iter()
         .filter_map(|item| match item {
-            Item::Trait(definition) if definition.name == "is" => Some(definition),
+            Item::Trait(definition) if definition.name == "Is" => Some(definition),
             _ => None,
         })
         .collect::<Vec<_>>();
@@ -1953,7 +1947,7 @@ fn validate_constraint_query_contract(program: &Program, diagnostics: &mut Vec<S
             if matches!(
                 &extension.trait_ref,
                 Some(Type::Named(name, arguments))
-                    if name.split(['.', ':']).next_back() == Some("is")
+                    if name.split(['.', ':']).next_back() == Some("Is")
                         && matches!(
                             arguments.as_slice(),
                             [Type::Named(argument, nested)]
@@ -1970,7 +1964,7 @@ fn validate_constraint_query_contract(program: &Program, diagnostics: &mut Vec<S
                             && function.compile_groups
                                 == vec![vec![
                                     CompileParam {
-                                        name: "left".to_owned(),
+                                        name: "Left".to_owned(),
                                         kind: Sort::Type,
                                         default: None,
                                     },
@@ -1991,7 +1985,7 @@ fn validate_constraint_query_contract(program: &Program, diagnostics: &mut Vec<S
     );
     if !valid {
         diagnostics.push(
-            "compile-time constraint query must have shape `extend(type, is(constraint)) { let is<comptime left: type, comptime right: constraint>: bool = builtin() }`"
+            "compile-time constraint query must have shape `extend(type, is(constraint)) { let is<left: type, right: constraint>: bool = builtin() }`"
                 .to_owned(),
         );
     }
@@ -2034,7 +2028,6 @@ fn validate_lang_item_builtin(kind: LangItemKind, item: &Item, diagnostics: &mut
             | LangItemKind::Requires
             | LangItemKind::CopyParameters
             | LangItemKind::MoveParameters
-            | LangItemKind::ComptimeParameters
             | LangItemKind::I8
             | LangItemKind::I16
             | LangItemKind::I32
@@ -2188,7 +2181,7 @@ fn validate_introspection_builtin(function: &Function, diagnostics: &mut Vec<Str
             matches!(
                 function.compile_groups.as_slice(),
                 [group] if matches!(group.as_slice(), [parameter]
-                    if parameter.name == "t" && parameter.kind == Sort::Type)
+                    if parameter.name == "T" && parameter.kind == Sort::Type)
             ) && matches!(
                 function.groups.as_slice(),
                 [group] if matches!(group.as_slice(), [parameter]
@@ -2197,7 +2190,7 @@ fn validate_introspection_builtin(function: &Function, diagnostics: &mut Vec<Str
                         && matches!(&parameter.ty, Type::Function { groups, result, .. }
                             if groups == &[Vec::new()]
                                 && result.as_ref()
-                                    == &Type::Named("t".to_owned(), Vec::new())))
+                                    == &Type::Named("T".to_owned(), Vec::new())))
             ) && function.return_type == Some(Type::Named("type".to_owned(), Vec::new()))
         }
         _ => false,
@@ -2227,7 +2220,7 @@ fn validate_defer_support(function: &Function, diagnostics: &mut Vec<String>) {
         && function.body.is_none();
     if !valid {
         diagnostics.push(
-            "compiler-owned support function `defer` must have shape `pub let defer<comptime e: effects>(move action: (): () with<e>): () with<e> = builtin()`"
+            "compiler-owned support function `defer` must have shape `pub let defer<e: effects>(move action: (): () with<e>): () with<e> = builtin()`"
                 .to_owned(),
         );
     }
@@ -2258,15 +2251,15 @@ fn is_allowed_non_lang_item(origin: &ItemOrigin) -> bool {
 fn is_core_support_item(name: &str) -> bool {
     matches!(
         name,
-        "array_into_iter"
-            | "slice_iter"
-            | "owned_item"
-            | "borrowed_item"
+        "ArrayIntoIter"
+            | "SliceIter"
+            | "OwnedItem"
+            | "BorrowedItem"
             | "sort"
             | "sort_of"
             | "type_of"
             | "constraint"
-            | "is"
+            | "Is"
     )
 }
 
@@ -2388,9 +2381,7 @@ fn validate_item_shape(kind: LangItemKind, item: &Item, diagnostics: &mut Vec<St
             Item::Sort(definition),
         ) => validate_sort(kind, definition, diagnostics),
         (
-            kind @ (LangItemKind::CopyParameters
-            | LangItemKind::MoveParameters
-            | LangItemKind::ComptimeParameters),
+            kind @ (LangItemKind::CopyParameters | LangItemKind::MoveParameters),
             Item::Function(function),
         ) => validate_parameter_modifier(kind.source_name(), function, diagnostics),
         (LangItemKind::BorrowTypeForm, Item::TypeForm(definition)) => {
@@ -2452,11 +2443,11 @@ fn validate_item_shape(kind: LangItemKind, item: &Item, diagnostics: &mut Vec<St
         }
         (LangItemKind::Continuation, Item::TypeForm(definition)) => {
             let valid = definition.compile_groups
-                == vec![vec![type_parameter("input"), type_parameter("output")]]
+                == vec![vec![type_parameter("Input"), type_parameter("Output")]]
                 && definition.values.is_empty();
             if !valid {
                 diagnostics.push(
-                    "lang item `continuation` must have shape `pub let continuation<comptime input: type, comptime output: type>: type`"
+                    "lang item `Continuation` must have shape `pub let Continuation<Input: type, Output: type>: type`"
                         .to_owned(),
                 );
             }
@@ -2464,14 +2455,14 @@ fn validate_item_shape(kind: LangItemKind, item: &Item, diagnostics: &mut Vec<St
         (LangItemKind::EffectCallable, Item::TypeForm(definition)) => {
             let valid = definition.compile_groups
                 == vec![vec![
-                    type_parameter("input"),
-                    type_parameter("output"),
-                    type_parameter("answer"),
+                    type_parameter("Input"),
+                    type_parameter("Output"),
+                    type_parameter("Answer"),
                 ]]
                 && definition.values.is_empty();
             if !valid {
                 diagnostics.push(
-                    "lang item `effect_callable` must have shape `pub let effect_callable<comptime input: type, comptime output: type, comptime answer: type>: type`"
+                    "lang item `EffectCallable` must have shape `pub let EffectCallable<Input: type, Output: type, Answer: type>: type`"
                         .to_owned(),
                 );
             }
@@ -2584,7 +2575,7 @@ fn validate_parameter_modifier(name: &str, function: &Function, diagnostics: &mu
         && function.body.is_none();
     if !valid {
         diagnostics.push(format!(
-            "parameter modifier `{name}` must have shape `pub let {name}<comptime p: parameters>: parameters`"
+            "parameter modifier `{name}` must have shape `pub let {name}<p: parameters>: parameters`"
         ));
     }
 }
@@ -2608,7 +2599,7 @@ fn validate_syntax_contract(
                             default: None,
                         }] if name == "name"
                             && sort.split(['.', ':']).rfind(|part| !part.is_empty())
-                                == Some("string")
+                                == Some("String")
                     )
             ) && single_moved_callable(
                 function,
@@ -2617,7 +2608,7 @@ fn validate_syntax_contract(
                 FunctionEffects {
                     custom: vec![Type::Named(
                         "core.error.throwing".to_owned(),
-                        vec![Type::Named("core.string.string".to_owned(), Vec::new())],
+                        vec![Type::Named("core.string.String".to_owned(), Vec::new())],
                     )],
                     ..FunctionEffects::default()
                 },
@@ -2637,7 +2628,7 @@ fn validate_syntax_contract(
                         default: None,
                     },
                     CompileParam {
-                        name: "result".to_owned(),
+                        name: "Result".to_owned(),
                         kind: Sort::Type,
                         default: None,
                     },
@@ -2645,13 +2636,13 @@ fn validate_syntax_contract(
                 && single_moved_callable(
                     function,
                     "body",
-                    named_type("result"),
+                    named_type("Result"),
                     FunctionEffects {
                         parameters: vec!["e".to_owned()],
                         ..FunctionEffects::default()
                     },
                 )
-                && function.return_type == Some(named_type("result"))
+                && function.return_type == Some(named_type("Result"))
                 && function.effects
                     == FunctionEffects {
                         parameters: vec!["e".to_owned()],
@@ -2668,13 +2659,13 @@ fn validate_syntax_contract(
     if !valid {
         let shape = match kind {
             LangItemKind::Foreign => {
-                "pub let foreign<comptime abi: abi>: never = builtin()` or `pub let foreign<comptime abi: abi, comptime symbol: string>: never = builtin()"
+                "pub let foreign<abi: abi>: never = builtin()` or `pub let foreign<abi: abi, symbol: string>: never = builtin()"
             }
             LangItemKind::Test => {
-                "pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()"
+                "pub let test<name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()"
             }
             LangItemKind::Requires => {
-                "pub let requires<comptime condition: bool, comptime e: effects, comptime result: type>: with<e>(move body: with<e>((): result)): result = builtin()"
+                "pub let requires<condition: bool, e: effects, result: type>: with<e>(move body: with<e>((): result)): result = builtin()"
             }
             _ => unreachable!(),
         };
@@ -2706,7 +2697,7 @@ fn foreign_contract_arity(function: &Function) -> Option<usize> {
                     },
                     CompileParam {
                         name: "symbol".to_owned(),
-                        kind: Sort::Named("string".to_owned()),
+                        kind: Sort::Named("String".to_owned()),
                         default: None,
                     },
                 ] =>
@@ -2746,7 +2737,7 @@ fn validate_borrow_type_form(definition: &TypeFormDef, diagnostics: &mut Vec<Str
         definition.compile_groups == borrow_compile_groups() && definition.values.is_empty();
     if !valid {
         diagnostics.push(
-            "lang item `borrow` type form must have shape `pub let borrow<comptime a: access = shared><comptime r: region><comptime t: type>: type`"
+            "lang item `Borrow` type form must have shape `pub let Borrow<a: access = shared><r: region><T: type>: type`"
                 .to_owned(),
         );
     }
@@ -2754,7 +2745,7 @@ fn validate_borrow_type_form(definition: &TypeFormDef, diagnostics: &mut Vec<Str
 
 fn validate_borrow_value_form(function: &Function, diagnostics: &mut Vec<String>) {
     let valid = function.compile_groups == borrow_compile_groups()
-        && function.return_type == Some(borrow_type("a", "r", named_type("t")))
+        && function.return_type == Some(borrow_type("a", "r", named_type("T")))
         && function.effects == crate::ast::FunctionEffects::default()
         && function.where_predicates.is_empty()
         && function.body.is_none()
@@ -2764,12 +2755,12 @@ fn validate_borrow_value_form(function: &Function, diagnostics: &mut Vec<String>
                 group.as_slice(),
                 [parameter] if parameter.name == "value"
                     && parameter.mode == PassMode::Inferred
-                    && parameter.ty == named_type("t")
+                    && parameter.ty == named_type("T")
             )
         );
     if !valid {
         diagnostics.push(
-            "lang item `borrow` value form must have shape `pub let borrow<comptime a: access = shared><comptime r: region><comptime t: type>(value: t): borrow<a><r><t>`"
+            "lang item `borrow` value form must have shape `pub let borrow<a: access = shared><r: region><T: type>(value: T): Borrow<a><r><T>`"
                 .to_owned(),
         );
     }
@@ -2780,7 +2771,7 @@ fn validate_pointer_type_form(definition: &TypeFormDef, diagnostics: &mut Vec<St
         definition.compile_groups == pointer_compile_groups() && definition.values.is_empty();
     if !valid {
         diagnostics.push(
-            "lang item `ptr` type form must have shape `pub let ptr<comptime a: access = shared><comptime t: type>: type`"
+            "lang item `Ptr` type form must have shape `pub let Ptr<a: access = shared><T: type>: type`"
                 .to_owned(),
         );
     }
@@ -2788,22 +2779,22 @@ fn validate_pointer_type_form(definition: &TypeFormDef, diagnostics: &mut Vec<St
 
 fn validate_array_type_form(definition: &TypeFormDef, diagnostics: &mut Vec<String>) {
     let valid = definition.compile_groups
-        == vec![vec![type_parameter("t")], vec![usize_parameter("l")]]
+        == vec![vec![type_parameter("T")], vec![usize_parameter("l")]]
         && definition.values.is_empty();
     if !valid {
         diagnostics.push(
-            "lang item `array` type form must have shape `pub let array<comptime t: type><comptime l: usize>: type`"
+            "lang item `Array` type form must have shape `pub let Array<T: type><l: usize>: type`"
                 .to_owned(),
         );
     }
 }
 
 fn validate_slice_type_form(definition: &TypeFormDef, diagnostics: &mut Vec<String>) {
-    let valid = definition.compile_groups == vec![vec![type_parameter("t")]]
+    let valid = definition.compile_groups == vec![vec![type_parameter("T")]]
         && definition.values.is_empty();
     if !valid {
         diagnostics.push(
-            "lang item `slice` type form must have shape `pub let slice<comptime t: type>: type`"
+            "lang item `Slice` type form must have shape `pub let Slice<T: type>: type`"
                 .to_owned(),
         );
     }
@@ -2813,8 +2804,8 @@ fn validate_pointer_value_form(function: &Function, diagnostics: &mut Vec<String
     let valid = function.compile_groups == pointer_compile_groups()
         && function.return_type
             == Some(Type::Named(
-                "ptr".to_owned(),
-                vec![named_type("a"), named_type("t")],
+                "Ptr".to_owned(),
+                vec![named_type("a"), named_type("T")],
             ))
         && function.effects == crate::ast::FunctionEffects::default()
         && function.where_predicates.is_empty()
@@ -2825,12 +2816,12 @@ fn validate_pointer_value_form(function: &Function, diagnostics: &mut Vec<String
                 group.as_slice(),
                 [parameter] if parameter.name == "value"
                     && parameter.mode == PassMode::Inferred
-                    && parameter.ty == access_borrow_type("a", named_type("t"))
+                    && parameter.ty == access_borrow_type("a", named_type("T"))
             )
         );
     if !valid {
         diagnostics.push(
-            "lang item `ptr` value form must have shape `pub let ptr<comptime a: access = shared><comptime t: type>(value: borrow<a><t>): ptr<a><t>`"
+            "lang item `ptr` value form must have shape `pub let ptr<a: access = shared><T: type>(value: Borrow<a><T>): Ptr<a><T>`"
                 .to_owned(),
         );
     }
@@ -2838,7 +2829,7 @@ fn validate_pointer_value_form(function: &Function, diagnostics: &mut Vec<String
 
 fn validate_layout_query(kind: LangItemKind, function: &Function, diagnostics: &mut Vec<String>) {
     let name = kind.source_name();
-    let valid = function.compile_groups == vec![vec![type_parameter("t")]]
+    let valid = function.compile_groups == vec![vec![type_parameter("T")]]
         && function.groups.is_empty()
         && function.return_type == Some(Type::U64)
         && function.effects == crate::ast::FunctionEffects::default()
@@ -2846,7 +2837,7 @@ fn validate_layout_query(kind: LangItemKind, function: &Function, diagnostics: &
         && function.body.is_none();
     if !valid {
         diagnostics.push(format!(
-            "lang item `{name}` must have shape `pub let {name}<comptime t: type>: u64`"
+            "lang item `{name}` must have shape `pub let {name}<T: type>: u64`"
         ));
     }
 }
@@ -2860,7 +2851,7 @@ fn validate_assignment_operator(
         .assignment_operator_method()
         .expect("assignment operator lang item has a method");
     let valid = trait_has_default_self(definition)
-        && definition.compile_groups == vec![vec![type_parameter("rhs")]]
+        && definition.compile_groups == vec![vec![type_parameter("Rhs")]]
         && matches!(
             definition.members.as_slice(),
             [TraitMember::Function(function)]
@@ -2868,7 +2859,7 @@ fn validate_assignment_operator(
         );
     if !valid {
         diagnostics.push(format!(
-            "lang item `{kind}` must have shape `pub let {kind}<comptime rhs: type> = trait {{ let {method}(self: borrow<mut><self>)(rhs: rhs): () }}`"
+            "lang item `{kind}` must have shape `pub let {kind}<Rhs: type> = trait {{ let {method}(self: Borrow<mut><self>)(rhs: Rhs): () }}`"
         ));
     }
 }
@@ -2894,7 +2885,7 @@ fn valid_assignment_operator_method(function: &Function, method: &str) -> bool {
         && receiver.ty == simple_borrow_type(true, named_type("self"))
         && rhs.name == "rhs"
         && rhs.mode == PassMode::Inferred
-        && rhs.ty == named_type("rhs")
+        && rhs.ty == named_type("Rhs")
 }
 
 fn validate_iterator(definition: &TraitDef, diagnostics: &mut Vec<String>) {
@@ -2905,13 +2896,13 @@ fn validate_iterator(definition: &TraitDef, diagnostics: &mut Vec<String>) {
             [
                 TraitMember::AssociatedType { name, compile_groups, default: None, .. },
                 TraitMember::Function(function),
-            ] if name == "item"
+            ] if name == "Item"
                 && compile_groups == &vec![vec![region_parameter("r")]]
                 && valid_iterator_next_method(function)
         );
     if !valid {
         diagnostics.push(
-            "lang item `iterator` must declare `item<r: region>: type` and `next<r: region>(self: borrow<mut><r><self>)(): option<item<r>>`"
+            "lang item `Iterator` must declare `Item<r: region>: type` and `next<r: region>(self: Borrow<mut><r><self>)(): Option<Item<r>>`"
                 .to_owned(),
         );
     }
@@ -2928,21 +2919,15 @@ fn valid_iterator_next_method(function: &Function) -> bool {
         && function.compile_groups == vec![vec![region_parameter("r")]]
         && function.return_type
             == Some(Type::Named(
-                "core.option".to_owned(),
-                vec![Type::Named("item".to_owned(), vec![named_type("r")])],
+                "core.Option".to_owned(),
+                vec![Type::Named("Item".to_owned(), vec![named_type("r")])],
             ))
         && function.effects == crate::ast::FunctionEffects::default()
         && function.where_predicates.is_empty()
         && function.body.is_none()
         && receiver.name == "self"
         && receiver.mode == PassMode::Inferred
-        && receiver.ty
-            == Type::Borrow {
-                mutable: true,
-                access: None,
-                region: Some("r".to_owned()),
-                pointee: Box::new(named_type("self")),
-            }
+        && receiver.ty == region_borrow_type(true, "r", named_type("self"))
         && empty_group.is_empty()
 }
 
@@ -2954,18 +2939,18 @@ fn validate_into_iterator(definition: &TraitDef, diagnostics: &mut Vec<String>) 
             [
                 TraitMember::AssociatedType { name: iter, compile_groups: iter_groups, default: None, .. },
                 TraitMember::Function(function),
-            ] if iter == "iter"
+            ] if iter == "Iter"
                 && iter_groups.is_empty()
                 && valid_iteration_method(
                     function,
                     "into_iter",
                     PassMode::Move,
-                    named_type("iter"),
+                    named_type("Iter"),
                 )
         );
     if !valid {
         diagnostics.push(
-            "lang item `into_iterator` must declare `iter` and `into_iter(move self)(): iter`"
+            "lang item `IntoIterator` must declare `Iter` and `into_iter(move self)(): Iter`"
                 .to_owned(),
         );
     }
@@ -2973,7 +2958,7 @@ fn validate_into_iterator(definition: &TraitDef, diagnostics: &mut Vec<String>) 
 
 fn validate_index(definition: &TraitDef, diagnostics: &mut Vec<String>) {
     let valid = trait_has_default_self(definition)
-        && definition.compile_groups == vec![vec![type_parameter("key")]]
+        && definition.compile_groups == vec![vec![type_parameter("Key")]]
         && definition.where_predicates.is_empty()
         && matches!(
             definition.members.as_slice(),
@@ -2985,13 +2970,13 @@ fn validate_index(definition: &TraitDef, diagnostics: &mut Vec<String>) {
                     default: None,
                 },
                 TraitMember::Function(function),
-            ] if name == "output"
+            ] if name == "Output"
                 && compile_groups.is_empty()
                 && valid_index_method(function)
         );
     if !valid {
         diagnostics.push(
-            "lang item `index` must have shape `pub let index<comptime key: type> = trait { let output: type; let index<comptime a: access>(self: borrow(a)(self))(key: key): borrow(a)(output) }`"
+            "lang item `Index` must have shape `pub let Index<Key: type> = trait { let Output: type; let index<a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output> }`"
                 .to_owned(),
         );
     }
@@ -3009,7 +2994,7 @@ fn valid_index_method(function: &Function) -> bool {
     };
     function.name == "index"
         && function.compile_groups == vec![vec![access_parameter("a", None)]]
-        && function.return_type == Some(access_borrow_type("a", named_type("output")))
+        && function.return_type == Some(access_borrow_type("a", named_type("Output")))
         && function.effects == FunctionEffects::default()
         && function.where_predicates.is_empty()
         && function.body.is_none()
@@ -3018,7 +3003,7 @@ fn valid_index_method(function: &Function) -> bool {
         && receiver.ty == access_borrow_type("a", named_type("self"))
         && key.name == "key"
         && key.mode == PassMode::Inferred
-        && key.ty == named_type("key")
+        && key.ty == named_type("Key")
 }
 
 fn valid_iteration_method(function: &Function, name: &str, mode: PassMode, result: Type) -> bool {
@@ -3069,15 +3054,15 @@ fn validate_chain(definition: &TraitDef, diagnostics: &mut Vec<String>) {
                     ..
                 },
                 TraitMember::Function(function),
-            ] if item_name == "item"
+            ] if item_name == "Item"
                 && item_groups.is_empty()
-                && rebind_name == "rebind"
-                && *rebind_groups == vec![vec![type_parameter("value")]]
+                && rebind_name == "Rebind"
+                && *rebind_groups == vec![vec![type_parameter("Value")]]
                 && valid_chain_method(function)
         );
     if !valid {
         diagnostics.push(
-            "lang item `chain` must declare `item`, `rebind(value: type): type`, and `chain(e: effects, u: type) (self) (transform: (item): u with<e>): rebind(u) with<e>`"
+            "lang item `Chain` must declare `Item`, `Rebind<Value: type>: type`, and `chain<e: effects, U: type>(self)(transform: (Item): U with<e>): Rebind<U> with<e>`"
                 .to_owned(),
         );
     }
@@ -3093,8 +3078,8 @@ fn valid_chain_method(function: &Function) -> bool {
     let effects = effect_parameter("e");
     function.name == "chain"
         && function.compile_groups
-            == vec![vec![compile_effects_parameter("e"), type_parameter("u")]]
-        && function.return_type == Some(Type::Named("rebind".to_owned(), vec![named_type("u")]))
+            == vec![vec![compile_effects_parameter("e"), type_parameter("U")]]
+        && function.return_type == Some(Type::Named("Rebind".to_owned(), vec![named_type("U")]))
         && function.effects == effects
         && function.where_predicates.is_empty()
         && function.body.is_none()
@@ -3103,7 +3088,7 @@ fn valid_chain_method(function: &Function) -> bool {
         && receiver.ty == named_type("self")
         && transform.name == "transform"
         && transform.mode == PassMode::Inferred
-        && transform.ty == function_type(vec![vec![named_type("item")]], named_type("u"), effects)
+        && transform.ty == function_type(vec![vec![named_type("Item")]], named_type("U"), effects)
 }
 
 fn validate_coalesce(definition: &TraitDef, diagnostics: &mut Vec<String>) {
@@ -3119,13 +3104,13 @@ fn validate_coalesce(definition: &TraitDef, diagnostics: &mut Vec<String>) {
                     ..
                 },
                 TraitMember::Function(function),
-            ] if name == "item"
+            ] if name == "Item"
                 && compile_groups.is_empty()
                 && valid_coalesce_method(function)
         );
     if !valid {
         diagnostics.push(
-            "lang item `coalesce` must declare `item` and `coalesce(e: effects) (self) (fallback: (): item with<e>): item with<e>`"
+            "lang item `Coalesce` must declare `Item` and `coalesce<e: effects>(self)(fallback: (): Item with<e>): Item with<e>`"
                 .to_owned(),
         );
     }
@@ -3141,7 +3126,7 @@ fn valid_coalesce_method(function: &Function) -> bool {
     let effects = effect_parameter("e");
     function.name == "coalesce"
         && function.compile_groups == vec![vec![compile_effects_parameter("e")]]
-        && function.return_type == Some(named_type("item"))
+        && function.return_type == Some(named_type("Item"))
         && function.effects == effects
         && function.where_predicates.is_empty()
         && function.body.is_none()
@@ -3150,7 +3135,7 @@ fn valid_coalesce_method(function: &Function) -> bool {
         && receiver.ty == named_type("self")
         && fallback.name == "fallback"
         && fallback.mode == PassMode::Inferred
-        && fallback.ty == function_type(vec![Vec::new()], named_type("item"), effects)
+        && fallback.ty == function_type(vec![Vec::new()], named_type("Item"), effects)
 }
 
 fn validate_unwrap(definition: &TraitDef, diagnostics: &mut Vec<String>) {
@@ -3166,13 +3151,13 @@ fn validate_unwrap(definition: &TraitDef, diagnostics: &mut Vec<String>) {
                     ..
                 },
                 TraitMember::Function(function),
-            ] if name == "output"
+            ] if name == "Output"
                 && compile_groups.is_empty()
                 && valid_unwrap_method(function)
         );
     if !valid {
         diagnostics.push(
-            "lang item `unwrap` must declare `output` and `unwrap(move self): output`".to_owned(),
+            "lang item `Unwrap` must declare `Output` and `unwrap(move self): Output`".to_owned(),
         );
     }
 }
@@ -3186,7 +3171,7 @@ fn valid_unwrap_method(function: &Function) -> bool {
     };
     function.name == "unwrap"
         && function.compile_groups.is_empty()
-        && function.return_type == Some(named_type("output"))
+        && function.return_type == Some(named_type("Output"))
         && function.effects == Default::default()
         && function.where_predicates.is_empty()
         && function.body.is_none()
@@ -3214,15 +3199,15 @@ fn validate_raise(definition: &TraitDef, diagnostics: &mut Vec<String>) {
                     ..
                 },
                 TraitMember::Function(function),
-            ] if output == "output"
+            ] if output == "Output"
                 && output_groups.is_empty()
-                && error == "error"
+                && error == "Error"
                 && error_groups.is_empty()
                 && valid_raise_method(function)
         );
     if !valid {
         diagnostics.push(
-            "lang item `raise` must declare `output`, `error`, and `raise(move self): output with<throwing<error>>`"
+            "lang item `Raise` must declare `Output`, `Error`, and `raise(move self): Output with<throwing<Error>>`"
                 .to_owned(),
         );
     }
@@ -3239,11 +3224,11 @@ fn valid_raise_method(function: &Function) -> bool {
         function.effects.custom.as_slice(),
         [Type::Named(name, arguments)]
             if name.split('.').next_back() == Some("throwing")
-                && arguments == &vec![named_type("error")]
+                && arguments == &vec![named_type("Error")]
     );
     function.name == "raise"
         && function.compile_groups.is_empty()
-        && function.return_type == Some(named_type("output"))
+        && function.return_type == Some(named_type("Output"))
         && failure_error
         && !function.effects.unsafety
         && function.effects.failure.is_none()
@@ -3265,7 +3250,7 @@ fn validate_effect(
             definition.compile_groups.is_empty() && definition.operations.is_empty()
         }
         LangItemKind::ThrowsEffect => {
-            definition.compile_groups == vec![vec![type_parameter("error")]]
+            definition.compile_groups == vec![vec![type_parameter("Error")]]
                 && matches!(
                     definition.operations.as_slice(),
                     [operation] if valid_failure_raise_operation(operation)
@@ -3284,7 +3269,7 @@ fn validate_effect(
         let shape = match kind {
             LangItemKind::UnsafeEffect => "pub let unsafety = effect {}",
             LangItemKind::ThrowsEffect => {
-                "pub let throwing<comptime error: type> = effect { let raise(move error: error): never }"
+                "pub let throwing<Error: type> = effect { let raise(move error: Error): never }"
             }
             LangItemKind::AsyncEffect => "pub let async = effect { let suspend(): () }",
             _ => unreachable!(),
@@ -3318,7 +3303,7 @@ fn valid_failure_raise_operation(function: &Function) -> bool {
         && function.body.is_none()
         && error.name == "error"
         && error.mode == PassMode::Move
-        && error.ty == named_type("error")
+        && error.ty == named_type("Error")
 }
 
 fn validate_control_effect(
@@ -3328,7 +3313,7 @@ fn validate_control_effect(
 ) {
     let valid = match kind {
         LangItemKind::BreakEffect | LangItemKind::ReturnEffect => {
-            definition.compile_groups == vec![vec![type_parameter("t")]]
+            definition.compile_groups == vec![vec![type_parameter("T")]]
                 && matches!(
                     definition.operations.as_slice(),
                     [operation] if valid_control_exit_operation(operation)
@@ -3352,11 +3337,11 @@ fn validate_control_effect(
     if !valid {
         let shape = match kind {
             LangItemKind::BreakEffect => {
-                "pub let break<comptime t: type> = effect { let exit(move value: t): never }"
+                "pub let break<T: type> = effect { let exit(move value: T): never }"
             }
             LangItemKind::ContinueEffect => "pub let continue = effect { let next(): never }",
             LangItemKind::ReturnEffect => {
-                "pub let return<comptime t: type> = effect { let exit(move value: t): never }"
+                "pub let return<T: type> = effect { let exit(move value: T): never }"
             }
             _ => unreachable!(),
         };
@@ -3367,7 +3352,7 @@ fn validate_control_effect(
 fn valid_control_exit_operation(function: &Function) -> bool {
     function.name == "exit"
         && function.compile_groups.is_empty()
-        && single_moved_parameter(function, "value", named_type("t"))
+        && single_moved_parameter(function, "value", named_type("T"))
         && function.return_type == Some(named_type("never"))
         && function.effects == FunctionEffects::default()
         && function.where_predicates.is_empty()
@@ -3417,12 +3402,12 @@ fn valid_control_exit_function(kind: LangItemKind, function: &Function, unit: bo
         LangItemKind::Return | LangItemKind::ReturnUnit => "function_exit",
         _ => return false,
     };
-    let argument = if unit { Type::Unit } else { named_type("t") };
+    let argument = if unit { Type::Unit } else { named_type("T") };
     let valid_groups = if unit {
         function.compile_groups.is_empty() && function.groups == vec![Vec::new()]
     } else {
-        function.compile_groups == vec![vec![type_parameter("t")]]
-            && single_moved_parameter(function, "value", named_type("t"))
+        function.compile_groups == vec![vec![type_parameter("T")]]
+            && single_moved_parameter(function, "value", named_type("T"))
     };
     valid_groups
         && function.return_type == Some(named_type("never"))
@@ -3458,10 +3443,10 @@ fn valid_do(function: &Function) -> bool {
                 kind: Sort::Effects,
                 default: None,
             },
-            type_parameter("t"),
+            type_parameter("T"),
         ]]
-        && single_moved_callable(function, "action", named_type("t"), effect_parameter("e"))
-        && function.return_type == Some(named_type("t"))
+        && single_moved_callable(function, "action", named_type("T"), effect_parameter("e"))
+        && function.return_type == Some(named_type("T"))
         && function.effects.parameters == vec!["e"]
         && !function.effects.unsafety
         && function.effects.failure.is_none()
@@ -3504,13 +3489,13 @@ fn valid_do_while(function: &Function) -> bool {
 
 fn valid_try(function: &Function) -> bool {
     let result = Type::Named(
-        "core.result".to_owned(),
-        vec![named_type("e"), named_type("t")],
+        "core.Result".to_owned(),
+        vec![named_type("Error"), named_type("T")],
     );
     let effects = crate::ast::FunctionEffects {
         custom: vec![Type::Named(
             "core.error.throwing".to_owned(),
-            vec![named_type("e")],
+            vec![named_type("Error")],
         )],
         parameters: vec!["f".to_owned()],
         ..crate::ast::FunctionEffects::default()
@@ -3522,10 +3507,10 @@ fn valid_try(function: &Function) -> bool {
                 kind: Sort::Effects,
                 default: None,
             },
-            type_parameter("t"),
-            type_parameter("e"),
+            type_parameter("T"),
+            type_parameter("Error"),
         ]]
-        && single_moved_callable(function, "action", named_type("t"), effects)
+        && single_moved_callable(function, "action", named_type("T"), effects)
         && function.return_type == Some(result)
         && function.effects.parameters == vec!["f"]
         && !function.effects.unsafety
@@ -3538,12 +3523,12 @@ fn valid_throw(function: &Function) -> bool {
     let effects = crate::ast::FunctionEffects {
         custom: vec![Type::Named(
             "core.error.throwing".to_owned(),
-            vec![named_type("error")],
+            vec![named_type("Error")],
         )],
         ..crate::ast::FunctionEffects::default()
     };
-    function.compile_groups == vec![vec![type_parameter("error")]]
-        && single_moved_parameter(function, "error", named_type("error"))
+    function.compile_groups == vec![vec![type_parameter("Error")]]
+        && single_moved_parameter(function, "error", named_type("Error"))
         && function.return_type == Some(named_type("never"))
         && function.effects == effects
         && function.body.is_some()
@@ -3562,10 +3547,10 @@ fn valid_unsafe(function: &Function) -> bool {
                 kind: Sort::Effects,
                 default: None,
             },
-            type_parameter("t"),
+            type_parameter("T"),
         ]]
-        && single_moved_callable(function, "action", named_type("t"), effects)
-        && function.return_type == Some(named_type("t"))
+        && single_moved_callable(function, "action", named_type("T"), effects)
+        && function.return_type == Some(named_type("T"))
         && function.effects.parameters == vec!["e"]
         && !function.effects.unsafety
         && function.effects.failure.is_none()
@@ -3581,15 +3566,15 @@ fn valid_loop(function: &Function) -> bool {
                 kind: Sort::Effects,
                 default: None,
             },
-            type_parameter("t"),
+            type_parameter("T"),
         ]]
         && single_moved_callable(
             function,
             "body",
             Type::Unit,
-            loop_body_effects(named_type("t"), "e"),
+            loop_body_effects(named_type("T"), "e"),
         )
-        && function.return_type == Some(named_type("t"))
+        && function.return_type == Some(named_type("T"))
         && function.effects.parameters == vec!["e"]
         && !function.effects.unsafety
         && function.effects.failure.is_none()
@@ -3643,14 +3628,14 @@ fn valid_if(function: &Function) -> bool {
                 kind: Sort::Effects,
                 default: None,
             },
-            type_parameter("t"),
+            type_parameter("T"),
         ]]
         && condition.name == "condition"
         && condition.mode == PassMode::Inferred
         && condition.ty == Type::Bool
-        && moved_callable_parameter(then, "then", named_type("t"), effect_parameter("e"))
-        && moved_callable_parameter(else_branch, "else", named_type("t"), effect_parameter("e"))
-        && function.return_type == Some(named_type("t"))
+        && moved_callable_parameter(then, "then", named_type("T"), effect_parameter("e"))
+        && moved_callable_parameter(else_branch, "else", named_type("T"), effect_parameter("e"))
+        && function.return_type == Some(named_type("T"))
         && function.effects == effect_parameter("e")
         && function.body.is_some()
 }
@@ -3667,8 +3652,8 @@ fn valid_match(function: &Function) -> bool {
     };
     function.compile_groups
         == vec![vec![
-            type_parameter("input"),
-            type_parameter("output"),
+            type_parameter("Input"),
+            type_parameter("Output"),
             CompileParam {
                 name: "e".to_owned(),
                 kind: Sort::Effects,
@@ -3682,7 +3667,7 @@ fn valid_match(function: &Function) -> bool {
         ]]
         && input.name == "input"
         && input.mode == PassMode::Move
-        && input.ty == named_type("input")
+        && input.ty == named_type("Input")
         && cases.name == "cases"
         && cases.mode == PassMode::Inferred
         && cases.ty
@@ -3690,7 +3675,7 @@ fn valid_match(function: &Function) -> bool {
                 "$parameter$groups$expand".to_owned(),
                 vec![named_type("cases")],
             )
-        && function.return_type == Some(named_type("output"))
+        && function.return_type == Some(named_type("Output"))
         && function.effects == effect_parameter("e")
         && function.body.is_none()
 }
@@ -3707,21 +3692,21 @@ fn valid_for(function: &Function) -> bool {
     };
     let expected_predicates = vec![
         crate::ast::WherePredicate {
-            subject: named_type("iterable"),
-            trait_ref: Type::Named("core.iter.into_iterator".to_owned(), Vec::new()),
+            subject: named_type("Iterable"),
+            trait_ref: Type::Named("core.iter.IntoIterator".to_owned(), Vec::new()),
             associated_types: vec![crate::ast::AssociatedTypeBinding {
-                name: "iter".to_owned(),
+                name: "Iter".to_owned(),
                 compile_groups: Vec::new(),
-                ty: named_type("iter"),
+                ty: named_type("Iter"),
             }],
         },
         crate::ast::WherePredicate {
-            subject: named_type("iter"),
-            trait_ref: Type::Named("core.iter.iterator".to_owned(), Vec::new()),
+            subject: named_type("Iter"),
+            trait_ref: Type::Named("core.iter.Iterator".to_owned(), Vec::new()),
             associated_types: vec![crate::ast::AssociatedTypeBinding {
-                name: "item".to_owned(),
+                name: "Item".to_owned(),
                 compile_groups: Vec::new(),
-                ty: named_type("item"),
+                ty: named_type("Item"),
             }],
         },
     ];
@@ -3732,18 +3717,18 @@ fn valid_for(function: &Function) -> bool {
                 kind: Sort::Effects,
                 default: None,
             },
-            type_parameter("iterable"),
-            type_parameter("iter"),
-            type_parameter("item"),
+            type_parameter("Iterable"),
+            type_parameter("Iter"),
+            type_parameter("Item"),
         ]]
         && iterable.name == "iterable"
         && iterable.mode == PassMode::Move
-        && iterable.ty == named_type("iterable")
+        && iterable.ty == named_type("Iterable")
         && body.name == "body"
         && body.mode == PassMode::Move
         && body.ty
             == Type::Function {
-                groups: vec![vec![named_type("item")]],
+                groups: vec![vec![named_type("Item")]],
                 effects: loop_body_effects(Type::Unit, "e"),
                 result: Box::new(Type::Unit),
             }
@@ -3814,10 +3799,18 @@ fn moved_callable_parameter(
 
 fn type_parameter(name: &str) -> CompileParam {
     CompileParam {
-        name: name.to_owned(),
+        name: pascal_type_name(name),
         kind: Sort::Type,
         default: None,
     }
+}
+
+fn pascal_type_name(name: &str) -> String {
+    let mut bytes = name.as_bytes().to_vec();
+    if let Some(first) = bytes.first_mut() {
+        first.make_ascii_uppercase();
+    }
+    String::from_utf8(bytes).expect("ASCII compiler contract name")
 }
 
 fn usize_parameter(name: &str) -> CompileParam {
@@ -3848,14 +3841,14 @@ fn borrow_compile_groups() -> Vec<Vec<CompileParam>> {
     vec![
         vec![access_parameter("a", Some("shared"))],
         vec![region_parameter("r")],
-        vec![type_parameter("t")],
+        vec![type_parameter("T")],
     ]
 }
 
 fn pointer_compile_groups() -> Vec<Vec<CompileParam>> {
     vec![
         vec![access_parameter("a", Some("shared"))],
-        vec![type_parameter("t")],
+        vec![type_parameter("T")],
     ]
 }
 
@@ -3912,14 +3905,14 @@ fn validate_handle(definition: &TraitDef, diagnostics: &mut Vec<String>) {
                 kind,
                 default,
             }, TraitMember::Function(function)] if name == "clauses"
-                && compile_groups == &vec![vec![type_parameter("value"), type_parameter("answer")]]
+                && compile_groups == &vec![vec![type_parameter("Value"), type_parameter("Answer")]]
                 && *kind == AssociatedKind::Parameters
                 && default.is_none()
                 && valid_handle_method(function)
         );
     if !valid {
         diagnostics.push(
-            "lang item `handle` must have shape `pub let handle = trait<comptime self: effect> { let clauses<comptime value: type, comptime answer: type>: parameters; let handle<comptime value: type, comptime answer: type, comptime rest: effects> ...clauses(value, answer) (move action: (): value with<self, rest>): answer with<rest> }`"
+            "lang item `Handle` must have shape `pub let Handle = trait<self: effect> { let clauses<Value: type, Answer: type>: parameters; let handle<Value: type, Answer: type, rest: effects> ...clauses(Value, Answer) (move action: (): Value with<self, rest>): Answer with<rest> }`"
                 .to_owned(),
         );
     }
@@ -3939,11 +3932,11 @@ fn valid_handle_method(function: &Function) -> bool {
     function.name == "handle"
         && function.compile_groups
             == vec![vec![
-                type_parameter("value"),
-                type_parameter("answer"),
+                type_parameter("Value"),
+                type_parameter("Answer"),
                 compile_effects_parameter("rest"),
             ]]
-        && function.return_type == Some(named_type("answer"))
+        && function.return_type == Some(named_type("Answer"))
         && function.effects == effect_parameter("rest")
         && function.where_predicates.is_empty()
         && function.body.is_none()
@@ -3954,12 +3947,12 @@ fn valid_handle_method(function: &Function) -> bool {
                 "$parameter$groups$expand".to_owned(),
                 vec![Type::Named(
                     "clauses".to_owned(),
-                    vec![named_type("value"), named_type("answer")],
+                    vec![named_type("Value"), named_type("Answer")],
                 )],
             )
         && action.name == "action"
         && action.mode == PassMode::Move
-        && action.ty == function_type(vec![Vec::new()], named_type("value"), action_effects)
+        && action.ty == function_type(vec![Vec::new()], named_type("Value"), action_effects)
 }
 
 fn compile_effects_parameter(name: &str) -> CompileParam {
@@ -4001,28 +3994,28 @@ fn unit_variant(name: &str) -> VariantDef {
 }
 
 fn validate_option(definition: &EnumDef, diagnostics: &mut Vec<String>) {
-    let expected_groups = vec![vec![type_parameter("t")]];
+    let expected_groups = vec![vec![type_parameter("T")]];
     let expected_variants = vec![
-        positional_variant("some", named_type("t")),
-        unit_variant("none"),
+        positional_variant("Some", named_type("T")),
+        unit_variant("None"),
     ];
     if definition.compile_groups != expected_groups || definition.variants != expected_variants {
         diagnostics.push(
-            "lang item `option` must have shape `pub let option<comptime t: type> = enum { some(t), none }`"
+            "lang item `Option` must have shape `pub let Option<T: type> = enum { Some(T), None }`"
                 .to_owned(),
         );
     }
 }
 
 fn validate_result(definition: &EnumDef, diagnostics: &mut Vec<String>) {
-    let expected_groups = vec![vec![type_parameter("e")], vec![type_parameter("t")]];
+    let expected_groups = vec![vec![type_parameter("Error")], vec![type_parameter("T")]];
     let expected_variants = vec![
-        positional_variant("ok", named_type("t")),
-        positional_variant("err", named_type("e")),
+        positional_variant("Ok", named_type("T")),
+        positional_variant("Err", named_type("Error")),
     ];
     if definition.compile_groups != expected_groups || definition.variants != expected_variants {
         diagnostics.push(
-            "lang item `result` must have shape `pub let result<comptime e: type><comptime t: type> = enum { ok(t), err(e) }`"
+            "lang item `Result` must have shape `pub let Result<Error: type><T: type> = enum { Ok(T), Err(Error) }`"
                 .to_owned(),
         );
     }
@@ -4030,16 +4023,16 @@ fn validate_result(definition: &EnumDef, diagnostics: &mut Vec<String>) {
 
 fn validate_attempt(definition: &EnumDef, diagnostics: &mut Vec<String>) {
     let expected_groups = vec![
-        vec![type_parameter("input")],
-        vec![type_parameter("output")],
+        vec![type_parameter("Input")],
+        vec![type_parameter("Output")],
     ];
     let expected_variants = vec![
-        positional_variant("hit", named_type("output")),
-        positional_variant("miss", named_type("input")),
+        positional_variant("Hit", named_type("Output")),
+        positional_variant("Miss", named_type("Input")),
     ];
     if definition.compile_groups != expected_groups || definition.variants != expected_variants {
         diagnostics.push(
-            "lang item `attempt` must have shape `pub let attempt<comptime input: type><comptime output: type> = enum { hit(output), miss(input) }`"
+            "lang item `Attempt` must have shape `pub let Attempt<Input: type><Output: type> = enum { Hit(Output), Miss(Input) }`"
                 .to_owned(),
         );
     }
@@ -4053,29 +4046,29 @@ fn validate_never(definition: &EnumDef, diagnostics: &mut Vec<String>) {
 
 fn validate_partial_ordering(definition: &EnumDef, diagnostics: &mut Vec<String>) {
     let expected_variants = vec![
-        unit_variant("less"),
-        unit_variant("equal"),
-        unit_variant("greater"),
-        unit_variant("unordered"),
+        unit_variant("Less"),
+        unit_variant("Equal"),
+        unit_variant("Greater"),
+        unit_variant("Unordered"),
     ];
     if !definition.compile_groups.is_empty() || definition.variants != expected_variants {
         diagnostics.push(
-            "lang item `partial_ordering` must have shape `pub let partial_ordering = enum { less, equal, greater, unordered }`"
+            "lang item `PartialOrdering` must have shape `pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }`"
                 .to_owned(),
         );
     }
 }
 
 fn validate_poll(definition: &EnumDef, diagnostics: &mut Vec<String>) {
-    if definition.compile_groups != vec![vec![type_parameter("t")]]
+    if definition.compile_groups != vec![vec![type_parameter("T")]]
         || definition.variants
             != vec![
-                unit_variant("pending"),
-                positional_variant("ready", named_type("t")),
+                unit_variant("Pending"),
+                positional_variant("Ready", named_type("T")),
             ]
     {
         diagnostics.push(
-            "lang item `poll` must have shape `pub let poll<comptime t: type> = enum { pending, ready(t) }`"
+            "lang item `Poll` must have shape `pub let Poll<T: type> = enum { Pending, Ready(T) }`"
                 .to_owned(),
         );
     }
@@ -4084,7 +4077,7 @@ fn validate_poll(definition: &EnumDef, diagnostics: &mut Vec<String>) {
 fn validate_move(definition: &TraitDef, diagnostics: &mut Vec<String>) {
     if !move_trait_has_required_shape(definition) {
         diagnostics
-            .push("lang item `movable` must have shape `pub let movable = trait {}`".to_owned());
+            .push("lang item `Movable` must have shape `pub let Movable = trait {}`".to_owned());
     }
 }
 
@@ -4099,7 +4092,7 @@ pub(crate) fn move_trait_has_required_shape(definition: &TraitDef) -> bool {
 fn validate_copy(definition: &TraitDef, diagnostics: &mut Vec<String>) {
     if !copy_trait_has_required_shape(definition) {
         diagnostics.push(
-            "lang item `copyable` must have shape `pub let copyable = trait(requires: self is movable) {}`"
+            "lang item `Copyable` must have shape `pub let Copyable = trait(requires: self is Movable) {}`"
                 .to_owned(),
         );
     }
@@ -4117,7 +4110,7 @@ pub(crate) fn copy_trait_has_required_shape(definition: &TraitDef) -> bool {
             &predicate.trait_ref,
             Type::Named(name, arguments)
                 if arguments.is_empty()
-                    && matches!(name.as_str(), "movable" | "core.marker.movable" | "core::marker::movable")
+                    && matches!(name.as_str(), "Movable" | "core.marker.Movable" | "core::marker::Movable")
         )
         && predicate.associated_types.is_empty()
         && definition.members.is_empty()
@@ -4126,7 +4119,7 @@ pub(crate) fn copy_trait_has_required_shape(definition: &TraitDef) -> bool {
 fn validate_drop(definition: &TraitDef, diagnostics: &mut Vec<String>) {
     if !drop_trait_has_required_shape(definition) {
         diagnostics.push(
-            "lang item `droppable` must have shape `pub let droppable = trait { let drop(self: borrow<mut><self>)(): () }`"
+            "lang item `Droppable` must have shape `pub let Droppable = trait { let drop(self: Borrow<mut><self>)(): () }`"
                 .to_owned(),
         );
     }
@@ -4164,7 +4157,7 @@ fn validate_future(definition: &TraitDef, diagnostics: &mut Vec<String>) {
             associated_types,
         }] if subject == "self"
             && subject_arguments.is_empty()
-            && matches!(trait_name.as_str(), "movable" | "core.marker.movable" | "core::marker::movable")
+            && matches!(trait_name.as_str(), "Movable" | "core.marker.Movable" | "core::marker::Movable")
             && trait_arguments.is_empty()
             && associated_types.is_empty()
     );
@@ -4179,13 +4172,13 @@ fn validate_future(definition: &TraitDef, diagnostics: &mut Vec<String>) {
                 kind: AssociatedKind::Type,
                 default: None,
             }, TraitMember::Function(function)]
-                if name == "output"
+                if name == "Output"
                     && compile_groups.is_empty()
                     && valid_future_poll(function)
         );
     if !valid {
         diagnostics.push(
-            "lang item `future` must declare `output` and `poll<r: region>(self: borrow<mut><r><self>)(): poll<output> with<e>`, with `self: movable`"
+            "lang item `Future` must declare `Output` and `poll<r: region>(self: Borrow<mut><r><self>)(): Poll<Output> with<e>`, with `self: Movable`"
                 .to_owned(),
         );
     }
@@ -4209,7 +4202,7 @@ fn valid_future_poll(function: &Function) -> bool {
         && receiver.mode == PassMode::Inferred
         && receiver.ty == region_borrow_type(true, "r", named_type("self"))
         && empty_group.is_empty()
-        && function.return_type == Some(Type::Named("poll".to_owned(), vec![named_type("output")]))
+        && function.return_type == Some(Type::Named("Poll".to_owned(), vec![named_type("Output")]))
         && function.effects == effect_parameter("e")
         && function.where_predicates.is_empty()
         && function.body.is_none()
@@ -4228,11 +4221,11 @@ fn validate_executor(definition: &TraitDef, diagnostics: &mut Vec<String>) {
                     && function.compile_groups
                         == vec![vec![
                             compile_effects_parameter("e"),
-                            type_parameter("f"),
-                            type_parameter("t"),
+                            type_parameter("F"),
+                            type_parameter("T"),
                         ]]
                     && function.effects == effect_parameter("e")
-                    && function.return_type == Some(named_type("t"))
+                    && function.return_type == Some(named_type("T"))
                     && function.where_predicates == vec![expected_bound]
                     && matches!(
                         function.groups.as_slice(),
@@ -4250,13 +4243,13 @@ fn validate_executor(definition: &TraitDef, diagnostics: &mut Vec<String>) {
                                     [future]
                                         if future.name == "future"
                                             && future.mode == PassMode::Move
-                                            && future.ty == named_type("f")
+                                            && future.ty == named_type("F")
                                 )
                     )
         );
     if !valid {
         diagnostics.push(
-            "lang item `executor` must declare `run(e: effects, f: type, t: type)` with `f: future<e, output = t>`"
+            "lang item `Executor` must declare `run<e: effects, F: type, T: type>` with `F: Future<e, Output = T>`"
                 .to_owned(),
         );
     }
@@ -4276,16 +4269,16 @@ fn validate_async_function(
                 definition.compile_groups
                     == vec![vec![
                         compile_effects_parameter("e"),
-                        type_parameter("f"),
-                        type_parameter("t"),
+                        type_parameter("F"),
+                        type_parameter("T"),
                     ]]
                     && single_moved_callable(
                         definition,
                         "action",
-                        named_type("t"),
+                        named_type("T"),
                         suspension_row("e"),
                     )
-                    && definition.return_type == Some(named_type("f"))
+                    && definition.return_type == Some(named_type("F"))
                     && definition.effects == crate::ast::FunctionEffects::default()
                     && definition.body.is_none()
                     && definition.builtin
@@ -4294,11 +4287,11 @@ fn validate_async_function(
                 definition.compile_groups
                     == vec![vec![
                         compile_effects_parameter("e"),
-                        type_parameter("f"),
-                        type_parameter("t"),
+                        type_parameter("F"),
+                        type_parameter("T"),
                     ]]
-                    && single_moved_parameter(definition, "future", named_type("f"))
-                    && definition.return_type == Some(named_type("t"))
+                    && single_moved_parameter(definition, "future", named_type("F"))
+                    && definition.return_type == Some(named_type("T"))
                     && definition.effects == effects
                     && definition.body.is_some()
                     && !definition.builtin
@@ -4323,15 +4316,15 @@ fn suspension_row(rest: &str) -> crate::ast::FunctionEffects {
 
 fn future_output_bound(future: &str, effects: &str, output: &str) -> crate::ast::WherePredicate {
     crate::ast::WherePredicate {
-        subject: named_type(future),
+        subject: named_type(&pascal_type_name(future)),
         trait_ref: Type::Named(
-            "future".to_owned(),
+            "Future".to_owned(),
             vec![Type::Named(effects.to_owned(), Vec::new())],
         ),
         associated_types: vec![crate::ast::AssociatedTypeBinding {
-            name: "output".to_owned(),
+            name: "Output".to_owned(),
             compile_groups: Vec::new(),
-            ty: named_type(output),
+            ty: named_type(&pascal_type_name(output)),
         }],
     }
 }
@@ -4343,13 +4336,13 @@ fn validate_operator(kind: LangItemKind, definition: &TraitDef, diagnostics: &mu
     if !operator_trait_has_required_shape(kind, definition) {
         let shape = match kind {
             LangItemKind::Eq => format!(
-                "pub let eq<comptime rhs: type> = trait {{ let {method}(self: borrow(self))(rhs: borrow(rhs)): bool }}"
+                "pub let Eq<Rhs: type> = trait {{ let {method}(self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
             ),
             LangItemKind::PartialOrd => format!(
-                "pub let partial_ord<comptime rhs: type> = trait {{ let {method}(self: borrow(self))(rhs: borrow(rhs)): partial_ordering }}"
+                "pub let PartialOrd<Rhs: type> = trait {{ let {method}(self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
             ),
             _ => format!(
-                "pub let {kind}<comptime rhs: type> = trait {{ let output: type; let {method}(self)(rhs: rhs): output }}"
+                "pub let {kind}<Rhs: type> = trait {{ let Output: type; let {method}(self)(rhs: Rhs): Output }}"
             ),
         };
         diagnostics.push(format!("lang item `{kind}` must have shape `{shape}`"));
@@ -4366,7 +4359,7 @@ fn validate_unary_operator(
         .expect("unary operator lang items have a method");
     if !unary_operator_trait_has_required_shape(kind, definition) {
         diagnostics.push(format!(
-            "lang item `{kind}` must have shape `pub let {kind} = trait {{ let output: type; let {method}(self)(): output }}`"
+            "lang item `{kind}` must have shape `pub let {kind} = trait {{ let Output: type; let {method}(self)(): Output }}`"
         ));
     }
 }
@@ -4389,7 +4382,7 @@ pub(crate) fn unary_operator_trait_has_required_shape(
         [
             TraitMember::AssociatedType { name, compile_groups, default: None, .. },
             TraitMember::Function(function),
-        ] if name == "output"
+        ] if name == "Output"
             && compile_groups.is_empty()
             && valid_unary_operator_method(function, method)
     )
@@ -4404,7 +4397,7 @@ fn valid_unary_operator_method(function: &Function, method: &str) -> bool {
     };
     function.name == method
         && function.compile_groups.is_empty()
-        && function.return_type == Some(named_type("output"))
+        && function.return_type == Some(named_type("Output"))
         && function.body.is_none()
         && receiver.name == "self"
         && receiver.mode == PassMode::Inferred
@@ -4418,7 +4411,7 @@ pub(crate) fn operator_trait_has_required_shape(kind: LangItemKind, definition: 
         return false;
     };
     let valid_groups = trait_has_default_self(definition)
-        && definition.compile_groups == vec![vec![type_parameter("rhs")]];
+        && definition.compile_groups == vec![vec![type_parameter("Rhs")]];
     let valid_members = if matches!(kind, LangItemKind::Eq | LangItemKind::PartialOrd) {
         match definition.members.as_slice() {
             [TraitMember::Function(function)] => valid_borrowing_comparison_method(function, kind),
@@ -4432,7 +4425,7 @@ pub(crate) fn operator_trait_has_required_shape(kind: LangItemKind, definition: 
                 default,
                 ..
             }, TraitMember::Function(function)] => {
-                name == "output"
+                name == "Output"
                     && compile_groups.is_empty()
                     && default.is_none()
                     && valid_operator_method(function, method)
@@ -4458,7 +4451,7 @@ fn valid_borrowing_comparison_method(function: &Function, kind: LangItemKind) ->
                 function.return_type.as_ref(),
                 Some(Type::Named(name, arguments))
                     if arguments.is_empty()
-                        && matches!(name.as_str(), "partial_ordering" | "core::cmp::partial_ordering")
+                        && matches!(name.as_str(), "PartialOrdering" | "core::cmp::PartialOrdering")
             ),
         ),
         _ => return false,
@@ -4472,7 +4465,7 @@ fn valid_borrowing_comparison_method(function: &Function, kind: LangItemKind) ->
         && receiver.ty == simple_borrow_type(false, named_type("self"))
         && rhs.name == "rhs"
         && rhs.mode == PassMode::Inferred
-        && rhs.ty == simple_borrow_type(false, named_type("rhs"))
+        && rhs.ty == simple_borrow_type(false, named_type("Rhs"))
 }
 
 fn valid_operator_method(function: &Function, method: &str) -> bool {
@@ -4487,14 +4480,14 @@ fn valid_operator_method(function: &Function, method: &str) -> bool {
     };
     function.name == method
         && function.compile_groups.is_empty()
-        && function.return_type == Some(named_type("output"))
+        && function.return_type == Some(named_type("Output"))
         && function.body.is_none()
         && receiver.name == "self"
         && receiver.mode == PassMode::Inferred
         && receiver.ty == named_type("self")
         && rhs.name == "rhs"
         && rhs.mode == PassMode::Inferred
-        && rhs.ty == named_type("rhs")
+        && rhs.ty == named_type("Rhs")
 }
 
 #[cfg(test)]

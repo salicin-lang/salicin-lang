@@ -1,4 +1,4 @@
-let result = core.result
+let Result = core.Result
 
 let throwing = core.error.throwing
 let unsafety = core.unsafe.unsafety
@@ -9,7 +9,7 @@ let read: with<throwing<bool>, unsafety>(fail: bool): i32 = {
 }
 
 let main(): i32 = {
-  let result: result<bool><i32> = try {
+  let result: Result<bool><i32> = try {
     unsafe { read(false) }
   }
   result ?? 0

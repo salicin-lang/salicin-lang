@@ -1,4 +1,4 @@
-let read(value: borrow<i32>): i32 = { value }
+let read(value: Borrow<i32>): i32 = { value }
 
 let main(): i32 = {
   let values = [20, 22]

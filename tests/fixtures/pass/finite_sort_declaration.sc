@@ -3,7 +3,7 @@ let optimization = sort(1) {
   speed
 }
 
-let select<comptime mode: optimization>(value: i32): i32 = { value }
+let select<mode: optimization>(value: i32): i32 = { value }
 
 let main(): i32 = { select(optimization.speed)(42) }
 

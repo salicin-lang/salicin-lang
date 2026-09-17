@@ -1,17 +1,17 @@
-let maybe<comptime t: type> = enum {
-  some(t),
-  none,
+let maybe<t: type> = enum {
+  Some(t),
+  None,
 }
 
 let main(): i32 = {
-  let some = maybe.some(42)
-  let none: maybe(i32) = maybe.none
+  let some = maybe.Some(42)
+  let none: maybe(i32) = maybe.None
   let from_some = match some
-    { some(value) -> value }
-    { none -> 0 }
+    { Some(value) -> value }
+    { None -> 0 }
   let from_none = match none
-    { some(value) -> value }
-    { none -> 0 }
+    { Some(value) -> value }
+    { None -> 0 }
   from_some + from_none
 }
 

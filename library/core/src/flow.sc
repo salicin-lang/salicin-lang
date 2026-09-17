@@ -1,39 +1,39 @@
 /// Trait used by `?.` to transform successful container payloads.
-pub let chain = trait {
+pub let Chain = trait {
   /// Payload type read from the successful case.
-  let item: type
+  let Item: type
   /// Type constructor used to rebuild the container with a new payload.
-  let rebind<comptime value: type>: type
+  let Rebind<Value: type>: type
 
   /// Applies `transform` to the successful payload or propagates the residual case.
-  let chain<comptime e: effects, comptime u: type>: with<e>(self)(transform: with<e>((item): u)): rebind(u)
+  let chain<e: effects, U: type>: with<e>(self)(transform: with<e>((Item): U)): Rebind(U)
 }
 
-/// Trait used by `??` to extract a value or evaluate a fallback.
-pub let coalesce = trait {
+/// Trait used by `??` to extract a Value or evaluate a fallback.
+pub let Coalesce = trait {
   /// Payload type produced by coalescing.
-  let item: type
+  let Item: type
 
   /// Returns the successful payload or evaluates `fallback`.
-  let coalesce<comptime e: effects>: with<e>(self)(fallback: with<e>((): item)): item
+  let coalesce<e: effects>: with<e>(self)(fallback: with<e>((): Item)): Item
 }
 
 /// Trait used by postfix `!!` to assert success and extract a payload.
-pub let unwrap = trait {
+pub let Unwrap = trait {
   /// Payload type produced by unwrapping.
-  let output: type
+  let Output: type
 
   /// Returns the successful payload or terminates when no payload is present.
-  let unwrap(move self): output
+  let unwrap(move self): Output
 }
 
 /// Trait used by postfix `!` to turn a stored failure into `Throws`.
-pub let raise = trait {
+pub let Raise = trait {
   /// Successful payload type.
-  let output: type
+  let Output: type
   /// Error type introduced into the effect row.
-  let error: type
+  let Error: type
 
-  /// Returns the successful payload or raises the stored error.
-  let raise: with<core.error.throwing<error>>(move self): output
+  /// Returns the successful payload or raises the stored Error.
+  let raise: with<core.error.throwing<Error>>(move self): Output
 }

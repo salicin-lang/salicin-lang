@@ -1,6 +1,6 @@
-let effect_callable = core.effect.effect_callable
+let EffectCallable = core.effect.EffectCallable
 
-let abandon(move action: effect_callable<i32, i32, i32>): () = { () }
+let abandon(move action: EffectCallable<i32, i32, i32>): () = { () }
 
 let main(): i32 = { 42 }
 

@@ -1,13 +1,13 @@
-let option = core.option
+let Option = core.Option
 
-let fallback(count: borrow<mut><i32>): i32 = {
+let fallback(count: Borrow<mut><i32>): i32 = {
   count = count + 1
   42
 }
 
 let main(): i32 = {
   let mut count = 0
-  let answer = option<i32>.none ?? fallback(count)
+  let answer = Option<i32>.None ?? fallback(count)
   if count == 1 { answer } else { 0 }
 }
 

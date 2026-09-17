@@ -921,7 +921,7 @@ pub(super) fn rewrite_handler_chain_wrappers(
                     Box::new(Expr::Name(canonical.to_owned())),
                     variant.to_owned(),
                 );
-                *expression = if variant == "none" {
+                *expression = if variant == "None" {
                     member
                 } else {
                     Expr::Call(Box::new(member), vec![CallArg { label: None, value }])

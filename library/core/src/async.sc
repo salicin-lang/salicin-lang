@@ -5,32 +5,32 @@ pub let suspension = effect {
 }
 
 /// Result of polling an asynchronous computation once.
-pub let poll<comptime t: type> = enum {
-  pending,
-  ready(t)
+pub let Poll<T: type> = enum {
+  Pending,
+  Ready(T)
 }
 
 /// A cold asynchronous computation with residual effect row `E`.
-pub let future<comptime e: effects> = trait(requires: self is movable) {
-  let output: type
+pub let Future<e: effects> = trait(requires: self is Movable) {
+  let Output: type
 
-  let poll<comptime r: region>: with<e>(self: borrow<mut><r><self>)(): poll<output>
-}
+  let poll<r: region>: with<e>(self: Borrow<mut><r><self>)(): Poll<Output>
+  }
 
 /// Explicit executor protocol. Creating a future never selects an executor.
-pub let executor = trait {
-  let run<comptime e: effects, comptime f: type, comptime t: type>: with<e>(self: borrow<mut><self>)(move future: f): t = requires(f is future<e> && f.output == t)
+pub let Executor = trait {
+  let run<e: effects, F: type, T: type>: with<e>(self: Borrow<mut><self>)(move future: F): T = requires(F is Future<e> && F.Output == T)
 }
 
 /// Constructs a cold compiler-generated future without running `action`.
-pub let async<comptime e: effects, comptime f: type, comptime t: type>(move action: with<core.async.suspension, e>((): t)): f = requires(f is future<e> && f.output == t) builtin()
+pub let async<e: effects, F: type, T: type>(move action: with<core.async.suspension, e>((): T)): F = requires(F is Future<e> && F.Output == T) builtin()
 
-/// Suspends the enclosing async computation until `future` is ready.
-pub let await<comptime e: effects, comptime f: type, comptime t: type>: with<core.async.suspension, e>(move future: f): t = requires(f is future<e> && f.output == t) {
+/// Suspends the enclosing async computation until `future` is Ready.
+pub let await<e: effects, F: type, T: type>: with<core.async.suspension, e>(move future: F): T = requires(F is Future<e> && F.Output == T) {
   let mut current = future
   loop {
     match current.poll()
-      { pending -> suspension.suspend() }
-      { ready(value) -> break(value) }
+      { Pending -> suspension.suspend() }
+      { Ready(value) -> break(value) }
   }
 }

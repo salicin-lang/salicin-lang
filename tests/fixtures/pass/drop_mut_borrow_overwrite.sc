@@ -1,18 +1,18 @@
 let resource = struct { value: i32 }
 let holder = struct { resource: resource, tail: resource }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     let checked = 1 / self.value
     self.value = 0
   }
 }
 
-let replace_root(target: borrow<mut><resource>)(move replacement: resource): () = {
+let replace_root(target: Borrow<mut><resource>)(move replacement: resource): () = {
   target = replacement
 }
 
-let replace_field(target: borrow<mut><holder>)(move replacement: resource): () = {
+let replace_field(target: Borrow<mut><holder>)(move replacement: resource): () = {
   target.resource = replacement
 }
 

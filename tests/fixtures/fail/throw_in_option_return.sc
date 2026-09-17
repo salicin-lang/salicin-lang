@@ -1,6 +1,6 @@
-let option = core.option
+let Option = core.Option
 
-let fail(): option<i32> = {
+let fail(): Option<i32> = {
   throw(true)
 }
 

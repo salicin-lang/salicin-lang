@@ -8,46 +8,46 @@ helpers. The implementation package is not part of the intended prelude.
 Owning container names are not implicitly visible. Alias the types a module uses:
 
 ```sc fragment
-let box = alloc.boxed.box
-let vec = alloc.vec.vec
+let Box = alloc.boxed.Box
+let Vec = alloc.vec.Vec
 ```
 
-Qualified paths such as `alloc.boxed.box` are also valid. The underlying `alloc` layer is supplied by
+Qualified paths such as `alloc.boxed.Box` are also valid. The underlying `alloc` layer is supplied by
 the toolchain and does not need to appear in `salicin.toml`. Prefixed helpers such as `box_new` and
 `vec_push` are private implementation details. Owning types keep their
 canonical `alloc` paths rather than acquiring mirror paths in `std`.
 
 ## `alloc.boxed`
 
-`box<t>` owns one heap allocation. `box.new(value)` constructs it; `boxed.as_ref()` borrows the
+`Box<T>` owns one heap allocation. `Box.new(value)` constructs it; `boxed.as_ref()` borrows the
 pointee with shared access and `boxed.as_ref(mut)()` borrows it with exclusive access. The rest of
-the API covers replacement, `copyable` reads and writes, and consuming extraction. `boxed.into_raw()`
-consumes the owner without freeing its allocation; `unsafe { box<t>.from_raw(pointer) }` restores
+the API covers replacement, `Copyable` reads and writes, and consuming extraction. `boxed.into_raw()`
+consumes the owner without freeing its allocation; `unsafe { Box<T>.from_raw(pointer) }` restores
 unique ownership from a pointer produced by `into_raw`. The caller must not rebuild more than one
 owner or pass any other pointer to `from_raw`. Destruction recursively drops the pointee before
 releasing storage.
 
 ## `alloc.vec`
 
-`vec<t>` owns contiguous storage and supports both copyable and resource elements. Its API includes
+`Vec<T>` owns contiguous storage and supports both `Copyable` and resource elements. Its API includes
 construction, capacity management, push/pop, insertion/removal, append, truncation, swaps, and
 in-place reversal. `values.at(index)` borrows an element with shared access and
 `values.at(mut)(index)` borrows it with exclusive access. Bounds and allocation-layout failures
 trap.
 
-For copyable elements, `extend_from_slice` reserves the complete additional
+For `Copyable` elements, `extend_from_slice` reserves the complete additional
 capacity before copying, while `fill`, equal-length `copy_from`, and
 overlap-safe `copy_within` share the array/slice mutation contract. Borrow
 checking rejects a source slice that aliases the mutable vector. Move-only
 elements use owned `push` and `append` instead of borrowed slice copying.
 
-`vec<t>` also implements `core.ops.index(u64)` in source. `values[index]`,
-`borrow(values[index])`, and `values[index] = replacement` share the same checked `at(a)`
+`Vec<T>` also implements `core.ops.Index(u64)` in source. `values[index]`,
+`borrow<values[index]>`, and `values[index] = replacement` share the same checked `at(a)`
 implementation and preserve its receiver loan.
 
 `values.take()` replaces a vector with an empty vector and returns ownership of its previous
 allocation without copying elements. Consuming iteration transfers the allocation into
-`vec_into_iter(t)` and invalidates the original
+`VecIntoIter(T)` and invalidates the original
 vector. Each `next` moves one initialized element in source order. If iteration stops early, the
 iterator drops only the unyielded suffix and then releases the allocation; yielded values remain
 owned by the loop body. Capacity arithmetic, layout overflow, invalid bounds, invalid allocator
@@ -57,9 +57,9 @@ widening the caller's effect row.
 Container fields remain private so safe code cannot forge ownership metadata. Allocation operations
 ultimately use the ABI documented in [runtime.md](../runtime.md).
 
-## `string`
+## `String`
 
-`alloc` re-exports `core.string.string`; it does not declare a second string
+`alloc` re-exports `core.string.String`; it does not declare a second string
 identity or wrapper. String literals, CTFE values, globals, and runtime values
 therefore have the same type.
 

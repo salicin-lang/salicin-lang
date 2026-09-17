@@ -4,11 +4,11 @@ let step = effect {
 
 let state = struct {
   value: i32,
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
 }
 
-extend(state, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(state, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -16,12 +16,12 @@ extend(state, droppable) {
 }
 
 extend(state) {
-  let add(self: borrow<mut><self>)(amount: i32): () = {
+  let add(self: Borrow<mut><self>)(amount: i32): () = {
     self.value = self.value + amount
   }
 }
 
-let program: with<step>(drops: ptr<mut><i32>): i32 = {
+let program: with<step>(drops: Ptr<mut><i32>): i32 = {
   let mut state = state{ value: 40, drops: drops }
   state.add(1)
   let delta = step.delta()

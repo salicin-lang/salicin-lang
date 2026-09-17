@@ -1,5 +1,5 @@
-let future = core.async.future
-let poll = core.async.poll
+let Future = core.async.Future
+let Poll = core.async.Poll
 
 let ask = effect {
   let ask(): i32
@@ -9,21 +9,21 @@ let request: with<ask>(): i32 = {
   ask.ask()
 }
 
-let poll_once<comptime e: effects, comptime f: type, comptime t: type>: with<e>(future: borrow<mut><f>): poll<t> = requires(f is future<e> && f.output == t) {
+let poll_once<e: effects, f: type, t: type>: with<e>(future: Borrow<mut><f>): Poll<t> = requires(f is Future<e> && f.Output == t) {
   future.poll()
 }
 
-let program(value: borrow<mut><i32>): i32 = {
+let program(value: Borrow<mut><i32>): i32 = {
   let mut future = async {
     let amount = request()
     value = value + amount
     value
   }
   ask.handle ask { (resume) -> resume(40) } action {
-      let polled: poll<i32> = poll_once(future)
+      let polled: Poll<i32> = poll_once(future)
       match polled
-        { ready(result) -> result }
-        { pending -> 0 }
+        { Ready(result) -> result }
+        { Pending -> 0 }
     }
 }
 

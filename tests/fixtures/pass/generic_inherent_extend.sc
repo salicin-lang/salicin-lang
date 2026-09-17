@@ -1,9 +1,9 @@
-let cell<comptime t: type> = struct { value: t }
+let cell<t: type> = struct { value: t }
 
 extend(cell(t)) {
   let new(move value: t): cell(t) = { cell{ value: value } }
   let take(move self)(): t = { self.value }
-  let replace(self: borrow<mut><self>)(move value: t): () = {
+  let replace(self: Borrow<mut><self>)(move value: t): () = {
     self.value = value
   }
 }

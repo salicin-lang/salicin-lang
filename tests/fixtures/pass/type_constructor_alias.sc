@@ -1,7 +1,7 @@
-let cell<comptime t: type> = struct { value: t }
+let cell<t: type> = struct { value: t }
 
-let family<comptime t: type>: type = cell<t>;
-let constructor: (comptime t: type): type = cell
+let family<t: type>: type = cell<t>;
+let constructor: <t: type>: type = cell
 let scalar = i32
 
 let main(): scalar = {

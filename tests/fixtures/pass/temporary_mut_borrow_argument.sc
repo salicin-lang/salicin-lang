@@ -1,6 +1,6 @@
 let counter = struct { value: i32 }
 
-let reset(counter: borrow<mut><counter>): i32 = {
+let reset(counter: Borrow<mut><counter>): i32 = {
   counter.value = 42
   counter.value
 }

@@ -2,7 +2,7 @@ let step = effect {
   let delta(): i32
 }
 
-let update: with<step>(value: borrow<mut><i32>): () = {
+let update: with<step>(value: Borrow<mut><i32>): () = {
   let delta = step.delta()
   value = value + delta
 }

@@ -5,11 +5,11 @@ let timespec = struct(c) {
 
 let header = struct(c) {
   timestamp: timespec,
-  bytes: array<u8><4>,
-  next: ptr<u8>,
+  bytes: Array<u8><4>,
+  next: Ptr<u8>,
 }
 
-let pair<comptime t: type> = struct(c) {
+let pair<t: type> = struct(c) {
   left: t,
   right: t,
 }

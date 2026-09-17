@@ -1,8 +1,8 @@
 let resource = struct { value: i32 }
 let wrapper = struct { resource: resource, value: i32 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     let trapped = 1 / self.value
   }
 }

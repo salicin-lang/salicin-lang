@@ -1,7 +1,7 @@
 let main(): i32 = {
   let mut number = 42
-  let reference: borrow<i32> = do {
-    let inner: borrow<i32> = borrow(number)
+  let reference: Borrow<i32> = do {
+    let inner: Borrow<i32> = borrow(number)
     inner
   }
   number = 0

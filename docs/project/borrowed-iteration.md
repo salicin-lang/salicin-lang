@@ -3,14 +3,14 @@
 Status: implemented for the 2026 edition<br>
 Accepted: 2026-07-29
 
-This contract defines shared and mutable borrowed traversal for `array(t)(n)`
-and `slice<t>`.
+This contract defines shared and mutable borrowed traversal for `Array<T><n>`
+and `Slice<T>`.
 
 ## Construction and source ownership
 
-`array.iter()` and `slice.iter()` produce `slice_iter<shared><t>`.
-`array.iter(mut)()` and `slice.iter(mut)()` produce
-`slice_iter<mut><t>`. Array iteration first forms an access-preserving slice
+`Array.iter()` and `Slice.iter()` produce `SliceIter<shared><T>`.
+`Array.iter(mut)()` and `Slice.iter(mut)()` produce
+`SliceIter<mut><T>`. Array iteration first forms an access-preserving slice
 view and then uses the same iterator representation and advancement contract
 as a slice.
 
@@ -18,15 +18,15 @@ An iterator stores the source view for its complete lifetime. Creating a
 shared iterator prevents mutation of the source; creating a mutable iterator
 retains exclusive source access. Construction neither allocates nor copies,
 moves, or drops elements. Consequently borrowed array traversal has no
-`copyable` bound and works for resource elements.
+`Copyable` bound and works for resource elements.
 
 Consuming `for array` remains the separate owning array iterator contract.
 COLL-2 removes the copy limitation from borrowed traversal through
-`array.iter`; it does not change ownership transfer by the consuming form.
+`Array.iter`; it does not change ownership transfer by the consuming form.
 
 ## Yield and advancement
 
-`iterator.item(r)` is `borrow<a><r><t>`, where `a` is the source access and
+`Iterator.Item<r>` is `Borrow<a><r><T>`, where `a` is the source access and
 `r` is the region of the mutable borrow used for one `next` call. A yielded
 element therefore:
 
@@ -35,7 +35,7 @@ element therefore:
 - prevents another `next` call until that yield is no longer live;
 - is mutable only when the iterator owns mutable source access.
 
-`next` checks exhaustion before indexing. An exhausted call returns `none`
+`next` checks exhaustion before indexing. An exhausted call returns `None`
 without forming an element borrow. Dropping or breaking from an iterator
 releases its source view; it does not drop elements because the source owner
 still owns them.

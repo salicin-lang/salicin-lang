@@ -1,18 +1,18 @@
 let inner = enum {
   value( value: i32 ),
-  empty,
+  Empty,
 }
 
 let outer = enum {
   wrapped(inner),
-  empty,
+  Empty,
 }
 
 let read(value: outer): i32 = { match value
     { outer.wrapped(inner) -> match inner
       { inner.value( value: number ) -> number }
-      { inner.empty -> 0 } }
-    { outer.empty -> 0 }
+      { inner.Empty -> 0 } }
+    { outer.Empty -> 0 }
 }
 
 let main(): i32 = { read(outer.wrapped(inner.value( value: 42 ))) }

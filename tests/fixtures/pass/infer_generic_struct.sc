@@ -1,4 +1,4 @@
-let cell<comptime t: type> = struct { value: t }
+let cell<t: type> = struct { value: t }
 
 let main(): i32 = { cell{ value: 42 }.value }
 

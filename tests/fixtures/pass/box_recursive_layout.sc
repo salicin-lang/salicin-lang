@@ -1,12 +1,12 @@
-let option = core.option
+let Option = core.Option
 
-let box = alloc.boxed.box
+let Box = alloc.Box
 
-let node = struct { value: i32, next: option<box<node>> }
+let node = struct { value: i32, next: Option<Box<node>> }
 
 let main(): i32 = {
-  let tail = node{ value: 42, next: none }
-  let head = box.new(tail)
+  let tail = node{ value: 42, next: None }
+  let head = Box.new(tail)
   42
 }
 

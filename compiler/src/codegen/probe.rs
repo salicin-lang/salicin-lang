@@ -17,13 +17,13 @@ impl Analyzer {
         self.collection
             .struct_layouts
             .iter()
-            .find(|(_, layout)| layout.source_name == "string")
+            .find(|(_, layout)| layout.source_name == "String")
             .map(|(name, _)| Ty::Struct(name.clone()))
             .or_else(|| {
                 self.collection
                     .struct_defs
-                    .contains_key("core::string::string")
-                    .then(|| Ty::Struct("core::string::string".to_owned()))
+                    .contains_key("core::string::String")
+                    .then(|| Ty::Struct("core::string::String".to_owned()))
             })
     }
 
@@ -189,7 +189,7 @@ impl Analyzer {
                 }
                 if let Some(hint) = hint.filter(|hint| **hint != Ty::Error) {
                     if let Some(element) =
-                        self.literal_protocol_element("core::literal::array_literal", hint)
+                        self.literal_protocol_element("core::literal::ArrayLiteral", hint)
                     {
                         if elements.iter().all(|item| {
                             matches!(

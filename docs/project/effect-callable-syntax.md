@@ -22,7 +22,7 @@ and compile-time parameter groups:
 ```salicin
 let read: with<io>(path: str): string = { ... }
 
-let apply<comptime e: effects>: with<e>
+let apply<e: effects>: with<e>
   (action: with<e>((i32): i32))
   (value: i32): i32 = {
   action(value)

@@ -26,7 +26,7 @@ fn m1_array_errors_report_their_cause() {
         ("array_constant_oob.sc", "out of bounds"),
         ("array_negative_oob.sc", "out of bounds"),
         ("array_empty_without_context.sc", "empty array"),
-        ("array_resource_dynamic_index.sc", "requires copyable"),
+        ("array_resource_dynamic_index.sc", "requires Copyable"),
         ("array_resource_element_use_after_move.sc", "moved"),
         ("array_resource_partial_root_move.sc", "moved"),
         ("array_dynamic_index_assignment.sc", "compile-time"),
@@ -57,8 +57,8 @@ fn m1_loop_errors_report_their_cause() {
         ("loop_break_type_mismatch.sc", "type mismatch"),
         ("loop_backedge_move.sc", "move"),
         ("while_let_binding_scope.sc", "unknown"),
-        ("for_missing_into_iterator.sc", "into_iter"),
-        ("for_missing_iterator.sc", "iterator"),
+        ("for_missing_into_iterator.sc", "IntoIterator"),
+        ("for_missing_iterator.sc", "Iterator"),
         ("for_break_value.sc", "type mismatch"),
         ("for_refutable_pattern.sc", "pattern type mismatch"),
     ] {
@@ -470,7 +470,7 @@ fn arithmetic_trait_errors_report_their_cause() {
         ("arithmetic_trait_rhs_mismatch.sc", "div"),
         ("arithmetic_trait_use_after_move.sc", "moved"),
         ("compound_assign_immutable.sc", "immutable"),
-        ("compound_assign_missing_impl.sc", "add_assign"),
+        ("compound_assign_missing_impl.sc", "AddAssign"),
     ] {
         let output = salic()
             .arg("check")
@@ -512,8 +512,8 @@ fn m2_core_option_and_result_programs_run_with_expected_result() {
 #[test]
 fn m2_core_option_and_result_errors_report_their_cause() {
     for (name, expected) in [
-        ("core_redefine_option.sc", "option"),
-        ("core_redefine_result.sc", "result"),
+        ("core_redefine_option.sc", "Option"),
+        ("core_redefine_result.sc", "Result"),
         ("core_option_arity.sc", "argument count"),
         ("core_result_arity.sc", "argument count"),
         ("core_option_payload_mismatch.sc", "conflicting"),
@@ -572,7 +572,7 @@ fn m2_coalesce_errors_report_their_cause() {
         ("coalesce_result_use_after_move.sc", "moved"),
         ("coalesce_option_rhs_mismatch.sc", "type mismatch"),
         ("coalesce_result_rhs_mismatch.sc", "type mismatch"),
-        ("coalesce_non_container_lhs.sc", "option"),
+        ("coalesce_non_container_lhs.sc", "Option"),
         (
             "coalesce_infer_result_error_unconstrained.sc",
             "cannot infer",
@@ -770,7 +770,7 @@ fn m2_optional_chain_programs_run_with_expected_result() {
 #[test]
 fn m2_optional_chain_errors_report_their_cause() {
     for (name, expected) in [
-        ("chain_non_container.sc", "option"),
+        ("chain_non_container.sc", "Chain"),
         ("chain_unknown_field.sc", "missing"),
         ("chain_unknown_method.sc", "missing"),
         ("chain_mut_borrow_method.sc", "mutable-borrow"),

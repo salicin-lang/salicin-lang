@@ -1,5 +1,5 @@
 // Borrow access, type, and value contracts.
-/// Describes whether a borrow is shared or mutable.
+/// Describes whether a Borrow is shared or mutable.
 pub let access = sort(1) {
   /// Shared read-only access.
   shared
@@ -12,13 +12,13 @@ pub let mut = access.mut
 /// Unqualified alias for `access.shared`.
 pub let shared = access.shared
 
-/// Type constructor for a borrow with access `A`, region `R`, and pointee `T`.
-pub let borrow<comptime a: access = shared>
-  <comptime r: region>
-  <comptime t: type>: type = builtin()
+/// Type constructor for a Borrow with access `A`, region `R`, and pointee `T`.
+pub let Borrow<a: access = shared>
+  <r: region>
+  <T: type>: type = builtin()
 
-/// Creates or reborrows a borrow of an addressable pointee.
-pub let borrow<comptime a: access = shared>
-  <comptime r: region>
-  <comptime t: type>
-  (value: t): borrow<a><r><t> = builtin()
+/// Creates or reborrows a Borrow of an addressable pointee.
+pub let borrow<a: access = shared>
+  <r: region>
+  <T: type>
+  (value: T): Borrow<a><r><T> = builtin()

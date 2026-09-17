@@ -1,12 +1,12 @@
-let option = core.option
+let Option = core.Option
 
-let next(): option<i32> = { none }
+let next(): Option<i32> = { None }
 
 let main(): i32 = {
   loop {
     match next()
-      { some(value) -> value }
-      { none -> break() }
+      { Some(value) -> value }
+      { None -> break() }
   }
   value
 }

@@ -533,30 +533,31 @@ type DependencyTable = HashMap<Vec<String>, BTreeMap<String, Vec<String>>>;
 /// code reaches these declarations through `alloc.<module>.<name>`, while the
 /// analyzer continues to consume the flattened canonical name.
 const ALLOC_EXPORTS: &[(&str, &str)] = &[
-    ("boxed", "box"),
-    ("vec", "vec"),
-    ("vec", "vec_into_iter"),
-    ("string", "from_utf8_error"),
+    ("boxed", "Box"),
+    ("vec", "Vec"),
+    ("vec", "VecIntoIter"),
+    ("string", "FromUtf8Error"),
     ("string", "string_from_utf8"),
     ("string", "string_into_bytes"),
-    ("string", "string_writer"),
+    ("string", "StringWriter"),
 ];
 
 const CORE_PRELUDE_EXPORTS: &[(&str, &str)] = &[
     ("never", "core::never::never"),
-    ("movable", "core::marker::movable"),
-    ("copyable", "core::marker::copyable"),
-    ("droppable", "core::marker::droppable"),
-    ("array", "core::memory::array"),
+    ("Movable", "core::marker::Movable"),
+    ("Copyable", "core::marker::Copyable"),
+    ("Droppable", "core::marker::Droppable"),
+    ("Array", "core::memory::Array"),
+    ("Ptr", "core::memory::Ptr"),
     ("ptr", "core::memory::ptr"),
+    ("Borrow", "core::borrow::Borrow"),
     ("size_of", "core::memory::size_of"),
     ("align_of", "core::memory::align_of"),
-    ("string", "core::string::string"),
-    ("array_literal", "core::literal::array_literal"),
-    ("string_literal", "core::literal::string_literal"),
+    ("String", "core::string::String"),
+    ("ArrayLiteral", "core::literal::ArrayLiteral"),
+    ("StringLiteral", "core::literal::StringLiteral"),
     ("copy", "core::passing::copy"),
     ("move", "core::passing::move"),
-    ("comptime", "core::passing::comptime"),
     ("mut", "$access$mut"),
     ("shared", "$access$shared"),
 ];
@@ -564,76 +565,76 @@ const CORE_ROOT_EXPORTS: &[(&str, &str)] = &[
     ("abi", "core::foreign::abi"),
     ("foreign", "core::foreign::foreign"),
     ("never", "core::never::never"),
-    ("movable", "core::marker::movable"),
-    ("copyable", "core::marker::copyable"),
-    ("droppable", "core::marker::droppable"),
-    ("option", "core::option::option"),
-    ("result", "core::result::result"),
-    ("slice", "core::memory::slice"),
-    ("string", "core::string::string"),
-    ("array_literal", "core::literal::array_literal"),
-    ("string_literal", "core::literal::string_literal"),
+    ("Movable", "core::marker::Movable"),
+    ("Copyable", "core::marker::Copyable"),
+    ("Droppable", "core::marker::Droppable"),
+    ("Option", "core::option::Option"),
+    ("Result", "core::result::Result"),
+    ("Slice", "core::memory::Slice"),
+    ("String", "core::string::String"),
+    ("ArrayLiteral", "core::literal::ArrayLiteral"),
+    ("StringLiteral", "core::literal::StringLiteral"),
 ];
 const CORE_NEVER_EXPORTS: &[&str] = &["never"];
-const CORE_MARKER_EXPORTS: &[&str] = &["movable", "copyable", "droppable"];
-const CORE_ARITH_EXPORTS: &[&str] = &["add", "sub", "mul", "div", "rem", "neg"];
-const CORE_BIT_EXPORTS: &[&str] = &["bit_and", "bit_or", "bit_xor", "shl", "shr", "not"];
+const CORE_MARKER_EXPORTS: &[&str] = &["Movable", "Copyable", "Droppable"];
+const CORE_ARITH_EXPORTS: &[&str] = &["Add", "Sub", "Mul", "Div", "Rem", "Neg"];
+const CORE_BIT_EXPORTS: &[&str] = &["BitAnd", "BitOr", "BitXor", "Shl", "Shr", "Not"];
 const CORE_ASSIGN_EXPORTS: &[&str] = &[
-    "add_assign",
-    "sub_assign",
-    "mul_assign",
-    "div_assign",
-    "rem_assign",
-    "bit_and_assign",
-    "bit_or_assign",
-    "bit_xor_assign",
-    "shl_assign",
-    "shr_assign",
+    "AddAssign",
+    "SubAssign",
+    "MulAssign",
+    "DivAssign",
+    "RemAssign",
+    "BitAndAssign",
+    "BitOrAssign",
+    "BitXorAssign",
+    "ShlAssign",
+    "ShrAssign",
 ];
-const CORE_INDEX_EXPORTS: &[&str] = &["index"];
-const CORE_CMP_EXPORTS: &[&str] = &["eq", "partial_ordering", "partial_ord"];
+const CORE_INDEX_EXPORTS: &[&str] = &["Index"];
+const CORE_CMP_EXPORTS: &[&str] = &["Eq", "PartialOrdering", "PartialOrd"];
 const CORE_OPS_EXPORTS: &[(&str, &str)] = &[
-    ("add", "core::ops::arith::add"),
-    ("sub", "core::ops::arith::sub"),
-    ("mul", "core::ops::arith::mul"),
-    ("div", "core::ops::arith::div"),
-    ("rem", "core::ops::arith::rem"),
-    ("neg", "core::ops::arith::neg"),
-    ("bit_and", "core::ops::bit::bit_and"),
-    ("bit_or", "core::ops::bit::bit_or"),
-    ("bit_xor", "core::ops::bit::bit_xor"),
-    ("shl", "core::ops::bit::shl"),
-    ("shr", "core::ops::bit::shr"),
-    ("not", "core::ops::bit::not"),
-    ("add_assign", "core::ops::assign::add_assign"),
-    ("sub_assign", "core::ops::assign::sub_assign"),
-    ("mul_assign", "core::ops::assign::mul_assign"),
-    ("div_assign", "core::ops::assign::div_assign"),
-    ("rem_assign", "core::ops::assign::rem_assign"),
-    ("bit_and_assign", "core::ops::assign::bit_and_assign"),
-    ("bit_or_assign", "core::ops::assign::bit_or_assign"),
-    ("bit_xor_assign", "core::ops::assign::bit_xor_assign"),
-    ("shl_assign", "core::ops::assign::shl_assign"),
-    ("shr_assign", "core::ops::assign::shr_assign"),
-    ("eq", "core::cmp::eq"),
-    ("partial_ordering", "core::cmp::partial_ordering"),
-    ("partial_ord", "core::cmp::partial_ord"),
-    ("index", "core::ops::index::index"),
-    ("chain", "core::flow::chain"),
-    ("coalesce", "core::flow::coalesce"),
-    ("unwrap", "core::flow::unwrap"),
-    ("raise", "core::flow::raise"),
+    ("Add", "core::ops::arith::Add"),
+    ("Sub", "core::ops::arith::Sub"),
+    ("Mul", "core::ops::arith::Mul"),
+    ("Div", "core::ops::arith::Div"),
+    ("Rem", "core::ops::arith::Rem"),
+    ("Neg", "core::ops::arith::Neg"),
+    ("BitAnd", "core::ops::bit::BitAnd"),
+    ("BitOr", "core::ops::bit::BitOr"),
+    ("BitXor", "core::ops::bit::BitXor"),
+    ("Shl", "core::ops::bit::Shl"),
+    ("Shr", "core::ops::bit::Shr"),
+    ("Not", "core::ops::bit::Not"),
+    ("AddAssign", "core::ops::assign::AddAssign"),
+    ("SubAssign", "core::ops::assign::SubAssign"),
+    ("MulAssign", "core::ops::assign::MulAssign"),
+    ("DivAssign", "core::ops::assign::DivAssign"),
+    ("RemAssign", "core::ops::assign::RemAssign"),
+    ("BitAndAssign", "core::ops::assign::BitAndAssign"),
+    ("BitOrAssign", "core::ops::assign::BitOrAssign"),
+    ("BitXorAssign", "core::ops::assign::BitXorAssign"),
+    ("ShlAssign", "core::ops::assign::ShlAssign"),
+    ("ShrAssign", "core::ops::assign::ShrAssign"),
+    ("Eq", "core::cmp::Eq"),
+    ("PartialOrdering", "core::cmp::PartialOrdering"),
+    ("PartialOrd", "core::cmp::PartialOrd"),
+    ("Index", "core::ops::index::Index"),
+    ("Chain", "core::flow::Chain"),
+    ("Coalesce", "core::flow::Coalesce"),
+    ("Unwrap", "core::flow::Unwrap"),
+    ("Raise", "core::flow::Raise"),
 ];
-const CORE_FLOW_EXPORTS: &[&str] = &["chain", "coalesce", "unwrap", "raise"];
-const CORE_EFFECT_EXPORTS: &[&str] = &["continuation", "effect_callable", "handle"];
-const CORE_RESULT_EXPORTS: &[&str] = &["result"];
+const CORE_FLOW_EXPORTS: &[&str] = &["Chain", "Coalesce", "Unwrap", "Raise"];
+const CORE_EFFECT_EXPORTS: &[&str] = &["Continuation", "EffectCallable", "Handle"];
+const CORE_RESULT_EXPORTS: &[&str] = &["Result"];
 const CORE_ERROR_EXPORTS: &[&str] = &["throwing", "try", "throw"];
 const CORE_UNSAFE_EXPORTS: &[&str] = &["unsafety", "unsafe"];
-const CORE_ASYNC_EXPORTS: &[&str] = &["suspension", "poll", "future", "executor", "async", "await"];
+const CORE_ASYNC_EXPORTS: &[&str] = &["suspension", "Poll", "Future", "Executor", "async", "await"];
 const CORE_PRIMITIVE_EXPORTS: &[&str] = &[
     "bool", "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize",
 ];
-const CORE_NUMERIC_EXPORTS: &[&str] = &["sign"];
+const CORE_NUMERIC_EXPORTS: &[&str] = &["Sign"];
 const CORE_SORT_EXPORTS: &[&str] = &[
     "sort",
     "sort_of",
@@ -644,38 +645,38 @@ const CORE_SORT_EXPORTS: &[&str] = &[
     "effects",
     "parameters",
     "constraint",
-    "is",
+    "Is",
 ];
 const CORE_STRING_EXPORTS: &[&str] = &[
     "str",
-    "str_bytes",
-    "str_scalars",
-    "string",
+    "StrBytes",
+    "StrScalars",
+    "String",
     "string_from_raw_parts",
     "string_into_raw_parts",
-    "unicode_scalar",
+    "UnicodeScalar",
 ];
 const CORE_FMT_EXPORTS: &[&str] = &[
-    "parse",
-    "text_writer",
-    "display",
-    "debug",
-    "parse_int_error_kind",
-    "parse_int_error",
+    "Parse",
+    "TextWriter",
+    "Display",
+    "Debug",
+    "ParseIntErrorKind",
+    "ParseIntError",
     "parse_u64_radix",
     "parse_i64_radix",
     "write_bool",
 ];
-const CORE_LITERAL_EXPORTS: &[&str] = &["array_literal", "string_literal"];
+const CORE_LITERAL_EXPORTS: &[&str] = &["ArrayLiteral", "StringLiteral"];
 const CORE_FOREIGN_EXPORTS: &[&str] = &["abi", "foreign"];
-const CORE_PASSING_EXPORTS: &[&str] = &["copy", "move", "comptime"];
-const CORE_BORROW_EXPORTS: &[&str] = &["access", "mut", "shared", "borrow"];
-const CORE_MEMORY_EXPORTS: &[&str] = &["array", "slice", "ptr", "size_of", "align_of"];
+const CORE_PASSING_EXPORTS: &[&str] = &["copy", "move"];
+const CORE_BORROW_EXPORTS: &[&str] = &["access", "mut", "shared", "Borrow", "borrow"];
+const CORE_MEMORY_EXPORTS: &[&str] = &["Array", "Slice", "Ptr", "ptr", "size_of", "align_of"];
 const CORE_CONTROL_EXPORTS: &[&str] = &[
     "loop_exit",
     "iteration_skip",
     "function_exit",
-    "attempt",
+    "Attempt",
     "break",
     "continue",
     "return",
@@ -688,14 +689,14 @@ const CORE_CONTROL_EXPORTS: &[&str] = &[
     "defer",
 ];
 const CORE_ITER_EXPORTS: &[&str] = &[
-    "iterator",
-    "into_iterator",
-    "array_into_iter",
-    "slice_iter",
-    "owned_item",
-    "borrowed_item",
+    "Iterator",
+    "IntoIterator",
+    "ArrayIntoIter",
+    "SliceIter",
+    "OwnedItem",
+    "BorrowedItem",
 ];
-const CORE_TESTING_EXPORTS: &[&str] = &["outcome", "run"];
+const CORE_TESTING_EXPORTS: &[&str] = &["Outcome", "run"];
 
 fn validate_package_layout(
     packages: &[SourcePackage],
@@ -1346,7 +1347,7 @@ fn install_standard_namespaces(
             if export.module == "ops"
                 && matches!(
                     export.name.as_str(),
-                    "chain" | "coalesce" | "unwrap" | "raise"
+                    "Chain" | "Coalesce" | "Unwrap" | "Raise"
                 )
             {
                 continue;
@@ -1546,8 +1547,8 @@ fn install_core_namespace(
             package_root,
             &core_root,
             "option",
-            "option",
-            "core::option::option",
+            "Option",
+            "core::option::Option",
             "<core>",
         );
         for name in CORE_RESULT_EXPORTS {

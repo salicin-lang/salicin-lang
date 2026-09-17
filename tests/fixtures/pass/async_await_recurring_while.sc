@@ -1,53 +1,53 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 
 let step = struct {
-  remaining: ptr<mut><i32>,
-  polls: ptr<mut><i32>
+  remaining: Ptr<mut><i32>,
+  polls: Ptr<mut><i32>
 }
 
-extend(step, future(())) {
-  let output = ()
+extend(step, Future(())) {
+  let Output = ();
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<()> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<()> = {
     unsafe {
       *self.polls = *self.polls + 1
       *self.remaining = *self.remaining - 1
-      poll<()>.ready(())
+      Poll<()>.Ready(())
     }
   }
 }
 
-let step(remaining: ptr<mut><i32>, polls: ptr<mut><i32>): step = {
+let step(remaining: Ptr<mut><i32>, polls: Ptr<mut><i32>): step = {
   step{ remaining: remaining, polls: polls }
 }
 
 let pending_step = struct {
   polled: bool,
-  remaining: ptr<mut><i32>
+  remaining: Ptr<mut><i32>
 }
 
-extend(pending_step, future(())) {
-  let output = ()
+extend(pending_step, Future(())) {
+  let Output = ();
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<()> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<()> = {
     if self.polled {
       unsafe {
         *self.remaining = *self.remaining - 1
       }
-      poll<()>.ready(())
+      Poll<()>.Ready(())
     } else {
       self.polled = true
-      poll<()>.pending
+      Poll<()>.Pending
     }
   }
 }
 
-let pending_step(remaining: ptr<mut><i32>): pending_step = {
+let pending_step(remaining: Ptr<mut><i32>): pending_step = {
   pending_step{ polled: false, remaining: remaining }
 }
 
@@ -65,8 +65,8 @@ let main(): i32 = {
     }
   }
   let pre_ready = match pre.poll()
-    { pending -> 0 }
-    { ready(_) -> 1 }
+    { Pending -> 0 }
+    { Ready(_) -> 1 }
 
   let mut false_remaining = 0
   let false_ptr = ptr<mut>(borrow<mut>(false_remaining))
@@ -78,8 +78,8 @@ let main(): i32 = {
     }
   }
   let false_ready = match initially_false.poll()
-    { pending -> 0 }
-    { ready(_) -> 1 }
+    { Pending -> 0 }
+    { Ready(_) -> 1 }
 
   let mut post_remaining = 0
   let post_ptr = ptr<mut>(borrow<mut>(post_remaining))
@@ -92,8 +92,8 @@ let main(): i32 = {
     }
   }
   let post_ready = match post.poll()
-    { pending -> 0 }
-    { ready(_) -> 1 }
+    { Pending -> 0 }
+    { Ready(_) -> 1 }
 
   let mut pending_remaining = 1
   let mut condition_checks = 0
@@ -110,11 +110,11 @@ let main(): i32 = {
     }
   }
   let was_pending = match pending.poll()
-    { pending -> 1 }
-    { ready(_) -> 0 }
+    { Pending -> 1 }
+    { Ready(_) -> 0 }
   let became_ready = match pending.poll()
-    { pending -> 0 }
-    { ready(_) -> 1 }
+    { Pending -> 0 }
+    { Ready(_) -> 1 }
 
   31 + pre_ready + false_ready + post_ready + unsafe { *polls_ptr } +
     was_pending + became_ready + unsafe { *checks_ptr }

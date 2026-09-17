@@ -1,26 +1,26 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 
 let number = struct {}
 let flag = struct {}
 
-extend(number, future(())) {
-  let output = i32
+extend(number, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
-    poll<i32>.ready(42)
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
+    Poll<i32>.Ready(42)
   }
 }
 
-extend(flag, future(())) {
-  let output = bool
+extend(flag, Future(())) {
+  let Output = bool;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<bool> = {
-    poll<bool>.ready(true)
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
+    Poll<bool>.Ready(true)
   }
 }
 

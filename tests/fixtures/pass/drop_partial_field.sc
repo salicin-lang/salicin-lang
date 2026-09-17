@@ -2,8 +2,8 @@ let resource = struct { value: i32 }
 let pair = struct { left: resource, right: resource }
 let nested = struct { pair: pair, tail: resource }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     let checked = 1 / self.value
     self.value = 0
   }

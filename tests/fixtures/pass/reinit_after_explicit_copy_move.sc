@@ -1,6 +1,6 @@
 let number = struct { value: i32 }
 
-extend(number, copyable) {}
+extend(number, Copyable) {}
 
 let consume(move number: number): i32 = { number.value }
 

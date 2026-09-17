@@ -1,8 +1,8 @@
 let c_memset(
-  destination: ptr<mut><u8>,
+  destination: Ptr<mut><u8>,
   value: i32,
   count: usize,
-): ptr<mut><u8> = foreign(c, "memset")
+): Ptr<mut><u8> = foreign(c, "memset")
 
 let main(): i32 = {
   let mut byte: u8 = 0

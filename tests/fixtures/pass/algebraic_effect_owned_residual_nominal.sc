@@ -8,18 +8,18 @@ let step = effect {
 
 let state = struct {
   value: i32,
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
 }
 
-extend(state, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(state, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let update: with<audit, step>(state: borrow<mut><state>): i32 = {
+let update: with<audit, step>(state: Borrow<mut><state>): i32 = {
   let adjustment = audit.adjust()
   let delta = step.delta()
   state.value = state.value + adjustment + delta
@@ -27,7 +27,7 @@ let update: with<audit, step>(state: borrow<mut><state>): i32 = {
 }
 
 let audit_outside(
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
   abandon_audit: bool,
   abandon_step: bool,
 ): i32 = {
@@ -45,7 +45,7 @@ let audit_outside(
 }
 
 let step_outside(
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
   abandon_audit: bool,
   abandon_step: bool,
 ): i32 = {

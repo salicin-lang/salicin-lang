@@ -1,4 +1,4 @@
-let result = core.result
+let Result = core.Result
 let throwing = core.error.throwing
 
 let fail: with<throwing<bool>>(): i32 = {

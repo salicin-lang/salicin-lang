@@ -1,21 +1,21 @@
 let suspension = core.async.suspension
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 let await_source = core.async.await
 
 let step = struct { ready: bool }
 
-extend(step, future(())) {
-  let output = i32
+extend(step, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if self.ready {
-      ready(42)
+      Ready(42)
     } else {
       self.ready = true
-      pending
+      Pending
     }
   }
 }

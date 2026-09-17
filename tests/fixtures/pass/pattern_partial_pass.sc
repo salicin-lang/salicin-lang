@@ -1,16 +1,16 @@
-let option = core.option
+let Option = core.Option
 
 let apply(
-  move choose: (option<i32>): core.control.attempt(option<i32>)(i32),
-)(move input: option<i32>): core.control.attempt(option<i32>)(i32) = {
+  move choose: (Option<i32>): core.control.Attempt(Option<i32>)(i32),
+)(move input: Option<i32>): core.control.Attempt(Option<i32>)(i32) = {
   choose(input)
 }
 
 let main(): i32 = {
-  let attempted = apply({ some(value) -> value })(option.some(42))
+  let attempted = apply({ Some(value) -> value })(Option.Some(42))
   match attempted
-    { hit(value) -> value }
-    { miss(_) -> 0 }
+    { Hit(value) -> value }
+    { Miss(_) -> 0 }
 }
 
 test("pattern_partial_pass.sc") {

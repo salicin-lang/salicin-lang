@@ -1,8 +1,8 @@
-let option = core.option
+let Option = core.Option
 
-let make(count: borrow<mut><i32>): option<i32> = {
+let make(count: Borrow<mut><i32>): Option<i32> = {
   count = count + 1
-  option<i32>.some(42)
+  Option<i32>.Some(42)
 }
 
 let main(): i32 = {

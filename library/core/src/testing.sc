@@ -1,16 +1,16 @@
-/// The normalized result of interpreting one test registration.
-pub let outcome = enum {
-  passed,
-  failed(core.string.string),
+/// The normalized Result of interpreting one test registration.
+pub let Outcome = enum {
+  Passed,
+  Failed(core.string.String),
 }
 
-/// Interprets exactly one unit-returning, string-throwing registration.
+/// Interprets exactly one unit-returning, String-throwing registration.
 pub let run(
-  move action: with<core.error.throwing<core.string.string>>((): ()),
-): outcome = {
-  core.error.throwing<core.string.string>.handle
-    raise { (message) -> outcome.failed(message) }
-    done { (_) -> outcome.passed }
+  move action: with<core.error.throwing<core.string.String>>((): ()),
+): Outcome = {
+  core.error.throwing<core.string.String>.handle
+    raise { (message) -> Outcome.Failed(message) }
+    done { (_) -> Outcome.Passed }
     action {
       action()
     }

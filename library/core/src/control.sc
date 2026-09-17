@@ -2,9 +2,9 @@
 // validated functions. Most control helpers are ordinary source definitions;
 // the compiler only keeps syntax-directed shortcuts and the few places that
 // need authority or primitive control-flow lowering.
-/// Dynamically exits the nearest loop whose result type is `T`.
-pub let loop_exit<comptime t: type> = effect {
-  let exit(move value: t): never
+/// Dynamically exits the nearest loop whose Result type is `T`.
+pub let loop_exit<T: type> = effect {
+  let exit(move value: T): never
 }
 
 /// Dynamically starts the next iteration of the nearest loop.
@@ -13,18 +13,18 @@ pub let iteration_skip = effect {
 }
 
 /// Dynamically returns from the nearest function boundary returning `T`.
-pub let function_exit<comptime t: type> = effect {
-  let exit(move value: t): never
+pub let function_exit<T: type> = effect {
+  let exit(move value: T): never
 }
 
-/// The observable result of trying one refutable pattern function.
-pub let attempt<comptime input: type><comptime output: type> = enum {
-  hit(output),
-  miss(input),
+/// The observable Result of trying one refutable pattern function.
+pub let Attempt<Input: type><Output: type> = enum {
+  Hit(Output),
+  Miss(Input),
 }
 
-pub let break<comptime t: type>: with<loop_exit<t>>(move value: t): never = {
-  loop_exit<t>.exit(value)
+pub let break<T: type>: with<loop_exit<T>>(move value: T): never = {
+  loop_exit<T>.exit(value)
 }
 
 pub let break: with<loop_exit<()>>(): never = {
@@ -35,8 +35,8 @@ pub let continue: with<iteration_skip>(): never = {
   iteration_skip.next()
 }
 
-pub let return<comptime t: type>: with<function_exit<t>>(move value: t): never = {
-  function_exit<t>.exit(value)
+pub let return<T: type>: with<function_exit<T>>(move value: T): never = {
+  function_exit<T>.exit(value)
 }
 
 pub let return: with<function_exit<()>>(): never = {
@@ -44,15 +44,15 @@ pub let return: with<function_exit<()>>(): never = {
 }
 
 /// Runs `action` and preserves its effect row.
-pub let do<comptime e: effects, comptime t: type>: with<e>(move action: with<e>((): t)): t = {
+pub let do<e: effects, T: type>: with<e>(move action: with<e>((): T)): T = {
   action()
 }
 
 /// Registers `action` to run when the current lexical scope exits.
-pub let defer<comptime e: effects>: with<e>(move action: with<e>((): ())): () = builtin()
+pub let defer<e: effects>: with<e>(move action: with<e>((): ())): () = builtin()
 
 /// Runs `action` once, then repeats it while the lazy condition remains true.
-pub let do<comptime e: effects>: with<e>(move action: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): ()))(move while: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)): () = {
+pub let do<e: effects>: with<e>(move action: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): ()))(move while: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)): () = {
   loop {
     core.control.iteration_skip.handle
       next { () }
@@ -68,10 +68,10 @@ pub let do<comptime e: effects>: with<e>(move action: with<core.control.loop_exi
 }
 
 /// Repeats `body` indefinitely until control exits through another construct.
-pub let loop<comptime e: effects, comptime t: type>: with<e>(move body: with<core.control.loop_exit<t>, core.control.iteration_skip, e>((): ())): t = builtin()
+pub let loop<e: effects, T: type>: with<e>(move body: with<core.control.loop_exit<T>, core.control.iteration_skip, e>((): ())): T = builtin()
 
 /// Repeats `body` while the lazy condition remains true.
-pub let while<comptime e: effects>: with<e>(move condition: with<e>((): bool))(move do: with<e>((): ())): () = {
+pub let while<e: effects>: with<e>(move condition: with<e>((): bool))(move do: with<e>((): ())): () = {
   loop {
     if condition() {
       do()
@@ -82,7 +82,7 @@ pub let while<comptime e: effects>: with<e>(move condition: with<e>((): bool))(m
 }
 
 /// Selects one of two lazy branches from an eager boolean condition.
-pub let if<comptime e: effects, comptime t: type>: with<e>(condition: bool)(move then: with<e>((): t))(move else: with<e>((): t)): t = {
+pub let if<e: effects, T: type>: with<e>(condition: bool)(move then: with<e>((): T))(move else: with<e>((): T)): T = {
   match condition
     { true -> then() }
     { false -> else() }
@@ -90,25 +90,25 @@ pub let if<comptime e: effects, comptime t: type>: with<e>(condition: bool)(move
 
 /// Selects the first matching case parameter group.
 pub let match<
-  comptime input: type,
-  comptime output: type,
-  comptime e: effects,
-  comptime ...cases: parameters,
+  Input: type,
+Output: type,
+e: effects,
+...cases: parameters,
 >: with<e>
-  (move input: input)
-  ...cases: output = builtin()
+  (move input: Input)
+  ...cases: Output = builtin()
 
 /// Iterates through `iterable`, passing each item to the lazy body.
-pub let for<comptime e: effects, comptime iterable: type, comptime iter: type, comptime item: type>: with<e>(move iterable: iterable)(move body: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((item): ())): () = requires(
-    iterable is core.iter.into_iterator &&
-    iterable.iter == iter &&
-    iter is core.iter.iterator &&
-    iter.item == item
+pub let for<e: effects, Iterable: type, Iter: type, Item: type>: with<e>(move iterable: Iterable)(move body: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((Item): ())): () = requires(
+    Iterable is core.iter.IntoIterator &&
+    Iterable.Iter == Iter &&
+    Iter is core.iter.Iterator &&
+    Iter.Item == Item
 ) {
   let mut iterator = iterable.into_iter()
   loop {
     match iterator.next()
-      { some(item) -> body(item) }
-      { none -> break() }
+      { Some(item) -> body(item) }
+      { None -> break() }
   }
 }

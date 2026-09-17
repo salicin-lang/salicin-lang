@@ -1,11 +1,11 @@
-let index = core.ops.index
+let Index = core.ops.Index
 
 let bag = struct { value: i32 }
-extend(bag, index(i32)) {
-  let output = i32
-  let index<comptime a: access>
-    (self: borrow<a><self>)
-    (key: i32): borrow<a><i32> = {
+extend(bag, Index(i32)) {
+  let Output = i32;
+  let index<a: access>
+    (self: Borrow<a><self>)
+    (key: i32): Borrow<a><i32> = {
     borrow<a>(self.value)
   }
 }

@@ -1,17 +1,17 @@
-let fixed<comptime l: usize>: type = array<i32><l>;
+let fixed<l: usize>: type = Array<i32><l>;
 
 let keep = trait {
-  let output<comptime l: usize>: type
+  let Output<l: usize>: type
 
-  let keep<comptime l: usize>(move value: output<l>): output<l>
+  let keep<l: usize>(move value: Output<l>): Output<l>
 }
 
 let marker = struct {}
 
 extend(marker, keep) {
-  let output = fixed
+  let Output = fixed;
 
-  let keep<comptime l: usize>(move value: array<i32><l>): array<i32><l> = {
+  let keep<l: usize>(move value: Array<i32><l>): Array<i32><l> = {
     value
   }
 }

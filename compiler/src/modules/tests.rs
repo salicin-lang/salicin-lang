@@ -20,7 +20,7 @@ fn resolves_user_closed_compile_parameter_types_across_modules() {
             "root.sc",
             &[],
             "use root.config.optimization as optimization\n\
-                 let select<comptime o: optimization>(value: i32): i32 = { value }\n\
+                 let select<o: optimization>(value: i32): i32 = { value }\n\
                  let main(): i32 = { 0 }\n",
             true,
         ),
@@ -256,10 +256,10 @@ fn local_parameters_blocks_closures_and_match_bindings_shadow_modules() {
         unit(
             "src/main.sc",
             &[],
-            "use core.option\n\
+            "use core.option.Option\n\
                  let keep(math: i32): i32 = {\n\
                    let local = { (math: i32) -> math }\n\
-                   option.some(math) match { option.some(math) => local(math), _ => math }\n\
+                   Option.Some(math) match { Option.Some(math) => local(math), _ => math }\n\
                  }\n",
             true,
         ),
@@ -334,14 +334,14 @@ fn preserves_self_and_associated_types_inside_traits_and_extensions() {
                    let output: type\n\
                    let a: type\n\
                    let b: type\n\
-                   let convert(self: borrow(self))(value: self): output\n\
+                   let convert(self: Borrow<self>)(value: self): output\n\
                  }\n\
                  pub(package) let number = struct { value: i32 }\n\
                  extend(number, convert) {\n\
                    let output = i32\n\
                    let a = self\n\
                    let b = a\n\
-                   let convert(self: borrow(self))(value: self): output = { value.value }\n}\n",
+                   let convert(self: Borrow<self>)(value: self): output = { value.value }\n}\n",
             false,
         ),
     ])
@@ -438,7 +438,7 @@ fn preserves_generic_extend_parameters_while_qualifying_the_target() {
         unit(
             "src/api.sc",
             &["api"],
-            "pub(package) let cell<comptime t: type> = struct { value: t }\n\
+            "pub(package) let cell<t: type> = struct { value: t }\n\
                  extend(cell(t)) {\n\
                    let new(move value: t): cell(t) = { cell { value: value } }\n\
                    let take(move self)(): t = { self.value }\n\
@@ -489,7 +489,7 @@ fn reinfers_cross_module_extend_pattern_sorts_after_resolution() {
             "src/api.sc",
             &["api"],
             "pub let mode = sort(1) { shared unique }\n\
-                 pub let handle<comptime a: mode><comptime t: type> = struct {}\n",
+                 pub let handle<a: mode><t: type> = struct {}\n",
             false,
         ),
     ])
@@ -629,18 +629,18 @@ fn rejects_bare_modules_before_they_can_fall_back_to_prelude_names() {
         unit(
             "root.sc",
             &[],
-            r#"use root.fake as option
-let add = root.fake
+            r#"use root.fake as Option
+let Add = root.fake
 let never = root.fake
 
 let number = struct { value: i32 }
-extend(number, add(number)) {
-  let output = i32
+extend(number, Add<number>) {
+  let Output = i32
   let add(self)(rhs: number): i32 = { self.value + rhs.value }
 }
 
 let stop(): never = { loop {} }
-let main(): i32 = { option {} }
+let main(): i32 = { Option {} }
 "#,
             true,
         ),
@@ -649,8 +649,8 @@ let main(): i32 = { option {} }
     .unwrap_err();
 
     for expected in [
-        "module `option` cannot be used as a type or compile-time argument",
-        "module `add` cannot be used as a type",
+        "module `Option` cannot be used as a type or compile-time argument",
+        "module `Add` cannot be used as a type",
         "module `never` cannot be used as a type",
     ] {
         assert!(
@@ -1243,7 +1243,7 @@ fn rejects_nominal_types_that_are_narrower_than_function_and_global_apis() {
         "src/lib.sc",
         &[],
         "let hidden = struct {}\n\
-             pub let wrapper<comptime t: type> = struct {}\n\
+             pub let wrapper<t: type> = struct {}\n\
              pub let expose(value: wrapper(hidden)): hidden = { value }\n\
              pub let shared: hidden = hidden {}\n",
         true,
@@ -1312,7 +1312,7 @@ fn rejects_traits_that_are_narrower_than_public_where_predicates() {
         "src/lib.sc",
         &[],
         "let hidden = trait {}\n\
-             pub let expose<comptime t: type>(value: t): t = requires(t is hidden) { value }\n",
+             pub let expose<t: type>(value: t): t = requires(t is hidden) { value }\n",
         true,
     )])
     .unwrap_err();
@@ -1332,7 +1332,7 @@ fn rejects_traits_that_are_narrower_than_constrained_extension_members() {
         "src/lib.sc",
         &[],
         "let hidden = trait {}\n\
-             pub let cell<comptime t: type> = struct { pub value: t }\n\
+             pub let cell<t: type> = struct { pub value: t }\n\
              extend(cell(t))(requires: t is hidden) {\n\
                let take(move self)(): t = { self.value }\n\
              }\n",
@@ -1423,9 +1423,9 @@ fn validates_trait_signatures_without_treating_bound_types_as_nominals() {
     let valid = resolve_sources(&[unit(
         "src/valid.sc",
         &[],
-        "pub let convert<comptime t: type> = trait {\n\
+        "pub let convert<t: type> = trait {\n\
                let output: type = t\n\
-               let convert<comptime u: type>(self: borrow(self))(value: t): output\n\
+               let convert<u: type>(self: Borrow<self>)(value: t): output\n\
              }\n",
         true,
     )]);
@@ -1437,7 +1437,7 @@ fn validates_trait_signatures_without_treating_bound_types_as_nominals() {
         "let hidden = struct {}\n\
              pub let expose = trait {\n\
                let output: type = hidden\n\
-               let convert(self: borrow(self))(value: hidden): hidden\n\
+               let convert(self: Borrow<self>)(value: hidden): hidden\n\
              }\n",
         true,
     )])
@@ -1463,25 +1463,25 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     let program = resolve_sources(&[unit(
         "main.sc",
         &[],
-        "use alloc.boxed.box as heap_box\nuse alloc.vec.vec\n\
-             let keep(move boxed: heap_box(i32)): heap_box(i32) = { boxed }\n\
-             let empty(): vec<i32> = { vec<i32>.new() }\n",
+        "use alloc.boxed.Box as HeapBox\nuse alloc.vec.Vec\n\
+             let keep(move boxed: HeapBox<i32>): HeapBox<i32> = { boxed }\n\
+             let empty(): Vec<i32> = { Vec<i32>.new() }\n",
         true,
     )])
     .unwrap();
     assert_eq!(
         function(&program, "keep").groups[0][0].ty,
-        Type::Named("alloc::boxed::box".into(), vec![Type::I32])
+        Type::Named("alloc::boxed::Box".into(), vec![Type::I32])
     );
     assert_eq!(
         function(&program, "empty").return_type,
-        Some(Type::Named("alloc::vec::vec".into(), vec![Type::I32]))
+        Some(Type::Named("alloc::vec::Vec".into(), vec![Type::I32]))
     );
 
     let operator = resolve_sources(&[unit(
         "operator.sc",
         &[],
-        "use core.ops.add as plus\n\
+        "use core.ops.Add as plus\n\
              let number = struct { value: i32 }\n\
              extend(number, plus(number)) {\n\
                let output = number\n\
@@ -1493,18 +1493,18 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     assert!(operator.items.iter().any(|item| {
         matches!(item, Item::Extend(extension)
                 if matches!(&extension.trait_ref,
-                    Some(Type::Named(name, _)) if name == "core::ops::arith::add"))
+                    Some(Type::Named(name, _)) if name == "core::ops::arith::Add"))
     }));
 
     let flow = resolve_sources(&[unit(
         "flow.sc",
         &[],
-        "let chain = core.flow.chain\n\
-             let ops_coalesce = core.ops.coalesce\n\
-             let legacy_coalesce = core.ops.coalesce\n\
-             let maybe<comptime t: type> = enum { some(t), none }\n\
-             let legacy_maybe<comptime t: type> = enum { some(t), none }\n\
-             extend(maybe(t), chain) {}\n\
+        "let Chain = core.flow.Chain\n\
+             let ops_coalesce = core.ops.Coalesce\n\
+             let legacy_coalesce = core.ops.Coalesce\n\
+             let maybe<t: type> = enum { Some(t), None }\n\
+             let legacy_maybe<t: type> = enum { Some(t), None }\n\
+             extend(maybe(t), Chain) {}\n\
              extend(maybe(t), ops_coalesce) {}\n\
              extend(legacy_maybe(t), legacy_coalesce) {}\n",
         true,
@@ -1513,26 +1513,26 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     assert!(flow.items.iter().any(|item| {
         matches!(item, Item::Extend(extension)
                 if matches!(&extension.trait_ref,
-                    Some(Type::Named(name, _)) if name == "core::flow::chain"))
+                    Some(Type::Named(name, _)) if name == "core::flow::Chain"))
     }));
     assert!(flow.items.iter().any(|item| {
         matches!(item, Item::Extend(extension)
                 if matches!(&extension.trait_ref,
-                    Some(Type::Named(name, _)) if name == "core::flow::coalesce"))
+                    Some(Type::Named(name, _)) if name == "core::flow::Coalesce"))
     }));
 
     let standard_modules = resolve_sources(&[unit(
             "standard.sc",
             &[],
-            "use core.async.async\n\
-             let semigroup = std.algebra.semigroup
-             let monoid = std.algebra.monoid
+             "use core.async.async\n\
+              let Semigroup = std.algebra.Semigroup
+              let Monoid = std.algebra.Monoid
              let number = struct { value: i32 }\n\
              let suspended(): i32 with<async> = { 0 }\n\
              let invoke(move action: (): i32 with<async>): i32 with<async> = { action() }\n\
-             extend(number, semigroup) {\n\
+              extend(number, Semigroup) {\n\
                let combine(move left: number, move right: number): number = { number { value: left.value + right.value } }\n}\n\
-             extend(number, monoid) {\n\
+              extend(number, Monoid) {\n\
                let empty(): number = { number { value: 0 } }\n}\n",
             true,
         )])
@@ -1552,77 +1552,77 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     assert!(standard_modules.items.iter().any(|item| {
         matches!(item, Item::Extend(extension)
                 if matches!(&extension.trait_ref,
-                    Some(Type::Named(name, _)) if name == "std::algebra::semigroup"))
+                    Some(Type::Named(name, _)) if name == "std::algebra::Semigroup"))
     }));
     assert!(standard_modules.items.iter().any(|item| {
         matches!(item, Item::Extend(extension)
                 if matches!(&extension.trait_ref,
-                    Some(Type::Named(name, _)) if name == "std::algebra::monoid"))
+                    Some(Type::Named(name, _)) if name == "std::algebra::Monoid"))
     }));
 
     let bare = resolve_sources(&[unit(
         "main.sc",
         &[],
-        "let make(): box<i32> = { box.new(1) }\n",
+        "let make(): Box<i32> = { Box.new(1) }\n",
         true,
     )])
     .unwrap_err();
     assert!(bare.iter().any(|diagnostic| {
-        diagnostic.contains("standard-library item `box` is not in the prelude")
-            && diagnostic.contains("let box = alloc.boxed.box")
+        diagnostic.contains("standard-library item `Box` is not in the prelude")
+            && diagnostic.contains("let Box = alloc.boxed.Box")
     }));
 
     let bare_option = resolve_sources(&[unit(
         "option.sc",
         &[],
-        "let maybe(): option<i32> = { option.none }\n",
+        "let maybe(): Option<i32> = { Option.None }\n",
         true,
     )])
     .unwrap_err();
     assert!(bare_option.iter().any(|diagnostic| {
-        diagnostic.contains("standard-library item `option` is not in the prelude")
-            && diagnostic.contains("let option = core.option")
+        diagnostic.contains("standard-library item `Option` is not in the prelude")
+            && diagnostic.contains("let Option = core.Option")
     }));
 
     let bare_result = resolve_sources(&[unit(
         "result.sc",
         &[],
-        "let outcome(): result(bool)(i32) = { result.ok(1) }\n",
+        "let outcome(): Result<bool><i32> = { Result.Ok(1) }\n",
         true,
     )])
     .unwrap_err();
     assert!(bare_result.iter().any(|diagnostic| {
-        diagnostic.contains("standard-library item `result` is not in the prelude")
-            && diagnostic.contains("let result = core.result")
+        diagnostic.contains("standard-library item `Result` is not in the prelude")
+            && diagnostic.contains("let Result = core.result.Result")
     }));
 
     let bare_operator = resolve_sources(&[unit(
         "operator.sc",
         &[],
         "let number = struct { value: i32 }\n\
-             extend(number, add(number)) {\n\
-               let output = number\n\
+             extend(number, Add<number>) {\n\
+               let Output = number\n\
                let add(self)(rhs: number): number = { self }\n\
              }\n",
         true,
     )])
     .unwrap_err();
     assert!(bare_operator.iter().any(|diagnostic| {
-        diagnostic.contains("standard-library item `add` is not in the prelude")
-            && diagnostic.contains("let add = core.ops.add")
+        diagnostic.contains("standard-library item `Add` is not in the prelude")
+            && diagnostic.contains("let Add = core.ops.Add")
     }));
 
     let bare_flow = resolve_sources(&[unit(
         "flow.sc",
         &[],
-        "let maybe<comptime t: type> = enum { some(t), none }\n\
-             extend(maybe(t), chain) {}\n",
+        "let maybe<t: type> = enum { Some(t), None }\n\
+             extend(maybe(t), Chain) {}\n",
         true,
     )])
     .unwrap_err();
     assert!(bare_flow.iter().any(|diagnostic| {
-        diagnostic.contains("standard-library item `chain` is not in the prelude")
-            && diagnostic.contains("let chain = core.flow.chain")
+        diagnostic.contains("standard-library item `Chain` is not in the prelude")
+            && diagnostic.contains("let Chain = core.flow.Chain")
     }));
 
     let bare_effect = resolve_sources(&[unit(
@@ -1641,27 +1641,27 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         "algebra.sc",
         &[],
         "let number = struct { value: i32 }\n\
-             extend(number, semigroup) {\n\
+             extend(number, Semigroup) {\n\
                let combine(move left: number, move right: number): number = { left }\n}\n",
         true,
     )])
     .unwrap_err();
     assert!(bare_algebra.iter().any(|diagnostic| {
-        diagnostic.contains("standard-library item `semigroup` is not in the prelude")
-            && diagnostic.contains("let semigroup = std.algebra.semigroup")
+        diagnostic.contains("standard-library item `Semigroup` is not in the prelude")
+            && diagnostic.contains("let Semigroup = std.algebra.Semigroup")
     }));
 
     let bare_functional = resolve_sources(&[unit(
         "functional.sc",
         &[],
         "let number = struct { value: i32 }\n\
-             extend(number, functor) {}\n",
+             extend(number, Functor) {}\n",
         true,
     )])
     .unwrap_err();
     assert!(bare_functional.iter().any(|diagnostic| {
-        diagnostic.contains("standard-library item `functor` is not in the prelude")
-            && diagnostic.contains("let functor = std.functional.functor")
+        diagnostic.contains("standard-library item `Functor` is not in the prelude")
+            && diagnostic.contains("let Functor = std.functional.Functor")
     }));
 
     for namespace in ["core", "alloc", "std"] {
@@ -1729,7 +1729,7 @@ fn mounted_standard_exports_match_the_validated_bundles() {
                 .iter()
                 .map(|name| ("primitives", *name)),
         )
-        .chain([("option", "option")])
+        .chain([("option", "Option")])
         .chain(CORE_RESULT_EXPORTS.iter().map(|name| ("result", *name)))
         .chain(CORE_ERROR_EXPORTS.iter().map(|name| ("error", *name)))
         .chain(CORE_CMP_EXPORTS.iter().map(|name| ("cmp", *name)))

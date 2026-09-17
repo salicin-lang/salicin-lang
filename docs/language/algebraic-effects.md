@@ -8,9 +8,9 @@ This document defines the implementation contract for source-declared algebraic 
 An effect is a nominal compile-time identity with zero or more operations:
 
 ```sc fragment
-let state<comptime s: type> = effect {
-  let get: (): s
-  let put: (move value: s): ()
+let state<S: type> = effect {
+  let get: (): S
+  let put: (move value: S): ()
 }
 ```
 
@@ -26,13 +26,13 @@ rules. A declaration with the same operation name in another effect is unrelated
 `with<E>(F)` adds the normalized effect row `E` to callable type `F`:
 
 ```sc fragment
-let increment: with(state(i32))(): i32 = {
-  let value = state(i32).get()
-  state(i32).put(value + 1)
+let increment: with<state<i32>>(): i32 = {
+  let value = state<i32>.get()
+  state<i32>.put(value + 1)
   value
 }
 
-let apply<comptime e: effects>: with<e>
+let apply<e: effects>: with<e>
   (action: with<e>((i32): i32))
   (value: i32): i32 = {
   action(value)
@@ -41,13 +41,13 @@ let apply<comptime e: effects>: with<e>
 
 The declaration boundary after the function name and compile-time parameters
 starts the complete runtime callable type. A function value uses the fully
-parenthesized form, such as `with(state(i32))((): i32)`. The row belongs to
+parenthesized form, such as `with<state<i32>>((): i32)`. The row belongs to
 the complete multi-group call, not to a parameter group or result value.
 `with<>((a): b)` is the pure callable `(a): b`; a non-callable operand is
 rejected.
 
 Rows are unordered sets of nominal effect identities. Handling one identity removes exactly that
-identity and forwards every other requirement. A `comptime e: effects` parameter may represent
+identity and forwards every other requirement. A `e: effects` parameter may represent
 an abstract residual row and is instantiated before runtime lowering.
 The singular `effect` sort classifies one identity; the plural `effects` sort classifies the empty
 row (`pure`) or any normalized combination of identities and row variables.
@@ -67,7 +67,7 @@ accepts:
 Conceptually:
 
 ```sc fragment
-let answer = state(i32).handle
+let answer = state<i32>.handle
   get { resume -> resume(41) }
   put { (value, resume) -> resume(()) }
   action {
@@ -98,9 +98,9 @@ duplicate drops, or silently skip destructors.
 
 ## Standard Effects
 
-`core.error.throwing<error>` is the standard abortive error effect. Its `raise` operation returns
+`core.error.throwing<Error>` is the standard abortive error effect. Its `raise` operation returns
 `never`. `throw(error)` invokes that operation. `try { action }` is one standard interpreter that
-handles it into `core.result(error)(value)`; the effect itself is independent of `result`.
+handles it into `core.Result<Error><Value>`; the effect itself is independent of `Result`.
 
 `core.unsafe.unsafety` is an authority effect. Its handler is the lexical `unsafe { ... }` boundary.
 Authorization does not weaken type checking, ownership, region checking, or cleanup.
@@ -136,7 +136,7 @@ specialize into CPS frames. An unknown callable must not be silently treated as 
 
 ## Runtime Contracts
 
-`continuation<input, output>` and `effect_callable<input, output, answer>` are
+`Continuation<input, output>` and `EffectCallable<input, output, answer>` are
 source-declared type forms with complete core-private `= builtin()`
 initializers and compiler-owned representations. They are not empty
 structures, and their values are linear resources.

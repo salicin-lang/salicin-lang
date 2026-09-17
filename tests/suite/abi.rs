@@ -91,7 +91,7 @@ fn primitive_scalar_overflows_and_conversions_are_diagnosed() {
         ),
         (
             "numeric_checked_into_non_integer.sc",
-            "`checked_into` requires an integer `output` type",
+            "`checked_into` requires an integer `Output` type",
         ),
     ];
     for (name, expected) in cases {
@@ -150,14 +150,14 @@ let Record = struct(c) {
   tag: u8,
   inner: Inner,
   huge: i128,
-  values: array(u16)(3),
-  next: ptr(u8),
+  values: Array<u16><3>,
+  next: Ptr<u8>,
 }
 
 let c_record_size(): u64 = foreign(c)
 let c_record_align(): u64 = foreign(c)
-let c_verify_record(record: ptr(Record)): i32 = foreign(c)
-let c_fill_record(record: ptr<mut>(Record)): () = foreign(c)
+let c_verify_record(record: Ptr<Record>): i32 = foreign(c)
+let c_fill_record(record: Ptr<mut><Record>): () = foreign(c)
 
 let main(): i32 = {
   let byte: u8 = 31
@@ -541,7 +541,7 @@ fn c_ffi_rejects_unsafe_calls_and_private_abi_types() {
         ),
         (
             "ffi_borrow_parameter.sc",
-            "has unsupported C ABI type `borrow<i32>`",
+            "has unsupported C ABI type `Borrow<i32>`",
         ),
         (
             "ffi_bool_result.sc",
@@ -549,7 +549,7 @@ fn c_ffi_rejects_unsafe_calls_and_private_abi_types() {
         ),
         (
             "ffi_array_parameter.sc",
-            "has unsupported C ABI type `array<i32><2>`",
+            "has unsupported C ABI type `Array<i32><2>`",
         ),
         (
             "ffi_c_struct_parameter.sc",

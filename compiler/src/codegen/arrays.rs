@@ -11,7 +11,7 @@ use super::hir::{
 use super::lower::{error_expr, integer_literal_value, BoundMethodConstraint, TypeProbe};
 use super::Analyzer;
 
-const ARRAY_LITERAL_TRAIT: &str = "core::literal::array_literal";
+const ARRAY_LITERAL_TRAIT: &str = "core::literal::ArrayLiteral";
 
 impl Analyzer {
     pub(super) fn lower_array_literal(
@@ -123,7 +123,7 @@ impl Analyzer {
             .values()
             .find_map(|implementation| {
                 (implementation.key.trait_ref.name == trait_name
-                    && implementation.associated_types.get("output") == Some(output))
+                    && implementation.associated_types.get("Output") == Some(output))
                 .then(|| implementation.key.trait_ref.arguments.first().cloned())
                 .flatten()
             })
@@ -153,7 +153,7 @@ impl Analyzer {
             .values()
             .filter(|implementation| {
                 implementation.key.trait_ref.name == trait_name
-                    && implementation.associated_types.get("output") == Some(expected)
+                    && implementation.associated_types.get("Output") == Some(expected)
                     && self.literal_trait_arguments_match(
                         trait_name,
                         &implementation.key.trait_ref.arguments,
@@ -227,7 +227,7 @@ impl Analyzer {
     ) {
         let exists = self.collection.trait_impls.values().any(|implementation| {
             implementation.key.trait_ref.name == trait_name
-                && implementation.associated_types.get("output") == Some(output)
+                && implementation.associated_types.get("Output") == Some(output)
                 && implementation.methods.contains_key(member)
                 && self.literal_trait_arguments_match(
                     trait_name,
@@ -254,7 +254,7 @@ impl Analyzer {
             (ARRAY_LITERAL_TRAIT, Ty::Array(element, _)) => {
                 arguments == std::slice::from_ref(element.as_ref())
             }
-            ("core::literal::string_literal", Ty::Array(element, _)) => {
+            ("core::literal::StringLiteral", Ty::Array(element, _)) => {
                 element.as_ref() == &Ty::U8 && arguments.is_empty()
             }
             _ => false,
@@ -347,7 +347,7 @@ impl Analyzer {
         let moves = !self.is_copy_type(&element_ty);
         if moves && integer_literal_value(index).is_none() {
             self.error(format!(
-                "dynamic indexing requires copyable elements, found `{}`; use a constant index to move a resource element",
+                "dynamic indexing requires `Copyable` elements, found `{}`; use a constant index to move a resource element",
                 self.diagnostic_type_name(&element_ty)
             ));
             return error_expr();
@@ -392,7 +392,7 @@ impl Analyzer {
         let element = pointee.as_ref().clone();
         if !self.is_copy_type(&element) {
             self.error(format!(
-                "indexed value access requires copyable output, found `{}`; borrow the indexed place instead",
+                "indexed value access requires `Copyable` output, found `{}`; borrow the indexed place instead",
                 self.diagnostic_type_name(&element)
             ));
             return error_expr();

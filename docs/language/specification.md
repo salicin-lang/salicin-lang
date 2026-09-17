@@ -67,7 +67,7 @@ Fixed structural keywords include `let`, `struct`, `enum`, `trait`, `extend`, `p
 `parameters`, `borrow`, `copy`, `move`, `shared`, `mut`, and control-operation names are
 contextual: they retain their special meaning only in the corresponding grammatical position.
 
-Region binders are ordinary identifiers declared by `comptime r: region`. Diagnostics may display inferred
+Region binders are ordinary identifiers declared by `<r: region>`. Diagnostics may display inferred
 regions with a leading apostrophe; that rendering is not source binder syntax. `'static` is a
 predefined region identity and cannot be redeclared.
 
@@ -89,14 +89,17 @@ shadow an outer binding.
 Top-level `let` declarations introduce values, functions, types, type aliases, sorts, effects,
 traits, or modules according to their annotation and initializer.
 
-Types, traits, functions, values, parameters, variants, modules, effects, and
-ordinary sort names all use `snake_case`. `usize` and `string`
-retain their type spelling in compile-parameter positions because the same names also classify
-compile-time size and metadata values; the parameter context selects their sort semantics.
+Names follow their semantic category. Types and type parameters, type forms,
+traits, enum variants, and associated types use `PascalCase`. Functions, methods, values, fields,
+modules, effects, and sorts use `snake_case`. The primitive types `bool`, the
+integer families, `str`, and `never`, and the primitive values `true` and
+`false`, remain lowercase. Runtime `String` values are also accepted in the
+supported compile-time subset and carry syntax metadata such as test names and
+foreign symbols.
 
 ```sc fragment
-let scalar = i32
-let point = struct { x: i32, y: i32 }
+let Scalar = i32
+let Point = struct { x: i32, y: i32 }
 let add(x: i32)(y: i32): i32 = { x + y }
 ```
 
@@ -110,7 +113,7 @@ Declarations are private to their module and descendant modules by default. `pub
 a declaration throughout its package. `pub` also exposes it to dependants.
 
 ```sc fragment
-pub let point = struct {
+pub let Point = struct {
   pub x: i32,
   pub y: i32,
 }
@@ -135,15 +138,15 @@ test("arithmetic") {
 test target during compilation; it is not an ordinary runtime call and does
 not introduce a user binding. The form is authorized by the private edition
 contract
-`pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()`.
+`pub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()`.
 The name must be a non-empty
 string literal and is used in diagnostics. Registrations are private to their
 source package and cannot have visibility or attributes.
 
 The body is evaluated as a parameterless function returning `()` with the
-exact `core.error.throwing<core.string.string>` effect. Normal return passes;
+exact `core.error.throwing<core.string.String>` effect. Normal return passes;
 `core.error.throw(message)` and the `std.test` assertion helpers transfer an
-owned `string` message to the registration handler. Boolean-returning bodies
+owned `String` message to the registration handler. Boolean-returning bodies
 are rejected. All other
 effects must be discharged inside the body under the ordinary effect rules.
 Test bodies are excluded from ordinary program and library builds.
@@ -168,26 +171,26 @@ A sort classifies compile-time values. An abstract sort has no source-enumerable
 is compiler-owned:
 
 ```sc fragment
-let type: sort(2)
+let type: sort<2>
 ```
 
 A defined sort lists its complete members:
 
 ```sc fragment
-let optimization = sort(1) {
+let optimization = sort<1> {
   debug
   release
 }
 
-let empty = sort(1) {}
+let empty = sort<1> {}
 
-let select<comptime mode: optimization>(value: i32): i32 = { value }
+let select<mode: optimization>(value: i32): i32 = { value }
 let answer = select(optimization.release)(42)
 ```
 
 An abstract sort and an empty defined sort are different. `let name = sort` is invalid:
-compiler-owned abstract sorts use `: sort(2)`, while user-defined finite sorts use
-`= sort(1) { ... }`. User packages cannot introduce a new abstract sort.
+compiler-owned abstract sorts use `: sort<2>`, while user-defined finite sorts use
+`= sort<1> { ... }`. User packages cannot introduce a new abstract sort.
 Finite members are named through their Sort, as in `optimization.release`.
 
 `type`, `region`, `effect`, `effects`, and `parameters` are compiler-owned
@@ -200,12 +203,12 @@ Compiler-owned fragment recognition comes from the edition's complete
 [static-sort registry](../project/static-sort-model.md); each registered sort
 must declare phase, scope, equality, normal form, producers, and budgets.
 Edition 2026 registers no `declaration` sort.
-`string` is an ordinary runtime type accepted by
-CTFE. `access` is the finite sort `sort(1) { shared mut }`. `bool` remains an ordinary
+`String` is an ordinary runtime type accepted by
+CTFE. `access` is the finite sort `sort<1> { shared mut }`. `bool` remains an ordinary
 closed runtime enum whose values can also classify compile-time parameters. Any other closed enum
 or defined finite sort can be used the same way.
 
-`abi` is the compiler-owned finite sort `sort(1) { c }`. Its `c` member is the calling-convention
+`abi` is the compiler-owned finite sort `sort<1> { c }`. Its `c` member is the calling-convention
 argument accepted by the current foreign initializer.
 
 ### 3.4 Compiler Definitions
@@ -227,8 +230,8 @@ Compiler-owned types and type constructors use the same form:
 
 ```sc fragment
 pub let i32: type = builtin()
-pub let array<comptime t: type><comptime l: usize>: type = builtin()
-pub let size_of<comptime t: type>: u64 = builtin()
+pub let Array<T: type><l: usize>: type = builtin()
+pub let size_of<T: type>: u64 = builtin()
 ```
 
 `builtin()` is private to `core`. User functions, types, extension methods,
@@ -240,22 +243,22 @@ implementations.
 The same root module publicly declares the other syntax-owned contracts:
 
 ```sc fragment
-pub let foreign<comptime abi: abi>: never = builtin()
-pub let foreign<comptime abi: abi, comptime symbol: string>: never = builtin()
-pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()
-pub let requires<comptime condition: bool, comptime e: effects, comptime result: type>: with<e>(move body: with<e>((): result)): result = builtin()
+pub let foreign<abi: abi>: never = builtin()
+pub let foreign<abi: abi, symbol: String>: never = builtin()
+pub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()
+pub let requires<condition: bool, e: effects, Result: type>: with<e>(move body: with<e>((): Result)): Result = builtin()
 ```
 
 `foreign(c, ...)` passes the finite `abi.c` value (using the contextual short spelling `c`) as
 statically validated metadata to its containing function declaration;
-`test("name") { ... }` consumes its compile-time `string` name in syntax and
+`test("name") { ... }` consumes its compile-time `String` name in syntax and
 supplies a body whose only escaping effect is structured test failure. Neither
 metadata payload is a runtime value.
 
 The function-definition form `= requires(condition) { body }` supplies a
 compile-time `bool` and a delayed parameterless closure to `core.requires`.
 Trait and extension requirements instead occupy their declaration header as
-the labeled compile-time boolean parameter `(requires: condition)`. `extend`
+the labeled compile-time boolean parameter `<requires: condition>`. `extend`
 itself is parser-owned syntax: there is no decorative `extend` callable or
 language item. META-1 now defines the registry contract for phase, scope,
 equality, normalization, producers, and resource bounds, but additional
@@ -280,20 +283,20 @@ Arrays, borrows, raw pointers, tuples, function types, structs, and enums are ty
 Compile-time parameters occur in their own parameter groups:
 
 ```sc fragment
-let identity<comptime t: type>(value: t): t = { value }
-let first<comptime t: type, comptime l: usize>(values: array(t)(l)): t = { values[0] }
+let identity<T: type>(value: T): T = { value }
+let first<T: type, l: usize>(values: Array<T><l>): T = { values[0] }
 ```
 
-Supported compile-time parameter sorts include:
+Supported compile-time parameter binders include:
 
-- `comptime t: type`;
-- `comptime l: usize`;
-- `comptime s: string` for compiler-owned UTF-8 metadata;
-- `comptime r: region`;
-- `comptime x: effect` for one nominal effect identity;
-- `comptime e: effects`;
-- `comptime p: parameters`;
-- `comptime a: access`;
+- `<T: type>`;
+- `<l: usize>`;
+- `<s: String>` for UTF-8 metadata;
+- `<r: region>`;
+- `<x: effect>` for one nominal effect identity;
+- `<e: effects>`;
+- `<p: parameters>`;
+- `<a: access>`;
 - values of another closed compile-time type;
 - bounded type and effect constructor sorts.
 
@@ -304,24 +307,24 @@ underconstrained inference are distinct errors.
 
 ### 4.1 Type Constructors and Aliases
 
-Each parenthesized compile-time group is a distinct constructor layer:
+Each angle-bracketed compile-time group is a distinct constructor layer:
 
 ```sc fragment
-pub let array<comptime t: type><comptime l: usize>: type = core.memory.array(t)(l)
-let result<comptime error: type><comptime value: type> = enum {
-  ok(value)
-  err(error)
+pub let Array<T: type><l: usize>: type = core.memory.Array<T><l>
+let Result<Error: type><Value: type> = enum {
+  Ok(Value)
+  Err(Error)
 }
 ```
 
-`array(i32)(4)` applies two groups. It is not equivalent to `array(i32, 4)`.
+`Array<i32><4>` applies two groups. It is not equivalent to `Array<i32, 4>`.
 
 A type alias is transparent and preserves the identity of its target:
 
 ```sc fragment
-let scalar = i32
-let family<comptime t: type>: type = core.option<t>
-let constructor: <comptime t: type>: type = core.option
+let Scalar = i32
+let Family<T: type>: type = core.Option<T>
+let Constructor: <T: type>: type = core.Option
 ```
 
 Alias expansion must terminate. Cyclic aliases and arity or sort mismatches are rejected.
@@ -343,17 +346,17 @@ fixed 16,384-step and 128-active-call limits; an equal repeated call is an
 immediate cycle error.
 
 ```sc fragment
-let next<comptime value: usize>: usize = { value + 1 }
+let next<value: usize>: usize = { value + 1 }
 
-let buffer<comptime element: type><comptime length: usize> = struct {
-  values: array(element)(next(length))
+let Buffer<Element: type><length: usize> = struct {
+  values: Array<Element><next<length>>
 }
 ```
 
 Static expressions preserve call-group boundaries and labels and are
 evaluated after generic static arguments are substituted and before runtime
 type lowering. The result therefore participates in type identity:
-`buffer(i32)(2)` contains an `array(i32)(3)`. Global initializers use the same
+`Buffer<i32><2>` contains an `Array<i32><3>`. Global initializers use the same
 evaluator and retain the same exact typed normalized values before LLVM
 encoding; they may call the same eligible ordinary source functions.
 Mutation, borrowing, handlers, closures, runtime effects, foreign calls,
@@ -361,7 +364,7 @@ builtins without a specified CTFE rule, and bodyless functions are rejected
 in static evaluation. Checked overflow, division by zero, invalid
 shifts, or exhaustion of the implementation's evaluation budget are compile errors. Struct values
 retain canonical nominal identity and declaration-order fields. Unsized, address-dependent,
-allocating, recursively laid out, or `droppable` fields are rejected before construction. Enum
+allocating, recursively laid out, or `Droppable` fields are rejected before construction. Enum
 values retain canonical identity, source variant identity, and only the active declaration-order
 payload; matching never exposes or depends on a backend discriminant. Resource exclusion checks
 every possible variant of an enum before it becomes a CTFE value. `size_of`
@@ -373,16 +376,16 @@ against the compilation target rather than the compiler host.
 The safe reference constructor is:
 
 ```sc fragment
-borrow<comptime a: access = shared><comptime r: region><comptime t: type>
+Borrow<a: access = shared><r: region><T: type>
 ```
 
-When omitted, access is `shared` and the region is inferred. The common forms are `borrow(t)`,
-`borrow<mut><t>`, and `borrow<r><t>`.
+When omitted, access is `shared` and the region is inferred. The common forms are `Borrow<T>`,
+`Borrow<mut><T>`, and `Borrow<r><T>`.
 
 The raw pointer family is:
 
 ```sc fragment
-ptr<comptime a: access = shared><comptime t: type>
+Ptr<a: access = shared><T: type>
 ```
 
 Raw pointer dereference, arithmetic that can leave an allocation, initialization, and ownership
@@ -391,7 +394,7 @@ reconstruction require an `unsafe` boundary.
 The fixed-size array family is:
 
 ```sc fragment
-array<comptime t: type><comptime l: usize>
+Array<T: type><l: usize>
 ```
 
 Array length is part of the type. Array indexing requires `usize`, evaluates
@@ -399,38 +402,39 @@ its base and index once, and performs a bounds check.
 
 Array and string literals are target-typed construction protocols declared in
 `core.literal`. The compiler first forms an exact backing
-`array(element)(length)` (UTF-8 bytes for a string literal), then selects the
-implementation whose associated `output` matches the expected type:
+`Array<element><length>` (UTF-8 bytes for a string literal), then selects the
+implementation whose associated `Output` matches the expected type:
 
 ```sc fragment
-pub let array_literal<comptime element: type> = trait {
-  let output: type
-  let from_array_literal<comptime length: usize>
-    (move values: array(element)(length)): output
+pub let ArrayLiteral<Element: type> = trait {
+  let Output: type
+  let from_array_literal<length: usize>
+    (move values: Array<Element><length>): Output
 }
 
-pub let string_literal = trait {
-  let output: type
-  let from_string_literal<comptime length: usize>
-    (move utf8: array(u8)(length)): output
+pub let StringLiteral = trait {
+  let Output: type
+  let from_string_literal<length: usize>
+    (move utf8: Array<u8><length>): Output
 }
 ```
 
 Without an expected type, array literals default to their fixed-size backing
-array and string literals default to `string`. Core provides implementations
+array and string literals default to `String`. Core provides implementations
 for fixed arrays and slices; a slice result is always used through
-`borrow(slice<T>)`, because `slice<T>` is dynamically sized. User-defined
+`Borrow<Slice<T>>`, because `Slice<T>` is dynamically sized. User-defined
 nominal types may implement either trait. Implementations receive the exact
 literal length as a compile-time argument.
 
 ## 5. Functions and Application
 
-A function declaration may contain multiple compile-time and runtime parameter groups. Each group
-chooses one of four delimiters, `()`, `[]`, `<>`, or `{}`, and application must use the same
-delimiter at that group position:
+A function declaration may contain multiple compile-time and runtime parameter
+groups. Angle brackets exclusively declare and supply compile-time groups.
+Parentheses, square brackets, and braces declare and supply runtime groups,
+and application must preserve the runtime delimiter at that group position:
 
 ```sc fragment
-let map<comptime t: type, comptime u: type>(value: t)(transform: (t): u): u = {
+let map<T: type, U: type>(value: T)(transform: (T): U): U = {
   transform(value)
 }
 ```
@@ -444,7 +448,7 @@ let answer = add_two(40)
 ```
 
 ```sc fragment
-let select<comptime t: type>[left: t]{right: t}(fallback: t): t = { left }
+let select<T: type>[left: T]{right: T}(fallback: T): T = { left }
 let answer = select<i32>[40]{2}(0)
 ```
 
@@ -453,8 +457,8 @@ evaluated left to right. A partial application performs the passing actions for 
 but does not execute the final body until all runtime groups are supplied.
 
 The delimiter is part of a function's type and calling convention. It is checked for direct calls,
-function-valued calls, and every remaining layer of a partial application. `comptime`, not the
-delimiter, determines whether a declaration group is compile-time.
+function-valued calls, and every remaining layer of a partial application. No
+group mixes compile-time and runtime parameters.
 
 An explicit opener is a postfix call only when it is byte-adjacent to the callee token. Comparison
 operators require whitespace on both sides, so `a < b` compares and `a<b>` calls an angle group.
@@ -507,7 +511,7 @@ if condition then {
 A function type records each runtime group's delimiter, its result, and effect row:
 
 ```sc fragment
-let apply<comptime t: type, comptime u: type>(value: t)(function: (t): u): u = {
+let apply<T: type, U: type>(value: T)(function: (T): U): U = {
   function(value)
 }
 ```
@@ -527,24 +531,24 @@ explicit parameters.
 
 Every runtime parameter has a passing mode:
 
-- `copy` duplicates a `copyable` value;
-- `move` transfers ownership of a `movable` value;
+- `copy` duplicates a `Copyable` value;
+- `move` transfers ownership of a `Movable` value;
 - `borrow` creates a shared loan;
 - `borrow<mut>` creates an exclusive loan.
 
 ```sc fragment
-let consume<comptime t: type>(move value: t): () = { ... }
-let inspect<comptime t: type>(value: borrow(t)): () = { ... }
-let update<comptime t: type>(value: borrow<mut><t>): () = { ... }
+let consume<T: type>(move value: T): () = { ... }
+let inspect<T: type>(value: Borrow<T>): () = { ... }
+let update<T: type>(value: Borrow<mut><T>): () = { ... }
 ```
 
-An omitted mode uses the type's default: `copyable` values are copied and resource values are moved.
+An omitted mode uses the type's default: `Copyable` values are copied and resource values are moved.
 An explicit mode always takes precedence.
 
-`movable` is a source-backed structural auto marker. Scalars, borrows, raw pointers, and aggregates
-whose owned members are all `movable` may be relocated. `copyable` inherits `movable`; duplicating a value
+`Movable` is a source-backed structural auto marker. Scalars, borrows, raw pointers, and aggregates
+whose owned members are all `Movable` may be relocated. `Copyable` inherits `Movable`; duplicating a value
 therefore always implies that either resulting value may also be relocated. Parameter transfer,
-return, assignment from an existing place, and movement into reallocating storage require `movable`.
+return, assignment from an existing place, and movement into reallocating storage require `Movable`.
 Direct in-place initialization does not relocate an existing value and does not require it.
 
 A moved binding cannot be read, moved, or borrowed again. Moving one field leaves other fields
@@ -561,10 +565,10 @@ initialization cleanup.
 
 ### 6.1 Access Polymorphism
 
-An `comptime a: access` parameter selects shared or mutable borrowing without defining two APIs:
+An `a: access` parameter selects shared or mutable borrowing without defining two APIs:
 
 ```sc fragment
-let view<comptime a: access><comptime t: type>(value: borrow(a)(t)): borrow(a)(t) = {
+let view<a: access><T: type>(value: Borrow<a><T>): Borrow<a><T> = {
   value
 }
 ```
@@ -577,12 +581,12 @@ flag or a subtype of shared access.
 Structs are nominal product types:
 
 ```sc fragment
-let point = struct {
+let Point = struct {
   x: i32,
   y: i32,
 }
 
-let origin = point { x: 0, y: 0 }
+let origin = Point { x: 0, y: 0 }
 ```
 
 Fields are initialized left to right. Every required field must appear exactly once. Field access
@@ -592,7 +596,7 @@ preserves the ownership and borrow state of the base.
 constructor:
 
 ```sc fragment
-let timespec = struct(c) {
+let Timespec = struct(c) {
   seconds: i64,
   nanoseconds: i64,
 }
@@ -610,9 +614,9 @@ padding rules determine `size_of` and `align_of`.
 Enums are nominal closed sums:
 
 ```sc fragment
-let option<comptime t: type> = enum {
-  none
-  some(t)
+let Option<T: type> = enum {
+  None
+  Some(T)
 }
 ```
 
@@ -625,45 +629,45 @@ type. A match over a closed type must be exhaustive.
 
 ```sc fragment
 match value {
-  option<i32>.some(number) -> number
+  Option<i32>.Some(number) -> number
 } {
-  option<i32>.none -> 0
+  Option<i32>.None -> 0
 }
 ```
 
 ## 8. Traits, Extensions, and Static Dispatch
 
-A trait is neither a runtime type nor a Sort. Semantically, it declares a relation over a subject
-and any compile-time arguments. A bound such as `t: iterator` is a logical constraint (a solver
-goal); an applicable `extend(t, iterator)` supplies implementation evidence. Associated-type
+A trait is neither a runtime type nor a sort. Semantically, it declares a relation over a subject
+and any compile-time arguments. A bound such as `T: Iterator` is a logical constraint (a solver
+goal); an applicable `extend(T, Iterator)` supplies implementation evidence. Associated-type
 bindings add projection-equality constraints to the same goal. Trait declarations and evidence are
 erased after static dispatch.
 
 A trait declares associated types and required or default methods:
 
 ```sc fragment
-let iterator = trait {
-  let item<comptime r: region>: type
-  let next<comptime r: region>(self: borrow<mut><r><self>): core.option<item<r>>
+let Iterator = trait {
+  let Item<r: region>: type
+  let next<r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>>
 }
 ```
 
 An `extend` block adds inherent members or implements a trait:
 
 ```sc fragment
-extend(point) {
-  let translated(self: borrow(self))(dx: i32, dy: i32): point = {
-    point { x: self.x + dx, y: self.y + dy }
+extend(Point) {
+  let translated(self: Borrow<self>)(dx: i32, dy: i32): Point = {
+    Point { x: self.x + dx, y: self.y + dy }
   }
 }
 ```
 
 `extend` has the call-shaped compiler contract
-`extend(comptime t: type, impl: (self): ())` for inherent members and
-`extend(comptime t: type, tt: trait, impl: (self): ())` for trait implementations. The final implementation
+`extend<T: type>(impl: (self): ())` for inherent members and
+`extend<T: type, Trait: trait>(impl: (self): ())` for trait implementations. The final implementation
 argument is written as a trailing declaration block. Its target is a type pattern: constructor
 parameters are bound by destructuring and their sorts are inferred from the constructor signature.
-For example, `extend(result(error)(t), core.flow.chain) { ... }` binds `error` and `t` as `type`
+For example, `extend(Result<Error><T>, core.flow.Chain) { ... }` binds `Error` and `T` as `type`
 values without a separate compile-time parameter header.
 
 Trait dispatch is static. Implementations are selected by the concrete subject and trait
@@ -674,17 +678,17 @@ compile-time operator trait over values classified by sorts, and `type`
 implements its relation to `constraint`:
 
 ```sc fragment
-pub let constraint: sort(2)
+pub let constraint: sort<2>
 
-pub let is(comptime right: sort(2)) = trait(comptime self: sort(2)) {
-  let is<comptime left: self, comptime right: right>: bool
+pub let Is<right: sort<2>> = trait<self: sort<2>> {
+  let is<left: self, right: right>: bool
 }
 
-extend(type, is(constraint)) {
-  let is(
-    comptime left: type,
-    comptime right: constraint,
-  ): bool = builtin()
+extend(type, Is(constraint)) {
+  let is<
+    Left: type,
+    right: constraint,
+  >: bool = builtin()
 }
 ```
 
@@ -692,14 +696,14 @@ An extension may guard its target pattern after that pattern binds its inferred
 compile-time parameters:
 
 ```sc fragment
-extend(cell(t), copyable)
-(requires: t is copyable) {}
+extend(Cell(T), Copyable)
+<requires: T is Copyable> {}
 ```
 
 A function applies the compiler-owned `requires` guard to its body:
 
 ```sc fragment
-let duplicate<comptime t: type>(value: t): (t, t) = requires(t is copyable) {
+let duplicate<T: type>(value: T): (T, T) = requires(T is Copyable) {
   (value, value)
 }
 ```
@@ -710,25 +714,25 @@ under the query's proof. A false concrete query rejects the instantiation.
 Associated type equalities are written as separate projection constraints:
 
 ```sc fragment
-let produce<comptime t: type>(value: t): i32 =
-requires(t is produce && t.item == i32) {
+let produce<T: type>(value: T): i32 =
+requires(T is Produce && T.Item == i32) {
   value.produce()
 }
 ```
 
 Trait and extension prerequisites use a labeled compile-time parameter group,
-for example `let copyable = trait(requires: self is movable) {}` and
-`extend(cell(t), copyable)(requires: t is copyable) {}`.
+for example `let Copyable = trait<requires: self is Movable> {}` and
+`extend(Cell(T), Copyable)<requires: T is Copyable) {}`.
 
 Generic associated constructors retain their parameter groups and sorts. Their receiver region can
-determine a yielded type, as in `iterator.item(r)`.
+determine a yielded type, as in `Iterator.Item<r>`.
 
 Projection constraints can equate a generic associated constructor with a
 type expression by declaring alpha-renamable binders on the projection:
 
 ```sc fragment
-let borrow_item<comptime t: type>(value: t): () =
-requires(t is iterator && t.item<comptime r: region> == borrow(r)(i32)) { ... }
+let borrow_item<T: type>(value: T): () =
+requires(T is Iterator && T.Item<r: region> == Borrow<r><i32>) { ... }
 ```
 
 The binder groups and sorts must exactly match the associated declaration. The right side may use
@@ -763,12 +767,12 @@ let absolute = if value < 0 {
 The principal source contracts in `core.control` are:
 
 ```sc fragment
-pub let if<comptime e: effects, comptime t: type>: with<e>
+pub let if<e: effects, T: type>: with<e>
   (condition: bool)
-  (move then: with<e>((): t))
-  (move else: with<e>((): t)): t
+  (move then: with<e>((): T))
+  (move else: with<e>((): T)): T
 
-pub let while<comptime e: effects>: with<e>
+pub let while<e: effects>: with<e>
   (move condition: with<e>((): bool))
   (move do: with<e>((): ())): ()
 ```
@@ -776,14 +780,14 @@ pub let while<comptime e: effects>: with<e>
 The surface forms supply their branch, condition, and body blocks as lazy callable groups. The
 canonical declarations for `do`, `loop`, `match`, and `for` are validated in the same way.
 `break`, `continue`, and `return` resolve to the canonical `core.control` functions, which introduce
-the corresponding `loop_exit<t>`, `iteration_skip`, or `function_exit<t>` effect before the enclosing construct
+the corresponding `loop_exit<T>`, `iteration_skip`, or `function_exit<T>` effect before the enclosing construct
 handles it. A same-named user declaration cannot redirect any of these forms. The complete
 contracts and their lowering obligations are specified in [Control-flow contracts](control-flow.md).
 
 `loop { ... }` repeats until `break(value)`. All reachable breaks from one loop agree on the result
 type. `while`, `do ... while`, and `for` have unit result. `for` obtains an iterator through
-the validated source traits `core.iter.into_iterator` and `core.iter.iterator`, then repeatedly calls
-`iterator.next`.
+the validated source traits `core.iter.IntoIterator` and `core.iter.Iterator`, then repeatedly calls
+`Iterator.next`.
 
 `return(value)` exits the nearest named function or closure. `break(value)` exits the nearest
 loop. `continue()` starts its next iteration. These exits have type `never`.
@@ -816,7 +820,7 @@ let read: with<counter>(): i32 = {
   counter.next()
 }
 
-let apply<comptime e: effects>: with<e>
+let apply<e: effects>: with<e>
   (action: with<e>((i32): i32))
   (value: i32): i32 = {
   action(value)
@@ -832,8 +836,8 @@ An operation transfers control to the nearest matching handler. A resumable clau
 single-use continuation. Resuming supplies the operation result and eventually returns the
 handler's answer type. Abandoning the continuation cleans its captured state exactly once.
 
-`throwing<error>` is the standard abortive error effect. `throw(error)` invokes its `raise`
-operation. `try { ... }` handles that effect and materializes `core.result(error)(value)`.
+`throwing<Error>` is the standard abortive error effect. `throw(error)` invokes its `raise`
+operation. `try { ... }` handles that effect and materializes `core.Result<Error><Value>`.
 
 ```sc fragment
 let parse: with<throwing<parse_error>>(): i32 = { ... }
@@ -845,44 +849,44 @@ let result = try {
 
 `effect` and `effects` are deliberately distinct sorts. A value of `effect` is exactly one nominal
 identity, such as `counter` or `throwing<parse_error>`; this is the sort used by
-`handle<comptime self: effect>`. A value of `effects` is a normalized zero-or-more row: `pure` is the empty
+`handle<self: effect>`. A value of `effects` is a normalized zero-or-more row: `pure` is the empty
 row, and `with<...>` combines identities and row variables without order or duplicates.
 
 Handling one identity removes it from the row and preserves every other requirement. Parameters
-such as `comptime e: effects` are compile-time row variables and are instantiated before runtime lowering.
+such as `e: effects` are compile-time row variables and are instantiated before runtime lowering.
 Once instantiated, a capturing closure passed to a parameter with that row follows the same
 ownership, materialization, and handling rules as a closure whose concrete effects were written
 directly.
 
 An `async { ... }` expression is cold: creating it does not execute its body. The compiler
 materializes private nominal state containing a state word and captured fields. That state is
-structurally `movable`; relocation transfers its initialized captures, and cancellation drops them
+structurally `Movable`; relocation transfers its initialized captures, and cancellation drops them
 exactly once. `core.async.async` is the intrinsic that materializes this
-anonymous state. `core.async.await` is a source polling loop: `pending`
-performs `suspension.suspend()`, while `ready(value)` returns the value.
+anonymous state. `core.async.await` is a source polling loop: `Pending`
+performs `suspension.suspend()`, while `Ready(value)` returns the value.
 Syntax-directed lowering may specialize `await` into the generated state
 machine without changing its source contract.
-A compiler-generated future implements `future((), output = t)`. Polling a body with
-no suspension point transfers its captures, executes the body once, and returns `poll.ready(t)`;
+A compiler-generated future implements `Future<(), Output = T>`. Polling a body with
+no suspension point transfers its captures, executes the body once, and returns `Poll.Ready(T)`;
 polling that completed future again traps. The completed state no longer drops transferred
 captures. An unhandled `unsafety` requirement is inferred from the body and attached to the
 generated future's `poll` contract; creating the future remains pure, while polling requires an
 unsafe handler. A body without suspension may retain a custom residual effect,
-including standard `throwing<error>`, with by-value `copyable`, move-only,
+including standard `throwing<Error>`, with by-value `Copyable`, move-only,
 shared-borrow, or mutable-borrow captures.
 Borrow captures store the reference value in future state and retain their
 ordinary loan until that state is consumed or dropped. Polling inside the
 corresponding handler specializes the generated poll and resume source before
 runtime lowering. Move-only capture fields transfer once and completed future
-cleanup does not drop them again. A residual `throwing<error>` poll may be
-handled by `try { future.poll() }`; both successful ready and thrown paths
+cleanup does not drop them again. A residual `throwing<Error>` poll may be
+handled by `try { future.poll() }`; both successful `Ready` and thrown paths
 preserve capture cleanup. A suspended body may also retain a custom residual
-effect, including `throwing<error>`, when its first segment ends in one `await`.
+effect, including `throwing<Error>`, when its first segment ends in one `await`.
 It may either return that value directly or run a finite linear sequence of
-continuations and awaits after ready. Every segment may capture by-value
-`copyable` or move-only values, or retain a region-checked shared or mutable
+continuations and awaits after `Ready`. Every segment may capture by-value
+`Copyable` or move-only values, or retain a region-checked shared or mutable
 reference to external storage. Pre-await locals used by a continuation may be
-retained when the resulting state remains structural `movable`. Only the first
+retained when the resulting state remains structural `Movable`. Only the first
 segment may retain a custom effect or `throwing`; each later child poll row must
 be pure apart from `unsafety`.
 Polling through the enclosing handler specializes the cold transition before
@@ -892,19 +896,19 @@ starting state continues to own move-only continuation captures until the
 factory returns; pre-await locals remain ordinary factory locals and are
 cleaned there if evaluation aborts. A successful factory transition stores
 the child and retained locals together. The operand and its residual effects
-run only while creating the child on the first poll; returning `pending` and
-polling the stored child again do not replay them. `poll.ready(value)` runs the
+run only while creating the child on the first poll; returning `Pending` and
+polling the stored child again do not replay them. `Poll.Ready(value)` runs the
 next continuation exactly once, destroys the completed child, and either
 completes or stores and polls the next child. Completion, error, and
 cancellation drop every initialized state field exactly once. Other suspended
 residual shapes remain unsupported. Outside residual
 specialization, one linear non-tail form, `let value = await child`, may
-execute ordinary continuation code after ready; the continuation's captures
-remain owned by the parent while suspended. Multiple sequential bindings compose recursively and preserve earlier ready values
-across later pending states. Ordinary preceding locals used by the continuation are retained in
-generated state and follow normal copyable, movable, and drop rules. A borrow of another retained local,
+execute ordinary continuation code after `Ready`; the continuation's captures
+remain owned by the parent while suspended. Multiple sequential bindings compose recursively and preserve earlier `Ready` values
+across later `Pending` states. Ordinary preceding locals used by the continuation are retained in
+generated state and follow normal `Copyable`, `Movable`, and drop rules. A borrow of another retained local,
 including through a borrow alias chain, is rejected because it would make the generated future
-self-referential and therefore non-`movable`. Borrows of external storage remain subject to their
+self-referential and therefore non-`Movable`. Borrows of external storage remain subject to their
 ordinary region and alias constraints. An `if` or `match` may place one tail await in every branch
 when every child future has the same output; concrete child types may differ. The condition,
 scrutinee, and guards run once before suspension, and cancellation drops only the selected child.
@@ -912,11 +916,11 @@ Branch-local linear statements may surround await, and a non-suspending branch c
 immediately when selected. Under residual specialization, a one-shot `if` or
 `match` may select direct-tail children of the same concrete future type. The
 selected child factory may use the first segment's residual row; selection and
-factory evaluation occur once, and pending, ready, or cancellation retains
+factory evaluation occur once, and `Pending`, `Ready`, or cancellation retains
 only the selected child. Direct `if` and `match` selection may also choose
 heterogeneous concrete child types through a private active-variant future,
 including pattern payload bindings, a move-only selector, and retained
-continuation locals. After a pure child becomes ready, a final continuation
+continuation locals. After a pure child becomes `Ready`, a final continuation
 that does not suspend again may retain a custom effect or `throwing`; it executes
 once under the poll caller's handler after the completed child and its output
 have been transferred. Residual construction or polling of a later child and
@@ -932,23 +936,23 @@ ordinary declarations.
 
 ## 11. Propagation Operators
 
-Postfix `value!` invokes the validated source trait `core.flow.raise`:
+Postfix `value!` invokes the validated source trait `core.flow.Raise`:
 
 ```sc fragment
-pub let raise = trait {
-  let output: type
-  let error: type
-  let raise: with<core.error.throwing<error>>(move self): output
+pub let Raise = trait {
+  let Output: type
+  let Error: type
+  let raise: with<core.error.throwing<Error>>(move self): Output
 }
 ```
 
-It propagates the stored error through the active `throwing<error>` effect. Postfix `value!!` invokes
-the separately validated `core.flow.unwrap` contract:
+It propagates the stored error through the active `throwing<Error>` effect. Postfix `value!!` invokes
+the separately validated `core.flow.Unwrap` contract:
 
 ```sc fragment
-pub let unwrap = trait {
-  let output: type
-  let unwrap(move self): output
+pub let Unwrap = trait {
+  let Output: type
+  let unwrap(move self): Output
 }
 ```
 
@@ -957,10 +961,10 @@ Neither postfix operator is name-based, and neither can be intercepted by a same
 method or user trait. Prefix `!value` is instead the `not` operator described in section 8.
 
 `?.` performs conditional chaining through the source-declared `chain` protocol. `??` performs
-fallback selection through `coalesce`. Both protocols are validated `core.flow` traits. Their
+fallback selection through `Coalesce`. Both protocols are validated `core.flow` traits. Their
 right-hand transforms or fallback bodies are lazy and run only on the corresponding path.
 
-The root `core.option` and `core.result` types follow the same ownership rule as user protocols:
+The root `core.Option` and `core.Result` types follow the same ownership rule as user protocols:
 payloads are moved, copied, or borrowed according to the surrounding expression and expected type.
 
 ## 12. Modules and Packages
@@ -970,7 +974,7 @@ define child modules. Paths use `.` in source. There is no `use` declaration: co
 qualified path or introduces a transparent alias with ordinary `let`:
 
 ```sc fragment
-let point = package.geometry.point
+let Point = package.geometry.Point
 let support = root.support
 let shared = super.shared
 ```
@@ -1011,7 +1015,7 @@ Salicin guarantees left-to-right evaluation for:
 An expression is evaluated at most once unless its source construct explicitly repeats it, such as
 a loop condition.
 
-Recoverable failures use `throwing<error>` or another declared effect. Contract violations without a
+Recoverable failures use `throwing<Error>` or another declared effect. Contract violations without a
 recoverable API, including bounds failures and forced unwrap failures, trap and terminate the
 process. Cleanup is deterministic for ordinary and handled exits; a process trap is not a
 recoverable unwind mechanism.
@@ -1026,21 +1030,21 @@ name. The foreign subset accepts every signed, unsigned, pointer-sized, and
 128-bit integer plus raw pointers as parameters and results; `()` is accepted
 only as a result. It rejects `bool`, Unit parameters, arrays, aggregates,
 borrows, slices, and callable values. A C array or `struct(c)` therefore
-crosses this function boundary behind `ptr` rather than by value. The complete
+crosses this function boundary behind `Ptr` rather than by value. The complete
 target mapping and cross-language evidence are specified by the
 [C interoperability contract](../project/c-interoperability.md).
 
 ```sc fragment
 let read(
   fd: i32,
-  buffer: ptr<mut><u8>,
-  comptime count: usize,
+  buffer: Ptr<mut><u8>,
+  count: usize,
 ): isize = foreign(c)
 
 let c_read(
   fd: i32,
-  buffer: ptr<mut><u8>,
-  comptime count: usize,
+  buffer: Ptr<mut><u8>,
+  count: usize,
 ): isize = foreign(c, "read")
 ```
 

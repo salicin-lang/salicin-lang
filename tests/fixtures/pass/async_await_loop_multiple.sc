@@ -1,27 +1,27 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 
 let step = struct {
   polled: bool,
-  remaining: ptr<mut><i32>,
-  drops: ptr<mut><i32>,
+  remaining: Ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
   finish: bool
 }
 
-extend(step, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(step, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-extend(step, future(())) {
-  let output = bool
+extend(step, Future(())) {
+  let Output = bool;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<bool> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
     if self.polled {
       let done = if self.finish {
         unsafe {
@@ -31,15 +31,15 @@ extend(step, future(())) {
       } else {
         false
       }
-      poll<bool>.ready(done)
+      Poll<bool>.Ready(done)
     } else {
       self.polled = true
-      poll<bool>.pending
+      Poll<bool>.Pending
     }
   }
 }
 
-let step(remaining: ptr<mut><i32>, drops: ptr<mut><i32>, finish: bool): step = {
+let step(remaining: Ptr<mut><i32>, drops: Ptr<mut><i32>, finish: bool): step = {
   step{ polled: false, remaining: remaining, drops: drops, finish: finish }
 }
 
@@ -61,20 +61,20 @@ let main(): i32 = {
   }
 
   let first = match future.poll()
-    { pending -> 1 }
-    { ready(_) -> 0 }
+    { Pending -> 1 }
+    { Ready(_) -> 0 }
   let second = match future.poll()
-    { pending -> 1 }
-    { ready(_) -> 0 }
+    { Pending -> 1 }
+    { Ready(_) -> 0 }
   let third = match future.poll()
-    { pending -> 1 }
-    { ready(_) -> 0 }
+    { Pending -> 1 }
+    { Ready(_) -> 0 }
   let fourth = match future.poll()
-    { pending -> 1 }
-    { ready(_) -> 0 }
+    { Pending -> 1 }
+    { Ready(_) -> 0 }
   let fifth = match future.poll()
-    { pending -> 0 }
-    { ready(value) -> value }
+    { Pending -> 0 }
+    { Ready(value) -> value }
 
   let mut cancel_remaining = 2
   let mut cancel_drops = 0
@@ -93,11 +93,11 @@ let main(): i32 = {
       }
     }
     match cancelled.poll()
-      { pending -> () }
-      { ready(_) -> () }
+      { Pending -> () }
+      { Ready(_) -> () }
     match cancelled.poll()
-      { pending -> () }
-      { ready(_) -> () }
+      { Pending -> () }
+      { Ready(_) -> () }
   }
 
   first + second + third + fourth + fifth + unsafe { *drops_ptr } +

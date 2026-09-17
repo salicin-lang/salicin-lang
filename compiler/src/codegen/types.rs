@@ -273,7 +273,7 @@ impl Analyzer {
                     }
                 };
                 let Some(mutable) = access_mutability(access) else {
-                    self.error("`ptr` access must be `shared` or `mut`");
+                    self.error("`Ptr` access must be `shared` or `mut`");
                     return Ty::Error;
                 };
                 Ty::Pointer {
@@ -616,13 +616,13 @@ impl Analyzer {
                 format!("({rendered})")
             }
             Ty::Array(element, length) => {
-                format!("array<{}><{length}>", self.diagnostic_type_name(element))
+                format!("Array<{}><{length}>", self.diagnostic_type_name(element))
             }
             Ty::Str => "str".to_owned(),
-            Ty::Slice(element) => format!("slice<{}>", self.diagnostic_type_name(element)),
+            Ty::Slice(element) => format!("Slice<{}>", self.diagnostic_type_name(element)),
             Ty::Pointer { pointee, mutable } => format!(
                 "{}<{}>",
-                if *mutable { "ptr<mut>" } else { "ptr" },
+                if *mutable { "Ptr<mut>" } else { "Ptr" },
                 self.diagnostic_type_name(pointee)
             ),
             Ty::Reference {
@@ -630,7 +630,7 @@ impl Analyzer {
                 mutable,
                 region,
             } => {
-                let mode = if *mutable { "borrow<mut>" } else { "borrow" };
+                let mode = if *mutable { "Borrow<mut>" } else { "Borrow" };
                 let region = region.as_ref().map_or_else(String::new, |region| {
                     format!("<{}>", display_region_argument(region))
                 });
@@ -690,7 +690,7 @@ impl Analyzer {
                 self.diagnostic_type_name(&Ty::Function(callable.signature.clone()))
             }
             Ty::Continuation { input, output } => format!(
-                "Continuation({}, {})",
+                "Continuation<{}><{}>",
                 self.diagnostic_type_name(input),
                 self.diagnostic_type_name(output)
             ),
@@ -758,7 +758,7 @@ impl Analyzer {
                 }
                 if self.is_lang_item_name(name, LangItemKind::ArrayTypeForm) {
                     if groups.len() != 2 || groups[0].len() != 1 || groups[1].len() != 1 {
-                        self.error("`array` type arguments require `array<Element><Length>`");
+                        self.error("`array` type arguments require `Array<Element><Length>`");
                         return None;
                     }
                     let element =

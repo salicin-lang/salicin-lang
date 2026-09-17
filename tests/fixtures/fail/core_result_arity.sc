@@ -1,8 +1,8 @@
-let result = core.result
+let Result = core.Result
 
 let main(): i32 = {
-  let value: result<i32> = result<i32>.ok(42)
+  let value: Result<i32> = Result<i32>.Ok(42)
   match value
-    { ok(item) -> item }
-    { err(_) -> 0 }
+    { Ok(item) -> item }
+    { Err(_) -> 0 }
 }

@@ -594,7 +594,7 @@ impl Analyzer {
                     .is_some_and(|(key, _)| self.is_drop_impl(key))
                 {
                     self.error(
-                        "`droppable.drop` cannot be called directly; destruction is automatic",
+                        "`Droppable.drop` cannot be called directly; destruction is automatic",
                     );
                     return error_expr();
                 }
@@ -817,7 +817,7 @@ impl Analyzer {
                         if !self.is_copy_type(&receiver_parameter.ty) {
                             let ty = self.diagnostic_type_name(&receiver_parameter.ty);
                             self.error(format!(
-                            "receiver for method `{target}.{member}` requires copyable, but `{ty}` does not implement copyable"
+                            "receiver for method `{target}.{member}` requires `Copyable`, but `{ty}` does not implement `Copyable`"
                         ));
                         }
                         HirArgument::Copy(self.access_place(
@@ -2461,7 +2461,7 @@ impl Analyzer {
                     if !self.is_copy_type(&parameter.ty) {
                         let ty = self.diagnostic_type_name(&parameter.ty);
                         self.error(format!(
-                            "parameter `{}` requires copyable, but `{}` does not implement copyable",
+                            "parameter `{}` requires `Copyable`, but `{}` does not implement `Copyable`",
                             parameter.name, ty
                         ));
                     }

@@ -1,7 +1,7 @@
-let slice = core.memory.slice
+let Slice = core.memory.Slice
 
 let invalid = struct {
-  values: slice<i32>,
+  values: Slice<i32>,
 }
 
 let main(): i32 = { 42 }

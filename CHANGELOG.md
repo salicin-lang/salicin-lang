@@ -6,6 +6,21 @@ subset.
 
 ## Unreleased
 
+- **Breaking:** Removed the `comptime` keyword. Angle brackets now exclusively
+  declare and supply compile-time groups; `()`, `[]`, and `{}` exclusively
+  declare and supply runtime groups, and mixed-stage groups are invalid.
+  Constructor sorts use forms such as `<T: type>: type`. The current
+  `core.passing` contract retains only the `copy` and `move` runtime parameter
+  modifiers.
+- **Breaking:** Migrated source naming to semantic categories. Types and type
+  parameters, type forms, traits, enum variants, and associated types now use `PascalCase`;
+  functions, methods, values, fields, modules, effects, and sorts use
+  `snake_case`. Primitive `bool`, integer, `str`, and `never` types and
+  `true`/`false` remain lowercase. Standard APIs now use names such as
+  `Option`, `Result`, `String`, `Vec`, `Some`, `None`, `Ok`, `Err`,
+  `Copyable`, and `Iterator`; existing source must migrate its declarations,
+  paths, bounds, patterns, and associated-type projections.
+
 ## 0.258.0 - 2026-08-05
 
 - Completed META-1 with an edition-owned extensible static-sort registry.

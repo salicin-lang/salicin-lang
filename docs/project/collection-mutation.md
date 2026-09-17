@@ -3,8 +3,8 @@
 Status: implemented for the 2026 edition<br>
 Accepted: 2026-07-29
 
-This contract defines in-place mutation shared by `array(t)(n)` and
-`slice<t>`.
+This contract defines in-place mutation shared by `Array<T><n>` and
+`Slice<T>`.
 
 ## Operations and element bounds
 
@@ -12,15 +12,15 @@ Arrays and mutable slices expose:
 
 - `swap(left, right)`, which exchanges two elements;
 - `reverse()`, which reverses the complete sequence;
-- `fill(value)` for `t: copyable`;
-- `copy_from(source)` for `t: copyable`;
+- `fill(value)` for `T: Copyable`;
+- `copy_from(source)` for `T: Copyable`;
 - `copy_within(source_start, source_end, destination_start)` for
-  `t: copyable`.
+  `T: Copyable`.
 
 `swap` and `reverse` work for every element with a concrete sized
 representation. They move resource elements in place without copying,
 allocating, or dropping them. `fill`, `copy_from`, and `copy_within` require
-`copyable`; copyable and droppable are mutually exclusive, so these operations
+`Copyable`; `Copyable` and `Droppable` are mutually exclusive, so these operations
 have no resource-cleanup path.
 
 `copy_from` requires the source and destination lengths to be equal. Safe

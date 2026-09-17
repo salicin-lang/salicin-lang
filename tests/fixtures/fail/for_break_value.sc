@@ -1,25 +1,25 @@
-let option = core.option
+let Option = core.Option
 
-let iterator = core.iter.iterator
-let into_iterator = core.iter.into_iterator
-let owned_item = core.iter.owned_item
+let Iterator = core.iter.Iterator
+let IntoIterator = core.iter.IntoIterator
+let OwnedItem = core.iter.OwnedItem
 
 let once = struct { done: bool }
 
-extend(once, iterator) {
-  let item = owned_item<i32>;
-  let next<comptime r: region>(self: borrow<mut><r><self>)(): option<i32> = {
+extend(once, Iterator) {
+  let Item = OwnedItem<i32>;
+  let next<r: region>(self: Borrow<mut><r><self>)(): Option<i32> = {
     if self.done {
-      none
+      None
     } else {
       self.done = true
-      some(1)
+      Some(1)
     }
   }
 }
 
-extend(once, into_iterator) {
-  let iter = once
+extend(once, IntoIterator) {
+  let Iter = once;
   let into_iter(move self)(): once = { self }}
 
 let main(): i32 = {

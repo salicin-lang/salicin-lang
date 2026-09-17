@@ -346,7 +346,7 @@ impl Analyzer {
             let ty = self.diagnostic_type_name(&param.ty);
             let function = self.diagnostic_function_name(function);
             self.error(format!(
-                "parameter `{}` in function `{function}` requires `copyable`, but nominal type `{}` does not implement copyable",
+                "parameter `{}` in function `{function}` requires `Copyable`, but nominal type `{}` does not implement `Copyable`",
                 param.name, ty
             ));
         }
@@ -600,12 +600,12 @@ impl Analyzer {
             .map(|ty| self.lower_source_type(ty));
         let integer_conversion_target = if let Some(source) = integer_conversion_source.as_ref() {
             let Some(target) = substitutions
-                .get("output")
+                .get("Output")
                 .map(|target| self.lower_source_type(target))
                 .filter(Ty::is_integer)
             else {
                 self.error(
-                    "`checked_into` requires an integer `output` type such as `u8` or `i64`",
+                    "`checked_into` requires an integer `Output` type such as `u8` or `i64`",
                 );
                 return None;
             };
@@ -618,17 +618,17 @@ impl Analyzer {
                     .get(name)
                     .is_some_and(|layout| {
                         layout.variants.iter().any(|variant| {
-                            variant.name == "some"
+                            variant.name == "Some"
                                 && variant.fields.len() == 1
                                 && variant.fields[0].ty == target
                         }) && layout
                             .variants
                             .iter()
-                            .any(|variant| variant.name == "none" && variant.fields.is_empty())
+                            .any(|variant| variant.name == "None" && variant.fields.is_empty())
                     })
             });
             if !valid_result {
-                self.error("internal error: `checked_into` must return `option<output>`");
+                self.error("internal error: `checked_into` must return `Option<output>`");
                 return None;
             }
             Some((source.clone(), target))

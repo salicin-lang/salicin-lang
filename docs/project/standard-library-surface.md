@@ -11,8 +11,10 @@ already exists. The [TODO](todo.md) owns the remaining implementation order.
 
 The surface follows six rules.
 
-1. Every source identifier uses `snake_case`, including types, traits,
-   variants, parameters, functions, values, modules, effects, and sorts.
+1. Types and type parameters, type forms, traits, enum variants, and associated types use
+   `PascalCase`; functions, methods, values, fields, modules, effects, and
+   sorts use `snake_case`. The primitive types `bool`, integers, `str`, and
+   `never`, and the primitive values `true` and `false`, remain lowercase.
 2. The prelude contains only names needed pervasively by ordinary syntax.
    Allocation, failure, formatting, collections, and host access stay
    qualified or use explicit local aliases.
@@ -22,7 +24,7 @@ The surface follows six rules.
    invariants. An unchecked operation requires `unsafety`; it is not
    made safe merely by living in the standard library.
 5. `io` is visible host authority, not an error-transport mechanism. Host
-   failures are values returned in `result(io_error)(t)`.
+   failures are values returned in `Result<IoError><T>`.
 6. Each declaration has one canonical definition module. Library source uses
    that path directly; mirror aliases and per-module re-export facades are
    forbidden in `std`. The deliberately small `core.lib`, `core.prelude`, and
@@ -44,17 +46,18 @@ a callable. Public embedded-library names therefore follow this vocabulary:
 
 | Declaration | Naming form | Examples |
 | --- | --- | --- |
-| struct, enum, or type form | entity, value, or state noun | `string`, `option`, `poll` |
-| trait | capability adjective, role noun, or operation protocol | `copyable`, `iterator`, `add` |
+| struct, enum, or type form | `PascalCase` entity, value, or state noun | `String`, `Option`, `Poll` |
+| trait | `PascalCase` capability adjective, role noun, or operation protocol | `Copyable`, `Iterator`, `Add` |
 | effect | abstract behavior, event, or capability noun; a gerund when it is clearer | `throwing`, `suspension`, `unsafety`, `io` |
 | function or method | action verb, with `is_`/`has_` for predicates | `write_all`, `is_empty` |
-| value or variant | state or value noun/adjective | `pending`, `ready`, `none` |
+| value | `snake_case` state or value noun/adjective | `default_limit` |
+| enum variant | `PascalCase` state or value noun/adjective | `Pending`, `Ready`, `None` |
 | sort | the classified concept | `type`, `effect`, `effects`, `parameters` |
 
-The standard effects are named `throwing<error>`, `suspension`, `unsafety`,
-`loop_exit<t>`, `iteration_skip`, and `function_exit<t>`. The enclosing module
+The standard effects are named `throwing<Error>`, `suspension`, `unsafety`,
+`loop_exit<T>`, `iteration_skip`, and `function_exit<T>`. The enclosing module
 and use position provide any further qualification, for example
-`with<core.error.throwing<e>>`. Names such as `async_effect`,
+`with<core.error.throwing<E>>`. Names such as `async_effect`,
 `iterator_trait`, and `message_type` are rejected in embedded public library
 source. This restriction is a standard-library quality gate, not a restriction
 on ordinary user declarations.
@@ -63,9 +66,9 @@ This choice follows the practice of naming effect constants for the behavior
 they document. The current Koka language guide uses semantic labels such as
 `console`, `io`, and `ndet`; Flix describes effects as compiler-checked
 documentation; recent higher-order-effect work uses domain labels such as
-`Output` rather than category suffixes. Salicin keeps its universal
-`snake_case` convention, so declaration context replaces capitalization as
-the category signal. [Koka language guide](https://koka-lang.github.io/koka/doc/book.html),
+`Output` rather than category suffixes. Salicin uses category-aware
+capitalization, while declaration context and semantic names avoid redundant
+kind suffixes. [Koka language guide](https://koka-lang.github.io/koka/doc/book.html),
 [Flix effect system](https://doc.flix.dev/effect-system.html),
 [Hefty Algebras (JFP 2025)](https://doi.org/10.1017/S0956796825100142).
 
@@ -80,19 +83,19 @@ allocator or host symbol.
 | --- | --- |
 | `core.primitives` | `bool`, fixed-width integers, `isize`, and `usize` |
 | `core.never` | `never` |
-| `core.marker` | `movable`, `copyable`, and `droppable` |
+| `core.marker` | `Movable`, `Copyable`, and `Droppable` |
 | `core.sorts` | compiler-owned static classifiers |
-| `core.passing` | `copy`, `move`, and `comptime` parameter modifiers |
-| `core.borrow` | `access`, `shared`, `mut`, and `borrow` |
-| `core.memory` | `array`, `slice`, `ptr`, layout queries, and safe contiguous access |
-| `core.option` | `option` and its source-backed operations |
-| `core.result` | `result` and its source-backed operations |
+| `core.passing` | `copy` and `move` runtime parameter modifiers |
+| `core.borrow` | `access`, `shared`, `mut`, and `Borrow` |
+| `core.memory` | `Array`, `Slice`, `Ptr`, layout queries, and safe contiguous access |
+| `core.option` | `Option` and its source-backed operations |
+| `core.result` | `Result` and its source-backed operations |
 | `core.cmp` | equality and partial-ordering protocols |
 | `core.ops` | arithmetic, bit, assignment, and indexing protocols |
 | `core.flow` | chaining, fallback, unwrap, and typed raising protocols |
 | `core.iter` | iterator protocols and allocation-free algorithms |
 | `core.numeric` | integer bounds, sign/magnitude helpers, and checked width conversion |
-| `core.string` | canonical UTF-8 `string`, literals, construction/mutation, borrowed views, scalars, validation, and iteration |
+| `core.string` | canonical UTF-8 `String`, literals, construction/mutation, borrowed views, scalars, validation, and iteration |
 | `core.fmt` | allocation-free parse, display, debug, and writer protocols |
 | `core.effect` | effect-handler machinery |
 | `core.error` | typed failure effect machinery |
@@ -111,10 +114,10 @@ added when a declaration moves.
 
 | Public module | Responsibility |
 | --- | --- |
-| `alloc.boxed` | the owning `box<t>` allocation |
-| `alloc.vec` | `vec<t>` and consuming vector iteration |
-| `alloc.string` | ownership-preserving `vec<u8>`/`string` conversion and conversion errors |
-| `alloc.fmt` | `string_writer` and allocation-backed formatting helpers |
+| `alloc.boxed` | the owning `Box<T>` allocation |
+| `alloc.vec` | `Vec<T>` and consuming vector iteration |
+| `alloc.string` | ownership-preserving `Vec<u8>`/`String` conversion and conversion errors |
+| `alloc.fmt` | `StringWriter` and allocation-backed formatting helpers |
 
 `alloc.raw` remains package-private. Safe source cannot call the allocator or
 forge container metadata. Allocation failure and invalid allocation layout
@@ -131,7 +134,7 @@ policy-bearing and host-facing facilities without mirroring lower layers.
 | `std.async` | concrete executor policies and future host runtimes |
 | `std.algebra` | opt-in algebraic protocols |
 | `std.functional` | opt-in higher-kinded functional protocols and standard implementations |
-| `std.io` | byte readers/writers, standard streams, and `io_error` |
+| `std.io` | byte readers/writers, standard streams, and `IoError` |
 | `std.process` | process arguments and exit information |
 | `std.fs` | paths, file options, owned files, and bounded convenience operations |
 | `std.test` | failure values and assertion helpers |
@@ -149,9 +152,9 @@ dependency. `core` is freestanding and dependency-free; `alloc` adds only
 replaceable heap authority; `std` may use both and owns policy or host-facing
 implementations. A declaration belongs in the lowest layer that can implement
 it without importing a higher layer, but genericity alone does not make an
-abstraction fundamental. Consequently `option`, `result`, iteration, operator
+abstraction fundamental. Consequently `Option`, `Result`, iteration, operator
 protocols, cold futures, and the executor protocol remain in `core`;
-`semigroup`, `monoid`, `functor`, `applicative`, `monad`, their standard
+`Semigroup`, `Monoid`, `Functor`, `Applicative`, `Monad`, their standard
 implementations, and the concrete `spin` executor belong to `std`.
 Text, conversion, and formatting do not acquire parallel `std` modules:
 the canonical string type and allocation-free operations use `core.string`,
@@ -177,15 +180,15 @@ authority and semantic necessity, not by whether they happen to be generic.
 
 The 2026 prelude contains exactly:
 
-- `never`, `movable`, `copyable`, and `droppable`;
+- `never`, `Movable`, `Copyable`, and `Droppable`;
 - `bool`, the fixed-width integers, `isize`, and `usize`;
-- `array`, `ptr`, `size_of`, and `align_of`;
-- `copy`, `move`, and `comptime`;
+- `Array`, `Ptr`, `size_of`, and `align_of`;
+- `copy` and `move`;
 - `shared` and `mut`.
 
-`borrow` remains contextual syntax and its qualified declaration remains
-available. `slice`, `str`, `unicode_scalar`, `option`, `result`, `box`, `vec`,
-`string`, operator traits, iterator traits, formatting traits, error types,
+`Borrow` remains contextual type syntax and its qualified declaration remains
+available. `Slice`, `str`, `UnicodeScalar`, `Option`, `Result`, `Box`, `Vec`,
+`String`, operator traits, iterator traits, formatting traits, error types,
 effects, I/O, and assertions are excluded.
 
 Compiler-recognized syntax may resolve a validated language item without
@@ -199,15 +202,15 @@ Public APIs use these modes consistently:
 
 | Intent | Receiver or parameter | Result |
 | --- | --- | --- |
-| inspect a value | `borrow(t)` | copied scalar or a borrow tied to the receiver |
-| mutate in place | `borrow<mut><t>` | `()` or a borrow tied to the exclusive receiver |
+| inspect a value | `Borrow<T>` | copied scalar or a borrow tied to the receiver |
+| mutate in place | `Borrow<mut><T>` | `()` or a borrow tied to the exclusive receiver |
 | transfer ownership | `move value: t` | a new owner or ownership-preserving error |
-| accept cheap reusable input | automatic passing, with an explicit `copyable` bound when required | never silently consumes a non-copy value |
-| expose immutable contiguous data | `slice<t>` or `str` | shared borrow only |
-| expose mutable contiguous data | `slice<mut>(t)` | exclusive borrow; never for UTF-8 bytes |
-| create a resource | host operation `with<io>` | `result(io_error)(owner)` |
+| accept cheap reusable input | automatic passing, with an explicit `Copyable` bound when required | never silently consumes a non-copy value |
+| expose immutable contiguous data | `Slice<T>` or `str` | shared borrow only |
+| expose mutable contiguous data | `Slice<mut><T>` | exclusive borrow; never for UTF-8 bytes |
+| create a resource | host operation `with<io>` | `Result<IoError><owner>` |
 | operate on a resource | borrow the owner `with<io>` | result value; no hidden ownership transfer |
-| close a resource | `move` the owner `with<io>` | `result(io_error)(())` |
+| close a resource | `move` the owner `with<io>` | `Result<IoError><()>` |
 
 Borrowed views retain the source loan. An iterator yielding borrowed elements
 cannot outlive that loan. Mutable iteration keeps one exclusive source loan
@@ -215,12 +218,12 @@ and cannot yield overlapping live element loans. Safe text APIs never expose
 mutable UTF-8 bytes.
 
 A consuming conversion that can fail returns the original owner in its error
-when doing so is necessary to avoid data loss. `string.from_utf8(move bytes)`
-therefore returns a `from_utf8_error` that owns the rejected `vec<u8>`.
+when doing so is necessary to avoid data loss. `String.from_utf8(move bytes)`
+therefore returns a `FromUtf8Error` that owns the rejected `Vec<u8>`.
 
-Resource destruction is deterministic. `file.close(move self)` attempts one
+Resource destruction is deterministic. `File.close(move self)` attempts one
 close, consumes the logical handle even on error, and reports the error.
-`droppable.drop` also attempts close exactly once but cannot report failure;
+`Droppable.drop` also attempts close exactly once but cannot report failure;
 programs that need the error must call `close` explicitly.
 
 ## Absence, failure, effects, and traps
@@ -231,13 +234,13 @@ condition.
 | Form | Use |
 | --- | --- |
 | plain value | total operation for all valid inputs |
-| `option<t>` | ordinary absence with no useful error detail, such as `get`, `first`, `last`, `find`, or `pop` |
-| `result(e)(t)` | malformed external data, checked conversion, allocation-independent parsing, or recoverable host failure |
+| `Option<T>` | ordinary absence with no useful error detail, such as `get`, `first`, `last`, `find`, or `pop` |
+| `Result<E><T>` | malformed external data, checked conversion, allocation-independent parsing, or recoverable host failure |
 | `with<effects>` | observable capability or control effect; never a substitute for a recoverable error value |
 | trap | violated checked precondition, impossible safe invariant, fixed arithmetic trap, invalid allocation layout, or allocation failure |
 
 Every trapping collection operation has a nearby checked alternative:
-`get(index)` returns `option(borrow(t))`, while `at(index)` and indexing trap
+`get(index)` returns `Option<Borrow<T>>`, while `at(index)` and indexing trap
 when out of bounds. A range operation validates the complete range before
 forming a borrow or mutating storage.
 
@@ -258,24 +261,24 @@ Errors are small, inspectable values with no mandatory allocation.
 
 | Error | Minimum information |
 | --- | --- |
-| `utf8_error` | first invalid byte index and, when known, expected sequence length |
-| `parse_int_error` | `empty`, `invalid_digit`, `invalid_sign`, or `overflow`, plus the failing byte index when applicable |
-| `int_conversion_error` | source value was outside the destination range |
-| `io_error` | portable `io_error_kind` and optional signed raw host code |
-| `test_failure` | optional owned message plus source registration identity supplied by the runner |
+| `Utf8Error` | first invalid byte index and, when known, expected sequence length |
+| `ParseIntError` | `Empty`, `InvalidDigit`, `InvalidSign`, or `Overflow`, plus the failing byte index when applicable |
+| `IntConversionError` | source value was outside the destination range |
+| `IoError` | portable `IoErrorKind` and optional signed raw host code |
+| `TestFailure` | optional owned message plus source registration identity supplied by the runner |
 
-`io_error_kind` initially includes `not_found`, `permission_denied`,
-`already_exists`, `invalid_input`, `invalid_data`, `interrupted`,
-`would_block`, `write_zero`, `unexpected_eof`, `broken_pipe`, `unsupported`,
-`out_of_memory`, and `other`. Platform-specific codes remain observable but
+`IoErrorKind` initially includes `NotFound`, `PermissionDenied`,
+`AlreadyExists`, `InvalidInput`, `InvalidData`, `Interrupted`,
+`WouldBlock`, `WriteZero`, `UnexpectedEof`, `BrokenPipe`, `Unsupported`,
+`OutOfMemory`, and `Other`. Platform-specific codes remain observable but
 must not change portable control flow.
 
 Low-level `read` and `write` expose partial progress. A successful zero-byte
 read means EOF when the requested buffer is non-empty. A successful
-zero-byte write for non-empty input becomes `write_zero` in `write_all`.
-`read_exact` reports `unexpected_eof`. High-level retrying helpers retry
-`interrupted`; primitive operations preserve it. Text readers validate UTF-8
-and return `invalid_data` rather than replacement text.
+zero-byte write for non-empty input becomes `WriteZero` in `write_all`.
+`read_exact` reports `UnexpectedEof`. High-level retrying helpers retry
+`Interrupted`; primitive operations preserve it. Text readers validate UTF-8
+and return `InvalidData` rather than replacement text.
 
 ## Host authority
 
@@ -293,7 +296,7 @@ effect-polymorphic where possible and acquire no host authority by import.
 
 Standard streams and process arguments are link-time capabilities of the
 entry environment. Open files are owned runtime capabilities: opening
-requires `io`, and the resulting unforgeable `file` limits subsequent
+requires `io`, and the resulting unforgeable `File` limits subsequent
 operations to that resource. Paths never imply ambient access by themselves.
 
 The first host implementation supports:
@@ -314,22 +317,22 @@ canonical identity in the layer and definition module that owns it.
 
 | Area | Required surface |
 | --- | --- |
-| `option<t>` | `is_some`, `is_none`, `as_ref`, `as_ref(mut)`, `map`, `and_then`, `unwrap_or`, `unwrap_or_else`, `ok_or` |
-| `result(e)(t)` | `is_ok`, `is_err`, `as_ref`, `as_ref(mut)`, `map`, `map_error`, `and_then`, `unwrap_or`, `unwrap_or_else`, `ok`, `err` |
+| `Option<T>` | `is_some`, `is_none`, `as_ref`, `as_ref(mut)`, `map`, `and_then`, `unwrap_or`, `unwrap_or_else`, `ok_or` |
+| `Result<E><T>` | `is_ok`, `is_err`, `as_ref`, `as_ref(mut)`, `map`, `map_error`, `and_then`, `unwrap_or`, `unwrap_or_else`, `ok`, `err` |
 | integers | `min`, `max`, `clamp`, sign queries, checked width conversions, decimal parse, decimal display |
 | `str` | byte `len`, `is_empty`, `as_bytes`, equality, boundary check, checked slice, prefix/suffix, find, byte iteration, scalar iteration |
-| `unicode_scalar` | checked construction from `u32`, `to_u32`, UTF-8 encoded length, encode into caller storage |
-| `string` | `new`, capacity construction, `from_str`, `from_utf8`, `as_str`, `push`, `push_str`, truncate at boundary, search, clear, byte recovery |
-| `array(t)(n)` | `len`, `is_empty`, `get`, `at`, `first`, `last`, shared/mutable slice, shared/mutable iteration, swap, reverse, copy/fill where bounded |
-| `slice<t>` | the same non-owning access and iteration vocabulary as arrays, plus checked subslicing |
-| `vec<t>` | array/slice vocabulary where applicable, capacity, push/pop, insert/remove, append, truncate, extend from slice, consuming iteration |
+| `UnicodeScalar` | checked construction from `u32`, `to_u32`, UTF-8 encoded length, encode into caller storage |
+| `String` | `new`, capacity construction, `from_str`, `from_utf8`, `as_str`, `push`, `push_str`, truncate at boundary, search, clear, byte recovery |
+| `Array<T><n>` | `len`, `is_empty`, `get`, `at`, `first`, `last`, shared/mutable slice, shared/mutable iteration, swap, reverse, copy/fill where bounded |
+| `Slice<T>` | the same non-owning access and iteration vocabulary as arrays, plus checked subslicing |
+| `Vec<T>` | array/slice vocabulary where applicable, capacity, push/pop, insert/remove, append, truncate, extend from slice, consuming iteration |
 | iteration | `find`, `position`, `contains`, `any`, `all`, and `fold`, with early-exit cleanup and forwarded effects |
 | formatting | `parse`, `display`, `debug`, byte/text `writer`, `string_writer`, and allocation-backed `to_string` |
 | byte I/O | `reader.read`, `reader.read_exact`, `writer.write`, `writer.write_all`, and `writer.flush` |
 | console | stdin read/read_line, stdout/stderr write/print/println, and explicit flush |
 | process | borrowed or owned argument iteration with defined invalid-host-text behavior |
-| filesystem | `open_options`, `file.open`, `file.read`, `file.write`, `file.flush`, `file.seek`, `file.close`, and bounded whole-file helpers |
-| tests | `fail`, `assert`, `assert_eq`, `assert_ne`, and common `option`/`result` expectations |
+| filesystem | `OpenOptions`, `File.open`, `File.read`, `File.write`, `File.flush`, `File.seek`, `File.close`, and bounded whole-file helpers |
+| tests | `fail`, `assert`, `assert_eq`, `assert_ne`, and common `Option`/`Result` expectations |
 
 Whole-file and read-to-end helpers take an explicit maximum byte count. They
 must not allocate without a caller-visible bound. `print` and assertion
@@ -366,8 +369,8 @@ The byte-I/O rules follow the established separation between partial
 `read`/`write` primitives and retrying exact/all helpers. Text follows the
 Unicode definition of UTF-8 as one-to-four bytes per Unicode scalar value and
 does not promise grapheme, normalization, locale, or collation behavior.
-Naming follows clarity-at-use-site guidance while retaining Salicin's
-language-wide `snake_case`.
+Naming follows clarity-at-use-site guidance and Salicin's category-aware
+`PascalCase`/`snake_case` policy.
 
 Primary references reviewed on 2026-07-27:
 

@@ -1,20 +1,20 @@
-let slice = core.memory.slice
+let Slice = core.memory.Slice
 
 let token = struct {
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
 }
 
-extend(token, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(token, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let read(value: borrow<i32>): i32 = { value }
+let read(value: Borrow<i32>): i32 = { value }
 
-let add_state(move state: (token, i32), value: borrow<i32>): (token, i32) = {
+let add_state(move state: (token, i32), value: Borrow<i32>): (token, i32) = {
   match state {
     (owner, total) -> (owner, total + read(value))
   }
@@ -27,8 +27,8 @@ let main(): i32 = {
   unsafe {
     *drops = 0
   }
-  let values: array<i32><4> = [3, 9, 12, 18]
-  let view: borrow<slice<i32>> = borrow(values)
+  let values: Array<i32><4> = [3, 9, 12, 18]
+  let view: Borrow<Slice<i32>> = borrow(values)
 
   let success = view.fold((token{ drops: drops }, 0))(add_state)
   let success_total = match success {

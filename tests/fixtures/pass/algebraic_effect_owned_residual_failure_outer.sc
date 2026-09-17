@@ -1,4 +1,4 @@
-let result = core.result
+let Result = core.Result
 let throwing = core.error.throwing
 
 let step = effect {
@@ -7,11 +7,11 @@ let step = effect {
 
 let state = struct {
   value: i32,
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
 }
 
-extend(state, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(state, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -22,14 +22,14 @@ let accept: with<throwing<bool>>(fail: bool): i32 = {
   if fail { throw(true) } else { 0 }
 }
 
-let update: with<step, throwing<bool>>(state: borrow<mut><state>, fail: bool): i32 = {
+let update: with<step, throwing<bool>>(state: Borrow<mut><state>, fail: bool): i32 = {
   let accepted = accept(fail)
   let delta = step.delta()
   state.value = state.value + delta
   state.value + accepted
 }
 
-let run: with<throwing<bool>>(drops: ptr<mut><i32>, fail: bool): i32 = {
+let run: with<throwing<bool>>(drops: Ptr<mut><i32>, fail: bool): i32 = {
   let mut state = state{ value: 20, drops: drops }
   step.handle delta { (resume) ->
       resume(1)
@@ -44,8 +44,8 @@ let main(): i32 = {
   }
   unsafe { *drops = 0 }
 
-  let success: result<bool><i32> = try { run(drops, false) }
-  let failure: result<bool><i32> = try { run(drops, true) }
+  let success: Result<bool><i32> = try { run(drops, false) }
+  let failure: Result<bool><i32> = try { run(drops, true) }
   let drop_count = unsafe { *drops }
 
   unsafe {

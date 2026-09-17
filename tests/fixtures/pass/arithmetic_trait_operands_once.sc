@@ -1,13 +1,13 @@
-let mul = core.ops.mul
+let Mul = core.ops.Mul
 
 let number = struct { value: i32 }
 
-extend(number, mul(number)) {
-  let output = number
+extend(number, Mul(number)) {
+  let Output = number;
   let mul(self)(rhs: number): number = { number{ value: self.value * rhs.value } }
 }
 
-let tick(count: borrow<mut><i32>)(value: i32): number = {
+let tick(count: Borrow<mut><i32>)(value: i32): number = {
   count = count + 1
   number{ value: value }
 }

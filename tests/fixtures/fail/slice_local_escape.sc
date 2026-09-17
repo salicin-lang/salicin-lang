@@ -1,6 +1,6 @@
-let slice = core.memory.slice
+let Slice = core.memory.Slice
 
-let invalid(): borrow<slice<i32>> = {
+let invalid(): Borrow<Slice<i32>> = {
   let values = [20, 22]
   borrow(values)
 }

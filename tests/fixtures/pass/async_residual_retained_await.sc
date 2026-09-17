@@ -1,15 +1,15 @@
-let future = core.async.future
-let poll = core.async.poll
-let result = core.result
+let Future = core.async.Future
+let Poll = core.async.Poll
+let Result = core.Result
 let throwing = core.error.throwing
 
 let resource = struct {
-  drops: ptr<mut><i32>,
+  drops: Ptr<mut><i32>,
   value: i32,
 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -21,17 +21,17 @@ let step = struct {
   value: i32,
 }
 
-extend(step, future(())) {
-  let output = i32
+extend(step, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll<i32>.pending
+      Poll<i32>.Pending
     } else {
-      poll<i32>.ready(self.value)
+      Poll<i32>.Ready(self.value)
     }
   }
 }
@@ -44,8 +44,8 @@ let make_step: with<throwing<bool>>(fail: bool): step = {
   }
 }
 
-let run_success(drops: ptr<mut><i32>): i32 = {
-  let result: result<bool><i32> = try {
+let run_success(drops: Ptr<mut><i32>): i32 = {
+  let result: Result<bool><i32> = try {
     let outer = resource{ drops: drops, value: 1 }
     let mut future = async {
       let inner = resource{ drops: drops, value: 39 }
@@ -55,18 +55,18 @@ let run_success(drops: ptr<mut><i32>): i32 = {
     let first = future.poll()
     let second = future.poll()
     match first
-      { pending -> match second
-        { ready(value) -> value }
-        { pending -> 0 } }
-      { ready(_) -> 0 }
+      { Pending -> match second
+        { Ready(value) -> value }
+        { Pending -> 0 } }
+      { Ready(_) -> 0 }
   }
   match result
-    { ok(value) -> value }
-    { err(_) -> 0 }
+    { Ok(value) -> value }
+    { Err(_) -> 0 }
 }
 
-let run_throwing(drops: ptr<mut><i32>): i32 = {
-  let result: result<bool><i32> = try {
+let run_throwing(drops: Ptr<mut><i32>): i32 = {
+  let result: Result<bool><i32> = try {
     let outer = resource{ drops: drops, value: 1 }
     let mut future = async {
       let inner = resource{ drops: drops, value: 39 }
@@ -74,16 +74,16 @@ let run_throwing(drops: ptr<mut><i32>): i32 = {
       outer.value + inner.value + value
     }
     match future.poll()
-      { pending -> 0 }
-      { ready(value) -> value }
+      { Pending -> 0 }
+      { Ready(value) -> value }
   }
   match result
-    { ok(_) -> 0 }
-    { err(error) -> if error { 42 } else { 0 } }
+    { Ok(_) -> 0 }
+    { Err(error) -> if error { 42 } else { 0 } }
 }
 
-let run_cancelled(drops: ptr<mut><i32>): i32 = {
-  let result: result<bool><i32> = try {
+let run_cancelled(drops: Ptr<mut><i32>): i32 = {
+  let result: Result<bool><i32> = try {
     let outer = resource{ drops: drops, value: 1 }
     let mut future = async {
       let inner = resource{ drops: drops, value: 39 }
@@ -91,12 +91,12 @@ let run_cancelled(drops: ptr<mut><i32>): i32 = {
       outer.value + inner.value + value
     }
     match future.poll()
-      { pending -> 42 }
-      { ready(_) -> 0 }
+      { Pending -> 42 }
+      { Ready(_) -> 0 }
   }
   match result
-    { ok(value) -> value }
-    { err(_) -> 0 }
+    { Ok(value) -> value }
+    { Err(_) -> 0 }
 }
 
 let main(): i32 = {

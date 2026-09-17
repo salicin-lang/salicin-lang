@@ -1,5 +1,5 @@
-extend(ptr<a><t>) {
-  let identity(self)(): ptr<a><t> = { self }
+extend(Ptr<a><t>) {
+  let identity(self)(): Ptr<a><t> = { self }
 }
 
 let main(): i32 = { 0 }

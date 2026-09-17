@@ -74,7 +74,7 @@ impl Analyzer {
                 .is_some_and(|access| access.origin.package != origin.package)
         {
             let target = self.diagnostic_type_name(&target);
-            let trait_name = if is_copy { "copyable" } else { "droppable" };
+            let trait_name = if is_copy { "Copyable" } else { "Droppable" };
             self.error(format!(
                 "`{trait_name}` for `{target}` must be implemented in the package that defines the type"
             ));
@@ -96,7 +96,7 @@ impl Analyzer {
         if is_drop && self.collection.copy_nominals.contains(&target) {
             let target = self.diagnostic_type_name(&target);
             self.error(format!(
-                "`{target}` cannot implement both `copyable` and `droppable`"
+                "`{target}` cannot implement both `Copyable` and `Droppable`"
             ));
             return;
         }
@@ -376,7 +376,7 @@ impl Analyzer {
                         && (method_name == "index"
                             || matches!(
                                 key.trait_ref.name.as_str(),
-                                "core::literal::array_literal" | "core::literal::string_literal"
+                                "core::literal::ArrayLiteral" | "core::literal::StringLiteral"
                             ))));
             if function.body.is_none() && !primitive_intrinsic {
                 self.error(format!(
@@ -1450,7 +1450,7 @@ impl Analyzer {
             .get(target_template)
             .map(|access| access.origin.package);
         if (is_copy || is_drop) && target_package != Some(origin.package) {
-            let trait_name = if is_copy { "copyable" } else { "droppable" };
+            let trait_name = if is_copy { "Copyable" } else { "Droppable" };
             self.error(format!(
                 "generic `{trait_name}` for `{target_template}` must be implemented in the package that defines the type"
             ));
@@ -2731,7 +2731,7 @@ impl Analyzer {
     ) {
         if origin.package != PackageId::CORE.0 {
             self.error(
-                "inherent extension for `ptr` must be declared in the package that defines the type",
+                "inherent extension for `Ptr` must be declared in the package that defines the type",
             );
             return;
         }
@@ -2745,7 +2745,7 @@ impl Analyzer {
                     .iter()
                     .any(|parameter| parameter.name == *pointee && parameter.kind == Sort::Type);
                 if !pointee_is_type {
-                    self.error("`ptr` extension pointee must be determined by a `type` parameter");
+                    self.error("`Ptr` extension pointee must be determined by a `type` parameter");
                     return;
                 }
                 if let Some(mutable) = compile_time::access_mutability(access) {
@@ -2762,7 +2762,7 @@ impl Analyzer {
                     (Some(access.clone()), None, pointee.clone())
                 } else {
                     self.error(
-                        "`ptr` extension access must be `shared`, `mut`, or a declared `access` parameter",
+                        "`Ptr` extension access must be `shared`, `mut`, or a declared `access` parameter",
                     );
                     return;
                 }
@@ -2774,14 +2774,14 @@ impl Analyzer {
                     .iter()
                     .any(|parameter| parameter.name == *pointee && parameter.kind == Sort::Type)
                 {
-                    self.error("`ptr` extension pointee must be determined by a `type` parameter");
+                    self.error("`Ptr` extension pointee must be determined by a `type` parameter");
                     return;
                 }
                 (None, Some(false), pointee.clone())
             }
             _ => {
                 self.error(
-                    "generic `ptr` extend target must be `ptr(A)(T)`, `ptr(T)`, or `ptr<mut>(T)`",
+                    "generic `Ptr` extend target must be `Ptr<A><T>`, `Ptr<T>`, or `Ptr<mut><T>`",
                 );
                 return;
             }
@@ -2793,13 +2793,13 @@ impl Analyzer {
             .collect::<HashSet<_>>();
         if determined != declared {
             self.error(
-                "every generic `ptr` extend parameter must be determined by the target type",
+                "every generic `Ptr` extend parameter must be determined by the target type",
             );
             return;
         }
         for member in &extension.members {
             let ExtendMember::Function(function) = member else {
-                self.error("generic `ptr` associated constants are not supported");
+                self.error("generic `Ptr` associated constants are not supported");
                 return;
             };
             if !function
@@ -2807,7 +2807,7 @@ impl Analyzer {
                 .first()
                 .is_some_and(|group| group.len() == 1 && group[0].name == "self")
             {
-                self.error("generic `ptr` extensions currently support methods only");
+                self.error("generic `Ptr` extensions currently support methods only");
                 return;
             }
             if let Some(parameter) = function
@@ -2817,7 +2817,7 @@ impl Analyzer {
                 .find(|parameter| declared.contains(&parameter.name))
             {
                 self.error(format!(
-                    "generic `ptr` method `{}` redeclares outer compile-time parameter `{}`",
+                    "generic `Ptr` method `{}` redeclares outer compile-time parameter `{}`",
                     function.name, parameter.name
                 ));
                 return;
@@ -2855,7 +2855,7 @@ impl Analyzer {
             return;
         }
         let [Type::Named(element, arguments)] = target_sources.as_slice() else {
-            self.error("generic `slice` extend target must be `slice<T>`");
+            self.error("generic `slice` extend target must be `Slice<T>`");
             return;
         };
         if !arguments.is_empty()
@@ -2929,7 +2929,7 @@ impl Analyzer {
             return;
         }
         let [Type::Named(element, arguments)] = target_sources.as_slice() else {
-            self.error("generic `slice` trait target must be `slice<T>`");
+            self.error("generic `slice` trait target must be `Slice<T>`");
             return;
         };
         if !arguments.is_empty()
@@ -3251,7 +3251,7 @@ impl Analyzer {
         }
         let Some(pointee_source) = self.source_type_for_ty(pointee) else {
             self.error(format!(
-                "cannot preserve pointee type `{pointee}` while instantiating `ptr` extensions"
+                "cannot preserve pointee type `{pointee}` while instantiating `Ptr` extensions"
             ));
             return Some(owner);
         };

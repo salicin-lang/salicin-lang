@@ -1,14 +1,14 @@
-let poll = core.async.poll
-let future = core.async.future
+let Poll = core.async.Poll
+let Future = core.async.Future
 let unsafety = core.unsafe.unsafety
 
 let resource = struct {
-  counter: ptr<mut><i32>,
+  counter: Ptr<mut><i32>,
   value: i32
 }
 
-extend(resource, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(resource, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -16,40 +16,40 @@ extend(resource, droppable) {
 }
 
 let step = struct {
-  counter: ptr<mut><i32>,
+  counter: Ptr<mut><i32>,
   polled: bool
 }
 
-extend(step, droppable) {
-  let drop(self: borrow<mut><self>)(): () = {
+extend(step, Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
   }
 }
 
-extend(step, future(())) {
-  let output = i32
+extend(step, Future(())) {
+  let Output = i32;
 
-  let poll<comptime r: region>
-    (self: borrow<mut><r><self>)
-    (): poll<i32> = {
+  let poll<r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if self.polled {
-      poll<i32>.ready(0)
+      Poll<i32>.Ready(0)
     } else {
       self.polled = true
-      poll<i32>.pending
+      Poll<i32>.Pending
     }
   }
 }
 
-let allocate: with<unsafety>(): ptr<mut><i32> = {
+let allocate: with<unsafety>(): Ptr<mut><i32> = {
   unsafe {
     raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
 }
 
-let release: with<unsafety>(counter: ptr<mut><i32>): () = {
+let release: with<unsafety>(counter: Ptr<mut><i32>): () = {
   unsafe {
     raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
@@ -65,11 +65,11 @@ let main(): i32 = {
       resource.value + awaited
     }
     let pending = match future.poll()
-      { pending -> 0 }
-      { ready(_) -> 100 }
+      { Pending -> 0 }
+      { Ready(_) -> 100 }
     let result = match future.poll()
-      { ready(value) -> value }
-      { pending -> 100 }
+      { Ready(value) -> value }
+      { Pending -> 100 }
 
     do {
       let mut cancelled = async {
@@ -78,8 +78,8 @@ let main(): i32 = {
         resource.value + awaited
       }
       match cancelled.poll()
-        { pending -> () }
-        { ready(_) -> () }
+        { Pending -> () }
+        { Ready(_) -> () }
     }
 
     let drops = *counter

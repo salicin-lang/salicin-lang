@@ -3,7 +3,7 @@
 Status: proposed implementation contract
 
 This document defines an implementation path for ordinary compile-time
-reflection and one `string` type shared by compile-time evaluation and native
+reflection and one `String` type shared by compile-time evaluation and native
 execution. It preserves Salicin's source-backed language model: syntax may
 receive compiler-directed lowering only after the edition-matched `core`
 bundle declares and validates the corresponding type or function. Every
@@ -16,21 +16,21 @@ language surface.
 The completed surface has these properties:
 
 ```salicin
-let runtime_text: string = "hello"
-let register<comptime name: string>: () = {}
+let runtime_text: String = "hello"
+let register<name: String>: () = {}
 
-let value_type: type = type_of(runtime_text)
-let string_sort = sort_of(string)
+let value_type: type = type_of<runtime_text>
+let string_sort = sort_of<String>
 ```
 
-- `"hello"` has the ordinary type `string` in every phase.
-- `comptime name: string` carries a typed CTFE value, not a member of a
+- `"hello"` has the ordinary type `String` in every phase.
+- `name: String` carries a typed CTFE value, not a member of a
   compiler-only `string` sort.
-- `type_of(expression)` reports the checked runtime type without evaluating,
+- `type_of<expression>` reports the checked runtime type without evaluating,
   moving, borrowing, or capturing `expression`.
-- `sort_of(value)` reports the immediate sort of a compile-time value.
+- `sort_of<value>` reports the immediate sort of a compile-time value.
 - bare `sort` is invalid in every declaration and expression; every universe
-  is written `sort(n)` and satisfies `sort(n) : sort(n + 1)`.
+  is written `sort<n>` and satisfies `sort<n> : sort<n + 1>`.
 - all compiler-recognized identities and signatures are declared in the
   edition-pinned `core` sources.
 
@@ -64,10 +64,10 @@ operations that cannot be expressed without exposing private storage.
 Sort levels are explicit positive compile-time integers:
 
 ```text
-sort(n) : sort(n + 1), for n >= 1
+sort<n> : sort<n + 1>, for n >= 1
 ```
 
-`sort` without a level is never valid. `sort(0)` is reserved and rejected:
+`sort` without a level is never valid. `sort<0>` is reserved and rejected:
 ordinary runtime values are classified by types, not by a universal
 level-zero sort.
 
@@ -75,9 +75,9 @@ The universe former has an edition-pinned bootstrap declaration:
 
 ```salicin
 /// Constructs the universe at positive level `level`.
-pub let sort(
-  comptime level: usize,
-): sort(level + 1) = builtin()
+pub let sort<
+  level: usize,
+>: sort<level + 1> = builtin()
 ```
 
 The compiler necessarily recognizes enough syntax to parse this bootstrap,
@@ -87,21 +87,21 @@ initializer before accepting user code. Universe comparison and lowering
 resolve this validated identity rather than an unqualified spelling.
 
 First-order sorts classify ordinary compile-time values. They inhabit
-`sort(2)`:
+`sort<2>`:
 
 The core declarations become:
 
 ```salicin
 /// Sort of compile-time type values.
-pub let type: sort(2)
+pub let type: sort<2>
 /// Sort of compile-time lifetime regions.
-pub let region: sort(2)
+pub let region: sort<2>
 /// Sort of individual compile-time effect identities.
-pub let effect: sort(2)
+pub let effect: sort<2>
 /// Sort of normalized compile-time effect rows.
-pub let effects: sort(2)
+pub let effects: sort<2>
 /// Sort of runtime parameter schemas.
-pub let parameters: sort(2)
+pub let parameters: sort<2>
 ```
 
 There are two declaration forms at every positive level.
@@ -110,7 +110,7 @@ An abstract sort at level `n` is declared by annotating it with its
 classifier:
 
 ```salicin
-let entity: sort(n + 1)
+let entity: sort<n + 1>
 ```
 
 Abstract sort declarations remain compiler-owned in this milestone. User
@@ -121,7 +121,7 @@ A closed finite sort at level `n` is defined with an explicitly levelled
 constructor:
 
 ```salicin
-pub let access = sort(1) {
+pub let access = sort<1> {
   shared,
   mut,
 }
@@ -130,10 +130,10 @@ pub let access = sort(1) {
 The general declaration rules are:
 
 ```text
-let S: sort(n + 1)       declares an abstract sort S at level n
-let S = sort(n) { ... }  defines a closed finite sort S at level n
+let S: sort<n + 1>       declares an abstract sort S at level n
+let S = sort<n> { ... }  defines a closed finite sort S at level n
 member : S
-S : sort(n + 1)
+S : sort<n + 1>
 ```
 
 Top-level sort declarations initially require `n` to normalize to a positive
@@ -141,31 +141,31 @@ integer literal. Generic signatures such as `sort_of` may use a symbolic
 level parameter and normalized level expressions such as `level + 1`.
 
 Universes are invariant in the initial implementation. The inhabitance rule
-`sort(n) : sort(n + 1)` does not imply that an arbitrary value of `sort(n)`
-may be silently used where `sort(n + 1)` is expected. Universe lifting or
+`sort<n> : sort<n + 1>` does not imply that an arbitrary value of `sort<n>`
+may be silently used where `sort<n + 1>` is expected. Universe lifting or
 cumulativity requires a later explicit contract.
 
 Canonical declarations are:
 
 ```salicin
-pub let type: sort(2)
-pub let access = sort(1) { shared, mut }
-pub let abi = sort(1) { c }
-let optimization = sort(1) { size, speed }
+pub let type: sort<2>
+pub let access = sort<1> { shared, mut }
+pub let abi = sort<1> { c }
+let optimization = sort<1> { size, speed }
 ```
 
 The result level of a finite declaration is inferred from its explicit
 constructor. An optional redundant annotation, when supported, must agree:
 
 ```salicin
-pub let access: sort(2) = sort(1) { shared, mut }
+pub let access: sort<2> = sort<1> { shared, mut }
 ```
 
 Bare legacy forms receive direct diagnostics:
 
 ```text
-`let name: sort` requires an explicit classifier level; write `sort(2)`
-`let name = sort { ... }` requires an explicit declared level; write `sort(1) { ... }`
+`let name: sort` requires an explicit classifier level; write `sort<2>`
+`let name = sort { ... }` requires an explicit declared level; write `sort<1> { ... }`
 ```
 
 ## Source-Backed Introspection
@@ -177,14 +177,14 @@ domains.
 Examples:
 
 ```salicin
-type_of(42)           // i32
-type_of(runtime_text) // string
+type_of<42>           // i32
+type_of<runtime_text> // string
 
-sort_of(i32)          // type
-sort_of('static)      // region
-sort_of(shared)       // access
-sort_of(type)         // sort(2)
-sort_of(sort(2))      // sort(3)
+sort_of<i32>          // type
+sort_of<'static>      // region
+sort_of<shared>       // access
+sort_of<type>         // sort<2>
+sort_of<sort<2>>      // sort<3>
 ```
 
 ### `sort_of`
@@ -195,19 +195,19 @@ definition:
 
 ```salicin
 /// Returns the inferred immediate sort of `value`.
-pub let sort_of(
-  comptime level: usize,
-  comptime classifier: sort(level),
-  comptime value: classifier,
-): sort(level) = {
+pub let sort_of<
+  level: usize,
+  classifier: sort<level>,
+  value: classifier,
+>: sort<level> = {
   classifier
 }
 ```
 
 The compiler infers `level` and `classifier` through ordinary static-argument
-inference; it does not special-case the body. For `sort_of(i32)`,
-`classifier = type` and `level = 2`. For `sort_of(type)`,
-`classifier = sort(2)` and `level = 3`.
+inference; it does not special-case the body. For `sort_of<i32>`,
+`classifier = type` and `level = 2`. For `sort_of<type>`,
+`classifier = sort<2>` and `level = 3`.
 
 ### `type_of`
 
@@ -218,17 +218,17 @@ Its source declaration therefore describes the expression as a lazy callable:
 
 ```salicin
 /// Returns the inferred type of `expression` without executing it.
-pub let type_of(
-  comptime e: effects,
-  comptime t: type,
-): with<e>
-  (move expression: with<e>((): t)): type = builtin()
+pub let type_of<
+  e: effects,
+  T: type,
+>: with<e>
+  (move expression: with<e>((): T)): type = builtin()
 ```
 
 The parser rewrites:
 
 ```salicin
-type_of(expression)
+type_of<expression>
 ```
 
 to the validated syntax contract without constructing a runtime closure.
@@ -248,16 +248,16 @@ that happens to be CTFE-evaluable still belongs to `type_of`; `sort_of`
 accepts compile-time entities rather than reclassifying source expressions by
 whether optimization can evaluate them.
 
-## The `string` Type
+## The `String` Type
 
-`string` becomes an opaque ordinary type owned by `core`, because literals,
+`String` becomes an opaque ordinary type owned by `core`, because literals,
 test registration, and compile-time parameters must have one identity even
 when the `alloc` package is absent:
 
 ```salicin
 // core/string.sc
 /// Owning, growable, well-formed UTF-8 text.
-pub let string: type = builtin()
+pub let String: type = builtin()
 
 extend(string, core.marker.movable) {}
 
@@ -266,18 +266,18 @@ extend(string, core.marker.droppable) {
 }
 ```
 
-It does not implement `copyable`. Static and inline instances obey the same
+It does not implement `Copyable`. Static and inline instances obey the same
 move-only ownership contract as heap instances; storage mode never changes
 source semantics.
 
 `library/core/src/lib.sc` and the prelude re-export this identity:
 
 ```salicin
-pub let string = core.string.string
+pub let String = core.string.String
 ```
 
 `library/alloc/src/lib.sc` re-exports the same identity and does not declare
-another `string` struct.
+another `String` struct.
 
 ### Logical Value
 
@@ -300,7 +300,7 @@ it is 24 bytes and has unobservable storage modes:
 
 The representation stores byte length. Scalar count and grapheme count are
 not cached in the initial ABI. Static storage detaches to heap storage before
-mutation; heap storage mutates in place under `borrow<mut>`; inline storage
+mutation; heap storage mutates in place under `Borrow<mut>`; inline storage
 promotes to heap only when capacity is exceeded.
 
 Tag layout, inline capacity, growth factor, and empty-string encoding are
@@ -320,20 +320,20 @@ let string_new(): string = builtin()
 // Creates an empty string with space for at least `capacity` UTF-8 bytes.
 let string_with_capacity(capacity: u64): string = builtin()
 
-let string_len_bytes(value: borrow(string)): u64 = builtin()
-let string_capacity(value: borrow(string)): u64 = builtin()
+let string_len_bytes(value: borrow<string>): u64 = builtin()
+let string_capacity(value: borrow<string>): u64 = builtin()
 
 // The source wrapper performs the bounds check.
 let string_byte_at_unchecked(
-  value: borrow(string),
+  value: borrow<string>,
   index: u64,
 ): u8 = builtin()
 
 // Returns a shared byte view tied to the source borrow.
-let string_as_bytes(
-  comptime r: region,
-)
-  (value: borrow(r)(string)): borrow(r)(slice<u8>) = builtin()
+let string_as_bytes<
+  r: region,
+>
+  (value: borrow<r><string>): borrow<r><slice<u8>> = builtin()
 
 let string_reserve(
   value: borrow<mut><string>,
@@ -391,24 +391,24 @@ extend(string) {
     string_with_capacity(capacity)
   }
 
-  let len_bytes(self: borrow(self))(): u64 = {
+  let len_bytes(self: borrow<self>)(): u64 = {
     string_len_bytes(self)
   }
 
-  let capacity(self: borrow(self))(): u64 = {
+  let capacity(self: borrow<self>)(): u64 = {
     string_capacity(self)
   }
 
-  let is_empty(self: borrow(self))(): bool = {
+  let is_empty(self: borrow<self>)(): bool = {
     self.len_bytes() == 0
   }
 
-  let as_bytes<comptime r: region>
-    (self: borrow(r)(self))(): borrow(r)(slice<u8>) = {
+  let as_bytes<r: region>
+    (self: borrow<r><self>)(): borrow<r><slice<u8>> = {
     string_as_bytes(self)
   }
 
-  let byte_at(self: borrow(self))(index: u64): u8 = {
+  let byte_at(self: borrow<self>)(index: u64): u8 = {
     if index >= self.len_bytes() {
       unsafe { raw_trap() }
     }
@@ -425,7 +425,7 @@ UTF-8 validation, boundary checks, `is_empty`, prefix/suffix operations,
 search, scalar iteration, and derived comparison stay in Salicin source.
 Only byte access and private-storage mutation cross the builtin boundary.
 
-An initial `unicode_scalar` ordinary type should precede safe single-scalar
+An initial `UnicodeScalar` ordinary type should precede safe single-scalar
 append. Until then, source may expose `push_str` and keep byte append private
 and unsafe.
 
@@ -435,11 +435,11 @@ Literal materialization also has a source contract. After typed composite
 compile-time parameters are available, `core/string.sc` declares:
 
 ```salicin
-/// Materializes compiler-validated UTF-8 literal bytes as `string`.
-let string_literal(
-  comptime n: usize,
-  comptime bytes: array(u8)(n),
-): string = builtin()
+/// Materializes compiler-validated UTF-8 literal bytes as `String`.
+let string_literal<
+  n: usize,
+  bytes: array<u8><n>,
+>: string = builtin()
 ```
 
 The lexer decodes escapes and validates source UTF-8, then expression
@@ -469,11 +469,11 @@ CompileClassifier
 Consequently:
 
 ```salicin
-comptime t: type       // a value classified by the static sort `type`
-comptime n: usize      // existing compiler integer value
-comptime name: string  // a typed CTFE value of ordinary runtime type `string`
-comptime s: sort(l)    // a classifier inhabiting an explicit universe
-comptime value: s      // a value classified by inferred classifier `s`
+<T: type>       // a value classified by the static sort `type`
+<n: usize>      // existing compiler integer value
+<name: String>  // a typed CTFE value of ordinary runtime type `String`
+<s: sort<l>>    // a classifier inhabiting an explicit universe
+<value: s>      // a value classified by inferred classifier `s`
 ```
 
 `usize` retains its dependent-constant behavior and is the scalar case of
@@ -488,24 +488,24 @@ CtfeValue::String {
 ```
 
 This value contains no host address, LLVM value, capacity, storage tag, or
-allocator state. Its exact type is the resolved core `string` identity.
+allocator state. Its exact type is the resolved core `String` identity.
 
 The existing blanket rejection of CTFE values whose runtime types implement
-`droppable` is refined: the validated core `string` type has a compiler-owned
+`Droppable` is refined: the validated core `String` type has a compiler-owned
 resource-free normalized representation and is admitted explicitly.
 User-defined droppable values remain rejected.
 
 ## `alloc` Integration
 
-The current `alloc.string.string` struct is removed. `alloc.string` becomes an
+The current `alloc.string.String` struct is removed. `alloc.string` becomes an
 adapter module over the core identity:
 
 ```salicin
-let string = core.string.string
-let vec = alloc.vec.vec
-let result = core.result
+let String = core.string.String
+let Vec = alloc.vec.Vec
+let Result = core.Result
 
-pub let from_utf8_error = struct {
+pub let FromUtf8Error = struct {
   bytes: vec<u8>,
   valid_prefix: u64,
 }
@@ -513,7 +513,7 @@ pub let from_utf8_error = struct {
 /// Validates and consumes `bytes`, transferring its allocation on success.
 pub let string_from_utf8(
   move bytes: vec<u8>,
-): result(from_utf8_error)(string) = {
+): result<from_utf8_error><string> = {
   // UTF-8 validation remains ordinary Salicin source.
   // On success, take the vector raw parts and call the validated core
   // `string_from_raw_parts` contract.
@@ -521,19 +521,19 @@ pub let string_from_utf8(
 
 /// Consumes a string and returns owned bytes.
 pub let string_into_bytes(move value: string): vec<u8> = {
-  // Call `string_into_raw_parts`, then construct `vec<u8>`.
+  // Call `string_into_raw_parts`, then construct `Vec<u8>`.
 }
 ```
 
 Because inherent extensions must be declared by the package owning the type,
-the common inherent `string` API lives in `core.string`. Allocation-specific
+the common inherent `String` API lives in `core.string`. Allocation-specific
 zero-copy adapters are free functions in `alloc.string`; they do not create a
 second type or rely on an orphan inherent extension.
 
 An eventual `str` or `string_slice(r)` may be a non-owning, UTF-8-boundary
 checked view. It is not a second compiler/runtime string identity: literals,
 compile-time parameters, owned values, equality, and reflection continue to
-use `string`. A borrowed view must carry or be constrained by its source
+use `String`. A borrowed view must carry or be constrained by its source
 region and cannot outlive the owning string.
 
 ## Test Registration
@@ -542,8 +542,8 @@ The source-backed syntax contract changes from the removed string sort to the
 ordinary type:
 
 ```salicin
-pub let test<comptime name: string>(
-  move body: with<core.error.throwing<core.string.string>>((): ()),
+pub let test<name: String>(
+  move body: with<core.error.throwing<core.string.String>>((): ()),
 ): () = builtin()
 ```
 
@@ -559,7 +559,7 @@ semantic identity of the string.
 ### S1: Source identities and opaque runtime type
 
 - add `library/core/src/string.sc`;
-- add the `string` type and primitive builtin declarations;
+- add the `String` type and primitive builtin declarations;
 - add exact core-bundle validation and resolved lang-item identities;
 - re-export the type from `core` and the prelude;
 - lower the three-word opaque native representation;
@@ -568,7 +568,7 @@ semantic identity of the string.
 
 ### S2: Ordinary runtime string literals
 
-- add string literals to the expression AST and type them as core `string`;
+- add string literals to the expression AST and type them as core `String`;
 - validate and resolve the literal materialization declaration;
 - emit inline/static literals without heap allocation;
 - implement the public source wrappers and UTF-8 boundary tests;
@@ -577,7 +577,7 @@ semantic identity of the string.
 ### S3: Typed compile-time string values
 
 - introduce `CompileClassifier::RuntimeType`;
-- admit `comptime name: string`;
+- admit `name: String`;
 - add `CtfeValue::String`;
 - update substitution, inference, overload identity, incremental
   fingerprints, diagnostics, and module interfaces;
@@ -587,9 +587,9 @@ semantic identity of the string.
 
 ### S4: `alloc` zero-copy adapters
 
-- replace the `alloc.string.string` struct with the core alias;
+- replace the `alloc.string.String` struct with the core alias;
 - retain source UTF-8 validation and ownership-preserving error recovery;
-- transfer successful `vec<u8>` allocations through the declared raw-parts
+- transfer successful `Vec<u8>` allocations through the declared raw-parts
   contracts;
 - add empty, inline, static, heap, invalid UTF-8, success, failure recovery,
   and allocator-leak tests;
@@ -598,15 +598,15 @@ semantic identity of the string.
 
 ### I1: Explicit Sort Universes
 
-- add and validate the source-backed `sort(level)` universe former;
-- parse, resolve, compare, substitute, print, and fingerprint `sort(n)`;
-- implement `sort(n) : sort(n + 1)` for every positive compile-time level;
+- add and validate the source-backed `sort<level>` universe former;
+- parse, resolve, compare, substitute, print, and fingerprint `sort<n>`;
+- implement `sort<n> : sort<n + 1>` for every positive compile-time level;
 - normalize symbolic level expressions and diagnose unsolved or non-positive
   levels at the boundary that requires a concrete declaration level;
 - keep universe matching invariant; do not add cumulative coercions;
-- reject bare `sort` and `sort(0)` everywhere;
-- require abstract declarations to use `: sort(2)`;
-- require closed declarations to use `= sort(1) { ... }`;
+- reject bare `sort` and `sort<0>` everywhere;
+- require abstract declarations to use `: sort<2>`;
+- require closed declarations to use `= sort<1> { ... }`;
 - record and validate the declared level on every `SortDef`;
 - change `SortDef` to retain its normalized declared level for both abstract
   and finite definitions;
@@ -616,13 +616,13 @@ semantic identity of the string.
 ### I2: Compile-Time `sort_of`
 
 - support universe-level and classifier inference;
-- admit `comptime classifier: sort(level)` and
-  `comptime value: classifier`;
+- admit `classifier: sort<level>` and
+  `value: classifier`;
 - add the ordinary universe-polymorphic source definition of `sort_of`;
 - cover builtin, finite, symbolic, constructor, universe, and cross-module
   values;
-- verify `sort_of(type) == sort(2)` and
-  `sort_of(sort(n)) == sort(n + 1)`.
+- verify `sort_of<type> == sort<2>` and
+  `sort_of<sort<n>> == sort<n + 1>`.
 
 ### I3: Runtime `type_of`
 
@@ -635,7 +635,7 @@ semantic identity of the string.
 
 String work packages S1-S4 may land before I1-I3. `sort_of` depends on I1;
 typed compile-time string parameters depend on S3. `type_of` is independent
-of the string representation once the core `string` type exists.
+of the string representation once the core `String` type exists.
 
 ## Required Diagnostics
 
@@ -649,7 +649,7 @@ At minimum:
 - safe truncation reports a non-boundary byte offset distinctly from an
   out-of-range offset;
 - bare `sort` reports that an explicit positive universe level is required;
-- `sort(0)` reports that level zero is reserved for the non-universal runtime
+- `sort<0>` reports that level zero is reserved for the non-universal runtime
   value domain;
 - an abstract sort annotation reports the expected classifier level;
 - a finite sort initializer reports the expected declared level;
@@ -665,7 +665,7 @@ Completion requires:
 - parser, core-bundle, semantic, CTFE, incremental, module, HIR, cleanup,
   LLVM IR, and native tests;
 - cross-module and cross-package identity tests proving that core, prelude,
-  and alloc aliases name the same `string` type;
+  and alloc aliases name the same `String` type;
 - deterministic CTFE hashing and test discovery for ASCII, non-ASCII, NUL,
   escapes, and strings that differ only by Unicode normalization;
 - target-size tests for 32-bit and 64-bit layouts without asserting private

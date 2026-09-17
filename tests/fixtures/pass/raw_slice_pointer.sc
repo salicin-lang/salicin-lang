@@ -1,9 +1,9 @@
-let slice = core.memory.slice
+let Slice = core.memory.Slice
 
 let main(): i32 = {
-  let mut values: array<i32><2> = [40, 1]
+  let mut values: Array<i32><2> = [40, 1]
   do {
-    let view: borrow<mut><slice<i32>> = borrow<mut>(values)
+    let view: Borrow<mut><Slice<i32>> = borrow<mut>(values)
     let pointer = unsafe {
       raw_slice_ptr(mut)(view)
     }
@@ -11,7 +11,7 @@ let main(): i32 = {
       *raw_offset(pointer, 1) = 2
     }
   }
-  let view: borrow<slice<i32>> = borrow(values)
+  let view: Borrow<Slice<i32>> = borrow(values)
   let pointer = unsafe {
     raw_slice_ptr(view)
   }

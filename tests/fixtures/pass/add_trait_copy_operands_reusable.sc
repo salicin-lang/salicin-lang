@@ -1,12 +1,12 @@
-let copyable = core.marker.copyable
-let add = core.ops.add
+let Copyable = core.marker.Copyable
+let Add = core.ops.Add
 
 let number = struct { value: i32 }
 
-extend(number, copyable) {}
+extend(number, Copyable) {}
 
-extend(number, add(number)) {
-  let output = number
+extend(number, Add(number)) {
+  let Output = number;
   let add(self)(rhs: number): number = {
     number{ value: self.value + rhs.value }
   }

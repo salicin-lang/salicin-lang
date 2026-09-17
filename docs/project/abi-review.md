@@ -25,18 +25,18 @@ rather than host `usize::bits`.
 | `bool` | `i1` | native only |
 | `()` | erased parameter, `void` result, `[0 x i8]` aggregate field | native only |
 | `never` | no first-class value; terminating path is `unreachable` | native control only |
-| `ptr(a)(t)` | opaque LLVM `ptr`; access and pointee are static | native and bounded C |
-| `borrow` / `borrow<mut>` | opaque LLVM `ptr`; region and access are static | native only |
-| `borrow(slice<t>)` | `{ ptr, i64 }` | native only, 64-bit target |
+| `Ptr<a><T>` | opaque LLVM `ptr`; access and pointee are static | native and bounded C |
+| `Borrow` / `Borrow<mut>` | opaque LLVM `ptr`; region and access are static | native only |
+| `Borrow<Slice<T>>` | `{ ptr, i64 }` | native only, 64-bit target |
 | `(a, b, ...)` | literal LLVM struct in source field order | native, experimental |
-| `array(t)(n)` | `[n x t]` | native; C only inside validated `struct(c)` |
+| `Array<T><n>` | `[n x T]` | native; C only inside validated `struct(c)` |
 | Salicin `struct` | named unpacked LLVM struct in declaration order | native, experimental |
 | `struct(c)` | named unpacked LLVM struct after recursive C-field validation | C data boundary |
 | Salicin `enum` | `{ i32 tag, all variant payload fields... }` | native, experimental |
 | noncapturing function value | opaque LLVM `ptr` | native, experimental |
 | concrete closure/partial | statically named struct of captures | native, compiler-private |
-| `continuation<i, o>` | `{ entry ptr, drop ptr, environment ptr, active-flag ptr }` | native, compiler-private |
-| `effect_callable<i, o, a>` | `{ entry ptr, drop ptr, environment ptr, active-flag ptr }` | native, compiler-private |
+| `Continuation<I, O>` | `{ entry ptr, drop ptr, environment ptr, active-flag ptr }` | native, compiler-private |
+| `EffectCallable<I, O, A>` | `{ entry ptr, drop ptr, environment ptr, active-flag ptr }` | native, compiler-private |
 
 Salicin structs and enums deliberately have no C status. `struct(c)` is the
 only aggregate admitted to the C data model. The verified
@@ -46,7 +46,7 @@ pointers in calls, `()` results, and pointer access to `struct(c)` storage.
 ## Function Boundaries
 
 Runtime parameter groups are flattened in source order. Unit parameters and
-borrows of unit are erased. Other `borrow` and `borrow<mut>` parameters pass one pointer; inferred,
+borrows of unit are erased. Other `Borrow` and `Borrow<mut>` parameters pass one pointer; inferred,
 `copy`, and `move` parameters pass the value representation directly.
 Aggregate returns are direct LLVM aggregate returns.
 
@@ -58,8 +58,8 @@ fingerprint.
 
 Effect rows have no standalone runtime argument in direct specialized calls.
 `unsafety` is static authority. Algebraic effects are specialized into
-continuation-bearing control flow. `throwing<error>` uses the corresponding
-`result(error)(output)` enum as its runtime return boundary.
+continuation-bearing control flow. `throwing<Error>` uses the corresponding
+`Result<Error><Output>` enum as its runtime return boundary.
 
 ## Module And Symbol Boundaries
 
