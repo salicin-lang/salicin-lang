@@ -15,7 +15,7 @@ extend(FromUtf8Error) {
 }
 
 let first_invalid_owned_utf8(bytes: Borrow<Vec<u8>>): core.Option<u64> = {
-  let source = bytes.as_slice(shared)()
+  let source = bytes.as_slice<shared>()
   core.string.str.first_invalid_utf8(source)
 }
 

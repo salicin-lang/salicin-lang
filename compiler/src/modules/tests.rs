@@ -439,8 +439,8 @@ fn preserves_generic_extend_parameters_while_qualifying_the_target() {
             "src/api.sc",
             &["api"],
             "pub(package) let cell<t: type> = struct { value: t }\n\
-                 extend(cell(t)) {\n\
-                   let new(move value: t): cell(t) = { cell { value: value } }\n\
+                 extend(cell<t>) {\n\
+                   let new(move value: t): cell<t> = { cell { value: value } }\n\
                    let take(move self)(): t = { self.value }\n\
                  }\n",
             false,
@@ -482,13 +482,13 @@ fn reinfers_cross_module_extend_pattern_sorts_after_resolution() {
         unit(
             "src/main.sc",
             &[],
-            "extend(api.handle(a)(t)) {}\nlet main(): i32 = { 0 }\n",
+            "extend(api.handle<a><t>) {}\nlet main(): i32 = { 0 }\n",
             true,
         ),
         unit(
             "src/api.sc",
             &["api"],
-            "pub let mode = sort(1) { shared unique }\n\
+            "pub let mode = sort<1> { shared unique }\n\
                  pub let handle<a: mode><t: type> = struct {}\n",
             false,
         ),
@@ -1244,7 +1244,7 @@ fn rejects_nominal_types_that_are_narrower_than_function_and_global_apis() {
         &[],
         "let hidden = struct {}\n\
              pub let wrapper<t: type> = struct {}\n\
-             pub let expose(value: wrapper(hidden)): hidden = { value }\n\
+             pub let expose(value: wrapper<hidden>): hidden = { value }\n\
              pub let shared: hidden = hidden {}\n",
         true,
     )])
@@ -1333,7 +1333,7 @@ fn rejects_traits_that_are_narrower_than_constrained_extension_members() {
         &[],
         "let hidden = trait {}\n\
              pub let cell<t: type> = struct { pub value: t }\n\
-             extend(cell(t))(requires: t is hidden) {\n\
+             extend(cell<t>)(requires: t is hidden) {\n\
                let take(move self)(): t = { self.value }\n\
              }\n",
         true,
@@ -1483,7 +1483,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         &[],
         "use core.ops.Add as plus\n\
              let number = struct { value: i32 }\n\
-             extend(number, plus(number)) {\n\
+             extend(number, plus<number>) {\n\
                let output = number\n\
                let add(self)(rhs: number): number = { number { value: self.value + rhs.value } }\n\
              }\n",
@@ -1504,9 +1504,9 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
              let legacy_coalesce = core.ops.Coalesce\n\
              let maybe<t: type> = enum { Some(t), None }\n\
              let legacy_maybe<t: type> = enum { Some(t), None }\n\
-             extend(maybe(t), Chain) {}\n\
-             extend(maybe(t), ops_coalesce) {}\n\
-             extend(legacy_maybe(t), legacy_coalesce) {}\n",
+             extend(maybe<t>, Chain) {}\n\
+             extend(maybe<t>, ops_coalesce) {}\n\
+             extend(legacy_maybe<t>, legacy_coalesce) {}\n",
         true,
     )])
     .unwrap();
@@ -1616,7 +1616,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         "flow.sc",
         &[],
         "let maybe<t: type> = enum { Some(t), None }\n\
-             extend(maybe(t), Chain) {}\n",
+             extend(maybe<t>, Chain) {}\n",
         true,
     )])
     .unwrap_err();

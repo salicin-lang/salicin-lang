@@ -4,7 +4,7 @@ extend(payload, Copyable) {}
 
 let main(): i32 = {
   let pointer = unsafe {
-    raw_alloc(payload)(size_of<payload>, align_of<payload>)
+    raw_alloc<payload>(size_of<payload>, align_of<payload>)
   }
   unsafe {
     *pointer = payload{ left: 40, right: 2 }

@@ -17,7 +17,7 @@ let step = struct {
   drops: Ptr<mut><i32>
 }
 
-extend(step, Future(())) {
+extend(step, Future<()>) {
   let Output = marker;
 
   let poll<r: region>

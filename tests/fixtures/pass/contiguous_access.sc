@@ -20,8 +20,8 @@ let main(): i32 = {
     read(value)
   }
   do {
-    let view = fixed.as_slice(mut)()
-    let first = view.at(mut)(0)
+    let view = fixed.as_slice<mut>()
+    let first = view.at<mut>(0)
     first = 20
   }
 
@@ -43,7 +43,7 @@ let main(): i32 = {
   dynamic.push(10)
   dynamic.push(12)
   do {
-    let last = dynamic.last(mut)()
+    let last = dynamic.last<mut>()
     match last
       { Option.Some(value) -> value = 22 }
       { Option.None -> () }

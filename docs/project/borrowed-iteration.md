@@ -9,7 +9,7 @@ and `Slice<T>`.
 ## Construction and source ownership
 
 `Array.iter()` and `Slice.iter()` produce `SliceIter<shared><T>`.
-`Array.iter(mut)()` and `Slice.iter(mut)()` produce
+`Array.iter<mut>()` and `Slice.iter<mut>()` produce
 `SliceIter<mut><T>`. Array iteration first forms an access-preserving slice
 view and then uses the same iterator representation and advancement contract
 as a slice.
@@ -51,7 +51,7 @@ hazards of mutable iterator designs
 ([PLDI 2026, DOI 10.1145/3808324](https://doi.org/10.1145/3808324)).
 Salicin does not snapshot mutable containers as that work does; instead, its
 affine source loan forbids concurrent invalidation and its GAT-like
-`item(r)` family makes advancement exclusive.
+`Item<r>` family makes advancement exclusive.
 
 The annotation-free call surface also follows the direction of
 [Fully-Automatic Type Inference for Borrows with Lifetimes](https://2026.splashcon.org/details/oopsla-2026/22/Fully-Automatic-Type-Inference-for-Borrows-with-Lifetimes):

@@ -686,7 +686,7 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
 #[test]
 fn constraint_query_contracts_are_explicit_and_bounded() {
     for malformed in [
-        EDITION_2026_SORTS.replace("pub let constraint: sort(2)", "pub let constraint: sort(1)"),
+        EDITION_2026_SORTS.replace("pub let constraint: sort<2>", "pub let constraint: sort<1>"),
         EDITION_2026_SORTS.replace("right: constraint", "right: type"),
         EDITION_2026_SORTS.replace(">: bool = builtin()", ">: usize = builtin()"),
     ] {
@@ -978,12 +978,12 @@ fn rejects_malformed_control_contracts() {
 
     let malformed = EDITION_2026_EFFECT
         .replace(
-            "let clauses<Value: type, Answer: type>: parameters",
-            "let clauses<Value: type, Answer: type>: type",
+            "let Clauses<Value: type, Answer: type>: parameters",
+            "let Clauses<Value: type, Answer: type>: type",
         )
         .replace(
-            "(...move clauses: clauses(value, answer))",
-            "(move clauses: clauses(value, answer))",
+            "...Clauses<Value, Answer>",
+            "(move clauses: Clauses<Value, Answer>)",
         );
     let modules = edition_2026_test_modules(&[("effect", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();

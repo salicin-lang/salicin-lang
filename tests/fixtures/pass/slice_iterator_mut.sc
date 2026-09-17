@@ -8,7 +8,7 @@ let main(): i32 = {
   let mut values: Array<i32><3> = [9, 10, 20]
   do {
     let slice: Borrow<mut><Slice<i32>> = borrow<mut>(values)
-    let mut iterator = slice.iter(mut)()
+    let mut iterator = slice.iter<mut>()
     do {
       let item = iterator.next()!!
       write(item)(14)

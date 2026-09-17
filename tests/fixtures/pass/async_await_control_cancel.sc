@@ -39,7 +39,7 @@ extend(second, Droppable) {
   }
 }
 
-extend(first, Future(())) {
+extend(first, Future<()>) {
   let Output = i32;
 
   let poll<r: region>
@@ -49,7 +49,7 @@ extend(first, Future(())) {
   }
 }
 
-extend(second, Future(())) {
+extend(second, Future<()>) {
   let Output = i32;
 
   let poll<r: region>
@@ -61,7 +61,7 @@ extend(second, Future(())) {
 
 let allocate: with<unsafety>(): Ptr<mut><i32> = {
   unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
 }
 

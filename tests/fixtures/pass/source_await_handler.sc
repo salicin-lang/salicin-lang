@@ -5,7 +5,7 @@ let await_source = core.async.await
 
 let step = struct { ready: bool }
 
-extend(step, Future(())) {
+extend(step, Future<()>) {
   let Output = i32;
 
   let poll<r: region>

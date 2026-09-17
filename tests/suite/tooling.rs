@@ -741,15 +741,15 @@ fn standard_test_assertions_evaluate_once_and_report_stable_messages() {
            std.test.assert_eq(evaluate(counter))(evaluate(counter))\n\
            let same: i64 = 42\n\
            let different: i64 = 43\n\
-           std.test.assert_ne(i64)(same)(different)\n\
+           std.test.assert_ne<i64>(same)(different)\n\
            let some_value: core.Option<i32> = core.Option.Some(40)\n\
            let none_value: core.Option<i64> = core.Option.None\n\
            let ok_value: core.Result<i64><i32> = core.Result.Ok(2)\n\
            let error_value: core.Result<i64><i64> = core.Result.Err(7)\n\
-           let some = std.test.expect_some(i32)(some_value)\n\
-           std.test.expect_none(i64)(none_value)\n\
-           let ok = std.test.expect_ok(i64, i32)(ok_value)\n\
-           let error = std.test.expect_err(i64, i64)(error_value)\n\
+           let some = std.test.expect_some<i32>(some_value)\n\
+           std.test.expect_none<i64>(none_value)\n\
+           let ok = std.test.expect_ok<i64, i32>(ok_value)\n\
+           let error = std.test.expect_err<i64, i64>(error_value)\n\
            std.test.assert(some + ok == 42 && error == 7 && counter == 2)\n\
          }\n\
          test(\"common assertions pass\") { common_assertions_pass() }\n",
@@ -769,27 +769,27 @@ fn standard_test_assertions_evaluate_once_and_report_stable_messages() {
          let fail_assert_eq: with<core.error.throwing<core.string.String>>(): () = {\n\
            let left: i64 = 1\n\
            let right: i64 = 2\n\
-           std.test.assert_eq(i64)(left)(right)\n\
+           std.test.assert_eq<i64>(left)(right)\n\
          }\n\
          let fail_assert_ne: with<core.error.throwing<core.string.String>>(): () = {\n\
            let value: i64 = 7\n\
-           std.test.assert_ne(i64)(value)(value)\n\
+           std.test.assert_ne<i64>(value)(value)\n\
          }\n\
          let fail_expect_some: with<core.error.throwing<core.string.String>>(): () = {\n\
            let value: core.Option<i64> = core.Option.None\n\
-           let _ = std.test.expect_some(i64)(value)\n\
+           let _ = std.test.expect_some<i64>(value)\n\
          }\n\
          let fail_expect_none: with<core.error.throwing<core.string.String>>(): () = {\n\
            let value: core.Option<i64> = core.Option.Some(9)\n\
-           std.test.expect_none(i64)(value)\n\
+           std.test.expect_none<i64>(value)\n\
          }\n\
          let fail_expect_ok: with<core.error.throwing<core.string.String>>(): () = {\n\
            let value: core.Result<i64><i64> = core.Result.Err(0)\n\
-           let _ = std.test.expect_ok(i64, i64)(value)\n\
+           let _ = std.test.expect_ok<i64, i64>(value)\n\
          }\n\
          let fail_expect_err: with<core.error.throwing<core.string.String>>(): () = {\n\
            let value: core.Result<i64><i64> = core.Result.Ok(11)\n\
-           let _ = std.test.expect_err(i64, i64)(value)\n\
+           let _ = std.test.expect_err<i64, i64>(value)\n\
          }\n\
          test(\"assert\") { fail_assert() }\n\
          test(\"assert_eq\") { fail_assert_eq() }\n\
@@ -988,7 +988,7 @@ fn structured_test_abort_runs_owned_cleanup_once() {
            }\n\
          }\n\
          let main(): i32 = {\n\
-           let counter = unsafe { raw_alloc(i32)(size_of<i32>, align_of<i32>) }\n\
+           let counter = unsafe { raw_alloc<i32>(size_of<i32>, align_of<i32>) }\n\
            unsafe { *counter = 0 }\n\
            let result = abort(counter)\n\
            let drops = unsafe { *counter }\n\

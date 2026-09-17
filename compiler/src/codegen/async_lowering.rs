@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::ast::{
-    BinaryOp, CallArg, Expr, Function, FunctionEffects, ItemOrigin, Param, PassMode, Stmt, Type,
-    Visibility,
+    BinaryOp, CallArg, Expr, Function, FunctionEffects, GroupDelimiter, ItemOrigin, Param, PassMode,
+    Stmt, Type, Visibility,
 };
 use crate::core::LangItemKind;
 
@@ -1607,15 +1607,16 @@ impl Analyzer {
                 })
                 .collect(),
         );
-        let poll_type = Expr::Call(
-            Box::new(Expr::Name(
+        let poll_type = Expr::DelimitedCall {
+            callee: Box::new(Expr::Name(
                 self.lang_item_name(LangItemKind::Poll).to_owned(),
             )),
-            vec![CallArg {
+            delimiter: GroupDelimiter::Angle,
+            arguments: vec![CallArg {
                 label: None,
                 value: source_type_expression(&output_source),
             }],
-        );
+        };
         let ready = Expr::Call(
             Box::new(Expr::Member(Box::new(poll_type), "Ready".to_owned())),
             vec![CallArg {
@@ -3375,15 +3376,16 @@ impl Analyzer {
                             )),
                             then_branch: Box::new(cold_poll.clone()),
                             else_branch: Some(Box::new(Expr::Member(
-                                Box::new(Expr::Call(
-                                    Box::new(Expr::Name(
+                                Box::new(Expr::DelimitedCall {
+                                    callee: Box::new(Expr::Name(
                                         self.lang_item_name(LangItemKind::Poll).to_owned(),
                                     )),
-                                    vec![CallArg {
+                                    delimiter: GroupDelimiter::Angle,
+                                    arguments: vec![CallArg {
                                         label: None,
                                         value: source_type_expression(&output_source),
                                     }],
-                                )),
+                                }),
                                 "Pending".to_owned(),
                             ))),
                         },
@@ -3398,15 +3400,16 @@ impl Analyzer {
                         guard: None,
                         body: Expr::Call(
                             Box::new(Expr::Member(
-                                Box::new(Expr::Call(
-                                    Box::new(Expr::Name(
+                                Box::new(Expr::DelimitedCall {
+                                    callee: Box::new(Expr::Name(
                                         self.lang_item_name(LangItemKind::Poll).to_owned(),
                                     )),
-                                    vec![CallArg {
+                                    delimiter: GroupDelimiter::Angle,
+                                    arguments: vec![CallArg {
                                         label: None,
                                         value: source_type_expression(&output_source),
                                     }],
-                                )),
+                                }),
                                 "Ready".to_owned(),
                             )),
                             vec![CallArg {
@@ -3477,15 +3480,16 @@ impl Analyzer {
                 Box::new(Expr::Name(residual.function.clone())),
                 continuation_arguments,
             );
-            let parent_poll_type = Expr::Call(
-                Box::new(Expr::Name(
+            let parent_poll_type = Expr::DelimitedCall {
+                callee: Box::new(Expr::Name(
                     self.lang_item_name(LangItemKind::Poll).to_owned(),
                 )),
-                vec![CallArg {
+                delimiter: GroupDelimiter::Angle,
+                arguments: vec![CallArg {
                     label: None,
                     value: source_type_expression(&output_source),
                 }],
-            );
+            };
             let pending = Expr::Member(Box::new(parent_poll_type.clone()), "Pending".to_owned());
             let ready = Expr::Call(
                 Box::new(Expr::Member(Box::new(parent_poll_type), "Ready".to_owned())),
@@ -3530,15 +3534,16 @@ impl Analyzer {
         let body = if let Some((owner_next, take_next, put_next, complete_next, poll_next_helper)) =
             source_next_helpers
         {
-            let parent_poll_type = Expr::Call(
-                Box::new(Expr::Name(
+            let parent_poll_type = Expr::DelimitedCall {
+                callee: Box::new(Expr::Name(
                     self.lang_item_name(LangItemKind::Poll).to_owned(),
                 )),
-                vec![CallArg {
+                delimiter: GroupDelimiter::Angle,
+                arguments: vec![CallArg {
                     label: None,
                     value: source_type_expression(&output_source),
                 }],
-            );
+            };
             let pending = Expr::Member(Box::new(parent_poll_type.clone()), "Pending".to_owned());
             let ready_value = |value| {
                 Expr::Call(

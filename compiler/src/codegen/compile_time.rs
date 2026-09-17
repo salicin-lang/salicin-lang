@@ -306,7 +306,7 @@ pub(super) fn source_effect_identity(effect: &Type) -> String {
             element,
             length,
         } => format!(
-            "{constructor}({})({})",
+            "{constructor}<{}><{}>",
             source_effect_identity(element),
             match length {
                 USizeConst::Literal(value) => value.to_string(),
@@ -316,7 +316,7 @@ pub(super) fn source_effect_identity(effect: &Type) -> String {
         ),
         Type::Named(name, arguments) if arguments.is_empty() => name.clone(),
         Type::Named(name, arguments) => format!(
-            "{name}({})",
+            "{name}<{}>",
             arguments
                 .iter()
                 .map(source_effect_identity)
@@ -324,7 +324,7 @@ pub(super) fn source_effect_identity(effect: &Type) -> String {
                 .join(", ")
         ),
         Type::NamedArgs(name, arguments) => format!(
-            "{name}({})",
+            "{name}<{}>",
             arguments
                 .iter()
                 .map(|argument| {
@@ -362,8 +362,14 @@ pub(super) fn render_static_expression(expression: &StaticExpr) -> String {
             operator,
             render_static_expression(right)
         ),
-        StaticExpr::Call { function, groups } => {
-            groups.iter().fold(function.clone(), |rendered, group| {
+        StaticExpr::Call {
+            function,
+            groups,
+            group_delimiters,
+        } => {
+            groups.iter().zip(group_delimiters).fold(
+                function.clone(),
+                |rendered, (group, delimiter)| {
                 let arguments = group
                     .iter()
                     .map(|argument| {
@@ -375,8 +381,13 @@ pub(super) fn render_static_expression(expression: &StaticExpr) -> String {
                     })
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("{rendered}({arguments})")
-            })
+                    format!(
+                        "{rendered}{}{arguments}{}",
+                        delimiter.opening(),
+                        delimiter.closing()
+                    )
+                },
+            )
         }
     }
 }
@@ -513,20 +524,20 @@ pub(super) fn source_type_from_identity(identity: &str) -> Option<Type> {
 }
 
 fn top_level_call_open(identity: &str) -> Option<usize> {
-    if !identity.ends_with(')') {
+    if !identity.ends_with('>') {
         return None;
     }
     let mut depth = 0usize;
     let mut open = None;
     for (index, character) in identity.char_indices() {
         match character {
-            '(' => {
+            '<' => {
                 if depth == 0 {
                     open = Some(index);
                 }
                 depth += 1;
             }
-            ')' => {
+            '>' => {
                 depth = depth.checked_sub(1)?;
                 if depth == 0 && index + character.len_utf8() != identity.len() {
                     return None;
@@ -547,8 +558,8 @@ fn split_top_level_arguments(arguments: &str) -> Option<Vec<&str>> {
     let mut start = 0usize;
     for (index, character) in arguments.char_indices() {
         match character {
-            '(' => depth += 1,
-            ')' => depth = depth.checked_sub(1)?,
+            '<' => depth += 1,
+            '>' => depth = depth.checked_sub(1)?,
             ',' if depth == 0 => {
                 result.push(arguments[start..index].trim());
                 start = index + character.len_utf8();
@@ -576,8 +587,8 @@ pub(super) fn effect_identity_sources(effects: &[String]) -> Vec<Type> {
 fn render_sort(sort: &Sort) -> String {
     match sort {
         Sort::Universe(level) => match level {
-            crate::ast::SortLevel::Literal(level) => format!("sort({level})"),
-            crate::ast::SortLevel::Parameter(level) => format!("sort({level})"),
+            crate::ast::SortLevel::Literal(level) => format!("sort<{level}>"),
+            crate::ast::SortLevel::Parameter(level) => format!("sort<{level}>"),
         },
         Sort::Type => "type".to_owned(),
         Sort::USize => "usize".to_owned(),

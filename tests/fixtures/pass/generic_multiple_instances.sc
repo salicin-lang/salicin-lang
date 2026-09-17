@@ -1,8 +1,8 @@
 let identity<t: type>(move value: t): t = { value }
 
 let main(): i32 = {
-  if identity(bool)(true) {
-    identity(i32)(42)
+  if identity<bool>(true) {
+    identity<i32>(42)
   } else {
     0
   }

@@ -3652,7 +3652,9 @@ impl Resolver {
                 self.rewrite_static_expression(left, context, static_scope);
                 self.rewrite_static_expression(right, context, static_scope);
             }
-            StaticExpr::Call { function, groups } => {
+            StaticExpr::Call {
+                function, groups, ..
+            } => {
                 let logical: Vec<String> = function.split('.').map(str::to_owned).collect();
                 if let Some(canonical) = self.resolve_logical_path(&logical, context) {
                     *function = canonical;

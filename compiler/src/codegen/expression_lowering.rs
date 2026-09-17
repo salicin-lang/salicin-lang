@@ -977,7 +977,7 @@ impl Analyzer {
                                 && closure.is_none()
                                 && !matches!(&ty, Ty::Function(function) if function.custom_effects.iter().any(|effect| {
                                     context.active_custom_effects.contains(effect)
-                                        && self.collection.effect_defs.get(effect.split('(').next().unwrap_or(effect)).is_some_and(|definition| !definition.operations.is_empty())
+                                        && self.collection.effect_defs.get(effect.split('<').next().unwrap_or(effect)).is_some_and(|definition| !definition.operations.is_empty())
                                 }))
                             {
                                 self.error(format!(

@@ -1,5 +1,5 @@
 /// Calling conventions accepted by foreign declarations.
-pub let abi = sort(1) {
+pub let abi = sort<1> {
   c
 }
 

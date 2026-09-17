@@ -2,7 +2,7 @@ let Eq = core.ops.Eq
 
 let token = struct { value: i32 }
 
-extend(token, Eq(token)) {
+extend(token, Eq<token>) {
   let eq(self: Borrow<self>)(rhs: Borrow<token>): bool = { self.value == rhs.value }
 }
 

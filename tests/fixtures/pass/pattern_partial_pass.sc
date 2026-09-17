@@ -1,8 +1,8 @@
 let Option = core.Option
 
 let apply(
-  move choose: (Option<i32>): core.control.Attempt(Option<i32>)(i32),
-)(move input: Option<i32>): core.control.Attempt(Option<i32>)(i32) = {
+  move choose: (Option<i32>): core.control.Attempt<Option<i32>><i32>,
+)(move input: Option<i32>): core.control.Attempt<Option<i32>><i32> = {
   choose(input)
 }
 

@@ -25,13 +25,13 @@ let main(): i32 = { unsafe {
   let mut outcome: Result<bool><i32> = Result.Ok(2)
 
   do {
-    let view = maybe.as_ref(mut)()
+    let view = maybe.as_ref<mut>()
     match view
       { Some(value) -> value = value + 1 }
       { None -> () }
   }
   do {
-    let view = outcome.as_ref(mut)()
+    let view = outcome.as_ref<mut>()
     match view
       { Ok(value) -> value = value + 1 }
       { Err(_) -> () }

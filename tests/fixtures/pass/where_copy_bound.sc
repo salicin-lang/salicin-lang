@@ -1,7 +1,7 @@
 let marker = trait {}
 let value = struct { value: i32 }
 extend(value, Copyable) {}
-extend(value, marker()) {}
+extend(value, marker) {}
 
 let duplicate<t: type>(copy value: t): t
 = requires(t is Copyable && t is marker) {

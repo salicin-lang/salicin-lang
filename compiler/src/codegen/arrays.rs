@@ -325,7 +325,7 @@ impl Analyzer {
         });
         if !implements_index {
             self.error(format!(
-                "type `{}` does not implement `Index(usize)` required by array brackets",
+                "type `{}` does not implement `Index<usize>` required by array brackets",
                 self.diagnostic_type_name(&base.ty)
             ));
             let _ = self.lower_expr(index, Some(&Ty::USize), context);
@@ -422,6 +422,7 @@ impl Analyzer {
             base,
             "index",
             &[access_group.as_slice(), key_group.as_slice()],
+            None,
             BoundMethodConstraint::LangItem(LangItemKind::Index),
             None,
             context,

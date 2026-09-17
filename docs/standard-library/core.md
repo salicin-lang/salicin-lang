@@ -80,7 +80,7 @@ Their inherent helper surface is allocation-free:
 | `Result<Error><T>` | `is_ok`, `is_err`, `as_ref` | `map`, `map_error`, `and_then` | `unwrap_or`, `unwrap_or_else`, `ok`, `err` |
 
 `as_ref()` preserves the receiver region and defaults to shared access;
-`as_ref(mut)()` requires an exclusive receiver and produces exclusive payload
+`as_ref<mut>()` requires an exclusive receiver and produces exclusive payload
 borrows. Matching a borrowed enum inspects its discriminant and aliases its
 payload storage instead of moving it. The returned view therefore cannot
 outlive the source, and an exclusive view blocks overlapping access.
@@ -90,7 +90,7 @@ evaluated values; the `_else` forms evaluate their callback only on `None` or
 `Err`. All consuming helpers evaluate and move each payload at most once.
 
 `Movable` is an automatically satisfied structural marker for relocatable values. `Copyable` has the
-supertrait constraint `trait<requires: self is Movable>`, while `Droppable` remains independent: an owning resource may
+supertrait constraint `trait(requires: self is Movable)`, while `Droppable` remains independent: an owning resource may
 be movable without being copyable. Source code does not need handwritten `Movable` implementations
 for ordinary aggregates.
 Operators and syntax that lower through these identities use the validated standard-library
@@ -107,7 +107,7 @@ Arithmetic and bitwise protocols accept their operands with automatic passing an
 ```sc fragment
 let Add = core.ops.Add
 
-extend(Number, Add(Number)) {
+extend(Number, Add<Number>) {
   let Output = Number
   let add(self)
     (rhs: Number): Number = { ... }
@@ -120,7 +120,7 @@ negates its result:
 ```sc fragment
 let Eq = core.ops.Eq
 
-extend(Number, Eq(Number)) {
+extend(Number, Eq<Number>) {
   let eq(self: Borrow<self>)
     (rhs: Borrow<Number>): bool = { self.value == rhs.value }
 }
@@ -134,7 +134,7 @@ the method once; an `Unordered` result makes each operator false:
 let PartialOrd = core.ops.PartialOrd
 let PartialOrdering = core.ops.PartialOrdering
 
-extend(Number, PartialOrd(Number)) {
+extend(Number, PartialOrd<Number>) {
   let partial_cmp(self: Borrow<self>)
     (rhs: Borrow<Number>): PartialOrdering = { ... }
 }
@@ -147,7 +147,7 @@ integer negation is defined as subtraction from zero. Generic code can state
 the same output relationship in a normal where predicate.
 
 `bit_and(rhs)`, `bit_or(rhs)`, `bit_xor(rhs)`, `shl(rhs)`, and `shr(rhs)` have the same two automatic
-parameter groups and associated `output` shape as arithmetic protocols. Built-in integer shifts use
+parameter groups and associated `Output` shape as arithmetic protocols. Built-in integer shifts use
 arithmetic right shift for signed integers and logical right shift for unsigned integers. Negative
 or out-of-width shift counts trap instead of exposing backend undefined behavior.
 
@@ -254,9 +254,9 @@ pub let abi = sort<1> {
 
 Inside a compiler-owned `requires(...)` guard, `left is right` selects the `is`
 relation between the classifiers of its operands. `type` implements
-`is(constraint)`, allowing function guards such as
+`Is<constraint>`, allowing function guards such as
 `requires(T is Copyable)` and extension requirement groups such as
-`<requires: T is Copyable>`.
+`(requires: T is Copyable)`.
 
 `effect` classifies one nominal effect identity; `effects` classifies a normalized zero-or-more
 effect row. Runtime `String` values are accepted by CTFE for compiler-consumed
@@ -289,17 +289,17 @@ is no compile-time passing modifier: angle groups are compile-time by syntax.
 `core.memory` declares the fixed-size `Array<T><l>`, unsized `Slice<T>`, and
 `Ptr<a: access = shared><T>` raw-pointer family. `Slice<T>` is never a first-class stored value:
 programs use `Borrow<a><r><Slice<T>>`, represented as a pointer and length while retaining the
-source loan and region. Array borrows unsize contextually, and `Vec<T>.as_slice(a)()` borrows its
+source loan and region. Array borrows unsize contextually, and `Vec<T>.as_slice<a>()` borrows its
 initialized prefix without transferring ownership.
 
 The source-backed slice extension provides `len()` and bounds-checked `at(index)`. Shared access is
-the default; `at(mut)(index)` returns a mutable element borrow when the slice borrow is mutable.
+the default; `at<mut>(index)` returns a mutable element borrow when the slice borrow is mutable.
 Out-of-bounds access traps. The pointer extension provides `offset(index)` for either access and
 `init(value)` / `take()` only for `Ptr<mut><T>`. Pointer methods retain the `unsafety` requirement of
 their underlying raw intrinsics; `init` expects uninitialized storage and `take` leaves storage
 uninitialized.
 
-`core.ops.index.Index(key)` is the single bracket protocol. Its `index<a: access>` method returns
+`core.ops.index.Index<Key>` is the single bracket protocol. Its `index<a: access>` method returns
 `Borrow<a><Output>`, so shared reads, explicit element borrows, and mutable assignment use one
 implementation without a separate `index_mut`. Arrays implement `index(usize)` through a validated
 core intrinsic; slice implements `index(u64)` in source by forwarding to `at`.
@@ -332,18 +332,18 @@ pub let Handle = trait<self: effect> {
 ```
 
 `Continuation` is a one-shot suspended computation. `EffectCallable` is an owned action awaiting a
-handler-supplied continuation from `output` to `answer`; `input` is the action's packed runtime input.
+handler-supplied continuation from `Output` to `Answer`; `Input` is the action's packed runtime input.
 Both native values carry call and drop entries, an environment pointer, and an ownership flag. They
 are `core.effect` exports rather than prelude names and cannot be replaced by same-named user
 declarations.
 The compiler-internal action entry has the logical signature
-`(environment, input, continuation<output, answer>): answer`. Erasing or invoking an action consumes
+`(environment, input, Continuation<Output, Answer>): Answer`. Erasing or invoking an action consumes
 its owner; a dropped, uninvoked action releases its captured environment through the stored drop
 entry. Within an active handler, compatible open runtime action parameters use this representation
 when crossing named effectful frames or another reusable handler. The source closure may have
 shared, mutable, or moved captures, but the erased owner itself is always one-shot and cannot escape
 with a borrow-capturing environment. `handle` is an effect-kinded lang trait automatically satisfied by every source
-`effect` declaration. Its `clauses` associated parameter schema names the compiler-derived labeled
+`effect` declaration. Its `Clauses` associated parameter schema names the compiler-derived labeled
 clause groups used by `.handle`; `...` expands that schema into an ordered sequence of runtime
 parameter groups. Consequently source calls use named trailing closures directly, for example
 `state<i32>.handle get { ... } put { ... } action { ... }`, while the generated implementation has exactly the
@@ -358,7 +358,7 @@ polling policy is intentionally above the freestanding protocol.
 Constructing a cold future does not select or run an executor.
 `async` remains the direct intrinsic that materializes the anonymous future
 state selected for its action, while `await` is source-defined. Their
-signatures expose their effect rows and `Future<e, Output = T>` relationship.
+signatures expose their effect rows and `Future<e>` plus `Output == T` relationship.
 `await` repeatedly calls `poll`; `Pending` invokes
 `suspension.suspend()`, and `Ready(value)` exits the source loop. The compiler may
 take an equivalent syntax-directed state-machine path for `await`.
@@ -487,8 +487,8 @@ iterator for `Iterator.next`, and stops on `None`. An inherent or unrelated trai
 `into_iter` or `next` cannot intercept this lowering.
 
 `Array<T><l>` implements consuming value iteration when `T: Copyable`. A borrowed `Slice<T>` exposes
-access-polymorphic `.iter(a)`: `SliceIter<a><T>` stores the source loan and yields
-`Borrow<a><r><T>` for the region of each `next(r)` receiver borrow. Shared iteration therefore
+access-polymorphic `.iter<a>`: `SliceIter<a><T>` stores the source loan and yields
+`Borrow<a><r><T>` for the region of each `next<r>` receiver borrow. Shared iteration therefore
 works for non-`Copyable` elements without moving them, while mutable iteration yields exclusive
 element borrows. A yielded mutable borrow must end before the next call to `next`; the source
 remains borrowed until the iterator is consumed or leaves scope. `Vec<T>` implements consuming
@@ -510,7 +510,7 @@ pub let Semigroup = trait {
   let combine(left: self, right: self): self
 }
 
-pub let Monoid = trait<requires: self is Semigroup> {
+pub let Monoid = trait(requires: self is Semigroup) {
   let empty(): self
 }
 ```
@@ -527,7 +527,7 @@ pub let Functor = trait<self: <Value: type>: type> {
     (transform: with<e>((A): B)): self<B>
 }
 
-pub let Applicative = trait<self: <Value: type>: type><requires: self is Functor> {
+pub let Applicative = trait<self: <Value: type>: type>(requires: self is Functor) {
   let pure<A: type>
     (value: A): self<A>
 
@@ -536,7 +536,7 @@ pub let Applicative = trait<self: <Value: type>: type><requires: self is Functor
     (value: self<A>): self<B>
 }
 
-pub let Monad = trait<self: <Value: type>: type><requires: self is Applicative> {
+pub let Monad = trait<self: <Value: type>: type>(requires: self is Applicative) {
   let flat_map<e: effects, A: type, B: type>: with<e>
     (self: self<A>)
     (next: with<e>((A): self<B>)): self<B>
@@ -547,9 +547,9 @@ These declarations use constructor sorts such as `<Value: type>: type` on the tr
 not as ordinary trait parameters. Traits with a matching constructor subject can be implemented for
 generic nominal constructors. Method implementations are registered as generic function templates
 and validated, for example
-`extend(Carrier, Functor> { let map<e: effects, A: type, B: type> ... }`.
+`extend(Carrier, Functor) { let map<e: effects, A: type, B: type> ... }`.
 Receiver methods
-dispatch from concrete nominal instances, so `carrier<i32> { value: 41 }.map(add_one)` selects the
+dispatch from concrete nominal instances, so `Carrier<i32> { value: 41 }.map(add_one)` selects the
 `Carrier: Functor` implementation and instantiates the generic method template. Constructor
 associated functions without a receiver can still be called from the bare constructor; for example,
 `Carrier.pure(...)` is available once `Carrier` implements `Applicative`. Trait-level `where`

@@ -87,7 +87,7 @@ extend(Result<Error><T>) {
 extend(Result<Error><T>, core.flow.Chain) {
   /// The success payload type.
   let Item = T
-  /// Rebuilds `Result(Error)` around a transformed success type.
+  /// Rebuilds `Result<Error>` around a transformed success type.
   let Rebind = Result<Error>;
 
   /// Applies `transform` to `Ok` and propagates `Err`.

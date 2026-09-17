@@ -6,7 +6,7 @@ let holds<item: type> = trait {
   let get(self: Borrow<self>)(): item
 }
 
-extend(pair(i32, bool), holds<item: i32>) {
+extend(pair<i32, bool>, holds<item: i32>) {
   let get(self: Borrow<self>)(): i32 = { self.key }
 }
 
@@ -21,7 +21,7 @@ let make(): pair_alias<value: bool, key: i32> = {
 
 let main(): i32 = {
   let pair_value: pair<v: bool, k: i32> = make()
-  if pair_value.value { read<t: pair(i32, bool)>(pair_value) + 1 } else { 0 }
+  if pair_value.value { read<t: pair<i32, bool>>(pair_value) + 1 } else { 0 }
 }
 
 test("type_constructor_labeled_arguments.sc") {

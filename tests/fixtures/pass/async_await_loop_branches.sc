@@ -11,7 +11,7 @@ let right_step = struct {
   remaining: Ptr<mut><i32>
 }
 
-extend(left_step, Future(())) {
+extend(left_step, Future<()>) {
   let Output = bool;
 
   let poll<r: region>
@@ -30,7 +30,7 @@ extend(left_step, Future(())) {
   }
 }
 
-extend(right_step, Future(())) {
+extend(right_step, Future<()>) {
   let Output = bool;
 
   let poll<r: region>

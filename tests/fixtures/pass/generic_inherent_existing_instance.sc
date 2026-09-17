@@ -1,7 +1,7 @@
 let cell<t: type> = struct { value: t }
-let holder = struct { cell: cell(i32) }
+let holder = struct { cell: cell<i32> }
 
-extend(cell(t)) {
+extend(cell<t>) {
   let take(move self)(): t = { self.value }
 }
 

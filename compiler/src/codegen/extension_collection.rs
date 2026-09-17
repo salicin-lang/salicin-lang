@@ -1800,6 +1800,10 @@ impl Analyzer {
             let mut compile_groups = extension.compile_groups.clone();
             compile_groups.extend(function.compile_groups.clone());
             function.compile_groups = compile_groups;
+            let mut compile_group_delimiters =
+                vec![crate::ast::GroupDelimiter::Angle; extension.compile_groups.len()];
+            compile_group_delimiters.extend(function.effects.compile_group_delimiters.clone());
+            function.effects.compile_group_delimiters = compile_group_delimiters;
             function.where_predicates = extension.where_predicates.clone();
             self.collection
                 .function_template_order
@@ -2658,6 +2662,10 @@ impl Analyzer {
             let mut compile_groups = extension.compile_groups.clone();
             compile_groups.extend(generic.compile_groups.clone());
             generic.compile_groups = compile_groups;
+            let mut compile_group_delimiters =
+                vec![crate::ast::GroupDelimiter::Angle; extension.compile_groups.len()];
+            compile_group_delimiters.extend(generic.effects.compile_group_delimiters.clone());
+            generic.effects.compile_group_delimiters = compile_group_delimiters;
             let mut where_predicates = extension.where_predicates.clone();
             where_predicates.extend(generic.where_predicates.clone());
             generic.where_predicates = where_predicates;

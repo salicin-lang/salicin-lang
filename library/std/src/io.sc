@@ -126,7 +126,7 @@ let count_result(
   if count < 0 {
     core.Result.Err(host_error(failure, raw_code))
   } else {
-    match count.checked_into(Output: u64)()
+    match count.checked_into<Output: u64>()
       { Some(value) -> core.Result.Ok(value) }
       { None -> core.Result.Err(generated_error(InvalidData)) }
   }
@@ -595,7 +595,7 @@ extend(File) {
     if position < 0 {
       core.Result.Err(host_error(failure, raw_code))
     } else {
-      match position.checked_into(Output: u64)()
+      match position.checked_into<Output: u64>()
         { Some(value) -> core.Result.Ok(value) }
         { None -> core.Result.Err(generated_error(InvalidData)) }
     }

@@ -77,13 +77,13 @@ These three spellings occupy different grammatical categories:
   body has type
   `with<core.error.throwing<core.string.String>>((): ())`.
 - `extend(pattern, ...) { ... }` is an implementation declaration. Its
-  optional `<requires: condition>` entry is a compile-time `bool` header
+  optional `(requires: condition)` entry is a compile-time `bool` header
   parameter; `extend` itself has no fake function declaration in `core`.
 - `requires(goals) expression` is an initializer guard. It constrains the
   function body through the source-visible `core.requires` contract, passing
   the compile-time `bool` and delayed body closure.
 
-Trait inheritance uses the same labeled `<requires: condition>` compile-time
+Trait inheritance uses the same labeled `(requires: condition)` compile-time
 `bool` header parameter as `extend`; it does not invoke the function-body
 guard contract.
 
@@ -303,10 +303,10 @@ constraint_guard =
     contextual("requires"), constraint_arguments ;
 
 requires_parameter_group =
-    "<", contextual("requires"), ":",
+    "(", contextual("requires"), ":",
     constraint_expression,
     { ( "&&" | "," ), constraint_expression },
-    [ "," ], ">" ;
+    [ "," ], ")" ;
 
 constraint_arguments =
     "(", constraint_expression,
@@ -322,7 +322,7 @@ projection =
 
 trait_ref =
     path,
-    [ "(", [ trait_argument, { ",", trait_argument }, [ "," ] ], ")" ] ;
+    [ type_argument_group ] ;
 
 trait_argument = [ IDENT, ":" ], type_expr ;
 ```
@@ -350,7 +350,7 @@ let duplicate<T: type>(value: T): (T, T) = requires(T is Copyable) {
 Both forms lower `is` relations and projection equalities to solver goals. An
 unsatisfied concrete goal is a compile-time error; an abstract goal is
 retained until generic instantiation. Trait prerequisites use the same
-constraint arguments directly, for example `trait<requires: self is Movable> {}`.
+constraint arguments directly, for example `trait(requires: self is Movable) {}`.
 
 ### 2.6 Foreign Declarations
 

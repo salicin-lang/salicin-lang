@@ -20,7 +20,7 @@ canonical `alloc` paths rather than acquiring mirror paths in `std`.
 ## `alloc.boxed`
 
 `Box<T>` owns one heap allocation. `Box.new(value)` constructs it; `boxed.as_ref()` borrows the
-pointee with shared access and `boxed.as_ref(mut)()` borrows it with exclusive access. The rest of
+pointee with shared access and `boxed.as_ref<mut>()` borrows it with exclusive access. The rest of
 the API covers replacement, `Copyable` reads and writes, and consuming extraction. `boxed.into_raw()`
 consumes the owner without freeing its allocation; `unsafe { Box<T>.from_raw(pointer) }` restores
 unique ownership from a pointer produced by `into_raw`. The caller must not rebuild more than one
@@ -32,7 +32,7 @@ releasing storage.
 `Vec<T>` owns contiguous storage and supports both `Copyable` and resource elements. Its API includes
 construction, capacity management, push/pop, insertion/removal, append, truncation, swaps, and
 in-place reversal. `values.at(index)` borrows an element with shared access and
-`values.at(mut)(index)` borrows it with exclusive access. Bounds and allocation-layout failures
+`values.at<mut>(index)` borrows it with exclusive access. Bounds and allocation-layout failures
 trap.
 
 For `Copyable` elements, `extend_from_slice` reserves the complete additional
@@ -41,13 +41,13 @@ overlap-safe `copy_within` share the array/slice mutation contract. Borrow
 checking rejects a source slice that aliases the mutable vector. Move-only
 elements use owned `push` and `append` instead of borrowed slice copying.
 
-`Vec<T>` also implements `core.ops.Index(u64)` in source. `values[index]`,
-`borrow<values[index]>`, and `values[index] = replacement` share the same checked `at(a)`
+`Vec<T>` also implements `core.ops.Index<u64>` in source. `values[index]`,
+`borrow(values[index])`, and `values[index] = replacement` share the same checked `at<a>`
 implementation and preserve its receiver loan.
 
 `values.take()` replaces a vector with an empty vector and returns ownership of its previous
 allocation without copying elements. Consuming iteration transfers the allocation into
-`VecIntoIter(T)` and invalidates the original
+`VecIntoIter<T>` and invalidates the original
 vector. Each `next` moves one initialized element in source order. If iteration stops early, the
 iterator drops only the unyielded suffix and then releases the allocation; yielded values remain
 owned by the loop body. Capacity arithmetic, layout overflow, invalid bounds, invalid allocator

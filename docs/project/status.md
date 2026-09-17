@@ -16,7 +16,7 @@ current capability inventory. It does not record release history; see the
 - native checking, IR emission, building, and running;
 - compile-time `test("name") { ... }` registrations collected into one native
   runner by `salic test`, with source-order execution, source-backed
-  unit-returning `throwing<string>` bodies, owned UTF-8 failure messages,
+  unit-returning `throwing<String>` bodies, owned UTF-8 failure messages,
   all-failure reporting,
   a dedicated framed parent channel, and `std.test` failure, boolean,
   equality, inequality, and `Option`/`Result` expectation helpers with static
@@ -156,7 +156,7 @@ collection summaries, UTF-8 byte boundaries, and exact formatting. Native
 acceptance additionally covers missing/invalid arguments, early exits,
 repeat-run determinism, stdin and file failures, and a replacement-allocator
 probe that observes zero live allocations after both normal return and
-`throwing<string>` transfer.
+`throwing<String>` transfer.
 
 The command-line surface is:
 
@@ -204,8 +204,10 @@ Implemented lexical and declaration features include:
   four surface forms idempotently, and missing or malformed edition contracts
   fail core-bundle validation.
 
-Types, traits, functions, values, modules, parameters, and ordinary sorts use
-`snake_case`.
+Types, type parameters, type forms, traits, enum variants, and associated types
+use `PascalCase`; functions, methods, values, fields, modules, effects, and
+sorts use `snake_case`. This is the embedded-library naming gate, not a
+restriction on ordinary user declarations.
 
 An abstract sort is distinct from a defined empty sort. Bare `let name = sort` and the former
 top-level `= type` forms are rejected. Primitive integer types use declarations such as
@@ -240,7 +242,7 @@ Implemented type-system features include:
 - static specialization of capturing callables passed to known higher-order callees.
 
 Generic associated constructors preserve parameter sorts and groups in trait declarations and
-implementations. Standard iterator contracts use `item<r: region>: type`, allowing an item type to
+implementations. Standard iterator contracts use `Item<r: region>: type`, allowing an item type to
 depend on the receiver-borrow region.
 
 Ordinary pure scalar functions can be evaluated in dependent array-length
@@ -467,7 +469,7 @@ its suspension into the same state machine; false pre-test conditions complete i
 pre-test condition may itself suspend. A child output may differ from the enclosing future output.
 Recurring suspension is classified by loop kind, condition/body location, `continue`, fallthrough,
 and value-producing `break`. A `loop` with one await followed by a boolean
-`break`/`continue()` decision now uses a private `iteration_skip(next_child) | loop_exit<output>` step enum.
+`break`/`continue()` decision now uses a private `iteration_skip(next_child) | loop_exit<Output>` step enum.
 The break output is inferred from the source expression and may be move-only. Its poll transition
 reinitializes one child slot and consumes consecutive immediately-ready iterations in an HIR loop.
 Completed children are destroyed before reuse, while cancellation drops only the active suspended
@@ -490,7 +492,7 @@ sequential awaits whose generated iteration future itself has a residual
 `poll`, effectful recurring conditions, and move-only factory or condition
 backedge state remain explicit diagnostics.
 Iterations with multiple top-level sequential awaits use a private iteration future; its final
-`loop_exit<output>` may depend on any awaited binding, and cancellation follows its nested active-child
+`loop_exit<Output>` may depend on any awaited binding, and cancellation follows its nested active-child
 chain without retaining completed children. A recurring loop with no break uses the standard
 uninhabited `never` as its output.
 For unit-valued general iteration bodies, the compiler rewrites control exits at the current loop

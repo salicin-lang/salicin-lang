@@ -5,22 +5,22 @@ let Rem = core.ops.Rem
 
 let number = struct { value: i32 }
 
-extend(number, Sub(number)) {
+extend(number, Sub<number>) {
   let Output = number;
   let sub(self)(rhs: number): number = { number{ value: self.value - rhs.value } }
 }
 
-extend(number, Mul(number)) {
+extend(number, Mul<number>) {
   let Output = number;
   let mul(self)(rhs: number): number = { number{ value: self.value * rhs.value } }
 }
 
-extend(number, Div(number)) {
+extend(number, Div<number>) {
   let Output = number;
   let div(self)(rhs: number): number = { number{ value: self.value / rhs.value } }
 }
 
-extend(number, Rem(number)) {
+extend(number, Rem<number>) {
   let Output = number;
   let rem(self)(rhs: number): number = { number{ value: self.value % rhs.value } }
 }

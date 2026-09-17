@@ -15,7 +15,7 @@ let read(value: Borrow<resource>): i32 = { value.value }
 
 let main(): i32 = {
   let drops = unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *drops = 0 }
 

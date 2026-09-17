@@ -1328,7 +1328,7 @@ pub let answer(): i32 = {
 
     workspace.write(
         "app/src/main.sc",
-        "let main(): i32 = { dep.reveal(i32)(dep.make()) + dep.answer() }\n",
+        "let main(): i32 = { dep.reveal<i32>(dep.make()) + dep.answer() }\n",
     );
     let internal = salic()
         .arg("run")
@@ -1367,7 +1367,7 @@ dep = { path = "../dep" }
 let Add = core.ops.Add
 
 pub let number = struct { value: i32 }
-extend(number, Add(number)) {
+extend(number, Add<number>) {
   let Output = number;
   let add(self)(rhs: number): number = { number { value: self.value + rhs.value } }
 }
@@ -1407,11 +1407,11 @@ pub let Sub<Rhs: type> = trait {
   let sub(move self)(move rhs: Rhs): Output
 }
 pub let Number = struct { value: i32 }
-extend(Number, Add(Number)) {
+extend(Number, Add<Number>) {
   let Output = Number;
   let add(move self)(move rhs: Number): Number = { Number { value: self.value + rhs.value } }
 }
-extend(Number, Sub(Number)) {
+extend(Number, Sub<Number>) {
   let Output = Number;
   let sub(move self)(move rhs: Number): Number = { Number { value: self.value - rhs.value } }
 }
@@ -1435,7 +1435,7 @@ pub let make_number(value: i32): Number = { Number { value: value } }
     );
     assert!(
         String::from_utf8_lossy(&fake_option.stderr)
-            .contains("type `fake::Option(i32)` does not implement `Coalesce`"),
+            .contains("type `fake::Option<i32>` does not implement `Coalesce`"),
         "{}",
         output_text(&fake_option)
     );

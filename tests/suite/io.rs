@@ -154,7 +154,7 @@ fn native_io_helpers_report_eof_and_broken_pipe() {
   if mode[0] == 101 {
     let mut bytes: Array<u8><2> = [0, 0]
     let outcome = do {
-      let buffer = bytes.as_slice(mut)()
+      let buffer = bytes.as_slice<mut>()
       std.io.read_stdin_exact(buffer)
     }
     match outcome
@@ -296,7 +296,7 @@ fn native_file_owners_support_options_seek_flush_limits_and_close() {
     { _ -> return(15) }
   let mut bytes: Array<u8><4> = [0, 0, 0, 0]
   let outcome = do {
-    let buffer = bytes.as_slice(mut)()
+    let buffer = bytes.as_slice<mut>()
     input.read_exact(buffer)
   }
   match outcome

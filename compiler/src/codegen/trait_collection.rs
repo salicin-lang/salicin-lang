@@ -569,7 +569,7 @@ impl Analyzer {
                 Item::Sort(definition) => {
                     if definition.members.is_none() && origin.package != PackageId::CORE.0 {
                         self.error(format!(
-                            "abstract sort `{}` is compiler-owned; user sorts must declare a finite member set with `= sort(1) {{ ... }}`",
+                            "abstract sort `{}` is compiler-owned; user sorts must declare a finite member set with `= sort<1> {{ ... }}`",
                             definition.name
                         ));
                     }
@@ -1495,6 +1495,10 @@ impl Analyzer {
             let method_compile_groups = std::mem::take(&mut template.compile_groups);
             template.compile_groups = vec![compile_parameters.clone()];
             template.compile_groups.extend(method_compile_groups);
+            template
+                .effects
+                .compile_group_delimiters
+                .insert(0, crate::ast::GroupDelimiter::Angle);
             let method_predicates = std::mem::take(&mut template.where_predicates);
             template.where_predicates = vec![predicate.clone()];
             template.where_predicates.extend(method_predicates);

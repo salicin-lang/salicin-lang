@@ -14,18 +14,18 @@ let mutable<r: region>
 
 let main(): i32 = {
   let pointer = unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe {
     raw_init(pointer, 20)
   }
   let mut anchor = 0
   let first = do {
-    let reference = shared(anchor)(pointer)
+    let reference = shared<anchor>(pointer)
     reference
   }
   do {
-    let reference = mutable(anchor)(pointer)
+    let reference = mutable<anchor>(pointer)
     reference = 22
   }
   let second = unsafe {

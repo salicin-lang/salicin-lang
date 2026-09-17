@@ -14,7 +14,7 @@ extend(step, Droppable) {
   }
 }
 
-extend(step, Future(())) {
+extend(step, Future<()>) {
   let Output = bool;
 
   let poll<r: region>

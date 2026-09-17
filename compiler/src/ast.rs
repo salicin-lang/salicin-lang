@@ -147,8 +147,8 @@ pub struct EffectDef {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SortDef {
     pub name: String,
-    /// The universe inhabited by the declared classifier. `sort(n)` defines
-    /// a classifier at level `n`; the declaration itself has sort `sort(n+1)`.
+    /// The universe inhabited by the declared classifier. `sort<n>` defines
+    /// a classifier at level `n`; the declaration itself has sort `sort<n+1>`.
     pub level: u64,
     pub members: Option<Vec<String>>,
 }
@@ -356,7 +356,7 @@ pub enum CompileParamDefault {
 /// `<T: type><L: usize>: type` and `<T: type, L: usize>: type` are distinct
 /// compile-time calling conventions.
 pub enum Sort {
-    /// A universe classifier written `sort(level)`.
+    /// A universe classifier written `sort<level>`.
     Universe(SortLevel),
     Type,
     USize,
@@ -450,6 +450,7 @@ pub enum StaticExpr {
     Call {
         function: String,
         groups: Vec<Vec<StaticCallArg>>,
+        group_delimiters: Vec<GroupDelimiter>,
     },
 }
 

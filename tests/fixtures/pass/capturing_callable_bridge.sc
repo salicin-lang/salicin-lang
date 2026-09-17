@@ -34,7 +34,7 @@ let effect_once<e: effects>: with<e>(move action: with<e>((): i32)): i32 = {
 
 let main(): i32 = {
   let counter = unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *counter = 0 }
 
@@ -53,13 +53,13 @@ let main(): i32 = {
   let captured = 0
   let effect_resource = resource{ counter: counter, value: 1 }
   let effectful = ask.handle value { (resume) -> resume(3) } action {
-      effect_once(ask)({
+      effect_once<ask>({
         ask.value() + captured + consume(effect_resource) - 1
       })
     }
 
   let unsafety = unsafe {
-    effect_once(unsafety)({ *counter - *counter })
+    effect_once<unsafety>({ *counter - *counter })
   }
   let drops = unsafe { *counter }
   unsafe {

@@ -5,7 +5,7 @@ let main(): i32 = {
   do {
     let view: Borrow<mut><Slice<i32>> = borrow<mut>(values)
     let pointer = unsafe {
-      raw_slice_ptr(mut)(view)
+      raw_slice_ptr<mut>(view)
     }
     unsafe {
       *raw_offset(pointer, 1) = 2

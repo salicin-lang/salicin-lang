@@ -1,9 +1,9 @@
 let cell<t: type> = struct { value: t }
 
-extend(cell(t), Copyable)
+extend(cell<t>, Copyable)
 (requires: t is Copyable) {}
 
-let read_twice(copy cell: cell(cell(i32))): i32 = {
+let read_twice(copy cell: cell<cell<i32>>): i32 = {
   let duplicate = cell
   duplicate.value.value + cell.value.value - 42
 }

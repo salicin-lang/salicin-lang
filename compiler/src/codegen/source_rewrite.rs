@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::ast::{
-    Binding, CallArg, CompileParam, EnumDef, Expr, ExtendMember, Function, Item, MatchArm, Param,
-    PassMode, Pattern, PatternFields, Program, Sort, Stmt, StructDef, TraitMember, Type,
+    Binding, CallArg, CompileParam, EnumDef, Expr, ExtendMember, Function, GroupDelimiter, Item,
+    MatchArm, Param, PassMode, Pattern, PatternFields, Program, Sort, Stmt, StructDef, TraitMember, Type,
     VariantFields,
 };
 
@@ -2257,32 +2257,36 @@ pub(super) fn source_type_expression(source: &Type) -> Expr {
         Type::Bool => Expr::Name("bool".to_owned()),
         Type::CompileUSize(value) => Expr::Integer(u128::from(*value)),
         Type::Borrow { .. } | Type::Tuple(_) | Type::Function { .. } => Expr::Type(source.clone()),
-        Type::Array(element, length) => Expr::Call(
-            Box::new(Expr::Call(
-                Box::new(Expr::Name("Array".to_owned())),
-                vec![CallArg {
+        Type::Array(element, length) => Expr::DelimitedCall {
+            callee: Box::new(Expr::DelimitedCall {
+                callee: Box::new(Expr::Name("Array".to_owned())),
+                delimiter: GroupDelimiter::Angle,
+                arguments: vec![CallArg {
                     label: None,
                     value: source_type_expression(element),
                 }],
-            )),
-            vec![CallArg {
+            }),
+            delimiter: GroupDelimiter::Angle,
+            arguments: vec![CallArg {
                 label: None,
                 value: Expr::Integer(u128::from(*length)),
             }],
-        ),
+        },
         Type::ArrayApplication {
             constructor,
             element,
             length,
-        } => Expr::Call(
-            Box::new(Expr::Call(
-                Box::new(Expr::Name(constructor.clone())),
-                vec![CallArg {
+        } => Expr::DelimitedCall {
+            callee: Box::new(Expr::DelimitedCall {
+                callee: Box::new(Expr::Name(constructor.clone())),
+                delimiter: GroupDelimiter::Angle,
+                arguments: vec![CallArg {
                     label: None,
                     value: source_type_expression(element),
                 }],
-            )),
-            vec![CallArg {
+            }),
+            delimiter: GroupDelimiter::Angle,
+            arguments: vec![CallArg {
                 label: None,
                 value: match length {
                     crate::ast::USizeConst::Literal(value) => Expr::Integer(u128::from(*value)),
@@ -2292,28 +2296,30 @@ pub(super) fn source_type_expression(source: &Type) -> Expr {
                     }
                 },
             }],
-        ),
+        },
         Type::Named(name, arguments) if arguments.is_empty() => Expr::Name(name.clone()),
-        Type::Named(name, arguments) => Expr::Call(
-            Box::new(Expr::Name(name.clone())),
-            arguments
+        Type::Named(name, arguments) => Expr::DelimitedCall {
+            callee: Box::new(Expr::Name(name.clone())),
+            delimiter: GroupDelimiter::Angle,
+            arguments: arguments
                 .iter()
                 .map(|argument| CallArg {
                     label: None,
                     value: source_type_expression(argument),
                 })
                 .collect(),
-        ),
-        Type::NamedArgs(name, arguments) => Expr::Call(
-            Box::new(Expr::Name(name.clone())),
-            arguments
+        },
+        Type::NamedArgs(name, arguments) => Expr::DelimitedCall {
+            callee: Box::new(Expr::Name(name.clone())),
+            delimiter: GroupDelimiter::Angle,
+            arguments: arguments
                 .iter()
                 .map(|argument| CallArg {
                     label: argument.label.clone(),
                     value: source_type_expression(&argument.ty),
                 })
                 .collect(),
-        ),
+        },
     }
 }
 
@@ -2330,22 +2336,26 @@ fn source_static_expression(expression: &crate::ast::StaticExpr) -> Expr {
             *operator,
             Box::new(source_static_expression(right)),
         ),
-        crate::ast::StaticExpr::Call { function, groups } => {
-            groups
-                .iter()
-                .fold(Expr::Name(function.clone()), |callee, group| {
-                    Expr::Call(
-                        Box::new(callee),
-                        group
+        crate::ast::StaticExpr::Call {
+            function,
+            groups,
+            group_delimiters,
+        } => groups.iter().zip(group_delimiters).fold(
+                Expr::Name(function.clone()),
+                |callee, (group, delimiter)| {
+                    Expr::DelimitedCall {
+                        callee: Box::new(callee),
+                        delimiter: *delimiter,
+                        arguments: group
                             .iter()
                             .map(|argument| crate::ast::CallArg {
                                 label: argument.label.clone(),
                                 value: source_static_expression(&argument.value),
                             })
                             .collect(),
-                    )
-                })
-        }
+                    }
+                },
+            ),
     }
 }
 
@@ -2574,7 +2584,7 @@ pub(super) fn source_effect_expression_identity(expression: &Expr) -> Option<Str
                     }
                 })
                 .collect::<Option<Vec<_>>>()?;
-            Some(format!("{name}({})", arguments.join(", ")))
+            Some(format!("{name}<{}>", arguments.join(", ")))
         }
         _ => None,
     }
@@ -2591,7 +2601,7 @@ pub(super) fn source_type_expression_name(expression: &Expr) -> Option<String> {
                 .iter()
                 .map(|argument| source_type_expression_name(&argument.value))
                 .collect::<Option<Vec<_>>>()?;
-            Some(format!("{name}({})", arguments.join(", ")))
+            Some(format!("{name}<{}>", arguments.join(", ")))
         }
         Expr::Unit => Some("()".into()),
         _ => None,

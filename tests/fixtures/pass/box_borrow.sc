@@ -13,7 +13,7 @@ let main(): i32 = {
     reference.read()
   }
   do {
-    let reference = boxed.as_ref(mut)()
+    let reference = boxed.as_ref<mut>()
     reference.value = 20
   }
   let second = do {
@@ -21,7 +21,7 @@ let main(): i32 = {
     reference.read()
   }
   do {
-    let reference = boxed.as_ref(mut)()
+    let reference = boxed.as_ref<mut>()
     reference.value = 22
   }
   let third = do {

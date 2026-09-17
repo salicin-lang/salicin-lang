@@ -51,7 +51,7 @@ test("inventory combines arrays slices vectors and Unicode") {
   let last_bytes: u64 = match byte_view.last()
     { Some(value) -> value }
     { None -> std.test.fail("expected last byte count") }
-  std.test.assert_eq(u64)(first_bytes + last_bytes)(4)
+  std.test.assert_eq<u64>(first_bytes + last_bytes)(4)
 
   let mut value = Inventory.new()
   value.push(model.Product.new("A", 2, 10))

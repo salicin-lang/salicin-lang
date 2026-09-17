@@ -1,6 +1,6 @@
 let main(): i32 = {
   let pointer = unsafe {
-    raw_alloc(i32)(8, align_of<i32>)
+    raw_alloc<i32>(8, align_of<i32>)
   }
   let second = unsafe {
     raw_offset(pointer, 1)

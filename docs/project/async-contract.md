@@ -35,7 +35,7 @@ pub let Poll<T: type> = enum {
   Ready(T)
 }
 
-pub let Future<e: effects> = trait<requires: self is Movable> {
+pub let Future<e: effects> = trait(requires: self is Movable) {
   let Output: type
   let poll<r: region>: with<e>
     (self: Borrow<mut><r><self>)(): Poll<Output>
@@ -186,7 +186,7 @@ require a distinct resumable condition state and are rejected before lowering.
 
 When one source iteration contains multiple sequential suspension points, it is lowered to a
 finite, non-recursive iteration future. That child owns only the currently active nested segment
-and eventually produces the same step outcome. Its `loop_exit<output>` type is inferred after binding
+and eventually produces the same step outcome. Its `loop_exit<Output>` type is inferred after binding
 each awaited `Future.Output` in source order. Cancelling the parent delegates cleanup through this
 finite child chain. If that iteration child's own `poll` retains a residual
 effect row, recurring handler specialization is not yet composed through the
@@ -232,7 +232,7 @@ Dropping a not-started or suspended future cancels it:
 - moved-out and never-initialized fields are skipped;
 - cancellation performs no implicit effect handling or unwind.
 
-After `ready(output)`, ownership of `output` leaves the state machine and remaining state is cleaned
+After `Ready(output)`, ownership of `output` leaves the state machine and remaining state is cleaned
 exactly once.
 
 ## `Movable` and Borrowing

@@ -10,7 +10,7 @@ let lend = trait {
 let cell = struct { value: i32 }
 
 extend(cell, lend) {
-  let Item = view(i32);
+  let Item = view<i32>;
 
   let view<a: access, r: region>
     (self: Borrow<a><r><self>)(): Borrow<a><r><i32> = {
@@ -23,14 +23,14 @@ let read(value: Borrow<i32>): i32 = { value }
 let main(): i32 = {
   let mut cell = cell{ value: 40 }
   let before = do {
-    let value = cell.view(shared)()
+    let value = cell.view<shared>()
     read(value)
   }
   do {
-    let value = cell.view(mut)()
+    let value = cell.view<mut>()
     value = before + 2
   }
-  let final_value = cell.view(shared)()
+  let final_value = cell.view<shared>()
   read(final_value)
 }
 

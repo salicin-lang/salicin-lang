@@ -1492,8 +1492,8 @@ fn remove_nonruntime_syntax_contracts(program: &mut Program, lang_items: &LangIt
 fn compile_parameter_sort_label(kind: &Sort) -> String {
     match kind {
         Sort::Universe(level) => match level {
-            crate::ast::SortLevel::Literal(level) => format!("sort({level})"),
-            crate::ast::SortLevel::Parameter(level) => format!("sort({level})"),
+            crate::ast::SortLevel::Literal(level) => format!("sort<{level}>"),
+            crate::ast::SortLevel::Parameter(level) => format!("sort<{level}>"),
         },
         Sort::Type => "type".to_owned(),
         Sort::Region => "region".to_owned(),

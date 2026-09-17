@@ -208,7 +208,7 @@ Public APIs use these modes consistently:
 | accept cheap reusable input | automatic passing, with an explicit `Copyable` bound when required | never silently consumes a non-copy value |
 | expose immutable contiguous data | `Slice<T>` or `str` | shared borrow only |
 | expose mutable contiguous data | `Slice<mut><T>` | exclusive borrow; never for UTF-8 bytes |
-| create a resource | host operation `with<io>` | `Result<IoError><owner>` |
+| create a resource | host operation `with<io>` | `Result<IoError><Owner>` |
 | operate on a resource | borrow the owner `with<io>` | result value; no hidden ownership transfer |
 | close a resource | `move` the owner `with<io>` | `Result<IoError><()>` |
 
@@ -317,8 +317,8 @@ canonical identity in the layer and definition module that owns it.
 
 | Area | Required surface |
 | --- | --- |
-| `Option<T>` | `is_some`, `is_none`, `as_ref`, `as_ref(mut)`, `map`, `and_then`, `unwrap_or`, `unwrap_or_else`, `ok_or` |
-| `Result<E><T>` | `is_ok`, `is_err`, `as_ref`, `as_ref(mut)`, `map`, `map_error`, `and_then`, `unwrap_or`, `unwrap_or_else`, `ok`, `err` |
+| `Option<T>` | `is_some`, `is_none`, `as_ref`, `as_ref<mut>`, `map`, `and_then`, `unwrap_or`, `unwrap_or_else`, `ok_or` |
+| `Result<E><T>` | `is_ok`, `is_err`, `as_ref`, `as_ref<mut>`, `map`, `map_error`, `and_then`, `unwrap_or`, `unwrap_or_else`, `ok`, `err` |
 | integers | `min`, `max`, `clamp`, sign queries, checked width conversions, decimal parse, decimal display |
 | `str` | byte `len`, `is_empty`, `as_bytes`, equality, boundary check, checked slice, prefix/suffix, find, byte iteration, scalar iteration |
 | `UnicodeScalar` | checked construction from `u32`, `to_u32`, UTF-8 encoded length, encode into caller storage |

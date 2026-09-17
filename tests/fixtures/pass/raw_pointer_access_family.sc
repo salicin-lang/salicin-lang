@@ -6,7 +6,7 @@ let main(): i32 = {
   let shared_pointer = ptr<i32>(borrow(shared_value))
   let mutable_pointer = ptr<mut>(borrow<mut>(mutable_value))
   let shared = preserve(shared_pointer)
-  let mutable = preserve(mut)(mutable_pointer)
+  let mutable = preserve<mut>(mutable_pointer)
   unsafe {
     *mutable = *mutable + 1
     *shared + *mutable

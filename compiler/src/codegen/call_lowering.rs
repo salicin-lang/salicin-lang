@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::ast::{
-    Binding, CallArg, Expr, MatchArm, Param, PassMode, Pattern, Stmt, Type, Visibility,
+    Binding, CallArg, Expr, GroupDelimiter, MatchArm, Param, PassMode, Pattern, Stmt, Type,
+    Visibility,
 };
 use crate::core::LangItemKind;
 
@@ -179,6 +180,7 @@ impl Analyzer {
                 &receiver.value,
                 member,
                 remaining_groups,
+                None,
                 BoundMethodConstraint::Nominal(target),
                 expected,
                 context,
@@ -459,6 +461,7 @@ impl Analyzer {
         receiver: &Expr,
         member: &str,
         groups: &[&[CallArg]],
+        actual_delimiters: Option<&[GroupDelimiter]>,
         constraint: BoundMethodConstraint<'_>,
         expected: Option<&Ty>,
         context: &mut LowerCtx,
@@ -693,10 +696,25 @@ impl Analyzer {
             }
         };
 
+        if actual_delimiters.is_some_and(|actual| {
+            !self.method_call_delimiters_match(&canonical, groups, actual, context)
+        }) {
+            return error_expr();
+        }
+
         let mut runtime_groups = groups;
         if let Some(template) = self.collection.function_templates.get(&canonical).cloned() {
-            let compile_prefix =
-                self.explicit_compile_group_prefix(&template.compile_groups, groups, context);
+            let compile_prefix = actual_delimiters
+                .map(|delimiters| {
+                    delimiters
+                        .iter()
+                        .take_while(|delimiter| **delimiter == GroupDelimiter::Angle)
+                        .count()
+                        .min(template.compile_groups.len())
+                })
+                .unwrap_or_else(|| {
+                    self.explicit_compile_group_prefix(&template.compile_groups, groups, context)
+                });
             let receiver_group = [CallArg {
                 label: None,
                 value: receiver.clone(),
@@ -1743,7 +1761,7 @@ impl Analyzer {
                 };
                 let has_algebraic_effect = effects.custom.iter().any(|effect| {
                     let identity = source_effect_identity(effect);
-                    let root = identity.split('(').next().unwrap_or(&identity);
+                    let root = identity.split('<').next().unwrap_or(&identity);
                     self.collection
                         .effect_defs
                         .get(root)

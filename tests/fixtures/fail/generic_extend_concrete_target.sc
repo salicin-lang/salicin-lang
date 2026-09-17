@@ -1,6 +1,6 @@
 let cell<t: type> = struct { value: t }
 
-extend(cell(i32)) {
+extend(cell<i32>) {
   let invalid(self: Borrow<self>)(): i32 = { 0 }
 }
 

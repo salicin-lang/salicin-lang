@@ -5,7 +5,7 @@ let dangerous: with<unsafety>(): i32 = {
 }
 
 let main(): i32 = {
-  let choose: with<unsafety>((bool): core.control.Attempt(bool)(i32))  = {
+  let choose: with<unsafety>((bool): core.control.Attempt<bool><i32>)  = {
     true -> dangerous()
   }
   let attempted = unsafe {

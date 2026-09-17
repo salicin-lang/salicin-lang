@@ -10,14 +10,14 @@ extend(resource, Droppable) {
 
 let cell<t: type> = struct { value: t }
 
-extend(cell(t)) {
-  let new(move value: t): cell(t) = { cell{ value: value } }
+extend(cell<t>) {
+  let new(move value: t): cell<t> = { cell{ value: value } }
   let take(move self)(): t = { self.value }
 }
 
 let main(): i32 = {
   let counter = unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe {
     *counter = 0

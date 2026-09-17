@@ -5,7 +5,7 @@ let step = struct {
   remaining: Ptr<mut><i32>
 }
 
-extend(step, Future(())) {
+extend(step, Future<()>) {
   let Output = bool;
 
   let poll<r: region>

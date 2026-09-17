@@ -656,7 +656,7 @@ impl Analyzer {
                     .map(|argument| self.diagnostic_type_name(argument))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("{}({arguments})", instance.key.template)
+                format!("{}<{arguments}>", instance.key.template)
             }
             Ty::Never => "never".to_owned(),
             Ty::Error => "<error>".to_owned(),
@@ -699,7 +699,7 @@ impl Analyzer {
                 output,
                 answer,
             } => format!(
-                "EffectCallable({}, {}, {})",
+                "EffectCallable<{}, {}, {}>",
                 self.diagnostic_type_name(input),
                 self.diagnostic_type_name(output),
                 self.diagnostic_type_name(answer)
@@ -1518,7 +1518,11 @@ impl Analyzer {
                     _ => None,
                 }
             }
-            Expr::Call(callee, arguments)
+            Expr::DelimitedCall {
+                callee,
+                delimiter: crate::ast::GroupDelimiter::Angle,
+                arguments,
+            }
                 if arguments.len() == 1
                     && arguments[0].label.is_none()
                     && matches!(

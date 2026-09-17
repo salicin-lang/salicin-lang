@@ -2,7 +2,7 @@ let Add = core.ops.Add
 
 let number = struct { value: i32 }
 
-extend(number, Add(i32)) {
+extend(number, Add<i32>) {
   let Output = number;
   let add(self)(rhs: i32): number = { number{ value: self.value + rhs } }
 }

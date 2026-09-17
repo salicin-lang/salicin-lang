@@ -4,7 +4,7 @@ let read = trait {
 
 let cell<t: type> = struct { value: t }
 
-extend(cell(t), read) {
+extend(cell<t>, read) {
   let read(self: Borrow<self>)(): i32 = { missing }
 }
 

@@ -3,8 +3,8 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use crate::ast::{
-    BinaryOp, Binding, CallArg, Expr, Function, FunctionEffects, HandlerChainCall, MatchArm, Param,
-    PassMode, Pattern, Stmt, Type, UnaryOp, Visibility,
+    BinaryOp, Binding, CallArg, Expr, Function, FunctionEffects, GroupDelimiter, HandlerChainCall,
+    MatchArm, Param, PassMode, Pattern, Stmt, Type, UnaryOp, Visibility,
 };
 use crate::core::LangItemKind;
 
@@ -1279,7 +1279,7 @@ impl Analyzer {
                 };
                 let forwards_algebraic_effect = effects.custom.iter().any(|effect| {
                     let identity = source_effect_identity(effect);
-                    let root = identity.split('(').next().unwrap_or(&identity);
+                    let root = identity.split('<').next().unwrap_or(&identity);
                     self.collection
                         .effect_defs
                         .get(root)
@@ -1650,7 +1650,7 @@ impl Analyzer {
         };
         if !effects.custom.iter().any(|effect| {
             let identity = source_effect_identity(effect);
-            let root = identity.split('(').next().unwrap_or(&identity);
+            let root = identity.split('<').next().unwrap_or(&identity);
             self.collection
                 .effect_defs
                 .get(root)
@@ -1753,7 +1753,7 @@ impl Analyzer {
                         .into_iter()
                         .next()
                         .expect("exactly one normalized custom effect");
-                    let root = effect.split('(').next().unwrap_or(&effect);
+                    let root = effect.split('<').next().unwrap_or(&effect);
                     if self
                         .collection
                         .effect_defs
@@ -3253,7 +3253,7 @@ impl Analyzer {
             return None;
         }
         let effect_name = source_type_expression_name(effect)?;
-        let root_name = effect_name.split('(').next().unwrap_or(&effect_name);
+        let root_name = effect_name.split('<').next().unwrap_or(&effect_name);
         if !self.collection.effect_defs.contains_key(root_name) || effect_name == handler.identity {
             return None;
         }
@@ -4797,13 +4797,14 @@ impl Analyzer {
                 let pointer =
                     Expr::Name(self.lang_item_name(LangItemKind::PtrValueForm).to_owned());
                 let pointer = if channel.mutable {
-                    Expr::Call(
-                        Box::new(pointer),
-                        vec![CallArg {
+                    Expr::DelimitedCall {
+                        callee: Box::new(pointer),
+                        delimiter: GroupDelimiter::Angle,
+                        arguments: vec![CallArg {
                             label: None,
                             value: Expr::Name("mut".to_owned()),
                         }],
-                    )
+                    }
                 } else {
                     pointer
                 };

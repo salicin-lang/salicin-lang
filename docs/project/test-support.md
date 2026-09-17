@@ -51,7 +51,7 @@ has a message; an empty message remains an exact, valid message.
 
 `std.test` exposes `fail`, `assert`, `assert_eq`, `assert_ne`, `expect_some`,
 `expect_none`, `expect_ok`, and `expect_err` over this contract. Equality
-helpers evaluate each operand once and require both `core.cmp.Eq(T)` and the
+helpers evaluate each operand once and require both `core.cmp.Eq<T>` and the
 static `std.test.AssertionDebug` formatting contract. Expectations consume
 their `Option` or `Result`, return the selected payload, and format only an
 unexpected payload.
@@ -74,10 +74,10 @@ Failure messages are deterministic:
 The generated runner invokes registrations one at a time in source order.
 For each registration it:
 
-1. enters a fresh `throwing<string>` handler;
+1. enters a fresh `throwing<String>` handler;
 2. calls the body exactly once;
 3. lets return or effect transfer run the body's cleanup exactly once;
-4. converts the result to one `outcome`;
+4. converts the result to one `Outcome`;
 5. emits one failure record when needed; and
 6. proceeds to the next registration regardless of that outcome.
 

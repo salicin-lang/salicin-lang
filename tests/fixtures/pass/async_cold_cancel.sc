@@ -19,7 +19,7 @@ let relocate<t: type>(move value: t): t
 
 let allocate: with<unsafety>(): Ptr<mut><i32> = {
   unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
 }
 

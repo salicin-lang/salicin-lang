@@ -7,8 +7,8 @@ let main(): i32 = {
   values.push(20)
   values.push(0)
   do {
-    let slice = values.as_slice(mut)()
-    let second = slice.at(mut)(1)
+    let slice = values.as_slice<mut>()
+    let second = slice.at<mut>(1)
     second = 22
   }
   let slice = values.as_slice()

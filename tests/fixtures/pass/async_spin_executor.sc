@@ -7,7 +7,7 @@ let step = struct {
   polled: bool
 }
 
-extend(step, Future(())) {
+extend(step, Future<()>) {
   let Output = i32;
 
   let poll<r: region>

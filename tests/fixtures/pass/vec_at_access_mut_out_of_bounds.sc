@@ -2,7 +2,7 @@ let Vec = alloc.Vec
 
 let main(): i32 = {
   let mut values: Vec<i32> = Vec<i32>.new()
-  let reference = values.at(mut)(0)
+  let reference = values.at<mut>(0)
   reference
 }
 

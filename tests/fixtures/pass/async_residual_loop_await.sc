@@ -19,7 +19,7 @@ extend(step, Droppable) {
   }
 }
 
-extend(step, Future(())) {
+extend(step, Future<()>) {
   let Output = bool;
 
   let poll<r: region>
@@ -124,16 +124,16 @@ let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
 
 let main(): i32 = {
   let drops = unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   let success_calls = unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   let cancelled_calls = unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   let abandoned_calls = unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe {
     *drops = 0

@@ -41,7 +41,7 @@ the next step. Normal completion returns that owner to the caller; early
 effect transfer destroys any in-flight owned state exactly once under the
 language cleanup rules.
 
-`contains` currently requires `T is Copyable && T is Eq(T)`. The slice kernel
+`contains` currently requires `T is Copyable && T is Eq<T>`. The slice kernel
 copies each element value before equality dispatch, so membership does not
 pretend that the present equality protocol accepts two source-tied borrows.
 Move-only collections can express membership with `any` and a borrowing

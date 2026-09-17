@@ -3,7 +3,7 @@ let Future = core.async.Future
 
 let step = struct { polls: i32 }
 
-extend(step, Future(())) {
+extend(step, Future<()>) {
   let Output = i32;
 
   let poll<r: region>

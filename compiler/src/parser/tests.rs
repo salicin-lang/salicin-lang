@@ -208,7 +208,7 @@ fn parses_function_effects_and_rejects_them_on_values() {
     }
 
     let contextual =
-        parse("let f(): i32 with(unsafe, try(bool)) = { 0 }\n").expect("custom effect names");
+        parse("let f(): i32 with<unsafe, try<bool>> = { 0 }\n").expect("custom effect names");
     let Item::Function(contextual) = &contextual.items[0] else {
         panic!("expected function");
     };
@@ -515,7 +515,7 @@ fn accepts_root_super_and_contextual_self_in_ordinary_paths() {
 #[test]
 fn parses_dotted_type_paths() {
     let program =
-        parse("let convert(value: net.http.point): net.http.result(core.status) = { value }\n")
+        parse("let convert(value: net.http.point): net.http.result<core.status> = { value }\n")
             .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
@@ -712,6 +712,31 @@ fn parses_angle_type_applications_and_official_type_forms() {
 }
 
 #[test]
+fn rejects_parenthesized_type_trait_effect_associated_and_schema_applications() {
+    for source in [
+        "let read(value: Option(i32)): i32 = { 0 }\n",
+        "let marker<t: type>(self: type) = trait {}\nextend(i32, marker(i32)) {}\n",
+        "let state<t: type> = effect {}\nlet read(): i32 with<state(i32)> = { 0 }\n",
+        "let read(value: Chain.Rebind(i32)): i32 = { 0 }\n",
+        "let handle<Value: type, Answer: type> ...Clauses(Value, Answer) (value: Value): Answer\n",
+    ] {
+        assert!(parse(source).is_err(), "legacy application parsed: {source}");
+    }
+}
+
+#[test]
+fn with_callable_operands_are_parenthesized() {
+    parse("let apply<t: type>(): with<io>((t): t)\n")
+        .expect("a parenthesized callable operand is canonical");
+    for source in [
+        "let apply<t: type>(): with<io>[(t): t]\n",
+        "let apply<t: type>(): with<io>{(t): t}\n",
+    ] {
+        assert!(parse(source).is_err(), "non-parenthesized operand parsed: {source}");
+    }
+}
+
+#[test]
 fn preserves_multiple_compile_parameters_in_one_group() {
     let program =
         parse("let choose<t: type, u: type>(value: t): u = { value }\n").unwrap();
@@ -882,7 +907,7 @@ fn preserves_generic_traits_and_trait_member_defaults() {
     let program = parse(
         "let convert<t: type> = trait {\n\
                let convert<u: type>(self: Borrow<self>)(value: u): t = { value }\n\
-               let output<v: type>: type = pair(t, v)\n\
+               let output<v: type>: type = pair<t, v>\n\
              }\n",
     )
     .unwrap();
@@ -931,7 +956,7 @@ fn preserves_region_and_access_generic_associated_type_groups() {
     let program = parse(
             "let lend = trait {\n\
                let item<a: access><r: region>: type\n\
-               let view<a: access, r: region>(self: Borrow<a><r><self>)(): item(a)(r)\n\
+               let view<a: access, r: region>(self: Borrow<a><r><self>)(): item<a><r>\n\
              }\n",
         )
         .unwrap();
@@ -957,9 +982,9 @@ fn rejects_runtime_parameter_groups_on_associated_types() {
 #[test]
 fn rejects_removed_underscore_inference_syntax() {
     for source in [
-        "let value: cell(_) = cell(i32) { value: 20 }\n",
-        "let value = cell(_) { value: 20 }\n",
-        "let value = cell(cell(_)) { value: cell(i32) { value: 20 } }\n",
+        "let value: cell<_> = cell<i32> { value: 20 }\n",
+        "let value = cell<_> { value: 20 }\n",
+        "let value = cell<cell<_>> { value: cell<i32> { value: 20 } }\n",
         "let value = _\n",
         "let value: Array<i32><_> = []\n",
     ] {
@@ -972,7 +997,7 @@ fn rejects_removed_underscore_inference_syntax() {
 #[test]
 fn parses_unsafe_raw_pointer_dereference_and_assignment() {
     let program = parse(
-            "let main(): i32 = {\n  let mut value = 41\n  let pointer = ptr(mut)(borrow(mut)(value))\n  unsafe {\n    *pointer = *pointer + 1\n  }\n  value\n}\n",
+            "let main(): i32 = {\n  let mut value = 41\n  let pointer = ptr<mut>(borrow<mut>(value))\n  unsafe {\n    *pointer = *pointer + 1\n  }\n  value\n}\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -1012,7 +1037,7 @@ fn parses_unsafe_raw_pointer_dereference_and_assignment() {
 }
 
 #[test]
-fn keeps_generic_construction_and_variant_heads_as_regular_postfix_expressions() {
+fn keeps_generic_construction_and_variant_heads_as_angle_postfix_expressions() {
     fn argument(label: Option<&str>, value: Expr) -> CallArg {
         CallArg {
             label: label.map(str::to_owned),
@@ -1021,17 +1046,18 @@ fn keeps_generic_construction_and_variant_heads_as_regular_postfix_expressions()
     }
 
     fn type_head(name: &str, type_argument: Expr) -> Expr {
-        Expr::Call(
-            Box::new(Expr::Name(name.to_owned())),
-            vec![argument(None, type_argument)],
-        )
+        Expr::DelimitedCall {
+            callee: Box::new(Expr::Name(name.to_owned())),
+            delimiter: GroupDelimiter::Angle,
+            arguments: vec![argument(None, type_argument)],
+        }
     }
 
     let program = parse(
-        "let cell = cell(i32) { value: 42 }\n\
-             let nested = cell(cell(i32)) { value: 42 }\n\
-             let some = maybe(i32).Some(42)\n\
-             let none = maybe(i32).None\n",
+        "let cell = cell<i32> { value: 42 }\n\
+             let nested = cell<cell<i32>> { value: 42 }\n\
+             let some = maybe<i32>.Some(42)\n\
+             let none = maybe<i32>.None\n",
     )
     .unwrap();
 
@@ -2135,6 +2161,7 @@ fn parses_pure_static_expressions_in_dependent_array_lengths() {
                         label: None,
                         value: StaticExpr::USize(2),
                     }]],
+                    group_delimiters: vec![GroupDelimiter::Parenthesis],
                 }),
                 BinaryOp::Mul,
                 Box::new(StaticExpr::USize(2)),
@@ -2269,7 +2296,7 @@ fn parses_region_parameters_and_borrow_regions() {
 fn parses_access_parameters_in_borrow_modes_types_and_expressions() {
     let program = parse(
         "let identity<a: access, r: region, t: type>\n\
-               (value: Borrow<a><r><t>): Borrow<a><r><t> = { borrow(a)(value) }\n",
+               (value: Borrow<a><r><t>): Borrow<a><r><t> = { borrow<a>(value) }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -2327,7 +2354,7 @@ fn parses_closed_types_as_compile_parameter_types() {
 #[test]
 fn parses_string_as_an_ordinary_named_type() {
     let program = parse(
-        "let register<name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()\n",
+        "let register<name: string>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()\n",
     )
     .unwrap();
     let [Item::Function(function)] = program.items.as_slice() else {
@@ -2428,14 +2455,7 @@ fn parses_effect_parameters_in_with_clauses() {
 
     let error =
         parse("let old<e: effects>(value: i32): i32(e) = { value }\n").unwrap_err();
-    assert!(
-        error
-            .message
-            .contains("effect parameter `e` cannot be used as a runtime type"),
-        "{}",
-        error.message
-    );
-    assert!(!error.message.contains("was removed"));
+    assert!(error.message.contains("expected a newline or `;`"));
 }
 
 #[test]
@@ -2476,8 +2496,8 @@ fn parses_compiler_owned_constraint_fragments_and_rejects_defaults() {
 fn parses_trait_self_effect_parameter_in_member_rows() {
     let program = parse(
             "let Handle = trait<self: effect> {\n\
-               let clauses<value: type, answer: type>: parameters\n\
-               let handle<value: type, answer: type, rest: effects>: with<rest> ...clauses(value, answer) (move action: with<self, rest>((): value)): answer\n\
+               let Clauses<Value: type, Answer: type>: parameters\n\
+               let handle<Value: type, Answer: type, rest: effects>: with<rest> ...Clauses<Value, Answer> (move action: with<self, rest>((): Value)): Answer\n\
              }\n",
         )
         .unwrap();
@@ -2496,10 +2516,10 @@ fn parses_trait_self_effect_parameter_in_member_rows() {
         Type::Named(
             "$parameter$groups$expand".to_owned(),
             vec![Type::Named(
-                "clauses".to_owned(),
+                "Clauses".to_owned(),
                 vec![
-                    Type::Named("value".to_owned(), Vec::new()),
-                    Type::Named("answer".to_owned(), Vec::new()),
+                    Type::Named("Value".to_owned(), Vec::new()),
+                    Type::Named("Answer".to_owned(), Vec::new()),
                 ],
             )],
         )
@@ -2517,11 +2537,11 @@ fn parses_compiler_provided_sort_and_control_contract_declarations() {
     let program = parse(
             "pub let unsafety = effect {}\n\
              pub let throwing<error: type> = effect { let raise(move error: error): never }\n\
-             pub let type: sort(2)\n\
-             pub let effect: sort(2)\n\
-             pub let effects: sort(2)\n\
-             pub let empty = sort(1) {}\n\
-             pub let access = sort(1) {\n\
+             pub let type: sort<2>\n\
+             pub let effect: sort<2>\n\
+             pub let effects: sort<2>\n\
+             pub let empty = sort<1> {}\n\
+             pub let access = sort<1> {\n\
                /// shared read-only access.\n\
                shared\n\
                /// exclusive mutable access.\n\
@@ -2718,13 +2738,13 @@ fn rejects_removed_type_value_syntax_and_duplicate_enum_variants() {
     assert!(error.message.contains("abstract sort"));
 
     let error = parse("let kind = sort\n").unwrap_err();
-    assert!(error.message.contains("`(` after `sort`"));
+    assert!(error.message.contains("`<` after `sort`"));
 
-    let error = parse("let kind = sort(0) { value }\n").unwrap_err();
-    assert!(error.message.contains("`sort(0)` is invalid"));
+    let error = parse("let kind = sort<0> { value }\n").unwrap_err();
+    assert!(error.message.contains("`sort<0>` is invalid"));
 
     let error = parse("let kind: sort\n").unwrap_err();
-    assert!(error.message.contains("`(` after `sort`"));
+    assert!(error.message.contains("`<` after `sort`"));
 
     let error = parse("let bool = enum { false, false }\n").unwrap_err();
     assert!(error.message.contains("duplicate enum variant `false`"));
@@ -2772,7 +2792,7 @@ fn parses_parameterized_algebraic_effect_operations() {
                let get(): s\n\
                let put(move value: s): ()\n\
              }\n\
-             let program(): i32 with(state(i32)) = { 0 }\n",
+             let program(): i32 with<state<i32>> = { 0 }\n",
     )
     .unwrap();
     let Item::Effect(state) = &program.items[0] else {
@@ -2825,8 +2845,8 @@ fn parses_function_shaped_handlers_with_contextual_clause_parameters() {
     let program = parse(
         "let state<s: type> = effect { let get(): s }\n\
              let main(): i32 = {\n\
-               state(i32).handle get { (resume) -> resume(42) } action {\n\
-                 state(i32).get()\n\
+               state<i32>.handle get { (resume) -> resume(42) } action {\n\
+                 state<i32>.get()\n\
                }\n\
              }\n",
     )
@@ -2861,13 +2881,7 @@ fn parses_effects_as_part_of_callable_signatures() {
         "let apply<e: effects>(action: (i32): i32(e))(value: i32): i32 = { value }\n",
     )
     .unwrap_err();
-    assert!(
-        old.message
-            .contains("effect parameter `e` cannot be used as a runtime type"),
-        "{}",
-        old.message
-    );
-    assert!(!old.message.contains("was removed"));
+    assert!(old.message.contains("expected after runtime parameters"));
 }
 
 #[test]
@@ -3169,7 +3183,7 @@ fn parses_compile_parameters_on_extend_functions() {
 fn infers_extend_pattern_parameters_from_constructor_sorts() {
     let program = parse(
         "let cell<t: type> = struct { value: t }\n\
-             extend(cell(t))\n\
+             extend(cell<t>)\n\
              (requires: t is Copyable) {\n\
                let get(self: Borrow<self>)(): t = { self.value }\n}\n",
     )
@@ -3231,7 +3245,7 @@ fn qualified_extend_roots_are_not_inferred_as_parameters() {
 fn parses_multiline_constraint_guards_without_inference_placeholders() {
     let program = parse(
         "let choose<t: type>(copy value: t): t\n\
-             = requires(t is Copyable && t is marker(i32) && t.item == t) { value }\n",
+             = requires(t is Copyable && t is marker<i32> && t.item == t) { value }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -3265,7 +3279,7 @@ fn lowers_compile_time_constraint_guards_to_trait_predicates() {
          let duplicate<t: type>(value: t): (t, t) = requires(t is Copyable) {\n\
            (value, value)\n\
          }\n\
-         extend(cell(t), Copyable)\n\
+         extend(cell<t>, Copyable)\n\
          (requires: t is Copyable) {}\n",
     )
     .unwrap();
@@ -3458,14 +3472,14 @@ fn parses_type_families_and_type_constructor_aliases() {
 #[test]
 fn parses_constructor_compile_parameter_sorts() {
     let program = parse(
-            "let use<f: <element: type>: type>(move value: f(i32)): f(i32) = { value }\n\
+            "let use<f: <element: type>: type>(move value: f<i32>): f<i32> = { value }\n\
              let curried<f: <element: type><length: usize>: type>(): i32 = { 0 }\n\
-             let effects<e: <error: type>: effect>(move action: (): i32 with(e(bool))): i32 with(e(bool)) = { action() }\n\
+             let effects<e: <error: type>: effect>(move action: (): i32 with<e<bool>>): i32 with<e<bool>> = { action() }\n\
              let functor = trait<self: <value: type>: type> {\n\
-               let map<e: effects, a: type, b: type>(move self: self(a))(move transform: (a): b with<e>): self(b) with<e>\n\
+               let map<e: effects, a: type, b: type>(move self: self<a>)(move transform: (a): b with<e>): self<b> with<e>\n\
              }\n\
              let applicative = trait<self: <value: type>: type>(requires: self is functor) {\n\
-               let pure<a: type>(move value: a): self(a)\n}\n",
+               let pure<a: type>(move value: a): self<a>\n}\n",
         )
         .unwrap();
 
@@ -3535,7 +3549,7 @@ fn parses_constructor_compile_parameter_sorts() {
 #[test]
 fn parses_labeled_type_arguments_without_reordering() {
     let program =
-        parse("let consume(value: pair(v: bool, k: i32)): Result<e: bool><t: i32> = { value }\n")
+        parse("let consume(value: pair<v: bool, k: i32>): Result<e: bool><t: i32> = { value }\n")
             .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");

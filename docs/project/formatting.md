@@ -17,7 +17,7 @@ overflow, reporting the first failing UTF-8 byte offset where applicable.
 Whitespace, radix prefixes, separators, and trailing input are rejected unless
 a later concrete API explicitly opts into them.
 
-`TextWriter(e)` accepts Unicode scalars and checked ASCII bytes through a
+`TextWriter<e>` accepts Unicode scalars and checked ASCII bytes through a
 mutable writer borrow and declares the exact effect row `e`. Scalar-level
 input makes the protocol independent of any owning string representation and
 does not require a temporary allocation. Implementations trap if the ASCII

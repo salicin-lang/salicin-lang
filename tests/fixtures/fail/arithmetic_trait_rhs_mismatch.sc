@@ -3,7 +3,7 @@ let Div = core.ops.Div
 let number = struct { value: i32 }
 let divisor = struct { value: i32 }
 
-extend(number, Div(i32)) {
+extend(number, Div<i32>) {
   let Output = i32;
   let div(self)(rhs: i32): i32 = { self.value / rhs }
 }

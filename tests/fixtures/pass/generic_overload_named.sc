@@ -10,7 +10,7 @@ extend(counter) {
 
 let cell<t: type> = struct { value: t }
 
-extend(cell(t)) {
+extend(cell<t>) {
   let choose(left: t): t = { left }
   let choose(right: t): t = { right }
   let add(self: Borrow<self>)(left: t): t = { left }
@@ -18,7 +18,7 @@ extend(cell(t)) {
 }
 
 let main(): i32 = {
-  choose(left: 10) + cell.choose(right: 10) + cell(i32) { value: 0 }.add(left: 22)
+  choose(left: 10) + cell.choose(right: 10) + cell<i32> { value: 0 }.add(left: 22)
 }
 
 test("generic_overload_named.sc") {

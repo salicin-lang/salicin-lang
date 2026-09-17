@@ -886,9 +886,9 @@ edition = "2026"
     );
     project.write(
         "src/api.sc",
-        "pub(package) let cell<t: type> = struct { value: t }\n\
-         extend(cell(t)) {\n\
-           let new(move value: t): cell(t) = { cell { value: value } }\n\
+         "pub(package) let cell<t: type> = struct { value: t }\n\
+          extend(cell<t>) {\n\
+            let new(move value: t): cell<t> = { cell { value: value } }\n\
            let take(move self)(): t = { self.value }\n\
          }\n",
     );
@@ -914,7 +914,7 @@ edition = "2026"
     );
     project.write(
         "src/main.sc",
-        "let main(): i32 = {\n  api.cell.new().choose(i32)(42)\n}\n",
+        "let main(): i32 = {\n  api.cell.new().choose<i32>(42)\n}\n",
     );
     project.write(
         "src/api.sc",
@@ -971,7 +971,7 @@ dep = { path = "../dep" }
     );
     project.write(
         "app/src/main.sc",
-        "extend(dep.cell(t)) {\n\
+        "extend(dep.cell<t>) {\n\
            let take(move self)(): t = { self.value }\n\
          }\n\
          let main(): i32 = { 0 }\n",
@@ -1012,7 +1012,7 @@ fn raw_allocator_abi_can_be_replaced_by_strong_link_symbols() {
     let directory = TestDirectory::new();
     let source = directory.write(
         "main.sc",
-        "let main(): i32 = {\n  let pointer = unsafe { raw_alloc(i32)(4, 4) }\n  unsafe { *pointer = 42 }\n  unsafe { raw_dealloc(pointer, 4, 4) }\n  0\n}\n",
+        "let main(): i32 = {\n  let pointer = unsafe { raw_alloc<i32>(4, 4) }\n  unsafe { *pointer = 42 }\n  unsafe { raw_dealloc(pointer, 4, 4) }\n  0\n}\n",
     );
     let ir = directory.join("main.ll");
     let executable = directory.join("main");
@@ -1242,7 +1242,7 @@ fn type_constructor_aliases_cross_module_boundaries() {
     project.write(
         "src/types.sc",
         "pub(package) let cell<t: type> = struct { pub(package) value: t }\n\
-         pub(package) let family<t: type>: type = cell(t)\n\
+         pub(package) let family<t: type>: type = cell<t>\n\
          pub(package) let constructor: <t: type>: type = cell\n\
          pub(package) let scalar = i32\n",
     );
@@ -1250,8 +1250,8 @@ fn type_constructor_aliases_cross_module_boundaries() {
         "src/main.sc",
         "use types.{family, constructor, scalar}\n\n\
          let main(): scalar = {\n\
-           let left: family(i32) = family(i32) { value: 40 }\n\
-           let right = constructor(i32) { value: 2 }\n\
+           let left: family<i32> = family<i32> { value: 40 }\n\
+           let right = constructor<i32> { value: 2 }\n\
            left.value + right.value\n\
          }\n",
     );
@@ -1281,7 +1281,7 @@ fn algebraic_effect_operations_check_their_instantiated_row() {
     assert!(!invalid.status.success());
     let stderr = String::from_utf8_lossy(&invalid.stderr);
     assert!(
-        stderr.contains("call to `state(i32).get` requires custom effect `state(i32)`"),
+        stderr.contains("call to `state<i32>.get` requires custom effect `state<i32>`"),
         "{}",
         output_text(&invalid)
     );
@@ -1508,7 +1508,7 @@ fn region_frontend_errors_report_their_cause() {
         ("region_static_redeclared.sc", "predefined"),
         (
             "region_name_with_type_kind.sc",
-            "expected a parameter name, found a region name",
+            "region literals cannot be compile-time parameter names",
         ),
         (
             "region_plain_name.sc",
@@ -1998,7 +1998,7 @@ fn source_backed_copy_errors_report_their_cause() {
             &[
                 "function `read`",
                 "requires `Copyable`",
-                "cell(i64)",
+                "cell<i64>",
                 "does not implement `Copyable`",
             ][..],
         ),

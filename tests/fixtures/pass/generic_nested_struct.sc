@@ -1,8 +1,8 @@
 let cell<t: type> = struct { value: t }
 
 let main(): i32 = {
-  let inner = cell(i32) { value: 42 }
-  let outer = cell(cell(i32)) { value: inner }
+  let inner = cell<i32> { value: 42 }
+  let outer = cell<cell<i32>> { value: inner }
   outer.value.value
 }
 

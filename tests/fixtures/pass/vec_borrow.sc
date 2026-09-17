@@ -15,7 +15,7 @@ let main(): i32 = {
     reference.read()
   }
   do {
-    let reference = values.at(mut)(1)
+    let reference = values.at<mut>(1)
     reference.value = 21
   }
   let second = do {
@@ -23,7 +23,7 @@ let main(): i32 = {
     reference.read()
   }
   do {
-    let reference = values.at(mut)(1)
+    let reference = values.at<mut>(1)
     reference.value = 22
   }
   let third = do {

@@ -35,7 +35,7 @@ extend(pair) {
   let inferred_left_mut(self: Borrow<mut><self>)(): Borrow<mut><i32> = { borrow<mut>(self.left) }
 }
 
-extend(holder(t)) {
+extend(holder<t>) {
   let get<r: region>(self: Borrow<r><self>)(): Borrow<r><t> = { borrow(self.value) }
 }
 
@@ -51,7 +51,7 @@ let main(): i32 = {
     let generic = same(value: pair_value)
     let associated = pair.right_ref(pair_value)
     let method = pair_value.right_method()
-    let qualified = pair.right_method(self: pair_value)()
+    let qualified = pair.right_method<self: pair_value>()
     let forwarded = forwarded_method(pair_value)
     let generic_method = holder_value.get()
     let trait_method = pair_value.view()

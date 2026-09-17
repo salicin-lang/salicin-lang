@@ -13,7 +13,7 @@ let second = struct {
   value: i32,
 }
 
-extend(first, Future(())) {
+extend(first, Future<()>) {
   let Output = i32;
 
   let poll<r: region>
@@ -23,7 +23,7 @@ extend(first, Future(())) {
   }
 }
 
-extend(second, Future(())) {
+extend(second, Future<()>) {
   let Output = i32;
 
   let poll<r: region>

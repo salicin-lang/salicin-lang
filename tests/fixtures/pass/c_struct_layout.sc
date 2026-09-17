@@ -19,7 +19,7 @@ let main(): i32 = {
     align_of<timespec> == 8 &&
     size_of<header> == 32 &&
     align_of<header> == 8 &&
-    size_of<pair(i32)> == 8 {
+    size_of<pair<i32>> == 8 {
     42
   } else {
     0

@@ -85,6 +85,14 @@ impl Analyzer {
         let mut actual_delimiters = Vec::new();
         flatten_call_delimiters(expression, &mut actual_delimiters);
         if let Expr::Name(name) = root {
+            if !self.explicit_compile_delimiters_match(
+                name,
+                &groups,
+                &actual_delimiters,
+                context,
+            ) {
+                return error_expr();
+            }
             let expected = context.lookup(name).and_then(|local| {
                 if let Some(partial) = &local.partial {
                     self.collection
@@ -598,6 +606,7 @@ impl Analyzer {
                     base,
                     member,
                     groups,
+                    Some(&actual_delimiters),
                     BoundMethodConstraint::LangItem(lang_item),
                     if lang_item == LangItemKind::Raise {
                         None
@@ -693,6 +702,14 @@ impl Analyzer {
                             ) else {
                                 return error_expr();
                             };
+                            if !self.named_call_delimiters_match(
+                                &canonical,
+                                &groups,
+                                &actual_delimiters,
+                                context,
+                            ) {
+                                return error_expr();
+                            }
                             return self.lower_generic_function_call(
                                 &canonical, &groups, expected, context,
                             );
@@ -703,6 +720,14 @@ impl Analyzer {
                             .get(&(target_template.clone(), variant_name.clone()))
                             .cloned()
                         {
+                            if !self.named_call_delimiters_match(
+                                &canonical,
+                                &groups,
+                                &actual_delimiters,
+                                context,
+                            ) {
+                                return error_expr();
+                            }
                             return self.lower_generic_function_call(
                                 &canonical, &groups, expected, context,
                             );
@@ -720,6 +745,14 @@ impl Analyzer {
                         })
                         .flatten()
                         {
+                            if !self.named_call_delimiters_match(
+                                &canonical,
+                                &groups,
+                                &actual_delimiters,
+                                context,
+                            ) {
+                                return error_expr();
+                            }
                             return self
                                 .lower_named_function_call(&canonical, &groups, expected, context);
                         }
@@ -846,6 +879,14 @@ impl Analyzer {
                         .and_then(|members| members.functions.get(variant_name))
                         .cloned()
                     {
+                        if !self.named_call_delimiters_match(
+                            &canonical,
+                            &groups,
+                            &actual_delimiters,
+                            context,
+                        ) {
+                            return error_expr();
+                        }
                         return self
                             .lower_named_function_call(&canonical, &groups, expected, context);
                     }
@@ -910,6 +951,7 @@ impl Analyzer {
                 base,
                 variant_name,
                 &groups,
+                Some(&actual_delimiters),
                 BoundMethodConstraint::None,
                 expected,
                 context,
@@ -948,6 +990,106 @@ impl Analyzer {
                 return false;
             };
             expected_index += 1;
+        }
+        true
+    }
+
+    fn named_call_delimiters_match(
+        &mut self,
+        name: &str,
+        groups: &[&[CallArg]],
+        actual: &[GroupDelimiter],
+        context: &LowerCtx,
+    ) -> bool {
+        if !self.explicit_compile_delimiters_match(name, groups, actual, context) {
+            return false;
+        }
+        let expected = self
+            .collection
+            .functions
+            .get(name)
+            .or_else(|| self.collection.function_templates.get(name))
+            .map(|function| {
+                function
+                    .effects
+                    .compile_group_delimiters
+                    .iter()
+                    .chain(&function.effects.group_delimiters)
+                    .copied()
+                    .collect::<Vec<_>>()
+            });
+        expected.is_none_or(|expected| self.call_delimiters_match(name, actual, &expected))
+    }
+
+    pub(super) fn method_call_delimiters_match(
+        &mut self,
+        name: &str,
+        _groups: &[&[CallArg]],
+        actual: &[GroupDelimiter],
+        _context: &LowerCtx,
+    ) -> bool {
+        let Some(function) = self
+            .collection
+            .functions
+            .get(name)
+            .or_else(|| self.collection.function_templates.get(name))
+        else {
+            return true;
+        };
+        let runtime = function
+            .effects
+            .group_delimiters
+            .iter()
+            .copied()
+            .skip(1)
+            .collect::<Vec<_>>();
+        let explicit = actual.len().saturating_sub(runtime.len());
+        if explicit > function.effects.compile_group_delimiters.len() {
+            return self.call_delimiters_match(name, actual, &runtime);
+        }
+        for (index, delimiter) in actual.iter().take(explicit).enumerate() {
+            if *delimiter != GroupDelimiter::Angle {
+                self.error(format!(
+                    "argument group {} in call to `{name}` uses `{}` but the parameter group uses `<`",
+                    index + 1,
+                    delimiter.opening(),
+                ));
+                return false;
+            }
+        }
+        self.call_delimiters_match(name, &actual[explicit..], &runtime)
+    }
+
+    fn explicit_compile_delimiters_match(
+        &mut self,
+        name: &str,
+        groups: &[&[CallArg]],
+        actual: &[GroupDelimiter],
+        context: &LowerCtx,
+    ) -> bool {
+        let Some(compile_groups) = self
+            .collection
+            .function_templates
+            .get(name)
+            .map(|function| function.compile_groups.clone())
+        else {
+            return true;
+        };
+        let explicit = self.explicit_compile_group_prefix(&compile_groups, groups, context);
+        for index in 0..explicit {
+            if actual.get(index) == Some(&GroupDelimiter::Angle) {
+                continue;
+            }
+            let actual = actual
+                .get(index)
+                .copied()
+                .unwrap_or(GroupDelimiter::Parenthesis);
+            self.error(format!(
+                "argument group {} in call to `{name}` uses `{}` but the parameter group uses `<`",
+                index + 1,
+                actual.opening(),
+            ));
+            return false;
         }
         true
     }

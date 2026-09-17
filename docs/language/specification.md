@@ -258,7 +258,7 @@ metadata payload is a runtime value.
 The function-definition form `= requires(condition) { body }` supplies a
 compile-time `bool` and a delayed parameterless closure to `core.requires`.
 Trait and extension requirements instead occupy their declaration header as
-the labeled compile-time boolean parameter `<requires: condition>`. `extend`
+the labeled compile-time boolean parameter `(requires: condition)`. `extend`
 itself is parser-owned syntax: there is no decorative `extend` callable or
 language item. META-1 now defines the registry contract for phase, scope,
 equality, normalization, producers, and resource bounds, but additional
@@ -684,7 +684,7 @@ pub let Is<right: sort<2>> = trait<self: sort<2>> {
   let is<left: self, right: right>: bool
 }
 
-extend(type, Is(constraint)) {
+extend(type, Is<constraint>) {
   let is<
     Left: type,
     right: constraint,
@@ -696,8 +696,8 @@ An extension may guard its target pattern after that pattern binds its inferred
 compile-time parameters:
 
 ```sc fragment
-extend(Cell(T), Copyable)
-<requires: T is Copyable> {}
+extend(Cell<T>, Copyable)
+(requires: T is Copyable) {}
 ```
 
 A function applies the compiler-owned `requires` guard to its body:
@@ -721,8 +721,8 @@ requires(T is Produce && T.Item == i32) {
 ```
 
 Trait and extension prerequisites use a labeled compile-time parameter group,
-for example `let Copyable = trait<requires: self is Movable> {}` and
-`extend(Cell(T), Copyable)<requires: T is Copyable) {}`.
+for example `let Copyable = trait(requires: self is Movable) {}` and
+`extend(Cell<T>, Copyable)(requires: T is Copyable) {}`.
 
 Generic associated constructors retain their parameter groups and sorts. Their receiver region can
 determine a yielded type, as in `Iterator.Item<r>`.
@@ -866,7 +866,7 @@ anonymous state. `core.async.await` is a source polling loop: `Pending`
 performs `suspension.suspend()`, while `Ready(value)` returns the value.
 Syntax-directed lowering may specialize `await` into the generated state
 machine without changing its source contract.
-A compiler-generated future implements `Future<(), Output = T>`. Polling a body with
+A compiler-generated future implements `Future<()>` with associated `Output == T`. Polling a body with
 no suspension point transfers its captures, executes the body once, and returns `Poll.Ready(T)`;
 polling that completed future again traps. The completed state no longer drops transferred
 captures. An unhandled `unsafety` requirement is inferred from the body and attached to the

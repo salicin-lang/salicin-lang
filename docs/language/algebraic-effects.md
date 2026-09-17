@@ -136,7 +136,7 @@ specialize into CPS frames. An unknown callable must not be silently treated as 
 
 ## Runtime Contracts
 
-`Continuation<input, output>` and `EffectCallable<input, output, answer>` are
+`Continuation<Input, Output>` and `EffectCallable<Input, Output, Answer>` are
 source-declared type forms with complete core-private `= builtin()`
 initializers and compiler-owned representations. They are not empty
 structures, and their values are linear resources.

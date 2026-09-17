@@ -33,6 +33,7 @@ impl Analyzer {
                         .assignment_operator_method()
                         .expect("assignment lang item has a method"),
                     &[arguments.as_slice()],
+                    None,
                     BoundMethodConstraint::LangItem(lang_item),
                     Some(&Ty::Unit),
                     context,

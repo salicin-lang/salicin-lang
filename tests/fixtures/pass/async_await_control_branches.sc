@@ -6,7 +6,7 @@ let step = struct {
   value: i32
 }
 
-extend(step, Future(())) {
+extend(step, Future<()>) {
   let Output = i32;
 
   let poll<r: region>
@@ -26,7 +26,7 @@ let other_step = struct {
   value: i32
 }
 
-extend(other_step, Future(())) {
+extend(other_step, Future<()>) {
   let Output = i32;
 
   let poll<r: region>

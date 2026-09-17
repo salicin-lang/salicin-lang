@@ -137,7 +137,7 @@ pub let Chain = trait {
 
   let chain<e: effects, U: type>
     (self)
-    (transform: (Item): U with<e>): Rebind(U) with<e>
+    (transform: (Item): U with<e>): Rebind<U> with<e>
 }
 pub let Coalesce = trait {
   let Item: type
@@ -1856,7 +1856,7 @@ fn validate_constraint_query_contract(program: &Program, diagnostics: &mut Vec<S
             .collect::<Vec<_>>();
         if fragments.len() != 1 {
             diagnostics.push(format!(
-                "core must declare exactly one `pub let {name}: sort({})` contract",
+                "core must declare exactly one `pub let {name}: sort<{}>` contract",
                 descriptor.universe_level
             ));
             continue;
@@ -1869,7 +1869,7 @@ fn validate_constraint_query_contract(program: &Program, diagnostics: &mut Vec<S
             || program.item_visibilities[index] != Visibility::Public
         {
             diagnostics.push(format!(
-                "compile-time {name} fragment sort must have shape `pub let {name}: sort({})`",
+                "compile-time {name} fragment sort must have shape `pub let {name}: sort<{}>`",
                 descriptor.universe_level
             ));
         }
@@ -1985,7 +1985,7 @@ fn validate_constraint_query_contract(program: &Program, diagnostics: &mut Vec<S
     );
     if !valid {
         diagnostics.push(
-            "compile-time constraint query must have shape `extend(type, is(constraint)) { let is<left: type, right: constraint>: bool = builtin() }`"
+            "compile-time constraint query must have shape `extend(type, Is<constraint>) { let is<Left: type, right: constraint>: bool = builtin() }`"
                 .to_owned(),
         );
     }
@@ -2546,13 +2546,13 @@ fn validate_sort(
     };
     if !valid {
         let shape = match kind {
-            LangItemKind::TypeSort => "pub let type: sort(2)",
-            LangItemKind::RegionSort => "pub let region: sort(2)",
-            LangItemKind::EffectSort => "pub let effect: sort(2)",
-            LangItemKind::EffectsSort => "pub let effects: sort(2)",
-            LangItemKind::ParametersSort => "pub let parameters: sort(2)",
-            LangItemKind::AbiSort => "pub let abi = sort(1) { c }",
-            LangItemKind::AccessSort => "pub let access = sort(1) { shared, mut }",
+            LangItemKind::TypeSort => "pub let type: sort<2>",
+            LangItemKind::RegionSort => "pub let region: sort<2>",
+            LangItemKind::EffectSort => "pub let effect: sort<2>",
+            LangItemKind::EffectsSort => "pub let effects: sort<2>",
+            LangItemKind::ParametersSort => "pub let parameters: sort<2>",
+            LangItemKind::AbiSort => "pub let abi = sort<1> { c }",
+            LangItemKind::AccessSort => "pub let access = sort<1> { shared, mut }",
             _ => unreachable!("validate_sort called for non-sort lang item"),
         };
         diagnostics.push(format!("lang item `{kind}` must have shape `{shape}`"));
@@ -2659,13 +2659,13 @@ fn validate_syntax_contract(
     if !valid {
         let shape = match kind {
             LangItemKind::Foreign => {
-                "pub let foreign<abi: abi>: never = builtin()` or `pub let foreign<abi: abi, symbol: string>: never = builtin()"
+                "pub let foreign<abi: abi>: never = builtin()` or `pub let foreign<abi: abi, symbol: String>: never = builtin()"
             }
             LangItemKind::Test => {
-                "pub let test<name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()"
+                "pub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()"
             }
             LangItemKind::Requires => {
-                "pub let requires<condition: bool, e: effects, result: type>: with<e>(move body: with<e>((): result)): result = builtin()"
+                "pub let requires<condition: bool, e: effects, Result: type>: with<e>(move body: with<e>((): Result)): Result = builtin()"
             }
             _ => unreachable!(),
         };
@@ -3904,7 +3904,7 @@ fn validate_handle(definition: &TraitDef, diagnostics: &mut Vec<String>) {
                 compile_groups,
                 kind,
                 default,
-            }, TraitMember::Function(function)] if name == "clauses"
+            }, TraitMember::Function(function)] if name == "Clauses"
                 && compile_groups == &vec![vec![type_parameter("Value"), type_parameter("Answer")]]
                 && *kind == AssociatedKind::Parameters
                 && default.is_none()
@@ -3912,7 +3912,7 @@ fn validate_handle(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Handle` must have shape `pub let Handle = trait<self: effect> { let clauses<Value: type, Answer: type>: parameters; let handle<Value: type, Answer: type, rest: effects> ...clauses(Value, Answer) (move action: (): Value with<self, rest>): Answer with<rest> }`"
+            "lang item `Handle` must have shape `pub let Handle = trait<self: effect> { let Clauses<Value: type, Answer: type>: parameters; let handle<Value: type, Answer: type, rest: effects> ...Clauses<Value, Answer> (move action: (): Value with<self, rest>): Answer with<rest> }`"
                 .to_owned(),
         );
     }
@@ -3940,13 +3940,13 @@ fn valid_handle_method(function: &Function) -> bool {
         && function.effects == effect_parameter("rest")
         && function.where_predicates.is_empty()
         && function.body.is_none()
-        && clauses.name == "clauses"
+        && clauses.name == "Clauses"
         && clauses.mode == PassMode::Inferred
         && clauses.ty
             == Type::Named(
                 "$parameter$groups$expand".to_owned(),
                 vec![Type::Named(
-                    "clauses".to_owned(),
+                    "Clauses".to_owned(),
                     vec![named_type("Value"), named_type("Answer")],
                 )],
             )

@@ -20,7 +20,7 @@ let read_early: with<read>(counter: Ptr<mut><i32>): i32 = {
 
 let main(): i32 = {
   let counter = unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *counter = 0 }
   let result = read.handle read { (resume) -> resume(41) } action {

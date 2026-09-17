@@ -6,7 +6,7 @@ extend(resource, Droppable) {
 }
 
 let bag = struct { value: resource }
-extend(bag, Index(i32)) {
+extend(bag, Index<i32>) {
   let Output = resource;
   let index<a: access>
     (self: Borrow<a><self>)

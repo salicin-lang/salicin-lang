@@ -19,7 +19,7 @@ extend(step, Droppable) {
   }
 }
 
-extend(step, Future(())) {
+extend(step, Future<()>) {
   let Output = i32;
 
   let poll<r: region>
@@ -77,7 +77,7 @@ let run_cancelled(drops: Ptr<mut><i32>): i32 = {
 
 let main(): i32 = {
   let drops = unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe {
     *drops = 0

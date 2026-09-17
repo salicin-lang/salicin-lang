@@ -178,7 +178,7 @@ Examples:
 
 ```salicin
 type_of<42>           // i32
-type_of<runtime_text> // string
+type_of<runtime_text> // String
 
 sort_of<i32>          // type
 sort_of<'static>      // region
@@ -259,10 +259,10 @@ when the `alloc` package is absent:
 /// Owning, growable, well-formed UTF-8 text.
 pub let String: type = builtin()
 
-extend(string, core.marker.movable) {}
+extend(String, core.marker.Movable) {}
 
-extend(string, core.marker.droppable) {
-  let drop(self: borrow<mut><self>)(): () = builtin()
+extend(String, core.marker.Droppable) {
+  let drop(self: Borrow<mut><self>)(): () = builtin()
 }
 ```
 
@@ -315,17 +315,17 @@ exact signatures form the contract.
 
 ```salicin
 // Creates the empty inline string.
-let string_new(): string = builtin()
+let string_new(): String = builtin()
 
 // Creates an empty string with space for at least `capacity` UTF-8 bytes.
-let string_with_capacity(capacity: u64): string = builtin()
+let string_with_capacity(capacity: u64): String = builtin()
 
-let string_len_bytes(value: borrow<string>): u64 = builtin()
-let string_capacity(value: borrow<string>): u64 = builtin()
+let string_len_bytes(value: Borrow<String>): u64 = builtin()
+let string_capacity(value: Borrow<String>): u64 = builtin()
 
 // The source wrapper performs the bounds check.
 let string_byte_at_unchecked(
-  value: borrow<string>,
+  value: Borrow<String>,
   index: u64,
 ): u8 = builtin()
 
@@ -333,35 +333,35 @@ let string_byte_at_unchecked(
 let string_as_bytes<
   r: region,
 >
-  (value: borrow<r><string>): borrow<r><slice<u8>> = builtin()
+  (value: Borrow<r><String>): Borrow<r><Slice<u8>> = builtin()
 
 let string_reserve(
-  value: borrow<mut><string>,
+  value: Borrow<mut><String>,
   additional: u64,
 ): () = builtin()
 
 // Callers preserve the UTF-8 invariant.
 let string_push_byte_unchecked: with<core.unsafe.unsafety>(
-  value: borrow<mut><string>,
+  value: Borrow<mut><String>,
   byte: u8,
 ): () = builtin()
 
 // `new_length` has already been checked as a UTF-8 boundary.
 let string_truncate_unchecked: with<core.unsafe.unsafety>(
-  value: borrow<mut><string>,
+  value: Borrow<mut><String>,
   new_length: u64,
 ): () = builtin()
 
 // Transfers ownership between the opaque string and allocation adapters.
 pub let string_from_raw_parts: with<core.unsafe.unsafety>(
-  pointer: ptr<mut><u8>,
+  pointer: Ptr<mut><u8>,
   length: u64,
   capacity: u64,
-): string = builtin()
+): String = builtin()
 
 pub let string_into_raw_parts: with<core.unsafe.unsafety>(
-  move value: string,
-): (ptr<mut><u8>, u64, u64) = builtin()
+  move value: String,
+): (Ptr<mut><u8>, u64, u64) = builtin()
 ```
 
 The raw-parts operations always return heap-owned storage. Converting an
@@ -382,40 +382,40 @@ lowering or string operation selected by spelling is a contract violation.
 Public methods are ordinary source wrappers wherever possible:
 
 ```salicin
-extend(string) {
-  let new(): string = {
+extend(String) {
+  let new(): String = {
     string_new()
   }
 
-  let with_capacity(capacity: u64): string = {
+  let with_capacity(capacity: u64): String = {
     string_with_capacity(capacity)
   }
 
-  let len_bytes(self: borrow<self>)(): u64 = {
+  let len_bytes(self: Borrow<self>)(): u64 = {
     string_len_bytes(self)
   }
 
-  let capacity(self: borrow<self>)(): u64 = {
+  let capacity(self: Borrow<self>)(): u64 = {
     string_capacity(self)
   }
 
-  let is_empty(self: borrow<self>)(): bool = {
+  let is_empty(self: Borrow<self>)(): bool = {
     self.len_bytes() == 0
   }
 
   let as_bytes<r: region>
-    (self: borrow<r><self>)(): borrow<r><slice<u8>> = {
+    (self: Borrow<r><self>)(): Borrow<r><Slice<u8>> = {
     string_as_bytes(self)
   }
 
-  let byte_at(self: borrow<self>)(index: u64): u8 = {
+  let byte_at(self: Borrow<self>)(index: u64): u8 = {
     if index >= self.len_bytes() {
       unsafe { raw_trap() }
     }
     string_byte_at_unchecked(self, index)
   }
 
-  let reserve(self: borrow<mut><self>)(additional: u64): () = {
+  let reserve(self: Borrow<mut><self>)(additional: u64): () = {
     string_reserve(self, additional)
   }
 }
@@ -438,8 +438,8 @@ compile-time parameters are available, `core/string.sc` declares:
 /// Materializes compiler-validated UTF-8 literal bytes as `String`.
 let string_literal<
   n: usize,
-  bytes: array<u8><n>,
->: string = builtin()
+  bytes: Array<u8><n>,
+>: String = builtin()
 ```
 
 The lexer decodes escapes and validates source UTF-8, then expression
@@ -506,21 +506,21 @@ let Vec = alloc.vec.Vec
 let Result = core.Result
 
 pub let FromUtf8Error = struct {
-  bytes: vec<u8>,
+  bytes: Vec<u8>,
   valid_prefix: u64,
 }
 
 /// Validates and consumes `bytes`, transferring its allocation on success.
 pub let string_from_utf8(
-  move bytes: vec<u8>,
-): result<from_utf8_error><string> = {
+  move bytes: Vec<u8>,
+): Result<FromUtf8Error><String> = {
   // UTF-8 validation remains ordinary Salicin source.
   // On success, take the vector raw parts and call the validated core
   // `string_from_raw_parts` contract.
 }
 
 /// Consumes a string and returns owned bytes.
-pub let string_into_bytes(move value: string): vec<u8> = {
+pub let string_into_bytes(move value: String): Vec<u8> = {
   // Call `string_into_raw_parts`, then construct `Vec<u8>`.
 }
 ```
@@ -530,7 +530,7 @@ the common inherent `String` API lives in `core.string`. Allocation-specific
 zero-copy adapters are free functions in `alloc.string`; they do not create a
 second type or rely on an orphan inherent extension.
 
-An eventual `str` or `string_slice(r)` may be a non-owning, UTF-8-boundary
+An eventual `str` or `string_slice<r>` may be a non-owning, UTF-8-boundary
 checked view. It is not a second compiler/runtime string identity: literals,
 compile-time parameters, owned values, equality, and reflection continue to
 use `String`. A borrowed view must carry or be constrained by its source
@@ -549,7 +549,7 @@ pub let test<name: String>(
 
 The top-level `test("name") { ... }` syntax supplies `name` as compiler
 metadata to the validated contract. The body
-returns unit and may fail only through `throwing<string>`. Registration names
+returns unit and may fail only through `throwing<String>`. Registration names
 are read from `CtfeValue::String`, encoded deterministically for symbols when
 needed, and decoded only at the CLI boundary. The symbol encoding is not the
 semantic identity of the string.

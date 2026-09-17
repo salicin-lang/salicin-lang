@@ -3,7 +3,7 @@ let identity<t: type>: type = t
 let factory = trait {
   let Item<t: type>: type
 
-  let make(self: Borrow<self>)(value: i32): Item(i32)
+  let make(self: Borrow<self>)(value: i32): Item<i32>
 }
 
 let cell = struct {}

@@ -632,7 +632,7 @@ impl Analyzer {
         let Some(effect_name) = source_type_expression_name(effect) else {
             return false;
         };
-        let root_name = effect_name.split('(').next().unwrap_or(&effect_name);
+        let root_name = effect_name.split('<').next().unwrap_or(&effect_name);
         if !self.collection.effect_defs.contains_key(root_name) {
             return false;
         }
@@ -1476,7 +1476,7 @@ impl Analyzer {
         let Some(effect_name) = source_type_expression_name(effect) else {
             return;
         };
-        let root_name = effect_name.split('(').next().unwrap_or(&effect_name);
+        let root_name = effect_name.split('<').next().unwrap_or(&effect_name);
         if !self.collection.effect_defs.contains_key(root_name) {
             return;
         }

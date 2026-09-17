@@ -1,4 +1,4 @@
-use crate::ast::{Binding, CallArg, Expr, MatchArm, Pattern, PatternFields, Stmt};
+use crate::ast::{Binding, CallArg, Expr, GroupDelimiter, MatchArm, Pattern, PatternFields, Stmt};
 
 use super::fallible::{CoalescePayloadHint, InferredEnumHints, StandardFallibleKind};
 use super::flow::LowerCtx;
@@ -174,16 +174,17 @@ impl Analyzer {
                 value: left.clone(),
             })],
             Some(Box::new(Expr::Call(
-                Box::new(Expr::Call(
-                    Box::new(Expr::Member(
+                Box::new(Expr::DelimitedCall {
+                    callee: Box::new(Expr::Member(
                         Box::new(Expr::Name(SCRUTINEE_BINDING.to_owned())),
                         "$lang$coalesce".to_owned(),
                     )),
-                    vec![CallArg {
+                    delimiter: GroupDelimiter::Angle,
+                    arguments: vec![CallArg {
                         label: None,
                         value: Expr::Name("pure".to_owned()),
                     }],
-                )),
+                }),
                 vec![CallArg {
                     label: None,
                     value: Expr::Closure(Vec::new(), Box::new(right.clone())),

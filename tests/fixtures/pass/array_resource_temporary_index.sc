@@ -12,7 +12,7 @@ let make(counter: Ptr<mut><i32>): Array<resource><2> = { [resource{ counter: cou
 
 let main(): i32 = {
   let counter = unsafe {
-    raw_alloc(i32)(size_of<i32>, align_of<i32>)
+    raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe {
     *counter = 0

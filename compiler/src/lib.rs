@@ -517,14 +517,14 @@ mod tests {
     fn access_compile_parameters_select_shared_or_mutable_borrowing() {
         let source = "let inspect<a: access>(value: Borrow<a><i32>): i32 = { value }\n\
                       let borrow_value<a: access, r: region, t: type>\n\
-                        (value: Borrow<a><r><t>): Borrow<a><r><t> = { borrow(a)(value) }\n\
+                        (value: Borrow<a><r><t>): Borrow<a><r><t> = { borrow<a>(value) }\n\
                       let main(): i32 = {\n\
                         let mut left = 20\n\
                         let right = 22\n\
                         let mut third = 0\n\
-                        let mutable = borrow_value(mut, i32)(left)\n\
-                        let shared = borrow_value(t: i32)(right)\n\
-                        mutable + shared + inspect(mut)(third)\n\
+                        let mutable = borrow_value<mut, i32>(left)\n\
+                        let shared = borrow_value<t: i32>(right)\n\
+                        mutable + shared + inspect<mut>(third)\n\
                       }\n";
         compile_source(source).expect("access-generic function should instantiate both modes");
     }
@@ -537,7 +537,7 @@ mod tests {
                       let main(): i32 = {\n\
                         select_bool(true)(20) +\n\
                           select_bool(false)(1) +\n\
-                          select_optimization(size)(1)\n\
+                          select_optimization<size>(1)\n\
                       }\n";
         compile_source(source)
             .expect("bool and user-declared closed types should support compile-time values");
@@ -566,7 +566,7 @@ mod tests {
     #[test]
     fn parameter_modifiers_are_type_checked_after_instantiation() {
         let source = "let decorate<b: bool>(b value: i32): i32 = { value }\n\
-                      let main(): i32 = { decorate(true)(42) }\n";
+                       let main(): i32 = { decorate<true>(42) }\n";
         let errors = compile_source(source).unwrap_err();
         assert!(errors.iter().any(|error| {
             error.contains("parameter modifier `b`")
@@ -579,10 +579,10 @@ mod tests {
         let source = "let modifier_identity<m: <p: parameters>: parameters> = m\n\
              let apply<m: <p: parameters>: parameters, t: type>(m value: t): t = { value }\n\
              let forward<m: <p: parameters>: parameters, t: type>(m value: t): t = {\n\
-               apply(modifier_identity(m), t)(value)\n\
+               apply<modifier_identity<m>, t>(value)\n\
              }\n\
              let main(): i32 = {\n\
-               forward(copy, i32)(20) + forward(move, i32)(22)\n\
+               forward<copy, i32>(20) + forward<move, i32>(22)\n\
              }\n";
         compile_source(source)
             .expect("copy and move parameter modifier functions should instantiate generically");
@@ -711,13 +711,13 @@ mod tests {
                       let main(): i32 = {\n\
                         let mut boxed = Box.new(20)\n\
                         do {\n\
-                          let value = boxed.as_ref(mut)()\n\
+                          let value = boxed.as_ref<mut>()\n\
                           value = 21\n\
                         }\n\
                         let mut values: Vec<i32> = Vec<i32>.new()\n\
                         values.push(20)\n\
                         do {\n\
-                          let value = values.at(mut)(0)\n\
+                          let value = values.at<mut>(0)\n\
                           value = value + 1\n\
                         }\n\
                         boxed.read() + values.read(0)\n\
@@ -853,22 +853,22 @@ mod tests {
     #[test]
     fn generic_inherent_methods_accept_member_compile_parameters() {
         let source = "let cell<t: type> = struct { value: t }\n\
-                      extend(cell(t)) {\n\
-                        let make<u: type>(move value: t)(marker: u): cell(t) = {\n\
-                          cell(t) { value: value }\n\
+                      extend(cell<t>) {\n\
+                        let make<u: type>(move value: t)(marker: u): cell<t> = {\n\
+                          cell<t> { value: value }\n\
                         }\n\
                         let view<a: access>(self: Borrow<a><self>)(): Borrow<a><t> = {\n\
-                          borrow(a)(self.value)\n\
+                          borrow<a>(self.value)\n\
                         }\n\
                       }\n\
                       let main(): i32 = {\n\
-                        let mut cell = cell.make(t: i32)(u: bool)(20)(true)\n\
+                        let mut cell = cell.make<t: i32><u: bool>(20)(true)\n\
                         let before = do {\n\
                           let reference = cell.view()\n\
                           reference\n\
                         }\n\
                         do {\n\
-                          let reference = cell.view(a: mut)()\n\
+                          let reference = cell.view<a: mut>()\n\
                           reference = 21\n\
                         }\n\
                         do {\n\
@@ -946,12 +946,12 @@ mod tests {
         let ir = compile_source(
             "let Vec = alloc.vec.Vec\n\
              let main(): i32 = {\n\
-               let mut values = Vec.new(T: i32)()\n\
+               let mut values = Vec.new<T: i32>()\n\
                values.push(1)\n\
                values.push(2)\n\
                do {\n\
-                 let slice = values.as_slice(a: mut)()\n\
-                 let item = slice.at(a: mut)(1)\n\
+                 let slice = values.as_slice<a: mut>()\n\
+                 let item = slice.at<a: mut>(1)\n\
                  item = 42\n\
                }\n\
                values.read(1)\n\
@@ -972,7 +972,7 @@ mod tests {
                let index<a: access>\n\
                  (self: Borrow<a><self>)\n\
                  (key: i32): Borrow<a><i32> = {\n\
-                 borrow(a)(self.value)\n\
+                  borrow<a>(self.value)\n\
                }\n\
              }\n\
              let main(): i32 = {\n\
@@ -995,7 +995,7 @@ mod tests {
                let index<a: access>\n\
                  (self: Borrow<a><self>)\n\
                  (key: i32): Borrow<a><i32> = {\n\
-                 borrow(a)(self.value)\n\
+                  borrow<a>(self.value)\n\
                }\n\
              }\n\
              let main(): i32 = {\n\
@@ -1018,7 +1018,7 @@ mod tests {
                let index<a: access>\n\
                  (self: Borrow<a><self>)\n\
                  (key: i32): Borrow<a><i32> = {\n\
-                 borrow(a)(self.value)\n\
+                  borrow<a>(self.value)\n\
                }\n\
              }\n\
              let read(value: Borrow<i32>): i32 = { value }\n\
@@ -1037,7 +1037,7 @@ mod tests {
             "let Vec = alloc.vec.Vec\n\
              let read(value: Borrow<i32>): i32 = { value }\n\
              let main(): i32 = {\n\
-               let mut values = Vec.new(T: i32)()\n\
+               let mut values = Vec.new<T: i32>()\n\
                values.push(1)\n\
                values[0] = 42\n\
                let value = borrow(values[0])\n\

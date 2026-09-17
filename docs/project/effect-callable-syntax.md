@@ -8,7 +8,7 @@ Status: accepted and implemented for Edition 2026
 the callable type `F`. Its operand must be callable:
 
 ```salicin
-with<io>((str): string)
+with<io>((str): String)
 with<e>((i32): i32)
 ```
 
@@ -20,7 +20,7 @@ An effectful declaration places a callable-type/body boundary after its name
 and compile-time parameter groups:
 
 ```salicin
-let read: with<io>(path: str): string = { ... }
+let read: with<io>(path: str): String = { ... }
 
 let apply<e: effects>: with<e>
   (action: with<e>((i32): i32))

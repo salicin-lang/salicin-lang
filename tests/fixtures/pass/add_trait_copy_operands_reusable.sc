@@ -5,7 +5,7 @@ let number = struct { value: i32 }
 
 extend(number, Copyable) {}
 
-extend(number, Add(number)) {
+extend(number, Add<number>) {
   let Output = number;
   let add(self)(rhs: number): number = {
     number{ value: self.value + rhs.value }

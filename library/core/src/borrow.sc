@@ -1,6 +1,6 @@
 // Borrow access, type, and value contracts.
 /// Describes whether a Borrow is shared or mutable.
-pub let access = sort(1) {
+pub let access = sort<1> {
   /// Shared read-only access.
   shared
   /// Exclusive mutable access.

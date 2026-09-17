@@ -10,7 +10,7 @@ extend(leaf, read) {
 
 let cell<t: type> = struct { value: t }
 
-extend(cell(t), read)
+extend(cell<t>, read)
 (requires: t is read) {
   let read(self: Borrow<self>)(): i32 = { self.value.read() }
 }
@@ -23,7 +23,7 @@ let value = trait {
   let take(move self)(): Item
 }
 
-extend(cell(t), value) {
+extend(cell<t>, value) {
   let Item = t;
   let take(move self)(): t = { self.value }
 }

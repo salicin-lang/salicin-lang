@@ -11,12 +11,12 @@ This contract defines the safe common access vocabulary for `Array<T><n>`,
 All three containers expose:
 
 - `len(): u64` and `is_empty(): bool`;
-- `get(index): Option<Borrow<T>>`, with `get(mut)` returning a mutable borrow;
-- `at(index): Borrow<T>`, with `at(mut)` returning a mutable borrow;
+- `get(index): Option<Borrow<T>>`, with `get<mut>` returning a mutable borrow;
+- `at(index): Borrow<T>`, with `at<mut>` returning a mutable borrow;
 - `first()` and `last()` as checked access, with mutable forms selected by
   explicit `mut`.
 
-`Array` and `Vec` additionally expose `as_slice()`, with `as_slice(mut)`
+`Array` and `Vec` additionally expose `as_slice()`, with `as_slice<mut>`
 preserving exclusive access. The resulting slice has the same source region
 as its container borrow and does not allocate or copy elements.
 

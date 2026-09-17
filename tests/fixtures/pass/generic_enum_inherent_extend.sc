@@ -3,7 +3,7 @@ let maybe<t: type> = enum {
   None,
 }
 
-extend(maybe(t)) {
+extend(maybe<t>) {
   let unwrap_or(move self)(move fallback: t): t = { match self
       { Some(value) -> value }
       { None -> fallback }

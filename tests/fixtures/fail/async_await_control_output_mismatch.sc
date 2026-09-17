@@ -4,7 +4,7 @@ let Future = core.async.Future
 let number = struct {}
 let flag = struct {}
 
-extend(number, Future(())) {
+extend(number, Future<()>) {
   let Output = i32;
 
   let poll<r: region>
@@ -14,7 +14,7 @@ extend(number, Future(())) {
   }
 }
 
-extend(flag, Future(())) {
+extend(flag, Future<()>) {
   let Output = bool;
 
   let poll<r: region>

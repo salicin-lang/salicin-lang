@@ -1,5 +1,6 @@
 use crate::ast::{
-    CallArg, Expr, ItemOrigin, MatchArm, Param, PassMode, Pattern, PatternFields, Type,
+    CallArg, Expr, GroupDelimiter, ItemOrigin, MatchArm, Param, PassMode, Pattern, PatternFields,
+    Type,
 };
 use crate::core::LangItemKind;
 
@@ -712,12 +713,13 @@ impl Analyzer {
             }],
             Box::new(access),
         );
-        let callee = Expr::Call(
-            Box::new(Expr::Member(
+        let callee = Expr::DelimitedCall {
+            callee: Box::new(Expr::Member(
                 Box::new(base.clone()),
                 "$lang$chain".to_owned(),
             )),
-            vec![
+            delimiter: GroupDelimiter::Angle,
+            arguments: vec![
                 CallArg {
                     label: None,
                     value: Expr::Name("pure".to_owned()),
@@ -727,7 +729,7 @@ impl Analyzer {
                     value: source_type_expression(&plan.output_source),
                 },
             ],
-        );
+        };
         let call = Expr::Call(
             Box::new(callee),
             vec![CallArg {

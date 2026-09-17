@@ -164,22 +164,25 @@ impl Analyzer {
                 )?;
                 Self::evaluate_static_binary(left, *operator, right)
             }
-            StaticExpr::Call { function, groups } => {
-                let expression =
-                    groups
-                        .iter()
-                        .fold(Expr::Name(function.clone()), |callee, group| {
-                            Expr::Call(
-                                Box::new(callee),
-                                group
-                                    .iter()
-                                    .map(|argument| CallArg {
-                                        label: argument.label.clone(),
-                                        value: Self::source_static_expression(&argument.value),
-                                    })
-                                    .collect(),
-                            )
-                        });
+            StaticExpr::Call {
+                function,
+                groups,
+                group_delimiters,
+            } => {
+                let expression = groups.iter().zip(group_delimiters).fold(
+                    Expr::Name(function.clone()),
+                    |callee, (group, delimiter)| Expr::DelimitedCall {
+                        callee: Box::new(callee),
+                        delimiter: *delimiter,
+                        arguments: group
+                            .iter()
+                            .map(|argument| CallArg {
+                                label: argument.label.clone(),
+                                value: Self::source_static_expression(&argument.value),
+                            })
+                            .collect(),
+                    },
+                );
                 self.evaluate_static_body(
                     &expression,
                     expected,
@@ -204,22 +207,24 @@ impl Analyzer {
                 *operator,
                 Box::new(Self::source_static_expression(right)),
             ),
-            StaticExpr::Call { function, groups } => {
-                groups
-                    .iter()
-                    .fold(Expr::Name(function.clone()), |callee, group| {
-                        Expr::Call(
-                            Box::new(callee),
-                            group
-                                .iter()
-                                .map(|argument| CallArg {
-                                    label: argument.label.clone(),
-                                    value: Self::source_static_expression(&argument.value),
-                                })
-                                .collect(),
-                        )
-                    })
-            }
+            StaticExpr::Call {
+                function,
+                groups,
+                group_delimiters,
+            } => groups.iter().zip(group_delimiters).fold(
+                Expr::Name(function.clone()),
+                |callee, (group, delimiter)| Expr::DelimitedCall {
+                    callee: Box::new(callee),
+                    delimiter: *delimiter,
+                    arguments: group
+                        .iter()
+                        .map(|argument| CallArg {
+                            label: argument.label.clone(),
+                            value: Self::source_static_expression(&argument.value),
+                        })
+                        .collect(),
+                },
+            ),
         }
     }
 

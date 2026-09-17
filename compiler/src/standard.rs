@@ -157,16 +157,9 @@ pub(crate) fn naming_diagnostics(program: &Program, layer: &str) -> Vec<String> 
                         TraitMember::AssociatedType {
                             name,
                             compile_groups,
-                            kind,
                             ..
                         } => {
-                            let style = match kind {
-                                crate::ast::AssociatedKind::Type => StandardNameStyle::PascalCase,
-                                crate::ast::AssociatedKind::Parameters => {
-                                    StandardNameStyle::SnakeCase
-                                }
-                            };
-                            check(name, "associated type", style);
+                            check(name, "associated type", StandardNameStyle::PascalCase);
                             check_compile_parameters(compile_groups, &mut check);
                         }
                         TraitMember::Function(function) => {

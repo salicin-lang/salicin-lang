@@ -198,7 +198,10 @@ impl Parser {
                     ..crate::ast::ItemOrigin::default()
                 });
             }
-            if !self.at(&TokenKind::Eof) && !self.at_separator() {
+            if !self.at(&TokenKind::Eof)
+                && !self.at_separator()
+                && self.previous().end_line == self.current().line
+            {
                 return Err(self.error_here("expected a newline or `;` after declaration"));
             }
             self.skip_separators();
@@ -483,7 +486,7 @@ impl Parser {
                 Some(TokenKind::Ident(name)) if name == "domain"
             ) {
                 return Err(self.error_here(
-                    "`domain` was removed; user code must declare a finite sort with `let name = sort(1) { ... }` because abstract sorts are compiler-owned",
+                    "`domain` was removed; user code must declare a finite sort with `let name = sort<1> { ... }` because abstract sorts are compiler-owned",
                 ));
             }
             if matches!(
@@ -713,7 +716,7 @@ impl Parser {
 
         if self.at_context_ident("domain") {
             return Err(self.error_here(
-                "`domain` was removed; declare a finite sort with `let name = sort(1) { ... }`",
+                "`domain` was removed; declare a finite sort with `let name = sort<1> { ... }`",
             ));
         }
 
@@ -733,7 +736,7 @@ impl Parser {
             let level = self.sort_level_literal()?;
             if !self.at(&TokenKind::LBrace) {
                 return Err(self.error_here(
-                    "abstract sorts use `let name: sort(n)`; an empty defined sort uses `let name = sort(n) {}`",
+                    "abstract sorts use `let name: sort<n>`; an empty defined sort uses `let name = sort<n> {}`",
                 ));
             }
             return self.sort_definition(name, level).map(Item::Sort);
@@ -945,7 +948,10 @@ impl Parser {
                 where_predicates: Vec::new(),
                 body: None,
             });
-            if !self.at(&TokenKind::RBrace) && !self.at_separator() {
+            if !self.at(&TokenKind::RBrace)
+                && !self.at_separator()
+                && self.previous().end_line == self.current().line
+            {
                 return Err(self.error_here("expected a newline or `;` after effect operation"));
             }
             self.skip_separators();
@@ -1101,7 +1107,7 @@ impl Parser {
     }
 
     fn sort_level_literal(&mut self) -> Result<u64, ParseError> {
-        self.expect(&TokenKind::LParen, "`(` after `sort`")?;
+        self.expect(&TokenKind::Less, "`<` after `sort`")?;
         let token = self.current().clone();
         let TokenKind::Integer(level) = token.kind else {
             return Err(self.error_at(
@@ -1112,15 +1118,15 @@ impl Parser {
         let level = u64::try_from(level)
             .map_err(|_| self.error_at(&token, "sort level does not fit in `usize`"))?;
         if level == 0 {
-            return Err(self.error_at(&token, "`sort(0)` is invalid; sort levels start at 1"));
+            return Err(self.error_at(&token, "`sort<0>` is invalid; sort levels start at 1"));
         }
         self.advance();
-        self.expect(&TokenKind::RParen, "`)` after sort level")?;
+        self.expect_group_close(&TokenKind::Greater, "`>` after sort level")?;
         Ok(level)
     }
 
     fn compile_sort_level(&mut self) -> Result<crate::ast::SortLevel, ParseError> {
-        self.expect(&TokenKind::LParen, "`(` after `sort`")?;
+        self.expect(&TokenKind::Less, "`<` after `sort`")?;
         let token = self.current().clone();
         let level = match token.kind {
             TokenKind::Integer(level) => {
@@ -1128,7 +1134,7 @@ impl Parser {
                     .map_err(|_| self.error_at(&token, "sort level does not fit in `usize`"))?;
                 if level == 0 {
                     return Err(
-                        self.error_at(&token, "`sort(0)` is invalid; sort levels start at 1")
+                        self.error_at(&token, "`sort<0>` is invalid; sort levels start at 1")
                     );
                 }
                 crate::ast::SortLevel::Literal(level)
@@ -1142,7 +1148,7 @@ impl Parser {
             }
         };
         self.advance();
-        self.expect(&TokenKind::RParen, "`)` after sort level")?;
+        self.expect_group_close(&TokenKind::Greater, "`>` after sort level")?;
         Ok(level)
     }
 
@@ -1230,7 +1236,10 @@ impl Parser {
                 return Err(self.error_here("expected `}` before end of extend declaration"));
             }
             members.push(self.extend_member()?);
-            if !self.at(&TokenKind::RBrace) && !self.at_separator() {
+            if !self.at(&TokenKind::RBrace)
+                && !self.at_separator()
+                && self.previous().end_line == self.current().line
+            {
                 return Err(self.error_here("expected a newline or `;` after extend member"));
             }
             self.skip_separators();
@@ -1778,15 +1787,15 @@ impl Parser {
         }
         let name = path.join(".");
         let mut arguments = Vec::new();
-        if self.take(&TokenKind::LParen) && !self.take(&TokenKind::RParen) {
+        if self.take(&TokenKind::Less) && !self.take(&TokenKind::Greater) {
             loop {
                 arguments.push(self.type_expr()?);
                 if self.take(&TokenKind::Comma) {
-                    if self.take(&TokenKind::RParen) {
+                    if self.take(&TokenKind::Greater) {
                         break;
                     }
                 } else {
-                    self.expect(&TokenKind::RParen, "`)` after parameter schema arguments")?;
+                    self.expect(&TokenKind::Greater, "`>` after parameter schema arguments")?;
                     break;
                 }
             }
@@ -2735,7 +2744,10 @@ impl Parser {
                 return Err(self.error_here("expected `}` before end of trait declaration"));
             }
             members.push(self.trait_member(&member_effect_parameters)?);
-            if !self.at(&TokenKind::RBrace) && !self.at_separator() {
+            if !self.at(&TokenKind::RBrace)
+                && !self.at_separator()
+                && self.previous().end_line == self.current().line
+            {
                 return Err(self.error_here("expected a newline or `;` after trait member"));
             }
             self.skip_separators();
@@ -3010,7 +3022,7 @@ impl Parser {
 
     fn function_result_type(&mut self) -> Result<Type, ParseError> {
         if self.at_context_ident("sort")
-            && self.at_offset(1, &TokenKind::LParen)
+            && self.at_offset(1, &TokenKind::Less)
             && matches!(
                 self.tokens.get(self.index + 2).map(|token| &token.kind),
                 Some(TokenKind::Ident(_))
@@ -3025,11 +3037,11 @@ impl Parser {
             if token.kind != TokenKind::Integer(1) {
                 return Err(self.error_at(
                     &token,
-                    "a universe constructor result must be `sort(level + 1)`",
+                    "a universe constructor result must be `sort<level + 1>`",
                 ));
             }
             self.advance();
-            self.expect(&TokenKind::RParen, "`)` after successor universe")?;
+            self.expect_group_close(&TokenKind::Greater, "`>` after successor universe")?;
             return Ok(Type::Named(
                 "sort".to_owned(),
                 vec![Type::Named(format!("{level}+1"), Vec::new())],
@@ -3171,13 +3183,15 @@ impl Parser {
     fn type_expr(&mut self) -> Result<Type, ParseError> {
         if self.at_context_ident("with") {
             let (outer, _failure_error, _has_effect_clause) = self.function_effect_clause()?;
-            let Some(delimiter) = self.type_argument_delimiter() else {
+            if !self.at(&TokenKind::LParen) {
                 return Err(self.error_here("expected the callable operand of `with<...>`"));
-            };
-            let close = Self::group_close(delimiter);
+            }
             self.advance();
             let operand = self.type_expr()?;
-            self.expect_group_close(&close, "after the callable operand of `with<...>`")?;
+            self.expect(
+                &TokenKind::RParen,
+                "`)` after the callable operand of `with<...>`",
+            )?;
             let Type::Function {
                 groups,
                 effects: inner,
@@ -3354,8 +3368,8 @@ impl Parser {
 
     fn type_argument_delimiter(&self) -> Option<GroupDelimiter> {
         match self.current_group_delimiter()? {
-            delimiter @ (GroupDelimiter::Parenthesis | GroupDelimiter::Angle) => Some(delimiter),
-            GroupDelimiter::Square | GroupDelimiter::Brace => None,
+            delimiter @ GroupDelimiter::Angle => Some(delimiter),
+            GroupDelimiter::Parenthesis | GroupDelimiter::Square | GroupDelimiter::Brace => None,
         }
     }
 
@@ -3375,25 +3389,34 @@ impl Parser {
                 Box::new(Self::static_expression(right)?),
             )),
             Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
-                fn flatten<'a>(expression: &'a Expr, groups: &mut Vec<&'a [CallArg]>) -> &'a Expr {
+                fn flatten<'a>(
+                    expression: &'a Expr,
+                    groups: &mut Vec<&'a [CallArg]>,
+                    delimiters: &mut Vec<GroupDelimiter>,
+                ) -> &'a Expr {
                     match expression.unlocated() {
                         Expr::Call(callee, arguments) => {
-                            let root = flatten(callee, groups);
+                            let root = flatten(callee, groups, delimiters);
                             groups.push(arguments);
+                            delimiters.push(GroupDelimiter::Parenthesis);
                             root
                         }
                         Expr::DelimitedCall {
-                            callee, arguments, ..
+                            callee,
+                            delimiter,
+                            arguments,
                         } => {
-                            let root = flatten(callee, groups);
+                            let root = flatten(callee, groups, delimiters);
                             groups.push(arguments);
+                            delimiters.push(*delimiter);
                             root
                         }
                         expression => expression,
                     }
                 }
                 let mut groups = Vec::new();
-                let root = flatten(expression, &mut groups);
+                let mut group_delimiters = Vec::new();
+                let root = flatten(expression, &mut groups, &mut group_delimiters);
                 let Expr::Name(function) = root.unlocated() else {
                     return Err("static calls must name a top-level pure function");
                 };
@@ -3413,6 +3436,7 @@ impl Parser {
                                 .collect::<Result<Vec<_>, _>>()
                         })
                         .collect::<Result<Vec<_>, _>>()?,
+                    group_delimiters,
                 })
             }
             _ => Err(
