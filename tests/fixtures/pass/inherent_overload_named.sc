@@ -1,11 +1,11 @@
 let counter = struct { value: i32 }
 
 extend(counter) {
-  let add(self: borrow(self))(left: i32): i32 = { self.value + left }
-  let add(self: borrow(self))(right: i32): i32 = { self.value + right + 1 }
+  let add(self: borrow<self>)(left: i32): i32 = { self.value + left }
+  let add(self: borrow<self>)(right: i32): i32 = { self.value + right + 1 }
 
-  let make(left: i32): counter = { counter { value: left } }
-  let make(right: i32): counter = { counter { value: right + 1 } }
+  let make(left: i32): counter = { counter{ value: left } }
+  let make(right: i32): counter = { counter{ value: right + 1 } }
 }
 
 let main(): i32 = {

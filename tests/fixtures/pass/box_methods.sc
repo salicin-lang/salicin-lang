@@ -11,7 +11,7 @@ let main(): i32 = {
     return(0)
   }
   let rebuilt = unsafe {
-    box(i32).from_raw(pointer)
+    box<i32>.from_raw(pointer)
   }
   let current = rebuilt.into_inner()
   current - previous + 41

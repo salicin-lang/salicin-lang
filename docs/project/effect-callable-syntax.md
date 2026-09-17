@@ -4,26 +4,26 @@ Status: accepted and implemented for Edition 2026
 
 ## Contract
 
-`with(E)(F)` is a type constructor that adds the normalized effect row `E` to
+`with<E>(F)` is a type constructor that adds the normalized effect row `E` to
 the callable type `F`. Its operand must be callable:
 
 ```salicin
-with(io)((str): string)
-with(e)((i32): i32)
+with<io>((str): string)
+with<e>((i32): i32)
 ```
 
 The row belongs to the complete callable, including every runtime parameter
-group. `with()((A): B)` is equivalent to the pure callable `(A): B`.
-A non-callable operand such as `with(io)(i32)` is rejected.
+group. `with<>((A): B)` is equivalent to the pure callable `(A): B`.
+A non-callable operand such as `with<io>(i32)` is rejected.
 
 An effectful declaration places a callable-type/body boundary after its name
 and compile-time parameter groups:
 
 ```salicin
-let read: with(io)(path: str): string = { ... }
+let read: with<io>(path: str): string = { ... }
 
-let apply(comptime e: effects): with(e)
-  (action: with(e)((i32): i32))
+let apply<comptime e: effects>: with<e>
+  (action: with<e>((i32): i32))
   (value: i32): i32 = {
   action(value)
 }
@@ -36,7 +36,7 @@ its result. A pure declaration stays compact:
 let identity(value: i32): i32 = { value }
 ```
 
-`let f(...): with(e)(R)` is not an effect annotation: it attempts to use
+`let f(...): with<e>(R)` is not an effect annotation: it attempts to use
 `with` on a non-callable result and is rejected. This keeps the result
 position available for future task or computation types.
 
@@ -54,7 +54,7 @@ change handler lowering, cleanup, ownership, or calling convention.
 ## Research Basis
 
 Recent modal-effect work shows that effect tracking can be separated cleanly
-from the underlying function type, which motivates making `with(E)` an
+from the underlying function type, which motivates making `with<E>` an
 explicit callable constructor rather than decorating a result. Recent work on
 linear effects and automatic resource analysis also reinforces that exception
 and handler syntax must preserve cleanup and resource-safety semantics; this

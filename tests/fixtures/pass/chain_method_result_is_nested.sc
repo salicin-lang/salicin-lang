@@ -3,11 +3,11 @@ let option = core.option
 let boxed = struct { value: i32 }
 
 extend(boxed) {
-  let optional(move self)(): option(i32) = { option(i32).some(self.value) }
+  let optional(move self)(): option<i32> = { option<i32>.some(self.value) }
 }
 
 let main(): i32 = {
-  let nested = option(boxed).some(boxed { value: 42 })?.optional()
+  let nested = option<boxed>.some(boxed{ value: 42 })?.optional()
   match nested
     { some(inner) -> inner ?? 0 }
     { none -> 0 }

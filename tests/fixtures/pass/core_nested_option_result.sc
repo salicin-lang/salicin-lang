@@ -2,8 +2,8 @@ let option = core.option
 let result = core.result
 
 let main(): i32 = {
-  let inner = result(bool)(i32).ok(42)
-  let outer = option(result(bool)(i32)).some(inner)
+  let inner = result<bool><i32>.ok(42)
+  let outer = option<result<bool><i32>>.some(inner)
   match outer
     { some(result) -> match result
       { ok(value) -> value }

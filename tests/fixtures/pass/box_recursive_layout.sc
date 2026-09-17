@@ -2,10 +2,10 @@ let option = core.option
 
 let box = alloc.boxed.box
 
-let node = struct { value: i32, next: option(box(node)) }
+let node = struct { value: i32, next: option<box<node>> }
 
 let main(): i32 = {
-  let tail = node { value: 42, next: none }
+  let tail = node{ value: 42, next: none }
   let head = box.new(tail)
   42
 }

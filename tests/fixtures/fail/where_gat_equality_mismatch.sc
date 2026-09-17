@@ -1,7 +1,7 @@
-let view(comptime t: type)(comptime r: region): type = borrow(r)(t)
+let view<comptime t: type><comptime r: region>: type = borrow<r><t>
 
 let lend = trait {
-  let item(comptime r: region): type
+  let item<comptime r: region>: type
 }
 
 let cell = struct { value: i32 }
@@ -10,9 +10,9 @@ extend(cell, lend) {
   let item = view(i32)
 }
 
-let require_i64(comptime t: type)(move value: t): ()
-= requires(t is lend && t.item(comptime r: region) == borrow(r)(i64)) {}
+let require_i64<comptime t: type>(move value: t): ()
+= requires(t is lend && t.item<comptime r: region> == borrow(r)<i64>) {}
 
 let main(): () = {
-  require_i64(cell { value: 42 })
+  require_i64(cell{ value: 42 })
 }

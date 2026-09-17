@@ -3,7 +3,7 @@ let parse_u64_radix = core.fmt.parse_u64_radix
 let parse_i64_radix = core.fmt.parse_i64_radix
 let string_writer = alloc.string.string_writer
 
-let text_equal(left: borrow(string), right: borrow(string)): bool = {
+let text_equal(left: borrow<string>, right: borrow<string>): bool = {
   let left_view = left.as_str()
   let right_view = right.as_str()
   left_view == right_view

@@ -3,7 +3,7 @@ let vec = alloc.vec.vec
 let bomb = struct {}
 
 extend(bomb, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       raw_trap()
     }
@@ -11,8 +11,8 @@ extend(bomb, droppable) {
 }
 
 let main(): i32 = {
-  let mut values: vec(bomb) = vec(bomb).new()
-  values.push(bomb {})
+  let mut values: vec<bomb> = vec<bomb>.new()
+  values.push(bomb{})
   0
 }
 

@@ -5,18 +5,18 @@ let throwing = core.error.throwing
 
 let resource = struct {
   value: i32,
-  drops: ptr(mut)(i32),
+  drops: ptr<mut><i32>,
 }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let choose: with(throwing(bool))(fail: bool, value: i32): i32 = {
+let choose: with<throwing<bool>>(fail: bool, value: i32): i32 = {
   if fail {
     throw(true)
   } else {
@@ -24,11 +24,11 @@ let choose: with(throwing(bool))(fail: bool, value: i32): i32 = {
   }
 }
 
-let consume_or_throw: with(throwing(bool))(move resource: resource): i32 = {
+let consume_or_throw: with<throwing<bool>>(move resource: resource): i32 = {
   choose(true, resource.value)
 }
 
-let poll_once(comptime e: effects, comptime f: type, comptime t: type): with(e)(future: borrow(mut)(f)): poll(t) = requires(f is future(e) && f.output == t) {
+let poll_once<comptime e: effects, comptime f: type, comptime t: type>: with<e>(future: borrow<mut><f>): poll<t> = requires(f is future<e> && f.output == t) {
   future.poll()
 }
 
@@ -37,7 +37,7 @@ let main(): i32 = {
   let mut success = async {
     choose(false, offset)
   }
-  let success_result: result(bool)(poll(i32)) = try {
+  let success_result: result<bool><poll<i32>> = try {
     success.poll()
   }
   let success_value = match success_result
@@ -47,16 +47,16 @@ let main(): i32 = {
     { err(_) -> 0 }
 
   let drops = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   unsafe {
     *drops = 0
   }
-  let resource = resource { value: 2, drops: drops }
+  let resource = resource{ value: 2, drops: drops }
   let mut failure = async {
     consume_or_throw(resource)
   }
-  let failure_result: result(bool)(poll(i32)) = try {
+  let failure_result: result<bool><poll<i32>> = try {
     failure.poll()
   }
   let failed = match failure_result
@@ -66,7 +66,7 @@ let main(): i32 = {
     *drops
   }
   unsafe {
-    raw_dealloc(drops, size_of(i32), align_of(i32))
+    raw_dealloc(drops, size_of<i32>, align_of<i32>)
   }
 
   if success_value == 42 && failed && drop_count == 1 {

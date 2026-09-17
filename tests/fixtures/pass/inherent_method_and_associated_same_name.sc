@@ -1,12 +1,12 @@
 let number = struct { raw: i32 }
 
 extend(number) {
-  let value(self: borrow(self))(): i32 = { self.raw }
+  let value(self: borrow<self>)(): i32 = { self.raw }
   let value = 2
 }
 
 let main(): i32 = {
-  let number_value = number { raw: 40 }
+  let number_value = number{ raw: 40 }
   number_value.value() + number.value
 }
 

@@ -15,7 +15,7 @@ let classify(event: event): i32 = { match event
     { event.empty -> 0 }
 }
 
-let main(): i32 = { classify(event.value( value: payload { value: 42 } )) }
+let main(): i32 = { classify(event.value( value: payload{ value: 42 } )) }
 
 test("match_guard_copy_binding.sc") {
   std.test.assert(main() == 42)

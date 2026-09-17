@@ -1,6 +1,6 @@
 let option = core.option
 
-let next(): option(i32) = { none }
+let next(): option<i32> = { none }
 
 let main(): i32 = {
   loop {

@@ -1,6 +1,6 @@
 let option = core.option
 
-let option(comptime t: type) = enum {
+let option<comptime t: type> = enum {
   some(t),
   none,
 }

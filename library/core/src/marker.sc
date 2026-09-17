@@ -7,6 +7,6 @@ pub let copyable = trait(requires: self is movable) {}
 /// Trait for types that need cleanup when their owning value leaves scope.
 pub let droppable = trait {
   /// Releases resources owned by `self`.
-  let drop(self: borrow(mut)(self))
+  let drop(self: borrow<mut><self>)
     (): ()
 }

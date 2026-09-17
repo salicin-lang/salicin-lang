@@ -157,7 +157,7 @@ fn raw_pointer_intrinsic_errors_report_their_cause() {
         ("raw_offset_safe.sc", "requires an `unsafe` block"),
         (
             "raw_offset_non_pointer.sc",
-            "requires `ptr(t)` or `ptr(mut)(t)`",
+            "requires `ptr(t)` or `ptr<mut>(t)`",
         ),
         ("raw_trap_safe.sc", "requires an `unsafe` block"),
         (
@@ -180,7 +180,7 @@ fn raw_pointer_intrinsic_errors_report_their_cause() {
         ),
         (
             "raw_borrow_mut_immutable_pointer.sc",
-            "requires a `ptr(mut)(t)`",
+            "requires a `ptr<mut>(t)`",
         ),
         ("raw_borrow_anchor_conflict.sc", "borrowed"),
         (
@@ -189,7 +189,7 @@ fn raw_pointer_intrinsic_errors_report_their_cause() {
         ),
         (
             "raw_pointer_mut_method_shared.sc",
-            "unknown method `take` on `ptr(i32)`",
+            "unknown method `take` on `ptr<i32>`",
         ),
         (
             "raw_pointer_foreign_extension.sc",
@@ -886,7 +886,7 @@ edition = "2026"
     );
     project.write(
         "src/api.sc",
-        "pub(package) let cell(comptime t: type) = struct { value: t }\n\
+        "pub(package) let cell<comptime t: type> = struct { value: t }\n\
          extend(cell(t)) {\n\
            let new(move value: t): cell(t) = { cell { value: value } }\n\
            let take(move self)(): t = { self.value }\n\
@@ -919,11 +919,11 @@ edition = "2026"
     project.write(
         "src/api.sc",
         "pub(package) let choose = trait {\n\
-           let choose(comptime value_type: type)(self: borrow(self))(move value: value_type): value_type\n\
+           let choose<comptime value_type: type>(self: borrow(self))(move value: value_type): value_type\n\
          }\n\
          pub(package) let cell = struct {}\n\
          extend(cell, choose) {\n\
-           let choose(comptime result: type)(self: borrow(self))(move value: result): result = {\n\
+           let choose<comptime result: type>(self: borrow(self))(move value: result): result = {\n\
              value\n\
            }\n\
          }\n\
@@ -956,7 +956,7 @@ path = "src/lib.sc"
     );
     project.write(
         "dep/src/lib.sc",
-        "pub let cell(comptime t: type) = struct { pub value: t }\n",
+        "pub let cell<comptime t: type> = struct { pub value: t }\n",
     );
     project.write(
         "app/salicin.toml",
@@ -1053,7 +1053,7 @@ fn vec_drop_releases_its_allocation_through_the_allocator_abi() {
     let directory = TestDirectory::new();
     let source = directory.write(
         "main.sc",
-        "use alloc.vec.vec\n\nlet main(): i32 = {\n  let values: vec(i32) = vec(i32).new()\n  values.len()\n  0\n}\n",
+        "use alloc.vec.vec\n\nlet main(): i32 = {\n  let values: vec<i32> = vec<i32>.new()\n  values.len()\n  0\n}\n",
     );
     let ir = directory.join("main.ll");
     let executable = directory.join("main");
@@ -1096,13 +1096,13 @@ fn standard_library_acceptance_balances_allocations_on_return_and_throw() {
         "main.sc",
         r#"let live_allocations(): i64 = foreign(c, "live_allocations")
 
-let exercise: with(core.error.throwing(core.string.string))(fail: bool): () = {
+let exercise: with<core.error.throwing<core.string.string>>(fail: bool): () = {
   let mut writer = alloc.string.string_writer.new()
   "柳".display(writer)
   let number: i64 = 42
   number.display(writer)
   let text = writer.finish()
-  let mut values = alloc.vec.vec(core.string.string).new()
+  let mut values = alloc.vec.vec<core.string.string>.new()
   values.push(text)
   values.push("done")
   if fail {
@@ -1241,9 +1241,9 @@ fn type_constructor_aliases_cross_module_boundaries() {
     );
     project.write(
         "src/types.sc",
-        "pub(package) let cell(comptime t: type) = struct { pub(package) value: t }\n\
-         pub(package) let family(comptime t: type): type = cell(t)\n\
-         pub(package) let constructor: (comptime t: type): type = cell\n\
+        "pub(package) let cell<comptime t: type> = struct { pub(package) value: t }\n\
+         pub(package) let family<comptime t: type>: type = cell(t)\n\
+         pub(package) let constructor: <comptime t: type>: type = cell\n\
          pub(package) let scalar = i32\n",
     );
     project.write(

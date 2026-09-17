@@ -13,6 +13,6 @@ extend(number, mul(i64)) {
 }
 
 let main(): i32 = {
-  let answer = number { value: 21 } * 2
+  let answer = number{ value: 21 } * 2
   42
 }

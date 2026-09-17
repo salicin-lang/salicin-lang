@@ -9,7 +9,7 @@ extend(number, mul(i32)) {
 
 let main(): i32 = {
   let right = 2
-  let answer = number { value: 21 } * right
+  let answer = number{ value: 21 } * right
   answer + right - 2
 }
 

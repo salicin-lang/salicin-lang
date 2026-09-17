@@ -15,7 +15,7 @@ pub let io = effect {}
 ```
 
 The empty operation set is intentional. Compiler-validated `std` host
-functions perform the native operation directly and carry `with(std.io.io)`;
+functions perform the native operation directly and carry `with<std.io.io>`;
 the effect row proves authority at every call boundary. It is not an error
 transport and it is not a file handle.
 
@@ -24,19 +24,19 @@ named `io`, an alias with the same surface spelling, an imported module, a
 path, or a forged representation grants no authority. Safe host functions
 carry `io` and never implicitly add `core.unsafe.unsafety`. Their trusted
 implementation may cross the compiler/runtime FFI boundary, but raw-address
-or unchecked-representation APIs remain separately `with(unsafety)`.
+or unchecked-representation APIs remain separately `with<unsafety>`.
 
 A native binary entry point has exactly one of these shapes:
 
 ```salicin
 let main(): ()
 let main(): i32
-let main: with(std.io.io)(): ()
-let main: with(std.io.io)(): i32
+let main: with<std.io.io>(): ()
+let main: with<std.io.io>(): i32
 ```
 
 The native launcher discharges only the validated `io` identity. It does not
-discharge a user effect, `unsafety`, or `throwing(E)`. Imports do not change a
+discharge a user effect, `unsafety`, or `throwing<E>`. Imports do not change a
 pure `main`, and libraries remain effect-polymorphic. Test registrations
 receive no host authority until a later test-runner contract explicitly
 defines it.
@@ -48,7 +48,7 @@ Host failures are ordinary values:
 ```salicin
 pub let io_error = struct {
   failure: io_error_kind,
-  host_code: core.option(i32),
+  host_code: core.option<i32>,
 }
 ```
 
@@ -180,7 +180,7 @@ it never silently substitutes another ABI.
 Each concrete host primitive must have:
 
 - source signatures proving `io` without implicit `unsafety`;
-- pure-caller rejection and `main with(io)` acceptance;
+- pure-caller rejection and `main with<io>` acceptance;
 - native success, partial progress, EOF, interruption, and error mapping;
 - byte-exact output kept separate from compiler diagnostics;
 - initialized-buffer and checked-count coverage;

@@ -1,4 +1,4 @@
-let fail: with(std.io.io)(message: core.string.string)(code: i32): i32 = {
+let fail: with<std.io.io>(message: core.string.string)(code: i32): i32 = {
   let view = message.as_str()
   match std.io.eprintln(view)
     { ok(_) -> code }
@@ -6,8 +6,8 @@ let fail: with(std.io.io)(message: core.string.string)(code: i32): i32 = {
 }
 
 let take_number(
-  arguments: borrow(mut)(alloc.vec.vec(core.string.string)),
-): core.option(i64) = {
+  arguments: borrow<mut><alloc.vec.vec<core.string.string>>,
+): core.option<i64> = {
   let text = arguments.remove(1)
   let view = text.as_str()
   match parser.decimal(view)
@@ -15,7 +15,7 @@ let take_number(
     { err(_) -> core.option.none }
 }
 
-let main: with(std.io.io)(): i32 = {
+let main: with<std.io.io>(): i32 = {
   let mut arguments = match std.io.arguments()
     { ok(value) -> value }
     { err(_) -> return(fail("arguments are not valid UTF-8")(2)) }

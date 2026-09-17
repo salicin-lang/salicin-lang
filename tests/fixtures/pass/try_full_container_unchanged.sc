@@ -1,16 +1,16 @@
 let option = core.option
 let result = core.result
 
-let option_tail(): option(i32) = { option(i32).some(10) }
+let option_tail(): option<i32> = { option<i32>.some(10) }
 
-let option_return(): option(i32) = {
-  return(option(i32).some(10))
+let option_return(): option<i32> = {
+  return(option<i32>.some(10))
 }
 
-let result_tail(): result(bool)(i32) = { result(bool)(i32).ok(11) }
+let result_tail(): result<bool><i32> = { result<bool><i32>.ok(11) }
 
-let result_return(): result(bool)(i32) = {
-  return(result(bool)(i32).ok(11))
+let result_return(): result<bool><i32> = {
+  return(result<bool><i32>.ok(11))
 }
 
 let main(): i32 = {

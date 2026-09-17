@@ -431,7 +431,7 @@ impl Analyzer {
         }
         let Some(info) = self.standard_fallible_info_for_ty(&scrutinee.ty) else {
             self.error(format!(
-                "operator `?.` requires an owned `option(t)` or `result(e)(t)`, found `{}`",
+                "operator `?.` requires an owned `option<t>` or `result<e><t>`, found `{}`",
                 scrutinee.ty
             ));
             return error_expr();
@@ -587,7 +587,7 @@ impl Analyzer {
         }
         let Some(info) = self.standard_fallible_info_for_ty(&scrutinee.ty) else {
             self.error(format!(
-                "operator `?.` requires an owned `option(t)`, `result(e)(t)`, or `chain` value, found `{}`",
+                "operator `?.` requires an owned `option<t>`, `result<e><t>`, or `chain` value, found `{}`",
                 scrutinee.ty
             ));
             return error_expr();

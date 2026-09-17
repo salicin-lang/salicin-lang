@@ -1,4 +1,4 @@
-let maybe(comptime t: type) = enum {
+let maybe<comptime t: type> = enum {
   some(t),
   none,
 }

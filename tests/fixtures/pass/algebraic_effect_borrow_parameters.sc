@@ -2,11 +2,11 @@ let read = effect {
   let read(): i32
 }
 
-let add_read: with(read)(base: borrow(i32)): i32 = {
+let add_read: with<read>(base: borrow<i32>): i32 = {
   read.read() + base
 }
 
-let update: with(read)(base: borrow(mut)(i32)): () = {
+let update: with<read>(base: borrow<mut><i32>): () = {
   base += read.read()
 }
 

@@ -472,7 +472,7 @@ impl Analyzer {
         }
         if let Some(error) = &signature.failure_error {
             self.error(format!(
-                "`main` cannot expose unhandled `throwing({error})`; handle it with `try {{ ... }}`"
+                "`main` cannot expose unhandled `throwing<{error}>`; handle it with `try {{ ... }}`"
             ));
         }
         if !matches!(result, Ty::Unit | Ty::I32 | Ty::Error) {
@@ -628,7 +628,7 @@ impl Analyzer {
                     })
             });
             if !valid_result {
-                self.error("internal error: `checked_into` must return `option(output)`");
+                self.error("internal error: `checked_into` must return `option<output>`");
                 return None;
             }
             Some((source.clone(), target))

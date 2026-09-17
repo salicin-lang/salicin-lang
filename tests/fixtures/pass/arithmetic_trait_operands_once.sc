@@ -4,12 +4,12 @@ let number = struct { value: i32 }
 
 extend(number, mul(number)) {
   let output = number
-  let mul(self)(rhs: number): number = { number { value: self.value * rhs.value } }
+  let mul(self)(rhs: number): number = { number{ value: self.value * rhs.value } }
 }
 
-let tick(count: borrow(mut)(i32))(value: i32): number = {
+let tick(count: borrow<mut><i32>)(value: i32): number = {
   count = count + 1
-  number { value: value }
+  number{ value: value }
 }
 
 let main(): i32 = {

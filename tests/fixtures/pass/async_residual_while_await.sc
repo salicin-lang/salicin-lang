@@ -6,12 +6,12 @@ let ask = effect {
 }
 
 let step = struct {
-  drops: ptr(mut)(i32),
+  drops: ptr<mut><i32>,
   done: bool,
 }
 
 extend(step, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -21,25 +21,25 @@ extend(step, droppable) {
 extend(step, future(())) {
   let output = bool
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(bool) = {
-    poll(bool).ready(self.done)
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<bool> = {
+    poll<bool>.ready(self.done)
   }
 }
 
-let make_step: with(ask)(drops: ptr(mut)(i32)): step = {
-  step { drops: drops, done: ask.ask() }
+let make_step: with<ask>(drops: ptr<mut><i32>): step = {
+  step{ drops: drops, done: ask.ask() }
 }
 
-let next(calls: ptr(mut)(i32)): bool = {
+let next(calls: ptr<mut><i32>): bool = {
   unsafe {
     *calls = *calls + 1
     *calls == 3
   }
 }
 
-let run_true(drops: ptr(mut)(i32), calls: ptr(mut)(i32)): i32 = {
+let run_true(drops: ptr<mut><i32>, calls: ptr<mut><i32>): i32 = {
   ask.handle ask { (resume) -> resume(next(calls)) } action {
       let mut future = async {
         while { true } {
@@ -61,7 +61,7 @@ let run_true(drops: ptr(mut)(i32), calls: ptr(mut)(i32)): i32 = {
     }
 }
 
-let run_false(drops: ptr(mut)(i32), calls: ptr(mut)(i32)): i32 = {
+let run_false(drops: ptr<mut><i32>, calls: ptr<mut><i32>): i32 = {
   ask.handle ask { (resume) -> resume(next(calls)) } action {
       let mut future = async {
         while { false } {
@@ -79,7 +79,7 @@ let run_false(drops: ptr(mut)(i32), calls: ptr(mut)(i32)): i32 = {
     }
 }
 
-let run_post(drops: ptr(mut)(i32), calls: ptr(mut)(i32)): i32 = {
+let run_post(drops: ptr<mut><i32>, calls: ptr<mut><i32>): i32 = {
   ask.handle ask { (resume) -> resume(next(calls)) } action {
       let mut future = async {
         do {
@@ -101,16 +101,16 @@ let run_post(drops: ptr(mut)(i32), calls: ptr(mut)(i32)): i32 = {
 
 let main(): i32 = {
   let drops = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   let true_calls = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   let false_calls = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   let post_calls = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   unsafe {
     *drops = 0
@@ -135,10 +135,10 @@ let main(): i32 = {
     *post_calls
   }
   unsafe {
-    raw_dealloc(drops, size_of(i32), align_of(i32))
-    raw_dealloc(true_calls, size_of(i32), align_of(i32))
-    raw_dealloc(false_calls, size_of(i32), align_of(i32))
-    raw_dealloc(post_calls, size_of(i32), align_of(i32))
+    raw_dealloc(drops, size_of<i32>, align_of<i32>)
+    raw_dealloc(true_calls, size_of<i32>, align_of<i32>)
+    raw_dealloc(false_calls, size_of<i32>, align_of<i32>)
+    raw_dealloc(post_calls, size_of<i32>, align_of<i32>)
   }
 
   if true_result == 42 && false_result == 42 && post_result == 42 &&

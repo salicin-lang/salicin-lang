@@ -1,7 +1,7 @@
 let option = core.option
 let vec = alloc.vec.vec
 
-let read(value: borrow(i32)): i32 = { value }
+let read(value: borrow<i32>): i32 = { value }
 
 let main(): i32 = {
   let mut fixed = [10, 20, 12]

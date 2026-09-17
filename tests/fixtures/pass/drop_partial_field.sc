@@ -3,7 +3,7 @@ let pair = struct { left: resource, right: resource }
 let nested = struct { pair: pair, tail: resource }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     let checked = 1 / self.value
     self.value = 0
   }
@@ -12,24 +12,24 @@ extend(resource, droppable) {
 let consume(move value: resource): () = { () }
 
 let conditional(flag: bool): () = {
-  let pair = pair { left: resource { value: 1 }, right: resource { value: 1 } }
+  let pair = pair{ left: resource{ value: 1 }, right: resource{ value: 1 } }
   if flag { consume(pair.left) }
 }
 
 let rebuild(): () = {
-  let mut pair = pair { left: resource { value: 1 }, right: resource { value: 1 } }
+  let mut pair = pair{ left: resource{ value: 1 }, right: resource{ value: 1 } }
   consume(pair.left)
-  pair.left = resource { value: 1 }
+  pair.left = resource{ value: 1 }
 }
 
 let conditional_rebuild(flag: bool): () = {
-  let mut pair = pair { left: resource { value: 1 }, right: resource { value: 1 } }
+  let mut pair = pair{ left: resource{ value: 1 }, right: resource{ value: 1 } }
   if flag { consume(pair.left) }
-  pair.left = resource { value: 1 }
+  pair.left = resource{ value: 1 }
 }
 
 let nested(): () = {
-  let value = nested { pair: pair { left: resource { value: 1 }, right: resource { value: 1 } }, tail: resource { value: 1 } }
+  let value = nested{ pair: pair{ left: resource{ value: 1 }, right: resource{ value: 1 } }, tail: resource{ value: 1 } }
   consume(value.pair.left)
 }
 

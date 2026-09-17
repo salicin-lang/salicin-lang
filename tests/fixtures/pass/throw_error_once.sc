@@ -1,18 +1,18 @@
 let result = core.result
 let throwing = core.error.throwing
 
-let make_error(count: borrow(mut)(i32)): bool = {
+let make_error(count: borrow<mut><i32>): bool = {
   count = count + 1
   true
 }
 
-let fail: with(throwing(bool))(): i32 = {
+let fail: with<throwing<bool>>(): i32 = {
   let mut count = 0
   throw(make_error(count))
 }
 
 let main(): i32 = {
-  let result: result(bool)(i32) = try { fail() }
+  let result: result<bool><i32> = try { fail() }
   match result
     { ok(_) -> 0 }
     { err(error) -> if error { 42 } else { 0 } }

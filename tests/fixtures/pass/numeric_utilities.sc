@@ -1,28 +1,28 @@
 let ctfe_minimum: i8 = -128
 let ctfe_magnitude: u8 = ctfe_minimum.magnitude()
 let ctfe_source: i16 = 255
-let ctfe_conversion: core.option(u8) =
+let ctfe_conversion: core.option<u8> =
   ctfe_source.checked_into(output: u8)()
 
-let is_some_u8(value: core.option(u8), expected: u8): bool = {
+let is_some_u8(value: core.option<u8>, expected: u8): bool = {
   match value
     { some(value) -> value == expected }
     { none -> false }
 }
 
-let is_some_i16(value: core.option(i16), expected: i16): bool = {
+let is_some_i16(value: core.option<i16>, expected: i16): bool = {
   match value
     { some(value) -> value == expected }
     { none -> false }
 }
 
-let is_none_u8(value: core.option(u8)): bool = {
+let is_none_u8(value: core.option<u8>): bool = {
   match value
     { some(_) -> false }
     { none -> true }
 }
 
-let is_none_i8(value: core.option(i8)): bool = {
+let is_none_i8(value: core.option<i8>): bool = {
   match value
     { some(_) -> false }
     { none -> true }

@@ -23,7 +23,7 @@ let main(): i32 = {
   classify(input.number( value: 40 )) +
     classify(input.number( value: 42 )) +
     classify(input.flag( value: true )) +
-    classify(input.pair(pair { left: 10, flag: true }))
+    classify(input.pair(pair{ left: 10, flag: true }))
 }
 
 test("match_literal_payload.sc") {

@@ -12,18 +12,18 @@ let step = struct {
 extend(step, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
-    poll(i32).ready(self.value)
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
+    poll<i32>.ready(self.value)
   }
 }
 
-let make_step: with(ask)(): step = {
-  step { value: ask.ask() }
+let make_step: with<ask>(): step = {
+  step{ value: ask.ask() }
 }
 
-let program(value: borrow(mut)(i32)): i32 = {
+let program(value: borrow<mut><i32>): i32 = {
   let future = async {
     let amount = await make_step()
     value = value + amount

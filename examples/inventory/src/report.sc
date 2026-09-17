@@ -14,7 +14,7 @@ pub let render(value: catalog.summary): core.string.string = {
 }
 
 test("report output is deterministic") {
-  let value = catalog.summary { count: 2, total: 41, name_bytes: 4 }
+  let value = catalog.summary{ count: 2, total: 41, name_bytes: 4 }
   let actual = render(value)
   let expected: string = "items=2\ntotal=41\nname_bytes=4\n"
   std.test.assert(actual == expected)

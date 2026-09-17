@@ -6,8 +6,8 @@ let state = struct {
   value: i32,
 }
 
-let program: with(step)(): i32 = {
-  let mut state = state { value: 40 }
+let program: with<step>(): i32 = {
+  let mut state = state{ value: 40 }
   let mut count = 0
   while { count < 2 } do {
     let delta = step.delta()

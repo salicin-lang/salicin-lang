@@ -3,13 +3,13 @@ let future = core.async.future
 
 let step = struct {
   polled: bool,
-  remaining: ptr(mut)(i32),
-  drops: ptr(mut)(i32),
+  remaining: ptr<mut><i32>,
+  drops: ptr<mut><i32>,
   finish: bool
 }
 
 extend(step, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -19,9 +19,9 @@ extend(step, droppable) {
 extend(step, future(())) {
   let output = bool
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(bool) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<bool> = {
     if self.polled {
       let done = if self.finish {
         unsafe {
@@ -31,23 +31,23 @@ extend(step, future(())) {
       } else {
         false
       }
-      poll(bool).ready(done)
+      poll<bool>.ready(done)
     } else {
       self.polled = true
-      poll(bool).pending
+      poll<bool>.pending
     }
   }
 }
 
-let step(remaining: ptr(mut)(i32), drops: ptr(mut)(i32), finish: bool): step = {
-  step { polled: false, remaining: remaining, drops: drops, finish: finish }
+let step(remaining: ptr<mut><i32>, drops: ptr<mut><i32>, finish: bool): step = {
+  step{ polled: false, remaining: remaining, drops: drops, finish: finish }
 }
 
 let main(): i32 = {
   let mut remaining = 2
   let mut drops = 0
-  let remaining_ptr = ptr(mut)(borrow(mut)(remaining))
-  let drops_ptr = ptr(mut)(borrow(mut)(drops))
+  let remaining_ptr = ptr<mut>(borrow<mut>(remaining))
+  let drops_ptr = ptr<mut>(borrow<mut>(drops))
   let mut future = async {
     loop {
       let first = await step(remaining_ptr, drops_ptr, false)
@@ -78,8 +78,8 @@ let main(): i32 = {
 
   let mut cancel_remaining = 2
   let mut cancel_drops = 0
-  let cancel_remaining_ptr = ptr(mut)(borrow(mut)(cancel_remaining))
-  let cancel_drops_ptr = ptr(mut)(borrow(mut)(cancel_drops))
+  let cancel_remaining_ptr = ptr<mut>(borrow<mut>(cancel_remaining))
+  let cancel_drops_ptr = ptr<mut>(borrow<mut>(cancel_drops))
   do {
     let mut cancelled = async {
       loop {

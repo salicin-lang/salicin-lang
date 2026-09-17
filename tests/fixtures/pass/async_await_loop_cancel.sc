@@ -2,12 +2,12 @@ let poll = core.async.poll
 let future = core.async.future
 
 let step = struct {
-  polls: ptr(mut)(i32),
-  drops: ptr(mut)(i32)
+  polls: ptr<mut><i32>,
+  drops: ptr<mut><i32>
 }
 
 extend(step, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -17,29 +17,29 @@ extend(step, droppable) {
 extend(step, future(())) {
   let output = bool
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(bool) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<bool> = {
     unsafe {
       if *self.polls == 0 {
         *self.polls = 1
-        poll(bool).ready(false)
+        poll<bool>.ready(false)
       } else {
-        poll(bool).pending
+        poll<bool>.pending
       }
     }
   }
 }
 
-let step(polls: ptr(mut)(i32), drops: ptr(mut)(i32)): step = {
-  step { polls: polls, drops: drops }
+let step(polls: ptr<mut><i32>, drops: ptr<mut><i32>): step = {
+  step{ polls: polls, drops: drops }
 }
 
 let main(): i32 = {
   let mut polls = 0
   let mut drops = 0
-  let polls_ptr = ptr(mut)(borrow(mut)(polls))
-  let drops_ptr = ptr(mut)(borrow(mut)(drops))
+  let polls_ptr = ptr<mut>(borrow<mut>(polls))
+  let drops_ptr = ptr<mut>(borrow<mut>(drops))
 
   let pending = do {
     let mut future = async {

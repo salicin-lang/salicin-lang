@@ -17,7 +17,7 @@ The completed surface has these properties:
 
 ```salicin
 let runtime_text: string = "hello"
-let register(comptime name: string): () = {}
+let register<comptime name: string>: () = {}
 
 let value_type: type = type_of(runtime_text)
 let string_sort = sort_of(string)
@@ -221,8 +221,8 @@ Its source declaration therefore describes the expression as a lazy callable:
 pub let type_of(
   comptime e: effects,
   comptime t: type,
-): with(e)
-  (move expression: with(e)((): t)): type = builtin()
+): with<e>
+  (move expression: with<e>((): t)): type = builtin()
 ```
 
 The parser rewrites:
@@ -262,7 +262,7 @@ pub let string: type = builtin()
 extend(string, core.marker.movable) {}
 
 extend(string, core.marker.droppable) {
-  let drop(self: borrow(mut)(self))(): () = builtin()
+  let drop(self: borrow<mut><self>)(): () = builtin()
 }
 ```
 
@@ -300,7 +300,7 @@ it is 24 bytes and has unobservable storage modes:
 
 The representation stores byte length. Scalar count and grapheme count are
 not cached in the initial ABI. Static storage detaches to heap storage before
-mutation; heap storage mutates in place under `borrow(mut)`; inline storage
+mutation; heap storage mutates in place under `borrow<mut>`; inline storage
 promotes to heap only when capacity is exceeded.
 
 Tag layout, inline capacity, growth factor, and empty-string encoding are
@@ -333,35 +333,35 @@ let string_byte_at_unchecked(
 let string_as_bytes(
   comptime r: region,
 )
-  (value: borrow(r)(string)): borrow(r)(slice(u8)) = builtin()
+  (value: borrow(r)(string)): borrow(r)(slice<u8>) = builtin()
 
 let string_reserve(
-  value: borrow(mut)(string),
+  value: borrow<mut><string>,
   additional: u64,
 ): () = builtin()
 
 // Callers preserve the UTF-8 invariant.
-let string_push_byte_unchecked: with(core.unsafe.unsafety)(
-  value: borrow(mut)(string),
+let string_push_byte_unchecked: with<core.unsafe.unsafety>(
+  value: borrow<mut><string>,
   byte: u8,
 ): () = builtin()
 
 // `new_length` has already been checked as a UTF-8 boundary.
-let string_truncate_unchecked: with(core.unsafe.unsafety)(
-  value: borrow(mut)(string),
+let string_truncate_unchecked: with<core.unsafe.unsafety>(
+  value: borrow<mut><string>,
   new_length: u64,
 ): () = builtin()
 
 // Transfers ownership between the opaque string and allocation adapters.
-pub let string_from_raw_parts: with(core.unsafe.unsafety)(
-  pointer: ptr(mut)(u8),
+pub let string_from_raw_parts: with<core.unsafe.unsafety>(
+  pointer: ptr<mut><u8>,
   length: u64,
   capacity: u64,
 ): string = builtin()
 
-pub let string_into_raw_parts: with(core.unsafe.unsafety)(
+pub let string_into_raw_parts: with<core.unsafe.unsafety>(
   move value: string,
-): (ptr(mut)(u8), u64, u64) = builtin()
+): (ptr<mut><u8>, u64, u64) = builtin()
 ```
 
 The raw-parts operations always return heap-owned storage. Converting an
@@ -403,8 +403,8 @@ extend(string) {
     self.len_bytes() == 0
   }
 
-  let as_bytes(comptime r: region)
-    (self: borrow(r)(self))(): borrow(r)(slice(u8)) = {
+  let as_bytes<comptime r: region>
+    (self: borrow(r)(self))(): borrow(r)(slice<u8>) = {
     string_as_bytes(self)
   }
 
@@ -415,7 +415,7 @@ extend(string) {
     string_byte_at_unchecked(self, index)
   }
 
-  let reserve(self: borrow(mut)(self))(additional: u64): () = {
+  let reserve(self: borrow<mut><self>)(additional: u64): () = {
     string_reserve(self, additional)
   }
 }
@@ -506,13 +506,13 @@ let vec = alloc.vec.vec
 let result = core.result
 
 pub let from_utf8_error = struct {
-  bytes: vec(u8),
+  bytes: vec<u8>,
   valid_prefix: u64,
 }
 
 /// Validates and consumes `bytes`, transferring its allocation on success.
 pub let string_from_utf8(
-  move bytes: vec(u8),
+  move bytes: vec<u8>,
 ): result(from_utf8_error)(string) = {
   // UTF-8 validation remains ordinary Salicin source.
   // On success, take the vector raw parts and call the validated core
@@ -520,8 +520,8 @@ pub let string_from_utf8(
 }
 
 /// Consumes a string and returns owned bytes.
-pub let string_into_bytes(move value: string): vec(u8) = {
-  // Call `string_into_raw_parts`, then construct `vec(u8)`.
+pub let string_into_bytes(move value: string): vec<u8> = {
+  // Call `string_into_raw_parts`, then construct `vec<u8>`.
 }
 ```
 
@@ -542,14 +542,14 @@ The source-backed syntax contract changes from the removed string sort to the
 ordinary type:
 
 ```salicin
-pub let test(comptime name: string)(
-  move body: with(core.error.throwing(core.string.string))((): ()),
+pub let test<comptime name: string>(
+  move body: with<core.error.throwing<core.string.string>>((): ()),
 ): () = builtin()
 ```
 
 The top-level `test("name") { ... }` syntax supplies `name` as compiler
 metadata to the validated contract. The body
-returns unit and may fail only through `throwing(string)`. Registration names
+returns unit and may fail only through `throwing<string>`. Registration names
 are read from `CtfeValue::String`, encoded deterministically for symbols when
 needed, and decoded only at the CLI boundary. The symbol encoding is not the
 semantic identity of the string.
@@ -589,7 +589,7 @@ semantic identity of the string.
 
 - replace the `alloc.string.string` struct with the core alias;
 - retain source UTF-8 validation and ownership-preserving error recovery;
-- transfer successful `vec(u8)` allocations through the declared raw-parts
+- transfer successful `vec<u8>` allocations through the declared raw-parts
   contracts;
 - add empty, inline, static, heap, invalid UTF-8, success, failure recovery,
   and allocator-leak tests;

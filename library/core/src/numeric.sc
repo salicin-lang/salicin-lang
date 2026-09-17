@@ -24,7 +24,7 @@ extend(i8) {
     else { zero }
   }
   let magnitude(self)(): u8 = builtin()
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }
 
 extend(i16) {
@@ -42,7 +42,7 @@ extend(i16) {
     else { zero }
   }
   let magnitude(self)(): u16 = builtin()
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }
 
 extend(i32) {
@@ -60,7 +60,7 @@ extend(i32) {
     else { zero }
   }
   let magnitude(self)(): u32 = builtin()
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }
 
 extend(i64) {
@@ -78,7 +78,7 @@ extend(i64) {
     else { zero }
   }
   let magnitude(self)(): u64 = builtin()
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }
 
 extend(i128) {
@@ -96,7 +96,7 @@ extend(i128) {
     else { zero }
   }
   let magnitude(self)(): u128 = builtin()
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }
 
 extend(isize) {
@@ -114,7 +114,7 @@ extend(isize) {
     else { zero }
   }
   let magnitude(self)(): usize = builtin()
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }
 
 extend(u8) {
@@ -128,7 +128,7 @@ extend(u8) {
   }
   let sign(self)(): sign = { if self > 0 { positive } else { zero } }
   let magnitude(self)(): u8 = { self }
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }
 
 extend(u16) {
@@ -142,7 +142,7 @@ extend(u16) {
   }
   let sign(self)(): sign = { if self > 0 { positive } else { zero } }
   let magnitude(self)(): u16 = { self }
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }
 
 extend(u32) {
@@ -156,7 +156,7 @@ extend(u32) {
   }
   let sign(self)(): sign = { if self > 0 { positive } else { zero } }
   let magnitude(self)(): u32 = { self }
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }
 
 extend(u64) {
@@ -170,7 +170,7 @@ extend(u64) {
   }
   let sign(self)(): sign = { if self > 0 { positive } else { zero } }
   let magnitude(self)(): u64 = { self }
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }
 
 extend(u128) {
@@ -184,7 +184,7 @@ extend(u128) {
   }
   let sign(self)(): sign = { if self > 0 { positive } else { zero } }
   let magnitude(self)(): u128 = { self }
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }
 
 extend(usize) {
@@ -198,5 +198,5 @@ extend(usize) {
   }
   let sign(self)(): sign = { if self > 0 { positive } else { zero } }
   let magnitude(self)(): usize = { self }
-  let checked_into(comptime output: type)(self)(): core.option(output) = builtin()
+  let checked_into<comptime output: type>(self)(): core.option<output> = builtin()
 }

@@ -1,14 +1,14 @@
 let result = core.result
 let throwing = core.error.throwing
 
-let fail: with(throwing(bool))(): i32 = {
+let fail: with<throwing<bool>>(): i32 = {
   throw(true)
 }
 
-let forward: with(throwing(bool))(): i32 = { fail() }
+let forward: with<throwing<bool>>(): i32 = { fail() }
 
 let main(): i32 = {
-  let result: result(bool)(i32) = try { forward() }
+  let result: result<bool><i32> = try { forward() }
   result ?? 42
 }
 

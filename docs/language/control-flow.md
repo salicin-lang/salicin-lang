@@ -22,10 +22,10 @@ requires it.
 Conceptually, `if` has this shape:
 
 ```sc fragment
-let if(comptime e: effects, comptime t: type): with(e)
+let if<comptime e: effects, comptime t: type>: with<e>
   (condition: bool)
-  (move then: with(e)((): t))
-  (move else: with(e)((): t)): t
+  (move then: with<e>((): t))
+  (move else: with<e>((): t)): t
 ```
 
 The ordinary surface form:
@@ -71,7 +71,7 @@ begin. Deferred actions therefore cannot change the selected exit value. A `cont
 registered in the iteration body before starting the next iteration; a break or continue belonging
 to a nested loop does not exit an enclosing block outside that loop.
 
-`defer` is valid only as a standalone statement. Its action has type `with(e)((): ())`, so ordinary
+`defer` is valid only as a standalone statement. Its action has type `with<e>((): ())`, so ordinary
 effect checking and handler selection apply to the invocation. Lowering must preserve the action's
 capture ownership and must not expose compiler-generated binding names in diagnostics.
 
@@ -122,8 +122,8 @@ Compiler-generated internal match names must never appear in user diagnostics.
 
 ```sc fragment
 let iterator = trait {
-  let item(comptime r: region): type
-  let next(comptime r: region)(self: borrow(mut)(r)(self)): core.option(item(r))
+  let item<comptime r: region>: type
+  let next<comptime r: region>(self: borrow<mut><r><self>): core.option<item<r>>
 }
 ```
 

@@ -1,7 +1,7 @@
 let option = core.option
 
 let main(): i32 = {
-  let choose: (option(i32)): core.control.attempt(option(i32))(i32) = {
+  let choose: (option<i32>): core.control.attempt(option<i32>)(i32) = {
     some(value) -> value + 1
   }
   let hit = choose(option.some(40))

@@ -16,7 +16,7 @@ current capability inventory. It does not record release history; see the
 - native checking, IR emission, building, and running;
 - compile-time `test("name") { ... }` registrations collected into one native
   runner by `salic test`, with source-order execution, source-backed
-  unit-returning `throwing(string)` bodies, owned UTF-8 failure messages,
+  unit-returning `throwing<string>` bodies, owned UTF-8 failure messages,
   all-failure reporting,
   a dedicated framed parent channel, and `std.test` failure, boolean,
   equality, inequality, and `option`/`result` expectation helpers with static
@@ -155,7 +155,7 @@ collection summaries, UTF-8 byte boundaries, and exact formatting. Native
 acceptance additionally covers missing/invalid arguments, early exits,
 repeat-run determinism, stdin and file failures, and a replacement-allocator
 probe that observes zero live allocations after both normal return and
-`throwing(string)` transfer.
+`throwing<string>` transfer.
 
 The command-line surface is:
 
@@ -176,7 +176,7 @@ Implemented lexical and declaration features include:
 - UTF-8 source and NFC-normalized Unicode XID identifiers;
 - logical newlines, semicolons, line comments, and nested block comments;
 - uniform `let` declarations and mutable local value bindings;
-- prefix effect callable types `with(E)(F)` and effectful declaration
+- prefix effect callable types `with<E>(F)` and effectful declaration
   boundaries, with compact boundary-free syntax retained for pure functions;
 - the compiler-validated `std.io.io` authority identity, accepted only at the
   native `main` boundary, plus source-defined `io_error_kind` and `io_error`;
@@ -195,7 +195,7 @@ Implemented lexical and declaration features include:
 - explicit erased inputs for those syntax declarations:
   the one- and two-argument `foreign` overloads select the finite
   `abi.c` value, while
-  `pub let test(comptime name: string)(move body: with(core.error.throwing(core.string.string))((): ())): () = builtin()`
+  `pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()`
   receives the UTF-8 name and unit-returning throwing body;
   `core.requires` receives a compile-time boolean and delayed function body.
   Trait and extension requirements remain labeled boolean header parameters,
@@ -239,7 +239,7 @@ Implemented type-system features include:
 - static specialization of capturing callables passed to known higher-order callees.
 
 Generic associated constructors preserve parameter sorts and groups in trait declarations and
-implementations. Standard iterator contracts use `item(comptime r: region): type`, allowing an item type to
+implementations. Standard iterator contracts use `item<comptime r: region>: type`, allowing an item type to
 depend on the receiver-borrow region.
 
 Ordinary pure scalar functions can be evaluated in dependent array-length
@@ -256,7 +256,7 @@ Every primitive integer has source-declared `min`, `max`, `clamp`, and `sign`
 methods. Signed integers expose a total same-width unsigned `magnitude`, so
 the signed minimum is representable. Explicit
 `checked_into(output: target)()` conversion accepts only integer targets and
-returns `option(target)` without truncating on failure. CTFE and LLVM lowering
+returns `option<target>` without truncating on failure. CTFE and LLVM lowering
 share the same signed and width boundaries; LLVM uses defined comparisons,
 extensions, and truncations without overflow flags or backend undefined
 behavior.
@@ -379,13 +379,13 @@ Implemented data and control features include:
   `poll`/`suspension.suspend` protocol;
 - the explicit allocation-free `std.async.spin` executor for one owned future;
 - handler specialization for non-suspending futures with a custom residual
-  effect, including standard `throwing(error)`, and by-value `copyable`, move-only,
+  effect, including standard `throwing<error>`, and by-value `copyable`, move-only,
   shared-borrow, or mutable-borrow captures, including exact once-only
-  move/drop behavior, retained borrow exclusion, `future(e)` where-predicate
+  move/drop behavior, retained borrow exclusion, `future<e>` where-predicate
   inference, and effectful trait-method inlining;
 - handler specialization for a suspended await with a finite sequence of pure
   linear continuation segments and a residual effect in the first segment,
-  including standard `throwing(error)`, by-value `copyable`, move-only,
+  including standard `throwing<error>`, by-value `copyable`, move-only,
   shared-borrow, and mutable-borrow captures and retained locals, pending
   repoll without replaying earlier transitions, and exact completion, error,
   and cancellation cleanup;
@@ -411,7 +411,7 @@ Implemented algebraic-effect support includes:
 - cleanup on resumption and abandonment;
 - captured effectful closures;
 - capturing callable arguments specialized after generic custom-effect rows become concrete;
-- source-backed `throwing(error)`, `throw`, and `try`;
+- source-backed `throwing<error>`, `throw`, and `try`;
 - composition of standard error and unsafe effects.
 
 `unsafety` is an authority effect used by raw memory and foreign operations. It does not disable
@@ -421,7 +421,7 @@ Cold `async` blocks without suspension materialize compiler-generated nominal st
 explicit state word and their captured fields. The generated state satisfies structural `movable`;
 relocating or cancelling an unpolled future transfers or drops owned captures exactly once.
 The no-suspension polling transition returns `poll.ready` once, traps on repoll, and enforces an
-inferred residual `unsafety` requirement. Standard residual `throwing(error)` polling specializes
+inferred residual `unsafety` requirement. Standard residual `throwing<error>` polling specializes
 through `try` or its underlying handler; success, error, and move-capture cleanup paths run
 natively. An await may retain custom residual effects when the cold segment
 and its finite linear continuation segments capture by-value `copyable`,
@@ -466,7 +466,7 @@ its suspension into the same state machine; false pre-test conditions complete i
 pre-test condition may itself suspend. A child output may differ from the enclosing future output.
 Recurring suspension is classified by loop kind, condition/body location, `continue`, fallthrough,
 and value-producing `break`. A `loop` with one await followed by a boolean
-`break`/`continue()` decision now uses a private `iteration_skip(next_child) | loop_exit(output)` step enum.
+`break`/`continue()` decision now uses a private `iteration_skip(next_child) | loop_exit<output>` step enum.
 The break output is inferred from the source expression and may be move-only. Its poll transition
 reinitializes one child slot and consumes consecutive immediately-ready iterations in an HIR loop.
 Completed children are destroyed before reuse, while cancellation drops only the active suspended
@@ -489,7 +489,7 @@ sequential awaits whose generated iteration future itself has a residual
 `poll`, effectful recurring conditions, and move-only factory or condition
 backedge state remain explicit diagnostics.
 Iterations with multiple top-level sequential awaits use a private iteration future; its final
-`loop_exit(output)` may depend on any awaited binding, and cancellation follows its nested active-child
+`loop_exit<output>` may depend on any awaited binding, and cancellation follows its nested active-child
 chain without retaining completed children. A recurring loop with no break uses the standard
 uninhabited `never` as its output.
 For unit-valued general iteration bodies, the compiler rewrites control exits at the current loop
@@ -606,7 +606,7 @@ Implemented `core` facilities include:
   storage;
 - dynamically sized immutable `str` views represented through the same
   `{address, byte length}` borrowed-view ABI as slices; checked
-  `borrow(slice(u8))` validation rejects malformed, truncated, overlong,
+  `borrow(slice<u8>)` validation rejects malformed, truncated, overlong,
   surrogate, and out-of-range UTF-8, while `string.as_str` and `str.as_bytes`
   retain the source region and loan;
 - UTF-8 byte-boundary queries and checked `str` subviews, including empty
@@ -632,12 +632,12 @@ Implemented `core` facilities include:
 
 Implemented `alloc` facilities include:
 
-- `box(t)`;
-- `vec(t)` with consistent checked/trapping shared or mutable access,
+- `box<t>`;
+- `vec<t>` with consistent checked/trapping shared or mutable access,
   first/last, slice conversion, copyable slice extension, equal-length and
   overlap-safe copy mutation, resource-preserving owned append, and consuming
   iteration, plus the common slice-backed search and fold vocabulary;
-- ownership-preserving `vec(u8)`/`string` conversion: success transfers the
+- ownership-preserving `vec<u8>`/`string` conversion: success transfers the
   allocation, failure retains the original vector and its valid-prefix length,
   and static strings copy into owned bytes;
 - `string_writer`, an allocation-backed pure formatting sink whose empty state
@@ -650,9 +650,9 @@ escape analysis follows reference loans through raw view casts, calls,
 a mutable write. Broader Unicode algorithms and host I/O are not yet library
 features.
 
-Borrowed `array.iter` and `slice.iter` both produce `slice_iter(a)(t)` without
+Borrowed `array.iter` and `slice.iter` both produce `slice_iter<a><t>` without
 a `copyable` element bound. The iterator preserves shared or mutable source
-access and yields `borrow(a)(r)(t)` tied to one mutable `next` borrow, so a
+access and yields `borrow<a><r><t>` tied to one mutable `next` borrow, so a
 yielded mutable element must end before the iterator advances. Resource
 elements remain in place and are dropped by their owner. `vec` iteration
 consumes elements and drops an unyielded suffix exactly once on early exit.

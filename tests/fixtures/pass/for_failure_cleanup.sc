@@ -8,11 +8,11 @@ let owned_item = core.iter.owned_item
 let counter = struct {
   current: i32,
   end: i32,
-  drops: ptr(mut)(i32),
+  drops: ptr<mut><i32>,
 }
 
 extend(counter, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -20,9 +20,9 @@ extend(counter, droppable) {
 }
 
 extend(counter, iterator) {
-  let item = owned_item(i32)
+  let item = owned_item<i32>;
 
-  let next(comptime r: region)(self: borrow(mut)(r)(self))(): option(i32) = {
+  let next<comptime r: region>(self: borrow<mut><r><self>)(): option<i32> = {
     if self.current < self.end {
       let value = self.current
       self.current = self.current + 1
@@ -41,11 +41,11 @@ extend(counter, into_iterator) {
   }
 }
 
-let check: with(throwing(bool))(value: i32): () = {
+let check: with<throwing<bool>>(value: i32): () = {
   if value < 0 { throw(true) } else { () }
 }
 
-let visit: with(throwing(bool))(move counter: counter): i32 = {
+let visit: with<throwing<bool>>(move counter: counter): i32 = {
   for counter { value ->
     check(value)
   }
@@ -54,20 +54,20 @@ let visit: with(throwing(bool))(move counter: counter): i32 = {
 
 let main(): i32 = {
   let drops = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   unsafe { *drops = 0 }
 
-  let success: result(bool)(i32) = try {
-    visit(counter { current: 0, end: 2, drops: drops })
+  let success: result<bool><i32> = try {
+    visit(counter{ current: 0, end: 2, drops: drops })
   }
-  let failure: result(bool)(i32) = try {
-    visit(counter { current: -1, end: 2, drops: drops })
+  let failure: result<bool><i32> = try {
+    visit(counter{ current: -1, end: 2, drops: drops })
   }
   let drop_count = unsafe { *drops }
 
   unsafe {
-    raw_dealloc(drops, size_of(i32), align_of(i32))
+    raw_dealloc(drops, size_of<i32>, align_of<i32>)
   }
   (success ?? 0) + (failure ?? 0) + drop_count - 2
 }

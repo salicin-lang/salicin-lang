@@ -1,7 +1,7 @@
 let vec = alloc.vec.vec
 
 let main(): i32 = {
-  let mut values: vec(i32) = vec(i32).with_capacity(8)
+  let mut values: vec<i32> = vec<i32>.with_capacity(8)
   values.push(10)
   values.push(30)
   values.insert(1)(20)
@@ -11,7 +11,7 @@ let main(): i32 = {
   let first = values.remove(0)
   let middle = values.remove(1)
 
-  let mut other: vec(i32) = vec(i32).new()
+  let mut other: vec<i32> = vec<i32>.new()
   other.push(1)
   other.push(2)
   values.append(other)

@@ -4,24 +4,24 @@ let step = effect {
 
 let state = struct {
   value: i32,
-  drops: ptr(mut)(i32),
+  drops: ptr<mut><i32>,
 }
 
 extend(state, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let update: with(step)(state: borrow(mut)(state)): () = {
+let update: with<step>(state: borrow<mut><state>): () = {
   let delta = step.delta()
   state.value = state.value + delta
 }
 
-let program: with(step)(drops: ptr(mut)(i32)): i32 = {
-  let mut state = state { value: 40, drops: drops }
+let program: with<step>(drops: ptr<mut><i32>): i32 = {
+  let mut state = state{ value: 40, drops: drops }
   update(state)
   update(state)
   state.value
@@ -29,7 +29,7 @@ let program: with(step)(drops: ptr(mut)(i32)): i32 = {
 
 let main(): i32 = {
   let drops = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   unsafe { *drops = 0 }
 
@@ -46,7 +46,7 @@ let main(): i32 = {
   let drop_count = unsafe { *drops }
 
   unsafe {
-    raw_dealloc(drops, size_of(i32), align_of(i32))
+    raw_dealloc(drops, size_of<i32>, align_of<i32>)
   }
   resumed + abandoned + drop_count - 42
 }

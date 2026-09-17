@@ -14,7 +14,7 @@ pub let valued = trait {
 
 extend(product) {
   let new(move name: string, units: i64, unit_price: i64): product = {
-    product { name: name, units: units, unit_price: unit_price }
+    product{ name: name, units: units, unit_price: unit_price }
   }
 
   let name_bytes(self: borrow(self))(): u64 = {

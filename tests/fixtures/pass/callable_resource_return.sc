@@ -1,7 +1,7 @@
 let resource = struct { value: i32 }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     let checked = 1 / self.value
     self.value = 0
   }
@@ -15,7 +15,7 @@ let finish(move resource: resource)(value: i32): i32 = {
 }
 
 let make() = {
-  let pending = finish(resource { value: 1 })
+  let pending = finish(resource{ value: 1 })
   pending
 }
 

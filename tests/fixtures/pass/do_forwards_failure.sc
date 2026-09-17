@@ -1,9 +1,9 @@
 let result = core.result
 let throwing = core.error.throwing
 
-let reject: with(throwing(bool))(): i32 = { throw(true) }
+let reject: with<throwing<bool>>(): i32 = { throw(true) }
 
-let choose: with(throwing(bool))(flag: bool): i32 = {
+let choose: with<throwing<bool>>(flag: bool): i32 = {
   do {
     if flag { return(reject()) }
     42
@@ -11,8 +11,8 @@ let choose: with(throwing(bool))(flag: bool): i32 = {
 }
 
 let main(): i32 = {
-  let success: result(bool)(i32) = try { choose(false) }
-  let failure: result(bool)(i32) = try { choose(true) }
+  let success: result<bool><i32> = try { choose(false) }
+  let failure: result<bool><i32> = try { choose(true) }
   (success ?? 0) + (failure ?? 0)
 }
 

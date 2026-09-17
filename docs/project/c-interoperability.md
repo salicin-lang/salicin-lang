@@ -58,7 +58,7 @@ function values, closures, continuations, and effect callables are rejected
 as by-value foreign parameters and results.
 
 C array parameters decay to pointers and must therefore be declared as
-`ptr(t)` or `ptr(mut)(t)`. C aggregates must likewise cross the current
+`ptr<t>` or `ptr<mut><t>`. C aggregates must likewise cross the current
 function boundary behind a raw pointer. Typed C function pointers are not yet
 part of the foreign surface; an opaque address may be stored in `ptr`, but
 Salicin does not infer a callable C signature from it.

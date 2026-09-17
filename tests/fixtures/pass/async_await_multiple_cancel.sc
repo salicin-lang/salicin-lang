@@ -3,14 +3,14 @@ let future = core.async.future
 let unsafety = core.unsafe.unsafety
 
 let step = struct {
-  counter: ptr(mut)(i32),
+  counter: ptr<mut><i32>,
   polls: i32,
   value: i32
 }
-let resource = struct { counter: ptr(mut)(i32) }
+let resource = struct { counter: ptr<mut><i32> }
 
 extend(step, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -18,7 +18,7 @@ extend(step, droppable) {
 }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -28,29 +28,29 @@ extend(resource, droppable) {
 extend(step, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll(i32).pending
+      poll<i32>.pending
     } else {
-      poll(i32).ready(self.value)
+      poll<i32>.ready(self.value)
     }
   }
 }
 
 let consume(move resource: resource): () = { () }
 
-let allocate: with(unsafety)(): ptr(mut)(i32) = {
+let allocate: with<unsafety>(): ptr<mut><i32> = {
   unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
 }
 
-let release: with(unsafety)(counter: ptr(mut)(i32)): () = {
+let release: with<unsafety>(counter: ptr<mut><i32>): () = {
   unsafe {
-    raw_dealloc(counter, size_of(i32), align_of(i32))
+    raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
 }
 
@@ -60,10 +60,10 @@ let main(): i32 = {
     *counter = 0
 
     do {
-      let resource = resource { counter: counter }
+      let resource = resource{ counter: counter }
       let mut future = async {
-        let first = await step { counter: counter, polls: 0, value: 20 }
-        let second = await step { counter: counter, polls: 0, value: 22 }
+        let first = await step{ counter: counter, polls: 0, value: 20 }
+        let second = await step{ counter: counter, polls: 0, value: 22 }
         consume(resource)
         first + second
       }

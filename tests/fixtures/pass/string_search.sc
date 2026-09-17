@@ -1,4 +1,4 @@
-let option_is(value: core.option(u64), expected: u64): bool = {
+let option_is(value: core.option<u64>, expected: u64): bool = {
   match value
     { some(value) -> value == expected }
     { none -> false }

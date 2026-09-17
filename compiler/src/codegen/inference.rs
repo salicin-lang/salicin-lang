@@ -1318,6 +1318,7 @@ impl Analyzer {
                                 Type::Named(name.clone(), Vec::new())
                             }
                             Expr::Call(callee, arguments)
+                            | Expr::DelimitedCall { callee, arguments, .. }
                                 if matches!(
                                     callee.as_ref(),
                                     Expr::Name(name)
@@ -1328,6 +1329,7 @@ impl Analyzer {
                                 effect_row_source(true, None, &[])
                             }
                             Expr::Call(callee, arguments)
+                            | Expr::DelimitedCall { callee, arguments, .. }
                                 if matches!(
                                     callee.as_ref(),
                                     Expr::Name(name) if self.collection.effects.contains(name)
@@ -1362,6 +1364,7 @@ impl Analyzer {
                                 }
                             }
                             Expr::Call(callee, arguments)
+                            | Expr::DelimitedCall { callee, arguments, .. }
                                 if matches!(callee.as_ref(), Expr::Name(name) if effect_row_from_marker(name).is_some())
                                     && arguments.len() <= 1
                                     && arguments
@@ -1382,7 +1385,7 @@ impl Analyzer {
                             }
                             _ => {
                                 self.error(format!(
-                                "compile-time argument `{}` in `{owner}` expects sort {}; write `pure`, `Unsafe`, `throwing(Error)`, or a declared custom effect",
+                                "compile-time argument `{}` in `{owner}` expects sort {}; write `pure`, `Unsafe`, `throwing<Error>`, or a declared custom effect",
                                 parameter.name,
                                 describe_compile_sort(parameter.kind.clone()),
                             ));

@@ -2,7 +2,7 @@ let slice = core.memory.slice
 
 let main(): i32 = {
   let values = [1, 2]
-  let slice: borrow(slice(i32)) = borrow(values)
+  let slice: borrow<slice<i32>> = borrow(values)
   let item = slice.at(2)
   item
 }

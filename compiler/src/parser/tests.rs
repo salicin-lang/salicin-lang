@@ -3,8 +3,8 @@ use super::*;
 #[test]
 fn parses_prefix_effect_callable_declarations_and_types() {
     let program = parse(
-        "let apply(comptime e: effects): with(e)\n\
-           (action: with(e)((i32): i32))\n\
+        "let apply<comptime e: effects>: with<e>\n\
+           (action: with<e>((i32): i32))\n\
            (value: i32): i32 = { action(value) }\n\
          let pure(value: i32): i32 = { value }\n",
     )
@@ -25,7 +25,7 @@ fn parses_prefix_effect_callable_declarations_and_types() {
 
 #[test]
 fn prefix_with_requires_a_callable_operand_and_accepts_an_empty_row() {
-    let program = parse("let use(action: with()((i32): i32)): i32 = { action(1) }\n")
+    let program = parse("let use(action: with<>((i32): i32)): i32 = { action(1) }\n")
         .expect("an empty effect row is a pure callable");
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
@@ -35,7 +35,7 @@ fn prefix_with_requires_a_callable_operand_and_accepts_an_empty_row() {
     };
     assert_eq!(effects, &FunctionEffects::default());
 
-    let error = parse("let value: with(io)(i32) = 1\n")
+    let error = parse("let value: with<io>(i32) = 1\n")
         .expect_err("with must reject a non-callable operand");
     assert!(
         error.message.contains("accepts only a callable type")
@@ -163,7 +163,7 @@ fn parses_globals_and_curried_functions() {
 #[test]
 fn parses_function_effects_and_rejects_them_on_values() {
     let program =
-        parse("let read(pointer: ptr(i32)): i32 with(unsafety) = { *pointer }\n").unwrap();
+        parse("let read(pointer: ptr(i32)): i32 with<unsafety> = { *pointer }\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -184,7 +184,7 @@ fn parses_function_effects_and_rejects_them_on_values() {
     assert!(error.message.contains("expected a newline or `;`"));
 
     let program =
-        parse("let fallible(): i32 with(throwing(bool), unsafety) = { throw(true) }\n").unwrap();
+        parse("let fallible(): i32 with<throwing<bool>, unsafety> = { throw(true) }\n").unwrap();
     let Item::Function(fallible) = &program.items[0] else {
         panic!("expected fallible function");
     };
@@ -200,8 +200,8 @@ fn parses_function_effects_and_rejects_them_on_values() {
     );
 
     for source in [
-        "let f(): i32 with(unsafety, unsafety) = { 0 }\n",
-        "let f(): i32 with(throwing(bool), throwing(bool)) = { 0 }\n",
+        "let f(): i32 with<unsafety, unsafety> = { 0 }\n",
+        "let f(): i32 with<throwing<bool>, throwing<bool>> = { 0 }\n",
     ] {
         let error = parse(source).unwrap_err();
         assert!(error.message.contains("duplicate"));
@@ -551,8 +551,8 @@ fn rejects_visibility_where_it_is_not_supported_yet() {
 #[test]
 fn separates_compile_time_and_runtime_parameter_groups() {
     let program = parse(
-        "let identity(comptime t: type)(value: t): t = { value }\n\
-             let staged(comptime t: type)(comptime u: type)(value: t): u = { value }\n",
+        "let identity<comptime t: type>(value: t): t = { value }\n\
+             let staged<comptime t: type><comptime u: type>(value: t): u = { value }\n",
     )
     .unwrap();
 
@@ -682,9 +682,39 @@ fn splits_nested_angle_closers_from_shift_tokens() {
 }
 
 #[test]
+fn parses_angle_type_applications_and_official_type_forms() {
+    let program = parse(
+        "let apply<comptime t: type>(value: borrow<mut><option<array<t><2>>>): with<io>((t): ptr<t>)\n",
+    )
+    .unwrap();
+    let Item::Function(function) = &program.items[0] else {
+        panic!("expected function");
+    };
+    assert_eq!(
+        function.effects.compile_group_delimiters,
+        [GroupDelimiter::Angle]
+    );
+    assert_eq!(
+        function.effects.group_delimiters,
+        [GroupDelimiter::Parenthesis]
+    );
+    assert!(matches!(
+        &function.groups[0][0].ty,
+        Type::Borrow { mutable: true, pointee, .. }
+            if matches!(pointee.as_ref(), Type::Named(name, arguments)
+                if name == "option" && matches!(arguments.as_slice(), [Type::ArrayApplication { .. }]))
+    ));
+    assert!(matches!(
+        &function.return_type,
+        Some(Type::Function { effects, .. })
+            if effects.custom == [Type::Named("io".into(), Vec::new())]
+    ));
+}
+
+#[test]
 fn preserves_multiple_compile_parameters_in_one_group() {
     let program =
-        parse("let choose(comptime t: type, comptime u: type)(value: t): u = { value }\n").unwrap();
+        parse("let choose<comptime t: type, comptime u: type>(value: t): u = { value }\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected generic function");
     };
@@ -701,8 +731,8 @@ fn preserves_multiple_compile_parameters_in_one_group() {
 #[test]
 fn parses_generic_structs_and_enums() {
     let program = parse(
-        "let cell(comptime t: type) = struct { value: t }\n\
-             let maybe(comptime t: type) = enum {\n\
+        "let cell<comptime t: type> = struct { value: t }\n\
+             let maybe<comptime t: type> = enum {\n\
                some(t),\n\
                named(value: t),\n\
                none,\n\
@@ -850,9 +880,9 @@ fn parses_trait_method_signatures_and_associated_types() {
 #[test]
 fn preserves_generic_traits_and_trait_member_defaults() {
     let program = parse(
-        "let convert(comptime t: type) = trait {\n\
-               let convert(comptime u: type)(self: borrow(self))(value: u): t = { value }\n\
-               let output(comptime v: type): type = pair(t, v)\n\
+        "let convert<comptime t: type> = trait {\n\
+               let convert<comptime u: type>(self: borrow(self))(value: u): t = { value }\n\
+               let output<comptime v: type>: type = pair(t, v)\n\
              }\n",
     )
     .unwrap();
@@ -900,8 +930,8 @@ fn preserves_generic_traits_and_trait_member_defaults() {
 fn preserves_region_and_access_generic_associated_type_groups() {
     let program = parse(
             "let lend = trait {\n\
-               let item(comptime a: access)(comptime r: region): type\n\
-               let view(comptime a: access, comptime r: region)(self: borrow(a)(r)(self))(): item(a)(r)\n\
+               let item<comptime a: access><comptime r: region>: type\n\
+               let view<comptime a: access, comptime r: region>(self: borrow(a)(r)(self))(): item(a)(r)\n\
              }\n",
         )
         .unwrap();
@@ -942,7 +972,7 @@ fn rejects_removed_underscore_inference_syntax() {
 #[test]
 fn parses_unsafe_raw_pointer_dereference_and_assignment() {
     let program = parse(
-            "let main(): i32 = {\n  let mut value = 41\n  let pointer = ptr(mut)(borrow(mut)(value))\n  unsafe {\n    *pointer = *pointer + 1\n  }\n  value\n}\n",
+            "let main(): i32 = {\n  let mut value = 41\n  let pointer = ptr<mut>(borrow<mut>(value))\n  unsafe {\n    *pointer = *pointer + 1\n  }\n  value\n}\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -1057,14 +1087,48 @@ fn keeps_generic_construction_and_variant_heads_as_regular_postfix_expressions()
 }
 
 #[test]
+fn parses_tight_struct_literals_after_angle_applications() {
+    let program = parse(
+        "let cell = wrapper<i32>{ value: 42 }\n\
+         let empty = marker{}\n",
+    )
+    .unwrap();
+
+    let Item::Global(cell) = &program.items[0] else {
+        panic!("expected cell binding");
+    };
+    assert!(matches!(
+        &cell.value,
+        Expr::StructLiteral { constructor, fields }
+            if matches!(
+                constructor.as_ref(),
+                Expr::DelimitedCall {
+                    delimiter: GroupDelimiter::Angle,
+                    arguments,
+                    ..
+                } if arguments.len() == 1
+            ) && fields.len() == 1
+    ));
+
+    let Item::Global(empty) = &program.items[1] else {
+        panic!("expected empty binding");
+    };
+    assert!(matches!(
+        &empty.value,
+        Expr::StructLiteral { constructor, fields }
+            if constructor.as_ref() == &Expr::Name("marker".into()) && fields.is_empty()
+    ));
+}
+
+#[test]
 fn rejects_mixed_or_misordered_compile_parameter_groups() {
     let cases = [
         (
-            "let bad(value: i32)(comptime t: type): i32 = { value }\n",
+            "let bad(value: i32)<comptime t: type>: i32 = { value }\n",
             "cannot be mixed",
         ),
         (
-            "let bad(comptime t: type, value: t): t = { value }\n",
+            "let bad<comptime t: type, value: t>: t = { value }\n",
             "expected `comptime`",
         ),
         (
@@ -1089,7 +1153,7 @@ fn rejects_reserved_compile_parameter_names() {
         "_", "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128",
         "usize", "bool", "never",
     ] {
-        let source = format!("let invalid(comptime {name}: type)(value: i32): i32 = {{ value }}\n");
+        let source = format!("let invalid<comptime {name}: type>(value: i32): i32 = {{ value }}\n");
         let error = parse(&source).unwrap_err();
         assert_eq!(
             error.message,
@@ -1138,7 +1202,7 @@ fn parses_bounded_c_foreign_declarations() {
             "requires one runtime parameter group",
         ),
         (
-            "let identity(comptime t: type)(value: t): t = foreign(c)\n",
+            "let identity<comptime t: type>(value: t): t = foreign(c)\n",
             "cannot be generic",
         ),
         (
@@ -1146,7 +1210,7 @@ fn parses_bounded_c_foreign_declarations() {
             "require an explicit result type",
         ),
         (
-            "let abs(value: i32): i32 with(unsafety) = foreign(c)\n",
+            "let abs(value: i32): i32 with<unsafety> = foreign(c)\n",
             "cannot declare effects",
         ),
         (
@@ -1165,7 +1229,7 @@ fn parses_bounded_c_foreign_declarations() {
 
 #[test]
 fn rejects_runtime_parameters_on_generic_data_and_legacy_extend_headers() {
-    let data = parse("let bad(comptime t: type)(value: t) = struct { value: t }\n").unwrap_err();
+    let data = parse("let bad<comptime t: type>(value: t) = struct { value: t }\n").unwrap_err();
     assert!(data.message.contains("runtime parameters"));
 
     let extension = parse("extend cell {}\n").unwrap_err();
@@ -1346,7 +1410,7 @@ fn parses_do_if_else_and_return() {
 #[test]
 fn rejects_removed_if_let_syntax() {
     let error = parse(
-        "let choose(value: option(i32)): i32 = {\n\
+        "let choose(value: option<i32>): i32 = {\n\
                if let some(found) = value { found } else { 0 }\n\
              }\n",
     )
@@ -1416,7 +1480,7 @@ fn parses_do_and_try_as_distinct_immediate_handlers() {
     assert!(matches!(function_tail(other), Expr::DoBlock { .. }));
 
     let member =
-        parse("let unwrap(value: result(bool)(i32)): i32 with(throwing(bool)) = { value.try }\n")
+        parse("let unwrap(value: result(bool)(i32)): i32 with<throwing<bool>> = { value.try }\n")
             .unwrap();
     let Item::Function(member) = &member.items[0] else {
         panic!("expected function");
@@ -1964,7 +2028,7 @@ fn parses_shared_and_mutable_borrow_places() {
     let program = parse(
         "let main(): () = {\n\
                let shared = borrow(value.field)\n\
-               let exclusive = borrow(mut)(value)\n\
+               let exclusive = borrow<mut>(value)\n\
              }\n",
     )
     .unwrap();
@@ -2124,7 +2188,7 @@ fn parses_explicit_borrow_types() {
         "let main(): i32 = {\n\
                let value = 42\n\
                let shared: borrow(i32) = borrow(value)\n\
-               let mutable: borrow(mut)(i32) = borrow(mut)(value)\n\
+               let mutable: borrow<mut>(i32) = borrow<mut>(value)\n\
                shared\n\
              }\n",
     )
@@ -2177,7 +2241,7 @@ fn rejects_legacy_mut_borrow_token_sequence() {
 #[test]
 fn parses_region_parameters_and_borrow_regions() {
     let program = parse(
-            "let choose(comptime r: region)(value: borrow(r)(i32)): borrow(r)(i32) = { borrow(value) }\n",
+            "let choose<comptime r: region>(value: borrow(r)(i32)): borrow(r)(i32) = { borrow(value) }\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -2208,7 +2272,7 @@ fn parses_region_parameters_and_borrow_regions() {
 #[test]
 fn parses_access_parameters_in_borrow_modes_types_and_expressions() {
     let program = parse(
-        "let identity(comptime a: access, comptime r: region, comptime t: type)\n\
+        "let identity<comptime a: access, comptime r: region, comptime t: type>\n\
                (value: borrow(a)(r)(t)): borrow(a)(r)(t) = { borrow(a)(value) }\n",
     )
     .unwrap();
@@ -2248,7 +2312,7 @@ fn parses_access_parameters_in_borrow_modes_types_and_expressions() {
 fn parses_closed_types_as_compile_parameter_types() {
     let program = parse(
         "let optimization = enum { size, speed }\n\
-             let select(comptime b: bool, comptime o: optimization)(value: i32): i32 = { value }\n",
+             let select<comptime b: bool, comptime o: optimization>(value: i32): i32 = { value }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[1] else {
@@ -2267,7 +2331,7 @@ fn parses_closed_types_as_compile_parameter_types() {
 #[test]
 fn parses_string_as_an_ordinary_named_type() {
     let program = parse(
-        "let register(comptime name: string)(move body: with(core.error.throwing(core.string.string))((): ())): () = builtin()\n",
+        "let register<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()\n",
     )
     .unwrap();
     let [Item::Function(function)] = program.items.as_slice() else {
@@ -2300,7 +2364,7 @@ fn parses_string_as_an_ordinary_named_type() {
 #[test]
 fn parses_parameter_modifier_functions_in_prefix_position() {
     let program = parse(
-            "let identity(comptime m: (comptime p: parameters): parameters, comptime t: type)(m value: t): t = { value }\n",
+            "let identity(comptime m: <comptime p: parameters>: parameters, comptime t: type)(m value: t): t = { value }\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -2314,7 +2378,7 @@ fn parses_parameter_modifier_functions_in_prefix_position() {
 #[test]
 fn parses_parameter_prefixes_as_composable_modifiers() {
     let program = parse(
-            "let decorate(comptime b: bool, comptime m: (comptime p: parameters): parameters)(b m value: i32): i32 = { value }\n",
+            "let decorate(comptime b: bool, comptime m: <comptime p: parameters>: parameters)(b m value: i32): i32 = { value }\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -2327,7 +2391,7 @@ fn parses_parameter_prefixes_as_composable_modifiers() {
 #[test]
 fn parses_parameter_modifier_function_kind() {
     let program = parse(
-            "let identity(comptime m: (comptime p: parameters): parameters, comptime t: type)(m value: t): t = { value }\n",
+            "let identity(comptime m: <comptime p: parameters>: parameters, comptime t: type)(m value: t): t = { value }\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -2340,8 +2404,8 @@ fn parses_parameter_modifier_function_kind() {
 #[test]
 fn parses_effect_parameters_in_with_clauses() {
     let program = parse(
-        "let tagged(comptime e: effects)(value: i32): i32 with(e) = { value }\n\
-             let combined(comptime e: effects)(value: i32): i32 with(unsafety, e) = { value }\n",
+        "let tagged<comptime e: effects>(value: i32): i32 with<e> = { value }\n\
+             let combined<comptime e: effects>(value: i32): i32 with<unsafety, e> = { value }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -2358,16 +2422,16 @@ fn parses_effect_parameters_in_with_clauses() {
     );
     assert_eq!(combined.effects.parameters, vec!["e"]);
 
-    let error = parse("let box(comptime e: effects) = struct { value: i32 }\n").unwrap_err();
+    let error = parse("let box<comptime e: effects> = struct { value: i32 }\n").unwrap_err();
     assert!(error
         .message
         .contains("effect parameters belong to functions"));
 
-    let error = parse("let bad(comptime e: effects)(value: e): i32 with(e) = { 0 }\n").unwrap_err();
+    let error = parse("let bad<comptime e: effects>(value: e): i32 with<e> = { 0 }\n").unwrap_err();
     assert!(error.message.contains("cannot be used as a runtime type"));
 
     let error =
-        parse("let old(comptime e: effects)(value: i32): i32(e) = { value }\n").unwrap_err();
+        parse("let old<comptime e: effects>(value: i32): i32(e) = { value }\n").unwrap_err();
     assert!(
         error
             .message
@@ -2380,7 +2444,7 @@ fn parses_effect_parameters_in_with_clauses() {
 
 #[test]
 fn parses_compiler_owned_constraint_fragments_and_rejects_defaults() {
-    let program = parse("let inspect(comptime c: constraint)(): () = { () }\n").unwrap();
+    let program = parse("let inspect<comptime c: constraint>(): () = { () }\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -2389,11 +2453,11 @@ fn parses_compiler_owned_constraint_fragments_and_rejects_defaults() {
         Sort::Fragment(crate::ast::StaticFragmentKind::constraint())
     );
 
-    let constraint = parse("let bad(comptime c: constraint = value)(): () = { () }\n").unwrap_err();
+    let constraint = parse("let bad<comptime c: constraint = value>(): () = { () }\n").unwrap_err();
     assert!(constraint
         .message
         .contains("defaults for constraint fragments are not supported"));
-    let runtime = parse("let bad(comptime c: constraint)(value: c): () = { () }\n").unwrap_err();
+    let runtime = parse("let bad<comptime c: constraint>(value: c): () = { () }\n").unwrap_err();
     assert!(
         runtime
             .message
@@ -2402,7 +2466,7 @@ fn parses_compiler_owned_constraint_fragments_and_rejects_defaults() {
         runtime.message
     );
 
-    let ordinary = parse("let inspect(comptime d: declaration)(): () = { () }\n").unwrap();
+    let ordinary = parse("let inspect<comptime d: declaration>(): () = { () }\n").unwrap();
     let Item::Function(function) = &ordinary.items[0] else {
         panic!("expected function");
     };
@@ -2415,9 +2479,9 @@ fn parses_compiler_owned_constraint_fragments_and_rejects_defaults() {
 #[test]
 fn parses_trait_self_effect_parameter_in_member_rows() {
     let program = parse(
-            "let handle = trait(comptime self: effect) {\n\
-               let clauses(comptime value: type, comptime answer: type): parameters\n\
-               let handle(comptime value: type, comptime answer: type, comptime rest: effects): with(rest) ...clauses(value, answer) (move action: with(self, rest)((): value)): answer\n\
+            "let handle = trait<comptime self: effect> {\n\
+               let clauses<comptime value: type, comptime answer: type>: parameters\n\
+               let handle<comptime value: type, comptime answer: type, comptime rest: effects>: with<rest> ...clauses(value, answer) (move action: with<self, rest>((): value)): answer\n\
              }\n",
         )
         .unwrap();
@@ -2456,7 +2520,7 @@ fn parses_trait_self_effect_parameter_in_member_rows() {
 fn parses_compiler_provided_sort_and_control_contract_declarations() {
     let program = parse(
             "pub let unsafety = effect {}\n\
-             pub let throwing(comptime error: type) = effect { let raise(move error: error): never }\n\
+             pub let throwing<comptime error: type> = effect { let raise(move error: error): never }\n\
              pub let type: sort(2)\n\
              pub let effect: sort(2)\n\
              pub let effects: sort(2)\n\
@@ -2467,7 +2531,7 @@ fn parses_compiler_provided_sort_and_control_contract_declarations() {
                /// exclusive mutable access.\n\
                mut\n\
              }\n\
-             pub let do(comptime e: effects, comptime t: type)(move action: (): t with(e)): t with(e)\n",
+             pub let do<comptime e: effects, comptime t: type>(move action: (): t with<e>): t with<e>\n",
         )
         .unwrap();
     assert!(matches!(
@@ -2513,8 +2577,8 @@ fn parses_complete_builtin_definition_markers() {
     let program = parse(
         "let builtin() = builtin()\n\
              pub let scalar: type = builtin()\n\
-             pub let family(comptime t: type)(comptime l: usize): type = builtin()\n\
-             pub let intrinsic(comptime t: type)(value: t): t = builtin()\n\
+             pub let family<comptime t: type><comptime l: usize>: type = builtin()\n\
+             pub let intrinsic<comptime t: type>(value: t): t = builtin()\n\
              extend(i32, add(i32)) {\n\
                let output = i32\n\
                let add(self)(rhs: i32): i32 = builtin()\n\
@@ -2577,7 +2641,7 @@ fn parses_variadic_match_control_contract() {
                comptime output: type,\n\
                comptime e: effects,\n\
                comptime ...cases: parameters,\n\
-             ): with(e)\n\
+             ): with<e>\n\
                (move input: input)\n\
                ...cases: output\n",
     )
@@ -2674,8 +2738,8 @@ fn rejects_removed_type_value_syntax_and_duplicate_enum_variants() {
 fn parses_nominal_marker_effect_declarations_and_callable_rows() {
     let program = parse(
         "pub let ui = effect\n\
-             let render(): i32 with(ui) = { 0 }\n\
-             let invoke(action: (): i32 with(ui)): i32 with(ui) = { action() }\n",
+             let render(): i32 with<ui> = { 0 }\n\
+             let invoke(action: (): i32 with<ui>): i32 with<ui> = { action() }\n",
     )
     .unwrap();
 
@@ -2696,19 +2760,19 @@ fn parses_nominal_marker_effect_declarations_and_callable_rows() {
             if effects.custom == [Type::Named("ui".into(), Vec::new())]
     ));
 
-    let duplicate = parse("let f(): i32 with(ui, ui) = { 0 }\n").unwrap_err();
+    let duplicate = parse("let f(): i32 with<ui, ui> = { 0 }\n").unwrap_err();
     assert!(duplicate.message.contains("duplicate custom effect `ui`"));
 
     parse("let local_effect = effect\n")
         .expect("snake_case effect declarations are valid nominal identities");
-    parse("let f(): i32 with(core.effect.ui) = { 0 }\n")
+    parse("let f(): i32 with<core.effect.ui> = { 0 }\n")
         .expect("snake_case qualified effect names are valid");
 }
 
 #[test]
 fn parses_parameterized_algebraic_effect_operations() {
     let program = parse(
-        "let state(comptime s: type) = effect {\n\
+        "let state<comptime s: type> = effect {\n\
                let get(): s\n\
                let put(move value: s): ()\n\
              }\n\
@@ -2763,7 +2827,7 @@ fn permits_effect_operation_overloads_only_by_parameter_names() {
 #[test]
 fn parses_function_shaped_handlers_with_contextual_clause_parameters() {
     let program = parse(
-        "let state(comptime s: type) = effect { let get(): s }\n\
+        "let state<comptime s: type> = effect { let get(): s }\n\
              let main(): i32 = {\n\
                state(i32).handle get { (resume) -> resume(42) } action {\n\
                  state(i32).get()\n\
@@ -2783,7 +2847,7 @@ fn parses_function_shaped_handlers_with_contextual_clause_parameters() {
 #[test]
 fn parses_effects_as_part_of_callable_signatures() {
     let program = parse(
-            "let apply(comptime e: effects)(action: (i32): i32 with(e))(value: i32): i32 with(e) = { value }\n",
+            "let apply<comptime e: effects>(action: (i32): i32 with<e>)(value: i32): i32 with<e> = { value }\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -2798,7 +2862,7 @@ fn parses_effects_as_part_of_callable_signatures() {
     ));
 
     let old = parse(
-        "let apply(comptime e: effects)(action: (i32): i32(e))(value: i32): i32 = { value }\n",
+        "let apply<comptime e: effects>(action: (i32): i32(e))(value: i32): i32 = { value }\n",
     )
     .unwrap_err();
     assert!(
@@ -2813,7 +2877,7 @@ fn parses_effects_as_part_of_callable_signatures() {
 #[test]
 fn rejects_parameter_modifier_parameters_on_data_declarations() {
     let error = parse(
-        "let wrapper(comptime m: (comptime p: parameters): parameters) = struct { value: i32 }\n",
+        "let wrapper(comptime m: <comptime p: parameters>: parameters) = struct { value: i32 }\n",
     )
     .unwrap_err();
     assert!(error
@@ -2988,8 +3052,8 @@ fn array_length_must_be_a_restricted_static_expression() {
 #[test]
 fn array_type_preserves_curried_compile_parameter_groups() {
     let program = parse(
-        "pub let array(comptime t: type)(comptime l: usize): type\n\
-             let first(comptime l: usize)(values: array(i32)(l)): i32 = { values[0] }\n",
+        "pub let array<comptime t: type><comptime l: usize>: type\n\
+             let first<comptime l: usize>(values: array(i32)(l)): i32 = { values[0] }\n",
     )
     .unwrap();
 
@@ -3021,7 +3085,7 @@ fn parses_extend_methods_associated_functions_constants_and_trait_refs() {
     let program = parse(
         "let a = struct { value: i32 }\n\
              extend(a, foo) {\n\
-               let reset(self: borrow(mut)(self))(): () = {}\n\
+               let reset(self: borrow<mut>(self))(): () = {}\n\
                let answer: i32 = 42\n\
                let make(value: i32): a = { a { value: value } }\n\
              }\n",
@@ -3078,8 +3142,8 @@ fn parses_extend_methods_associated_functions_constants_and_trait_refs() {
 fn parses_compile_parameters_on_extend_functions() {
     let program = parse(
         "extend(a) {\n\
-               let convert(comptime t: type)(self: borrow(self))(value: t): t = { value }\n\
-               let make(comptime t: type)(value: t): t = { value }\n\
+               let convert<comptime t: type>(self: borrow(self))(value: t): t = { value }\n\
+               let make<comptime t: type>(value: t): t = { value }\n\
              }\n",
     )
     .unwrap();
@@ -3105,7 +3169,7 @@ fn parses_compile_parameters_on_extend_functions() {
 #[test]
 fn infers_extend_pattern_parameters_from_constructor_sorts() {
     let program = parse(
-        "let cell(comptime t: type) = struct { value: t }\n\
+        "let cell<comptime t: type> = struct { value: t }\n\
              extend(cell(t))\n\
              (requires: t is copyable) {\n\
                let get(self: borrow(self))(): t = { self.value }\n}\n",
@@ -3124,7 +3188,7 @@ fn infers_extend_pattern_parameters_from_constructor_sorts() {
     );
 
     let program = parse(
-        "let result(comptime error: type)(comptime t: type) = enum { ok(t), err(error) }\n\
+        "let result<comptime error: type><comptime t: type> = enum { ok(t), err(error) }\n\
              let chain = trait {}\n\
              extend(result(error)(t), chain) {}\n",
     )
@@ -3148,7 +3212,7 @@ fn infers_extend_pattern_parameters_from_constructor_sorts() {
 #[test]
 fn qualified_extend_roots_are_not_inferred_as_parameters() {
     let program = parse(
-        "let functor = trait(comptime self: (comptime value: type): type) {}\n\
+        "let functor = trait(comptime self: <comptime value: type>: type) {}\n\
              extend(core.option.option, functor) {}\n\
              extend(core.result.result(error), functor) {}\n",
     )
@@ -3167,7 +3231,7 @@ fn qualified_extend_roots_are_not_inferred_as_parameters() {
 #[test]
 fn parses_multiline_constraint_guards_without_inference_placeholders() {
     let program = parse(
-        "let choose(comptime t: type)(copy value: t): t\n\
+        "let choose<comptime t: type>(copy value: t): t\n\
              = requires(t is copyable && t is marker(i32) && t.item == t) { value }\n",
     )
     .unwrap();
@@ -3198,8 +3262,8 @@ fn parses_multiline_constraint_guards_without_inference_placeholders() {
 fn lowers_compile_time_constraint_guards_to_trait_predicates() {
     let program = parse(
         "let copyable = trait {}\n\
-         let cell(comptime t: type) = struct { value: t }\n\
-         let duplicate(comptime t: type)(value: t): (t, t) = requires(t is copyable) {\n\
+         let cell<comptime t: type> = struct { value: t }\n\
+         let duplicate<comptime t: type>(value: t): (t, t) = requires(t is copyable) {\n\
            (value, value)\n\
          }\n\
          extend(cell(t), copyable)\n\
@@ -3229,13 +3293,13 @@ fn lowers_compile_time_constraint_guards_to_trait_predicates() {
 #[test]
 fn constraint_guards_require_is_evidence_before_projection_equalities() {
     let error =
-        parse("let read(comptime t: type)(value: t): t = requires(t.item == i32) { value }\n")
+        parse("let read<comptime t: type>(value: t): t = requires(t.item == i32) { value }\n")
             .expect_err("a projection without trait evidence must fail");
     assert!(error
         .message
         .contains("must follow an `is` constraint for the same subject"));
 
-    let error = parse("let read(comptime t: type)(value: t): t where t: copyable = { value }\n")
+    let error = parse("let read<comptime t: type>(value: t): t where t: copyable = { value }\n")
         .expect_err("colon-style predicates must fail");
     assert!(error
         .message
@@ -3245,8 +3309,8 @@ fn constraint_guards_require_is_evidence_before_projection_equalities() {
 #[test]
 fn parses_generic_associated_type_equalities() {
     let program = parse(
-            "let lend(comptime t: type)(value: t): t\n\
-             = requires(t is lender && t.item(comptime a: access)(comptime r: region) == borrow(a)(r)(i32)) { value }\n",
+            "let lend<comptime t: type>(value: t): t\n\
+             = requires(t is lender && t.item<comptime a: access><comptime r: region> == borrow(a)(r)(i32)) { value }\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -3359,8 +3423,8 @@ fn reports_a_source_location() {
 #[test]
 fn parses_type_families_and_type_constructor_aliases() {
     let program = parse(
-        "let family(comptime t: type): type = box(t)\n\
-             let constructor: (comptime element: type): type = box\n\
+        "let family<comptime t: type>: type = box<t>;\n\
+             let constructor: (comptime element: type): type = box;\n\
              let scalar: type = i32\n",
     )
     .unwrap();
@@ -3395,14 +3459,14 @@ fn parses_type_families_and_type_constructor_aliases() {
 #[test]
 fn parses_constructor_compile_parameter_sorts() {
     let program = parse(
-            "let use(comptime f: (comptime element: type): type)(move value: f(i32)): f(i32) = { value }\n\
-             let curried(comptime f: (comptime element: type)(comptime length: usize): type)(): i32 = { 0 }\n\
-             let effects(comptime e: (comptime error: type): effect)(move action: (): i32 with(e(bool))): i32 with(e(bool)) = { action() }\n\
-             let functor = trait(comptime self: (comptime value: type): type) {\n\
-               let map(comptime e: effects, comptime a: type, comptime b: type)(move self: self(a))(move transform: (a): b with(e)): self(b) with(e)\n\
+            "let use(comptime f: <comptime element: type>: type)(move value: f(i32)): f(i32) = { value }\n\
+             let curried(comptime f: <comptime element: type><comptime length: usize>: type)(): i32 = { 0 }\n\
+             let effects(comptime e: <comptime error: type>: effect)(move action: (): i32 with(e(bool))): i32 with(e(bool)) = { action() }\n\
+             let functor = trait(comptime self: <comptime value: type>: type) {\n\
+               let map<comptime e: effects, comptime a: type, comptime b: type>(move self: self(a))(move transform: (a): b with<e>): self(b) with<e>\n\
              }\n\
-             let applicative = trait(comptime self: (comptime value: type): type)(requires: self is functor) {\n\
-               let pure(comptime a: type)(move value: a): self(a)\n}\n",
+             let applicative = trait(comptime self: <comptime value: type>: type)(requires: self is functor) {\n\
+               let pure<comptime a: type>(move value: a): self(a)\n}\n",
         )
         .unwrap();
 

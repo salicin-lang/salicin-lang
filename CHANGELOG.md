@@ -157,7 +157,7 @@ subset.
   scope-safety and phase-separation gates.
 - Tightened the source-backed `test` contract to include its compile-time
   `string` name while retaining the required unit-returning
-  `throwing(string)` closure and `()` result. Boolean-returning test bodies
+  `throwing<string>` closure and `()` result. Boolean-returning test bodies
   remain rejected.
 - Added the validated function-body `requires` contract: a compile-time
   `bool`, effect row, result type, and delayed parameterless closure.
@@ -263,7 +263,7 @@ subset.
   nominal C-layout validation now retain production-time source provenance;
   document-wide failures honestly omit a range.
 - Clarified that source-backed `core.test` accepts only a unit-returning
-  `throwing(string)` action, removed the final stale boolean signature, and
+  `throwing<string>` action, removed the final stale boolean signature, and
   documented why declaration-forming `extend` and constraint-guard
   `requires` are grammar contracts rather than ordinary callable
   declarations. Updated the editor contract, architecture, status, roadmap,
@@ -354,7 +354,7 @@ subset.
   and writes through explicit file/stdout authority.
 - Added source assertions plus native success, malformed/missing input,
   repeat-output, file, early-exit, and replacement-allocator coverage;
-  allocations balance after both normal return and `throwing(string)`.
+  allocations balance after both normal return and `throwing<string>`.
 - Updated the research ledger, status, standard-library conformance, README,
   TODO, and roadmap, promoting persistent incremental builds to the active
   milestone.
@@ -363,7 +363,7 @@ subset.
 
 - Replaced boolean-returning test registrations and the dedicated
   `core.testing.failure` effect with one canonical callable contract:
-  `with(core.error.throwing(core.string.string))((): ())`.
+  `with<core.error.throwing<core.string.string>>((): ())`.
 - Migrated all source test fixtures to unit-returning assertion bodies;
   failures now always throw an owned UTF-8 message, while normal `()` return
   passes.
@@ -456,11 +456,11 @@ subset.
 
 ## 0.228.0 - 2026-07-30
 
-- Made `with(E)(F)` the canonical effect-row constructor for callable type
+- Made `with<E>(F)` the canonical effect-row constructor for callable type
   `F`, applying one normalized row to the complete multi-group callable and
   rejecting non-callable operands.
 - Added the effectful declaration boundary syntax
-  `let f(comptime e: effects): with(e)(value: i32): i32`, while preserving the
+  `let f<comptime e: effects>: with<e>(value: i32): i32`, while preserving the
   compact `let f(value: i32): i32` spelling for pure functions.
 - Migrated core, alloc, std, examples, fixtures, formatter coverage, grammar,
   specification, and effect documentation to prefix syntax. Edition 2026
@@ -603,11 +603,11 @@ subset.
 ## 0.217.0 - 2026-07-28
 
 - Completed TEXT-1 with ownership-preserving UTF-8 conversion in
-  `alloc.string`. Valid `vec(u8)` storage transfers into `string` without
+  `alloc.string`. Valid `vec<u8>` storage transfers into `string` without
   copying, while `from_utf8_error` retains the rejected vector and reports the
   valid-prefix length, including truncated sequences.
 - Added consuming `string_into_bytes`: heap-backed strings transfer their
-  allocation to `vec(u8)`, while static literal storage is copied into a new
+  allocation to `vec<u8>`, while static literal storage is copied into a new
   owned vector. Empty zero-capacity vectors are released normally instead of
   being confused with static string storage.
 - Added package-private vector raw-parts adapters and unsafe core string
@@ -639,7 +639,7 @@ subset.
   `str.as_bytes`, `len`, and `is_empty`. Validation covers the exact Unicode
   well-formed sequence boundaries, including overlong, surrogate, truncated,
   and above-`U+10FFFF` rejection.
-- Preserved reference origins and source loans across raw `slice(u8)`/`str`
+- Preserved reference origins and source loans across raw `slice<u8>`/`str`
   view casts, reference-bearing `option` construction, and match payload
   binding. Local text views cannot escape, live views block writes to their
   bytes, and safe code cannot invoke the representation cast.
@@ -1486,7 +1486,7 @@ subset.
 
 ## 0.177.0 - 2026-07-22
 
-- Required effect declarations and nominal effect references in `with(...)` to use an uppercase
+- Required effect declarations and nominal effect references in `with<...>` to use an uppercase
   final name segment, keeping standard and user-defined effects aligned with type-like nominal
   spelling and rejecting accidental lowercase custom effect names before semantic analysis.
 
@@ -1524,8 +1524,8 @@ subset.
 - Allowed concrete nominal trait implementation methods to keep matching compile-time parameter
   groups, registering those methods as function templates so calls such as
   `value.method(T)(...)` can instantiate the implementation body.
-- Removed the remaining dedicated parser migration branch for lowercase `with(unsafe)` and
-  `with(try...)`; standard effects are parsed only as ordinary effect names such as `Unsafe`,
+- Removed the remaining dedicated parser migration branch for lowercase `with<unsafe>` and
+  `with<try...>`; standard effects are parsed only as ordinary effect names such as `Unsafe`,
   `Throws(E)`, and `Async`.
 - Updated language and standard-library documentation snippets to use the `.sc` code fence and the
   uppercase `Async` effect spelling.
@@ -1611,8 +1611,8 @@ subset.
 
 ## 0.165.0 - 2026-07-22
 
-- Made `Unsafe` the public standard effect spelling in `with(...)` rows and effect compile-time
-  arguments; lowercase `with(unsafe)` now reports a migration diagnostic instead of being accepted.
+- Made `Unsafe` the public standard effect spelling in `with<...>` rows and effect compile-time
+  arguments; lowercase `with<unsafe>` now reports a migration diagnostic instead of being accepted.
 - Changed the validated `core.unsafe.unsafe` contract to require `core.effects.Unsafe`, then
   normalized that standard effect identity onto the existing checked-unsafe semantic bit so raw
   pointer checks, callable rows, method signatures, and generic effect arguments continue to use one
@@ -1712,9 +1712,9 @@ subset.
 
 - Added constructor compile-time kinds such as `F: (Value: type): type` and
   `E: (Error: type): effect` to the AST and parser, with disambiguating lookahead so function types
-  like `action: (): T with(E)` remain runtime parameter types rather than compile-time parameters.
+  like `action: (): T with<E>` remain runtime parameter types rather than compile-time parameters.
 - Extended trait signature validation to understand type-constructor parameters in method types and
-  effect-constructor parameters in `with(...)` rows, while keeping constructor-valued generic
+  effect-constructor parameters in `with<...>` rows, while keeping constructor-valued generic
   functions and trait implementations explicitly unsupported with diagnostics.
 - Added non-prelude `core.functional.Functor`, `core.functional.Applicative`, and
   `core.functional.Monad` source definitions over HKT constructor kinds, and mounted
@@ -1808,7 +1808,7 @@ subset.
 
 - Extended captured reusable-handler actions from shared `Copy` environments to `FnMut` mutable
   captures and `FnOnce` owned root captures.
-- Lifted mutable captures as `borrow(mut)` parameters and consuming captures as `move` parameters,
+- Lifted mutable captures as `borrow<mut>` parameters and consuming captures as `move` parameters,
   preserving the closure's source ownership mode through handler specialization and selective CPS.
 - Verified native `FnMut` state across a resumed operation and exactly-once `FnOnce` resource cleanup
   on both resumption and continuation abandonment; all three regressions exit with 42.
@@ -2419,7 +2419,7 @@ subset.
 
 ## 0.91.0 - 2026-07-21
 
-- Replaced `with(try)` / `with(try(Error))` with the explicit error effect
+- Replaced `with<try>` / `with(try(Error))` with the explicit error effect
   `with(throws(Error))`; a throwing function keeps logical result `T` while the current native ABI
   lowers it through `Result(T, Error)`.
 - Made complete direct, method, partial, and non-capturing indirect throwing calls propagate
@@ -2447,18 +2447,18 @@ subset.
 ## 0.89.0 - 2026-07-21
 
 - Replaced the pre-result effect group with one contextual post-result spelling for declarations and
-  callable types: `let read(): T with(unsafe)` and `(): T with(unsafe)`. The removed
+  callable types: `let read(): T with<unsafe>` and `(): T with<unsafe>`. The removed
   `(unsafe): T`, `(E): T`, `T(effect)`, and `T ! effect` forms have no compatibility aliases.
 - Added nominal marker effects declared by `let UI = effect`, including module qualification,
   imports, visibility boundaries, duplicate/unknown diagnostics, callable identity, and static call
-  checking through `with(UI)`.
+  checking through `with<UI>`.
 - Generalized `E: effect` from the built-in pure/unsafe choice to a complete inferred effect row.
   Higher-order functions can now infer and forward pure, unsafe, and custom rows from callable
   arguments while keeping effect arguments compile-time-only.
 - Added the first native ABI for first-class non-capturing named functions. Function values are
   `Copy`, lower to LLVM function pointers, and can be passed to and invoked by higher-order code;
   effect requirements remain checked at indirect calls.
-- Kept `with(try)` and `with(try(Error))` as explicit Option/Result carrier normalization rather
+- Kept `with<try>` and `with(try(Error))` as explicit Option/Result carrier normalization rather
   than treating failure representation as a hidden runtime channel or a marker row.
 
 ## 0.88.0 - 2026-07-21
@@ -2640,7 +2640,7 @@ subset.
   before `.try` or `throw` may propagate.
 - Prevented generic enum variant inference from intercepting trait associated functions on explicit
   generic type heads such as `Option(i32).from_output(42)`.
-- Removed the dedicated pre-1.0 `mut borrow` compatibility diagnostic paths; `borrow(mut)` is the
+- Removed the dedicated pre-1.0 `mut borrow` compatibility diagnostic paths; `borrow<mut>` is the
   sole mutable-borrow grammar and legacy token sequences are ordinary invalid syntax.
 
 ## 0.74.0 - 2026-07-21
@@ -2702,7 +2702,7 @@ subset.
   outer nominal parameters with member-owned `type`, `access`, and region groups.
 - Added access inference for generic method receivers and expected reference types, including
   `value.view()` for shared access and `value.view(mut)()` for exclusive access.
-- Replaced the source spelling `mut borrow` with the single compositional form `borrow(mut)` across
+- Replaced the source spelling `mut borrow` with the single compositional form `borrow<mut>` across
   parameters, types, expressions, receivers, traits, core, alloc, and diagnostics.
 - Removed the pre-1.0 compatibility APIs `box_as_mut`, `vec_at_mut`, `Box.as_mut`, `Vec.at_mut`, and
   `raw_mut_borrow`; their access-generic counterparts are now the only APIs.

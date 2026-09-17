@@ -713,7 +713,9 @@ pub(super) fn promote_inferred_type_aliases<const N: usize>(programs: [&mut Prog
                 };
                 let is_type_binding = match &binding.value {
                     Expr::Name(_) => arity == 0,
-                    Expr::Call(_, _) => arity > 0 && source_arity == arity,
+                    Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
+                        arity > 0 && source_arity == arity
+                    }
                     _ => false,
                 };
                 if is_type_binding {
@@ -1009,7 +1011,7 @@ fn expression_type_source(expression: &Expr) -> Option<Type> {
             "bool" => Type::Bool,
             _ => Type::Named(name.clone(), Vec::new()),
         }),
-        Expr::Call(callee, arguments)
+        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. }
             if arguments.iter().all(|argument| argument.label.is_none()) =>
         {
             let Expr::Name(name) = callee.as_ref() else {
@@ -1048,7 +1050,7 @@ fn expand_expr_aliases(
     aliases: &HashMap<String, crate::ast::TypeAliasDef>,
     diagnostics: &mut Vec<String>,
 ) {
-    if let Expr::Call(callee, arguments) = expression {
+    if let Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } = expression {
         if let Expr::Name(name) = callee.as_ref() {
             if let Some(alias) = aliases.get(name) {
                 let expected = alias.compile_groups.iter().flatten().count();
@@ -2125,7 +2127,10 @@ pub(super) fn substitute_expr_types(expression: &mut Expr, substitutions: &HashM
             }
         }
         Expr::Member(base, _) => {
-            if matches!(base.as_ref(), Expr::Call(_, _) | Expr::StructLiteral { .. }) {
+            if matches!(
+                base.as_ref(),
+                Expr::Call(_, _) | Expr::DelimitedCall { .. } | Expr::StructLiteral { .. }
+            ) {
                 substitute_type_expression_parameters(base, substitutions);
             } else {
                 substitute_expr_types(base, substitutions);

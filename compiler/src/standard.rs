@@ -8,7 +8,7 @@ use std::error::Error;
 use std::fmt;
 use std::sync::OnceLock;
 
-use crate::ast::{Item, Program, Visibility};
+use crate::ast::{ExtendMember, GroupDelimiter, Item, Program, TraitMember, Visibility};
 use crate::manifest::Edition;
 use crate::modules::{self, PackageId, SourceUnit};
 use crate::parser;
@@ -82,6 +82,53 @@ pub(crate) fn naming_diagnostics(program: &Program, layer: &str) -> Vec<String> 
         .collect()
 }
 
+pub(crate) fn delimiter_diagnostics(program: &Program, layer: &str) -> Vec<String> {
+    let mut diagnostics = Vec::new();
+    let mut check = |function: &crate::ast::Function| {
+        if function.effects.compile_group_delimiters.len() != function.compile_groups.len()
+            || function
+                .effects
+                .compile_group_delimiters
+                .iter()
+                .any(|delimiter| *delimiter != GroupDelimiter::Angle)
+        {
+            diagnostics.push(format!(
+                "official {layer} function `{}` must use `<...>` for every compile-time parameter group",
+                function.name
+            ));
+        }
+        if function
+                .effects
+                .group_delimiters
+                .iter()
+                .any(|delimiter| *delimiter != GroupDelimiter::Parenthesis)
+        {
+            diagnostics.push(format!(
+                "official {layer} function `{}` must use `(...)` for every runtime parameter group",
+                function.name
+            ));
+        }
+    };
+    for item in &program.items {
+        match item {
+            Item::Function(function) => check(function),
+            Item::Effect(effect) => effect.operations.iter().for_each(&mut check),
+            Item::Trait(definition) => definition.members.iter().for_each(|member| {
+                if let TraitMember::Function(function) = member {
+                    check(function);
+                }
+            }),
+            Item::Extend(definition) => definition.members.iter().for_each(|member| {
+                if let ExtendMember::Function(function) = member {
+                    check(function);
+                }
+            }),
+            _ => {}
+        }
+    }
+    diagnostics
+}
+
 fn validate_standard_name(name: &str, category: &str) -> Option<String> {
     let ascii_snake_case = !name.is_empty()
         && !name.starts_with('_')
@@ -141,8 +188,10 @@ impl StdBundle {
                 )
             })?;
             let naming = naming_diagnostics(&parsed, "std");
-            if !naming.is_empty() {
-                return Err(StdBundleError::new(edition, naming));
+            let mut conventions = delimiter_diagnostics(&parsed, "std");
+            conventions.extend(naming);
+            if !conventions.is_empty() {
+                return Err(StdBundleError::new(edition, conventions));
             }
             for (item, visibility) in parsed.items.iter().zip(&parsed.item_visibilities) {
                 if *visibility != Visibility::Public {
@@ -465,7 +514,7 @@ mod tests {
     #[test]
     fn standard_names_encode_semantics_instead_of_declaration_categories() {
         let valid = parser::parse(
-            "pub let option(comptime t: type) = enum { some(t), none }\n\
+            "pub let option<comptime t: type> = enum { some(t), none }\n\
              pub let copyable = trait {}\n\
              pub let suspension = effect { let suspend(): () }\n",
         )

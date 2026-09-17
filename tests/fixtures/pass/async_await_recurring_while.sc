@@ -2,61 +2,61 @@ let poll = core.async.poll
 let future = core.async.future
 
 let step = struct {
-  remaining: ptr(mut)(i32),
-  polls: ptr(mut)(i32)
+  remaining: ptr<mut><i32>,
+  polls: ptr<mut><i32>
 }
 
 extend(step, future(())) {
   let output = ()
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(()) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<()> = {
     unsafe {
       *self.polls = *self.polls + 1
       *self.remaining = *self.remaining - 1
-      poll(()).ready(())
+      poll<()>.ready(())
     }
   }
 }
 
-let step(remaining: ptr(mut)(i32), polls: ptr(mut)(i32)): step = {
-  step { remaining: remaining, polls: polls }
+let step(remaining: ptr<mut><i32>, polls: ptr<mut><i32>): step = {
+  step{ remaining: remaining, polls: polls }
 }
 
 let pending_step = struct {
   polled: bool,
-  remaining: ptr(mut)(i32)
+  remaining: ptr<mut><i32>
 }
 
 extend(pending_step, future(())) {
   let output = ()
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(()) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<()> = {
     if self.polled {
       unsafe {
         *self.remaining = *self.remaining - 1
       }
-      poll(()).ready(())
+      poll<()>.ready(())
     } else {
       self.polled = true
-      poll(()).pending
+      poll<()>.pending
     }
   }
 }
 
-let pending_step(remaining: ptr(mut)(i32)): pending_step = {
-  pending_step { polled: false, remaining: remaining }
+let pending_step(remaining: ptr<mut><i32>): pending_step = {
+  pending_step{ polled: false, remaining: remaining }
 }
 
 let main(): i32 = {
   let mut polls = 0
-  let polls_ptr = ptr(mut)(borrow(mut)(polls))
+  let polls_ptr = ptr<mut>(borrow<mut>(polls))
 
   let mut pre_remaining = 3
-  let pre_ptr = ptr(mut)(borrow(mut)(pre_remaining))
+  let pre_ptr = ptr<mut>(borrow<mut>(pre_remaining))
   let mut pre = async {
     while {
       unsafe { *pre_ptr > 0 }
@@ -69,7 +69,7 @@ let main(): i32 = {
     { ready(_) -> 1 }
 
   let mut false_remaining = 0
-  let false_ptr = ptr(mut)(borrow(mut)(false_remaining))
+  let false_ptr = ptr<mut>(borrow<mut>(false_remaining))
   let mut initially_false = async {
     while {
       unsafe { *false_ptr > 0 }
@@ -82,7 +82,7 @@ let main(): i32 = {
     { ready(_) -> 1 }
 
   let mut post_remaining = 0
-  let post_ptr = ptr(mut)(borrow(mut)(post_remaining))
+  let post_ptr = ptr<mut>(borrow<mut>(post_remaining))
   let mut post = async {
     do {
       let ignored = await step(post_ptr, polls_ptr)
@@ -97,8 +97,8 @@ let main(): i32 = {
 
   let mut pending_remaining = 1
   let mut condition_checks = 0
-  let pending_ptr = ptr(mut)(borrow(mut)(pending_remaining))
-  let checks_ptr = ptr(mut)(borrow(mut)(condition_checks))
+  let pending_ptr = ptr<mut>(borrow<mut>(pending_remaining))
+  let checks_ptr = ptr<mut>(borrow<mut>(condition_checks))
   let mut pending = async {
     while {
       unsafe {

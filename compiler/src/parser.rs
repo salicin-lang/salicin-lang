@@ -116,7 +116,7 @@ pub fn parse_tokens(tokens: Vec<Token>) -> Result<Program, ParseError> {
 struct Parser {
     tokens: Vec<Token>,
     index: usize,
-    /// Names that may occur in `with(...)`, including individual `effect`
+    /// Names that may occur in `with<...>`, including individual `effect`
     /// identities and complete `effects` rows.
     effect_parameters_in_scope: HashSet<String>,
     next_control_binding: usize,
@@ -679,6 +679,8 @@ impl Parser {
                 return_type: annotation,
                 effects: FunctionEffects {
                     unsafety: true,
+                    compile_group_delimiters: effects.compile_group_delimiters,
+                    group_delimiters: effects.group_delimiters,
                     ..FunctionEffects::default()
                 },
                 where_predicates: Vec::new(),
@@ -1489,11 +1491,19 @@ impl Parser {
         let mut associated_types = Vec::new();
         let mut saw_associated = false;
         let mut labeled = 0;
-        if self.take(&TokenKind::LParen) && !self.take(&TokenKind::RParen) {
+        if let Some(delimiter) = self.type_argument_delimiter() {
+            let close = Self::group_close(delimiter);
+            self.advance();
+            if self.take(&close) {
+                return Ok((Type::Named(name, Vec::new()), associated_types));
+            }
             loop {
                 let starts_associated_binding = matches!(self.current().kind, TokenKind::Ident(_))
                     && (self.at_offset(1, &TokenKind::Equal)
-                        || (self.at_offset(1, &TokenKind::LParen)
+                        || (matches!(
+                                self.tokens.get(self.index + 1).map(|token| &token.kind),
+                                Some(TokenKind::LParen | TokenKind::Less)
+                            )
                             && self.at_offset(2, &TokenKind::Comptime)
                             && matches!(
                                 self.tokens.get(self.index + 3).map(|token| &token.kind),
@@ -1504,7 +1514,7 @@ impl Parser {
                     saw_associated = true;
                     let binding = self.expect_ident("an associated type name")?;
                     let mut compile_groups = Vec::new();
-                    while self.at(&TokenKind::LParen) {
+                    while self.group_starts_with_compile_parameter() {
                         compile_groups.push(self.compile_parameter_group()?);
                     }
                     self.expect(&TokenKind::Equal, "`=` in associated type equality")?;
@@ -1541,11 +1551,11 @@ impl Parser {
                     });
                 }
                 if self.take(&TokenKind::Comma) {
-                    if self.take(&TokenKind::RParen) {
+                    if self.take(&close) {
                         break;
                     }
                 } else {
-                    self.expect(&TokenKind::RParen, "`)` after trait arguments")?;
+                    self.expect_group_close(&close, "after trait arguments")?;
                     break;
                 }
             }
@@ -1868,6 +1878,8 @@ impl Parser {
     fn compile_parameter_sort_starts_at(&self, offset: usize) -> bool {
         self.at_offset(offset, &TokenKind::Type)
             || self.at_offset(offset, &TokenKind::Region)
+            || (self.at_offset(offset, &TokenKind::Less)
+                && self.at_offset(offset + 1, &TokenKind::Comptime))
             || self.constructor_compile_parameter_sort_starts_at(offset)
             || matches!(
                 self.tokens
@@ -2028,7 +2040,7 @@ impl Parser {
             }
         }
 
-        if self.at(&TokenKind::LParen) {
+        if self.group_starts_with_compile_parameter() {
             if matches!(
                 name,
                 "_" | "i8"
@@ -2071,7 +2083,7 @@ impl Parser {
 
     fn constructor_compile_parameter_sort(&mut self) -> Result<Sort, ParseError> {
         let mut parameter_groups = Vec::new();
-        while self.at(&TokenKind::LParen) {
+        while self.group_starts_with_compile_parameter() {
             parameter_groups.push(self.constructor_sort_parameter_group()?);
         }
         self.expect(&TokenKind::Colon, "`:` before constructor result sort")?;
@@ -2095,8 +2107,8 @@ impl Parser {
     }
 
     fn constructor_sort_parameter_group(&mut self) -> Result<Vec<Sort>, ParseError> {
-        self.expect(&TokenKind::LParen, "`(` in constructor sort")?;
-        if self.take(&TokenKind::RParen) {
+        let (_, close) = self.open_group("in constructor sort")?;
+        if self.take(&close) {
             return Err(self.error_here("constructor sort parameter groups cannot be empty"));
         }
 
@@ -2139,11 +2151,11 @@ impl Parser {
             parameter_kinds.push(self.compile_parameter_sort(&name_token, &name, false)?);
 
             if self.take(&TokenKind::Comma) {
-                if self.take(&TokenKind::RParen) {
+                if self.take(&close) {
                     break;
                 }
             } else {
-                self.expect(&TokenKind::RParen, "`)` after constructor sort parameters")?;
+                self.expect_group_close(&close, "after constructor sort parameters")?;
                 break;
             }
         }
@@ -2435,15 +2447,17 @@ impl Parser {
     }
 
     fn optional_region(&mut self) -> Result<Option<String>, ParseError> {
-        if !self.at(&TokenKind::LParen)
-            || !matches!(
-                self.tokens.get(self.index + 1).map(|token| &token.kind),
-                Some(TokenKind::Ident(_) | TokenKind::RegionName(_))
-            )
-        {
+        let Some(delimiter) = self.type_argument_delimiter() else {
+            return Ok(None);
+        };
+        if !matches!(
+            self.tokens.get(self.index + 1).map(|token| &token.kind),
+            Some(TokenKind::Ident(_) | TokenKind::RegionName(_))
+        ) {
             return Ok(None);
         }
-        self.expect(&TokenKind::LParen, "`(` before region")?;
+        let close = Self::group_close(delimiter);
+        self.advance();
         let token = self.current().clone();
         let name = match token.kind {
             TokenKind::Ident(name) | TokenKind::RegionName(name) => name,
@@ -2452,16 +2466,17 @@ impl Parser {
             }
         };
         self.advance();
-        self.expect(&TokenKind::RParen, "`)` after region")?;
+        self.expect_group_close(&close, "after region")?;
         Ok(Some(name))
     }
 
     fn optional_borrow_arguments(
         &mut self,
     ) -> Result<(bool, Option<String>, Option<String>), ParseError> {
-        if !self.at(&TokenKind::LParen) {
+        let Some(delimiter) = self.type_argument_delimiter() else {
             return Ok((false, None, None));
-        }
+        };
+        let close = Self::group_close(delimiter);
         match self.tokens.get(self.index + 1).map(|token| &token.kind) {
             Some(TokenKind::RegionName(_)) => {
                 return Ok((false, None, self.optional_region()?));
@@ -2469,8 +2484,9 @@ impl Parser {
             Some(TokenKind::Mut) | Some(TokenKind::Ident(_)) => {}
             _ => return Ok((false, None, None)),
         }
-        self.expect(&TokenKind::LParen, "`(` after `borrow`")?;
-        let (mutable, access) = if self.take(&TokenKind::Mut) {
+        self.advance();
+        let (mutable, access) = if self.at(&TokenKind::Mut) || self.at_context_ident("mut") {
+            self.advance();
             (true, None)
         } else {
             let name = self.expect_ident("an access value or access parameter")?;
@@ -2493,7 +2509,7 @@ impl Parser {
         } else {
             None
         };
-        self.expect(&TokenKind::RParen, "`)` after borrow arguments")?;
+        self.expect_group_close(&close, "after borrow arguments")?;
         Ok((mutable, access, region))
     }
 
@@ -2699,7 +2715,7 @@ impl Parser {
     ) -> Result<TraitDef, ParseError> {
         self.expect(&TokenKind::Trait, "`trait`")?;
         let self_parameter =
-            if self.at(&TokenKind::LParen) && self.at_offset(1, &TokenKind::Comptime) {
+            if self.group_starts_with_compile_parameter() {
                 let group = self.compile_parameter_group()?;
                 let [parameter] = group.as_slice() else {
                     return Err(self
@@ -2887,8 +2903,12 @@ impl Parser {
         }
 
         self.advance();
-        self.expect(&TokenKind::LParen, "`(` after `with`")?;
-        if self.take(&TokenKind::RParen) {
+        let Some(delimiter) = self.type_argument_delimiter() else {
+            return Err(self.error_here("expected a compile-time argument group after `with`"));
+        };
+        let close = Self::group_close(delimiter);
+        self.advance();
+        if self.take(&close) {
             return Ok((FunctionEffects::default(), None, true));
         }
         let unsafety = false;
@@ -2904,7 +2924,7 @@ impl Parser {
                     self.advance();
                     if effect_parameters.contains(&name) {
                         return Err(self.error_here(format!(
-                            "duplicate effect parameter `{name}` in `with(...)`"
+                            "duplicate effect parameter `{name}` in `with<...>`"
                         )));
                     }
                     effect_parameters.push(name);
@@ -2915,9 +2935,11 @@ impl Parser {
                     }
                     let name = path.join(".");
                     let mut arguments = Vec::new();
-                    if self.take(&TokenKind::LParen) && !self.take(&TokenKind::RParen) {
+                    if let Some(argument_delimiter) = self.type_argument_delimiter() {
+                        let argument_close = Self::group_close(argument_delimiter);
+                        self.advance();
                         let mut labeled = 0;
-                        loop {
+                        while !self.take(&argument_close) {
                             let label = if matches!(self.current().kind, TokenKind::Ident(_))
                                 && self.at_offset(1, &TokenKind::Colon)
                                 && !self.at_offset(2, &TokenKind::Type)
@@ -2937,11 +2959,11 @@ impl Parser {
                             let ty = self.type_expr()?;
                             arguments.push(TypeArg { label, ty });
                             if self.take(&TokenKind::Comma) {
-                                if self.take(&TokenKind::RParen) {
+                                if self.take(&argument_close) {
                                     break;
                                 }
                             } else {
-                                self.expect(&TokenKind::RParen, "`)` after effect arguments")?;
+                                self.expect_group_close(&argument_close, "after effect arguments")?;
                                 break;
                             }
                         }
@@ -2961,23 +2983,23 @@ impl Parser {
                     };
                     if custom.contains(&effect) {
                         return Err(self.error_here(format!(
-                            "duplicate custom effect `{name}` in `with(...)`"
+                            "duplicate custom effect `{name}` in `with<...>`"
                         )));
                     }
                     custom.push(effect);
                 }
             } else {
                 return Err(self.error_here(
-                    "expected `throwing(Error)`, `Unsafe`, an effect parameter, or a custom effect name in `with(...)`",
+                    "expected `throwing<Error>`, `Unsafe`, an effect parameter, or a custom effect name in `with<...>`",
                 ));
             }
 
             if self.take(&TokenKind::Comma) {
-                if self.take(&TokenKind::RParen) {
+                if self.take(&close) {
                     break;
                 }
             } else {
-                self.expect(&TokenKind::RParen, "`)` after function effects")?;
+                self.expect_group_close(&close, "after function effects")?;
                 break;
             }
         }
@@ -3167,15 +3189,13 @@ impl Parser {
     fn type_expr(&mut self) -> Result<Type, ParseError> {
         if self.at_context_ident("with") {
             let (outer, _failure_error, _has_effect_clause) = self.function_effect_clause()?;
-            self.expect(
-                &TokenKind::LParen,
-                "`(` before the callable operand of `with(...)`",
-            )?;
+            let Some(delimiter) = self.type_argument_delimiter() else {
+                return Err(self.error_here("expected the callable operand of `with<...>`"));
+            };
+            let close = Self::group_close(delimiter);
+            self.advance();
             let operand = self.type_expr()?;
-            self.expect(
-                &TokenKind::RParen,
-                "`)` after the callable operand of `with(...)`",
-            )?;
+            self.expect_group_close(&close, "after the callable operand of `with<...>`")?;
             let Type::Function {
                 groups,
                 effects: inner,
@@ -3183,7 +3203,7 @@ impl Parser {
             } = operand
             else {
                 return Err(self.error_here(
-                    "`with(E)(F)` accepts only a callable type `F`; it cannot wrap an ordinary result type",
+                    "`with<E>(F)` accepts only a callable type `F`; it cannot wrap an ordinary result type",
                 ));
             };
             let effects = self.merge_function_effects(outer, inner)?;
@@ -3215,7 +3235,10 @@ impl Parser {
             path.push(segment);
         }
         let name = path.join(".");
-        if name.split('.').next_back() == Some("array") && self.take(&TokenKind::LParen) {
+        if name.split('.').next_back() == Some("array") && self.type_argument_delimiter().is_some() {
+            let first = self.type_argument_delimiter().unwrap();
+            let first_close = Self::group_close(first);
+            self.advance();
             if matches!(&self.current().kind, TokenKind::Ident(label) if label == "t")
                 && self.at_offset(1, &TokenKind::Colon)
             {
@@ -3224,14 +3247,12 @@ impl Parser {
             }
             let element = self.type_expr()?;
             self.take(&TokenKind::Comma);
-            self.expect(
-                &TokenKind::RParen,
-                "`)` after the array element type; write the length in a second group",
-            )?;
-            self.expect(
-                &TokenKind::LParen,
-                "`(` before the array length; write `array(t)(l)`",
-            )?;
+            self.expect_group_close(&first_close, "after the array element type; write the length in a second group")?;
+            let Some(second) = self.type_argument_delimiter() else {
+                return Err(self.error_here("expected the array length in a second argument group"));
+            };
+            let second_close = Self::group_close(second);
+            self.advance();
             if matches!(&self.current().kind, TokenKind::Ident(label) if label == "l")
                 && self.at_offset(1, &TokenKind::Colon)
             {
@@ -3245,7 +3266,9 @@ impl Parser {
                     "`_` compile-time argument inference has been removed; provide an explicit array length",
                 ));
             }
+            self.expression_group_closers.push(second_close.clone());
             let length_expression = self.expression(false)?;
+            self.expression_group_closers.pop();
             let static_expression =
                 Self::static_expression(&length_expression).map_err(|message| {
                     self.error_at(
@@ -3259,7 +3282,7 @@ impl Parser {
                 expression => USizeConst::Expression(Box::new(expression)),
             };
             self.take(&TokenKind::Comma);
-            self.expect(&TokenKind::RParen, "`)` after array length")?;
+            self.expect_group_close(&second_close, "after array length")?;
             return Ok(Type::ArrayApplication {
                 constructor: name,
                 element: Box::new(element),
@@ -3269,8 +3292,10 @@ impl Parser {
 
         let mut arguments = Vec::new();
         let mut labeled_total = 0;
-        while self.take(&TokenKind::LParen) {
-            if self.take(&TokenKind::RParen) {
+        while let Some(delimiter) = self.type_argument_delimiter() {
+            let close = Self::group_close(delimiter);
+            self.advance();
+            if self.take(&close) {
                 break;
             }
             let group_start = arguments.len();
@@ -3295,11 +3320,11 @@ impl Parser {
                 let ty = self.type_expr()?;
                 arguments.push(TypeArg { label, ty });
                 if self.take(&TokenKind::Comma) {
-                    if self.take(&TokenKind::RParen) {
+                    if self.take(&close) {
                         break;
                     }
                 } else {
-                    self.expect(&TokenKind::RParen, "`)` after type arguments")?;
+                    self.expect_group_close(&close, "after type arguments")?;
                     break;
                 }
             }
@@ -3340,6 +3365,13 @@ impl Parser {
                 name,
                 arguments.into_iter().map(|argument| argument.ty).collect(),
             ))
+        }
+    }
+
+    fn type_argument_delimiter(&self) -> Option<GroupDelimiter> {
+        match self.current_group_delimiter()? {
+            delimiter @ (GroupDelimiter::Parenthesis | GroupDelimiter::Angle) => Some(delimiter),
+            GroupDelimiter::Square | GroupDelimiter::Brace => None,
         }
     }
 
@@ -3407,9 +3439,9 @@ impl Parser {
 
     fn borrow_type(&mut self) -> Result<Type, ParseError> {
         self.expect(&TokenKind::Borrow, "`borrow`")?;
-        if !self.at(&TokenKind::LParen) {
+        if self.type_argument_delimiter().is_none() {
             return Err(self.error_here(
-                "borrow types are written as `borrow(T)`; borrow values are written as `borrow(value)`",
+                "borrow types are written as `borrow<T>`; borrow values are written as `borrow(value)`",
             ));
         }
 
@@ -3433,14 +3465,15 @@ impl Parser {
     }
 
     fn borrow_qualifier_group_follows(&self) -> bool {
-        if !self.at(&TokenKind::LParen) {
+        let Some(delimiter) = self.type_argument_delimiter() else {
             return false;
-        }
+        };
+        let close = Self::group_close(delimiter);
         match self.tokens.get(self.index + 1).map(|token| &token.kind) {
             Some(TokenKind::Mut | TokenKind::RegionName(_)) => true,
             Some(TokenKind::Ident(_)) => {
                 self.at_offset(2, &TokenKind::Comma)
-                    || (self.at_offset(2, &TokenKind::RParen)
+                    || (self.at_offset(2, &close)
                         && self
                             .tokens
                             .get(self.index + 3)
@@ -3459,26 +3492,38 @@ impl Parser {
                 | TokenKind::Borrow
                 | TokenKind::Star
                 | TokenKind::LParen
+                | TokenKind::Less
         )
     }
 
     fn borrow_type_region_group_follows(&self) -> bool {
-        self.at(&TokenKind::LParen)
+        let Some(delimiter) = self.type_argument_delimiter() else {
+            return false;
+        };
+        let close = Self::group_close(delimiter);
+        self.current_group_delimiter() == Some(delimiter)
             && matches!(
                 self.tokens.get(self.index + 1).map(|token| &token.kind),
                 Some(TokenKind::Ident(_) | TokenKind::RegionName(_))
             )
-            && self.at_offset(2, &TokenKind::RParen)
-            && self.at_offset(3, &TokenKind::LParen)
+            && self.at_offset(2, &close)
+            && matches!(
+                self.tokens.get(self.index + 3).map(|token| &token.kind),
+                Some(TokenKind::LParen | TokenKind::Less)
+            )
     }
 
     fn borrow_type_pointee_group(&mut self) -> Result<Type, ParseError> {
-        self.expect(&TokenKind::LParen, "`(` before borrow pointee type")?;
-        if self.at(&TokenKind::RParen) {
+        let Some(delimiter) = self.type_argument_delimiter() else {
+            return Err(self.error_here("expected a borrow pointee type argument group"));
+        };
+        let close = Self::group_close(delimiter);
+        self.advance();
+        if self.at(&close) {
             return Err(self.error_here("borrow pointee type cannot be empty"));
         }
         let pointee = self.type_expr()?;
-        self.expect(&TokenKind::RParen, "`)` after borrow pointee type")?;
+        self.expect_group_close(&close, "after borrow pointee type")?;
         Ok(pointee)
     }
 
@@ -3567,7 +3612,7 @@ impl Parser {
             (None, failure) => outer.failure = failure,
             (Some(left), Some(right)) if **left != *right => {
                 return Err(self.error_here(
-                    "nested `with(...)` constructors declare incompatible failure effects",
+                    "nested `with<...>` constructors declare incompatible failure effects",
                 ));
             }
             _ => {}
@@ -4029,7 +4074,7 @@ impl Parser {
                     .iter()
                     .filter(|close| *close == &TokenKind::Greater)
                     .count()
-                    >= 2
+                    >= 1
                 && self.previous().end_byte == self.current().start_byte
             {
                 self.split_current_shift_right();
@@ -4162,7 +4207,13 @@ impl Parser {
         let mut can_take_trailing_closure = false;
 
         loop {
-            if self.explicit_call_delimiter_follows() == Some(GroupDelimiter::Parenthesis)
+            if self.struct_literal_follows(&expression) {
+                let fields = self.struct_literal_fields()?;
+                expression = Expr::StructLiteral {
+                    constructor: Box::new(expression),
+                    fields,
+                };
+            } else if self.explicit_call_delimiter_follows() == Some(GroupDelimiter::Parenthesis)
                 && Self::starts_implicit_handler_groups(&expression) {
                 return Err(self.error_here(
                     "`handle` clauses use named trailing groups; omit the parenthesized argument group",
@@ -4218,12 +4269,6 @@ impl Parser {
                     Box::new(Expr::Member(Box::new(expression), method.to_owned())),
                     Vec::new(),
                 );
-            } else if self.struct_literal_follows(&expression) {
-                let fields = self.struct_literal_fields()?;
-                expression = Expr::StructLiteral {
-                    constructor: Box::new(expression),
-                    fields,
-                };
             } else if allow_trailing_closure && self.at(&TokenKind::LBrace) {
                 if Self::starts_implicit_handler_groups(&expression) {
                     return Err(self.error_here(
@@ -4489,6 +4534,7 @@ impl Parser {
                     self.tokens.get(self.index + 2).map(|token| &token.kind),
                 ),
                 (Some(TokenKind::Ident(_)), Some(TokenKind::Colon))
+                    | (Some(TokenKind::RBrace), _)
             )
     }
 

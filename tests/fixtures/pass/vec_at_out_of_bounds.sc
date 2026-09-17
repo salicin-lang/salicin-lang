@@ -1,7 +1,7 @@
 let vec = alloc.vec.vec
 
 let main(): i32 = {
-  let values: vec(i32) = vec(i32).new()
+  let values: vec<i32> = vec<i32>.new()
   let reference = values.at(0)
   reference
 }

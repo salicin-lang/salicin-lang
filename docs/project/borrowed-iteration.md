@@ -4,13 +4,13 @@ Status: implemented for the 2026 edition<br>
 Accepted: 2026-07-29
 
 This contract defines shared and mutable borrowed traversal for `array(t)(n)`
-and `slice(t)`.
+and `slice<t>`.
 
 ## Construction and source ownership
 
-`array.iter()` and `slice.iter()` produce `slice_iter(shared)(t)`.
+`array.iter()` and `slice.iter()` produce `slice_iter<shared><t>`.
 `array.iter(mut)()` and `slice.iter(mut)()` produce
-`slice_iter(mut)(t)`. Array iteration first forms an access-preserving slice
+`slice_iter<mut><t>`. Array iteration first forms an access-preserving slice
 view and then uses the same iterator representation and advancement contract
 as a slice.
 
@@ -26,7 +26,7 @@ COLL-2 removes the copy limitation from borrowed traversal through
 
 ## Yield and advancement
 
-`iterator.item(r)` is `borrow(a)(r)(t)`, where `a` is the source access and
+`iterator.item(r)` is `borrow<a><r><t>`, where `a` is the source access and
 `r` is the region of the mutable borrow used for one `next` call. A yielded
 element therefore:
 

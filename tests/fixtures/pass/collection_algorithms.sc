@@ -1,22 +1,22 @@
 let option = core.option
 let slice = core.memory.slice
 let vec = alloc.vec.vec
-let read(value: borrow(i32)): i32 = { value }
+let read(value: borrow<i32>): i32 = { value }
 
-let greater_than_ten(value: borrow(i32)): bool = { read(value) > 10 }
-let greater_than_seventeen(value: borrow(i32)): bool = { read(value) > 17 }
-let greater_than_twenty(value: borrow(i32)): bool = { read(value) > 20 }
-let greater_than_two(value: borrow(i32)): bool = { read(value) > 2 }
-let greater_than_zero(value: borrow(i32)): bool = { read(value) > 0 }
-let less_than_eighteen(value: borrow(i32)): bool = { read(value) < 18 }
+let greater_than_ten(value: borrow<i32>): bool = { read(value) > 10 }
+let greater_than_seventeen(value: borrow<i32>): bool = { read(value) > 17 }
+let greater_than_twenty(value: borrow<i32>): bool = { read(value) > 20 }
+let greater_than_two(value: borrow<i32>): bool = { read(value) > 2 }
+let greater_than_zero(value: borrow<i32>): bool = { read(value) > 0 }
+let less_than_eighteen(value: borrow<i32>): bool = { read(value) < 18 }
 
-let add(total: i32, value: borrow(i32)): i32 = {
+let add(total: i32, value: borrow<i32>): i32 = {
   total + read(value)
 }
 
 let main(): i32 = {
-  let values: array(i32)(4) = [3, 9, 12, 18]
-  let view: borrow(slice(i32)) = borrow(values)
+  let values: array<i32><4> = [3, 9, 12, 18]
+  let view: borrow<slice<i32>> = borrow(values)
 
   let found_value = match view.find(greater_than_ten)
     { option.some(value) -> read(value) }
@@ -39,8 +39,8 @@ let main(): i32 = {
     return 5
   }
 
-  let empty_values: array(i32)(0) = []
-  let empty: borrow(slice(i32)) = borrow(empty_values)
+  let empty_values: array<i32><0> = []
+  let empty: borrow<slice<i32>> = borrow(empty_values)
   if empty.find(greater_than_zero).is_some() ||
     empty.position(greater_than_zero).is_some() ||
     empty.any(greater_than_zero) ||
@@ -57,7 +57,7 @@ let main(): i32 = {
     return 7
   }
 
-  let mut dynamic: vec(i32) = vec(i32).new()
+  let mut dynamic: vec<i32> = vec<i32>.new()
   dynamic.push(3)
   dynamic.push(9)
   dynamic.push(12)

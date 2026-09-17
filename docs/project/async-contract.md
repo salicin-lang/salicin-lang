@@ -30,22 +30,22 @@ pub let movable = trait {}
 `core.async` owns the allocation-free async contracts:
 
 ```sc future
-pub let poll(comptime t: type) = enum {
+pub let poll<comptime t: type> = enum {
   pending
   ready(t)
 }
 
-pub let future(comptime e: effects) = trait(requires: self is movable) {
+pub let future<comptime e: effects> = trait(requires: self is movable) {
   let output: type
-  let poll(comptime r: region): with(e)
-    (self: borrow(mut)(r)(self))(): poll(output)
+  let poll<comptime r: region>: with<e>
+    (self: borrow<mut><r><self>)(): poll<output>
 }
 
 pub let executor = trait {
-  let run(comptime e: effects, comptime f: type): with(e)
-    (self: borrow(mut)(self))
+  let run<comptime e: effects, comptime f: type>: with<e>
+    (self: borrow<mut><self>)
     (move future: f): f.output =
-    requires(f is future(e))
+    requires(f is future<e>)
 }
 ```
 
@@ -57,7 +57,7 @@ their internal state. `copyable` requires `movable`. Scalars, borrows, raw point
 whose fields are all `movable` satisfy it structurally. A compiler-generated value with an internal
 self-reference does not.
 
-`future(e)` is parameterized by the residual effect row of `poll`. The internal suspension effect
+`future<e>` is parameterized by the residual effect row of `poll`. The internal suspension effect
 is discharged by the generated state machine and is not part of `e`.
 
 ## Async Expressions
@@ -73,7 +73,7 @@ let future = async {
 Evaluating `async { body }`:
 
 1. evaluates and transfers its captures from left to right;
-2. creates a cold anonymous value implementing `future(e)`;
+2. creates a cold anonymous value implementing `future<e>`;
 3. does not execute `body`.
 
 The body starts on the first `poll`. Each `await operand` evaluates `operand` once, stores the
@@ -83,8 +83,8 @@ current state and returns `pending` from the outer future.
 `await` is contextual and valid only within an async body. It cannot cross a named function,
 closure, handler clause, or nested async boundary.
 
-The type and residual effects of the body determine `future(e).output` and `e`. Handling an effect
-inside the body removes it normally. Unhandled `throwing(error)`, `unsafety`, and custom effects remain
+The type and residual effects of the body determine `future<e>.output` and `e`. Handling an effect
+inside the body removes it normally. Unhandled `throwing<error>`, `unsafety`, and custom effects remain
 requirements of `poll`.
 
 The implemented suspended residual slice accepts a first segment ending in
@@ -153,9 +153,9 @@ nesting of anonymous futures. Conceptually, one suspended iteration completes wi
 compiler-internal outcomes:
 
 ```sc future
-let async_loop_step(comptime carry: type, comptime output: type) = enum {
+let async_loop_step<comptime carry: type, comptime output: type> = enum {
   iteration_skip(carry)
-  loop_exit(output)
+  loop_exit<output>
 }
 ```
 
@@ -170,7 +170,7 @@ completes:
 1. `pending` leaves the active child and carried values initialized and returns `pending`;
 2. `ready(iteration_skip(carry))` destroys the completed child, constructs the next iteration in the same
    child slot from `carry`, and polls it immediately;
-3. `ready(loop_exit(output))` destroys the completed child, marks the parent completed, and returns
+3. `ready(loop_exit<output>)` destroys the completed child, marks the parent completed, and returns
    `ready(output)`.
 
 Immediate iterations are consumed in an ordinary poll-local loop. They do not add observable
@@ -186,7 +186,7 @@ require a distinct resumable condition state and are rejected before lowering.
 
 When one source iteration contains multiple sequential suspension points, it is lowered to a
 finite, non-recursive iteration future. That child owns only the currently active nested segment
-and eventually produces the same step outcome. Its `loop_exit(output)` type is inferred after binding
+and eventually produces the same step outcome. Its `loop_exit<output>` type is inferred after binding
 each awaited `future.output` in source order. Cancelling the parent delegates cleanup through this
 finite child chain. If that iteration child's own `poll` retains a residual
 effect row, recurring handler specialization is not yet composed through the
@@ -240,7 +240,7 @@ exactly once.
 The first version rejects a borrow whose referent is stored in the same generated state machine
 when that borrow is live across `await`. This includes references to captured fields, earlier local
 fields, and projections of either. Such a state machine cannot implement `movable`, which is required
-by the initial `future(e)` contract. Diagnostics identify the source borrow, suspension point, and
+by the initial `future<e>` contract. Diagnostics identify the source borrow, suspension point, and
 failed `movable` requirement.
 
 A future may retain a borrow of an external source when the future's lifetime is proven not to
@@ -263,7 +263,7 @@ output.
 
 `pending` grants permission to poll again but does not imply a wake notification. This bounded spin
 executor is sufficient to validate state transitions, nested awaits, cancellation, and effects. A
-later host executor may add an explicit wake contract without changing `future(e)` only if polling
+later host executor may add an explicit wake contract without changing `future<e>` only if polling
 without a context remains sound; otherwise that addition is a new contract revision.
 
 Creating or polling a future never selects an executor. Heap erasure, when needed for recursive or
@@ -290,7 +290,7 @@ The compiler rejects:
 - moving or polling a future while it is borrowed;
 - polling a completed future when statically evident;
 - recursive anonymous future layouts without explicit indirection;
-- effect rows that cannot be determined for the generated `future(e)` implementation;
+- effect rows that cannot be determined for the generated `future<e>` implementation;
 - public anonymous future results;
 - generated state whose size or cleanup plan exceeds compiler limits.
 

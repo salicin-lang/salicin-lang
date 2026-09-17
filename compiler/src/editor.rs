@@ -2492,7 +2492,7 @@ mod tests {
     fn rename_handles_aliases_and_selected_overloads_without_textual_overreach() {
         let module = Vec::new();
         let alias_source =
-            "let option = core.option\nlet make(): option(i32) = { option.some(1) }\n";
+            "let option = core.option\nlet make(): option<i32> = { option.some(1) }\n";
         let alias_session = WorkspaceSession::new(
             &[EditorSource {
                 path: "src/lib.sc",

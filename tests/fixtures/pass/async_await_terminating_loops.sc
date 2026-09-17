@@ -9,20 +9,20 @@ let step = struct {
 extend(step, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
     if self.polled {
-      poll(i32).ready(self.value)
+      poll<i32>.ready(self.value)
     } else {
       self.polled = true
-      poll(i32).pending
+      poll<i32>.pending
     }
   }
 }
 
 let step(value: i32): step = {
-  step { polled: false, value: value }
+  step{ polled: false, value: value }
 }
 
 let condition = struct {
@@ -33,20 +33,20 @@ let condition = struct {
 extend(condition, future(())) {
   let output = bool
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(bool) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<bool> = {
     if self.polled {
-      poll(bool).ready(self.value)
+      poll<bool>.ready(self.value)
     } else {
       self.polled = true
-      poll(bool).pending
+      poll<bool>.pending
     }
   }
 }
 
 let condition(value: bool): condition = {
-  condition { polled: false, value: value }
+  condition{ polled: false, value: value }
 }
 
 let main(): i32 = {

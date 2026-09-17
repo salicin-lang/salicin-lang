@@ -1,8 +1,8 @@
 let result = core.result
 
 let main(): i32 = {
-  let outer = result(bool)(result(bool)(i32)).err(false)
-  let inner = outer ?? result(bool)(i32).ok(42)
+  let outer = result<bool><result<bool><i32>>.err(false)
+  let inner = outer ?? result<bool><i32>.ok(42)
   inner ?? 0
 }
 

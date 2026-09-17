@@ -4,17 +4,17 @@ let pair = struct {
 }
 
 let main(): i32 = {
-  let mut pair = pair { left: 18, right: 20 }
+  let mut pair = pair{ left: 18, right: 20 }
   let mut values = [10, 10]
   do {
-    let pointer = ptr(mut)(borrow(mut)(pair))
+    let pointer = ptr<mut>(borrow<mut>(pair))
     unsafe {
       (*pointer).left = (*pointer).left + 2
       (*pointer).right = (*pointer).right + 2
     }
   }
   do {
-    let pointer = ptr(mut)(borrow(mut)(values))
+    let pointer = ptr<mut>(borrow<mut>(values))
     unsafe {
       (*pointer)[0] = (*pointer)[0] + 1
       (*pointer)[1] = (*pointer)[1] + 1

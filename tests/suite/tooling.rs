@@ -731,19 +731,19 @@ fn standard_test_assertions_evaluate_once_and_report_stable_messages() {
     let temporary = TestDirectory::new();
     let passing = temporary.write(
         "assertions-pass.sc",
-        "let evaluate(counter: borrow(mut)(i32)): i64 = {\n\
+        "let evaluate(counter: borrow<mut>(i32)): i64 = {\n\
            counter = counter + 1\n\
            42\n\
          }\n\
-         let common_assertions_pass: with(core.error.throwing(core.string.string))(): () = {\n\
+         let common_assertions_pass: with<core.error.throwing<core.string.string>>(): () = {\n\
            let mut counter = 0\n\
            std.test.assert(true)\n\
            std.test.assert_eq(evaluate(counter))(evaluate(counter))\n\
            let same: i64 = 42\n\
            let different: i64 = 43\n\
            std.test.assert_ne(i64)(same)(different)\n\
-           let some_value: core.option(i32) = core.option.some(40)\n\
-           let none_value: core.option(i64) = core.option.none\n\
+           let some_value: core.option<i32> = core.option.some(40)\n\
+           let none_value: core.option<i64> = core.option.none\n\
            let ok_value: core.result(i64)(i32) = core.result.ok(2)\n\
            let error_value: core.result(i64)(i64) = core.result.err(7)\n\
            let some = std.test.expect_some(i32)(some_value)\n\
@@ -763,31 +763,31 @@ fn standard_test_assertions_evaluate_once_and_report_stable_messages() {
 
     let failing = temporary.write(
         "assertions-fail.sc",
-        "let fail_assert: with(core.error.throwing(core.string.string))(): () = {\n\
+        "let fail_assert: with<core.error.throwing<core.string.string>>(): () = {\n\
            std.test.assert(false)\n\
          }\n\
-         let fail_assert_eq: with(core.error.throwing(core.string.string))(): () = {\n\
+         let fail_assert_eq: with<core.error.throwing<core.string.string>>(): () = {\n\
            let left: i64 = 1\n\
            let right: i64 = 2\n\
            std.test.assert_eq(i64)(left)(right)\n\
          }\n\
-         let fail_assert_ne: with(core.error.throwing(core.string.string))(): () = {\n\
+         let fail_assert_ne: with<core.error.throwing<core.string.string>>(): () = {\n\
            let value: i64 = 7\n\
            std.test.assert_ne(i64)(value)(value)\n\
          }\n\
-         let fail_expect_some: with(core.error.throwing(core.string.string))(): () = {\n\
-           let value: core.option(i64) = core.option.none\n\
+         let fail_expect_some: with<core.error.throwing<core.string.string>>(): () = {\n\
+           let value: core.option<i64> = core.option.none\n\
            let _ = std.test.expect_some(i64)(value)\n\
          }\n\
-         let fail_expect_none: with(core.error.throwing(core.string.string))(): () = {\n\
-           let value: core.option(i64) = core.option.some(9)\n\
+         let fail_expect_none: with<core.error.throwing<core.string.string>>(): () = {\n\
+           let value: core.option<i64> = core.option.some(9)\n\
            std.test.expect_none(i64)(value)\n\
          }\n\
-         let fail_expect_ok: with(core.error.throwing(core.string.string))(): () = {\n\
+         let fail_expect_ok: with<core.error.throwing<core.string.string>>(): () = {\n\
            let value: core.result(i64)(i64) = core.result.err(0)\n\
            let _ = std.test.expect_ok(i64, i64)(value)\n\
          }\n\
-         let fail_expect_err: with(core.error.throwing(core.string.string))(): () = {\n\
+         let fail_expect_err: with<core.error.throwing<core.string.string>>(): () = {\n\
            let value: core.result(i64)(i64) = core.result.ok(11)\n\
            let _ = std.test.expect_err(i64, i64)(value)\n\
          }\n\
@@ -975,24 +975,24 @@ fn structured_test_abort_runs_owned_cleanup_once() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "cleanup.sc",
-        "pub let resource = struct { pub counter: ptr(mut)(i32) }\n\
+        "pub let resource = struct { pub counter: ptr<mut>(i32) }\n\
          extend(resource, droppable) {\n\
-           let drop(self: borrow(mut)(self))(): () = {\n\
+           let drop(self: borrow<mut>(self))(): () = {\n\
              unsafe { *self.counter = *self.counter + 1 }\n\
            }\n\
          }\n\
-         let abort(counter: ptr(mut)(i32)): core.testing.outcome = {\n\
+         let abort(counter: ptr<mut>(i32)): core.testing.outcome = {\n\
            core.testing.run {\n\
              let owned = resource { counter: counter }\n\
              core.error.throw(\"cleanup probe\")\n\
            }\n\
          }\n\
          let main(): i32 = {\n\
-           let counter = unsafe { raw_alloc(i32)(size_of(i32), align_of(i32)) }\n\
+           let counter = unsafe { raw_alloc(i32)(size_of<i32>, align_of<i32>) }\n\
            unsafe { *counter = 0 }\n\
            let result = abort(counter)\n\
            let drops = unsafe { *counter }\n\
-           unsafe { raw_dealloc(counter, size_of(i32), align_of(i32)) }\n\
+           unsafe { raw_dealloc(counter, size_of<i32>, align_of<i32>) }\n\
            match result\n\
              { passed -> 1 }\n\
              { failed(_) -> if drops == 1 { 42 } else { 2 } }\n\
@@ -1042,7 +1042,7 @@ fn core_diagnostics_are_stable_source_level_contracts() {
             "throw_in_plain_return.sc",
             2,
             3,
-            "call to `throw` requires `throwing(bool)`; handle it with `try { ... }` or propagate it from the current function",
+            "call to `throw` requires `throwing<bool>`; handle it with `try { ... }` or propagate it from the current function",
         ),
     ] {
         let source = fixture("fail", fixture_name);

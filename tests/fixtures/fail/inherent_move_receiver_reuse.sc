@@ -5,7 +5,7 @@ extend(payload) {
 }
 
 let main(): i32 = {
-  let payload = payload { value: 42 }
+  let payload = payload{ value: 42 }
   let answer = payload.into_value()
   answer + payload.value
 }

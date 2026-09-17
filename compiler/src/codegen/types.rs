@@ -616,13 +616,13 @@ impl Analyzer {
                 format!("({rendered})")
             }
             Ty::Array(element, length) => {
-                format!("array({})({length})", self.diagnostic_type_name(element))
+                format!("array<{}><{length}>", self.diagnostic_type_name(element))
             }
             Ty::Str => "str".to_owned(),
-            Ty::Slice(element) => format!("slice({})", self.diagnostic_type_name(element)),
+            Ty::Slice(element) => format!("slice<{}>", self.diagnostic_type_name(element)),
             Ty::Pointer { pointee, mutable } => format!(
-                "{}({})",
-                if *mutable { "ptr(mut)" } else { "ptr" },
+                "{}<{}>",
+                if *mutable { "ptr<mut>" } else { "ptr" },
                 self.diagnostic_type_name(pointee)
             ),
             Ty::Reference {
@@ -630,11 +630,11 @@ impl Analyzer {
                 mutable,
                 region,
             } => {
-                let mode = if *mutable { "borrow(mut)" } else { "borrow" };
+                let mode = if *mutable { "borrow<mut>" } else { "borrow" };
                 let region = region.as_ref().map_or_else(String::new, |region| {
-                    format!("({})", display_region_argument(region))
+                    format!("<{}>", display_region_argument(region))
                 });
-                format!("{mode}{region} {}", self.diagnostic_type_name(pointee))
+                format!("{mode}{region}<{}>", self.diagnostic_type_name(pointee))
             }
             Ty::Struct(name) | Ty::Enum(name) => {
                 if let Some(value) = usize_value_from_marker(name) {
@@ -680,9 +680,9 @@ impl Analyzer {
                     effects.insert(0, "unsafety".to_owned());
                 }
                 if !effects.is_empty() {
-                    rendered.push_str(" with(");
+                    rendered.push_str(" with<");
                     rendered.push_str(&effects.join(", "));
-                    rendered.push(')');
+                    rendered.push('>');
                 }
                 rendered
             }
@@ -741,7 +741,7 @@ impl Analyzer {
                     _ => Type::Named(name.clone(), Vec::new()),
                 })
             }
-            Expr::Call(_, _) => {
+            Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
                 let mut groups = Vec::new();
                 let root = flatten_call(expression, &mut groups);
                 let Expr::Name(name) = root else {
@@ -758,7 +758,7 @@ impl Analyzer {
                 }
                 if self.is_lang_item_name(name, LangItemKind::ArrayTypeForm) {
                     if groups.len() != 2 || groups[0].len() != 1 || groups[1].len() != 1 {
-                        self.error("`array` type arguments require `array(Element)(Length)`");
+                        self.error("`array` type arguments require `array<Element><Length>`");
                         return None;
                     }
                     let element =
@@ -920,7 +920,7 @@ impl Analyzer {
                     _ => Type::Named(name.clone(), Vec::new()),
                 })
             }),
-            Expr::Call(_, _) => {
+            Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
                 let mut groups = Vec::new();
                 let root = flatten_call(expression, &mut groups);
                 let Expr::Name(name) = root else {
@@ -1034,6 +1034,7 @@ impl Analyzer {
                         Some(Type::Named(name.clone(), Vec::new()))
                     }
                     Expr::Call(callee, arguments)
+                    | Expr::DelimitedCall { callee, arguments, .. }
                         if matches!(
                             callee.as_ref(),
                             Expr::Name(name)
@@ -1044,6 +1045,7 @@ impl Analyzer {
                         Some(effect_row_source(true, None, &[]))
                     }
                     Expr::Call(callee, arguments)
+                    | Expr::DelimitedCall { callee, arguments, .. }
                         if matches!(
                             callee.as_ref(),
                             Expr::Name(name) if self.collection.effects.contains(name)
@@ -1073,6 +1075,7 @@ impl Analyzer {
                         }
                     }
                     Expr::Call(callee, arguments)
+                    | Expr::DelimitedCall { callee, arguments, .. }
                         if matches!(callee.as_ref(), Expr::Name(name) if effect_row_from_marker(name).is_some())
                             && arguments.len() <= 1
                             && arguments.iter().all(|argument| argument.label.is_none()) =>
@@ -1538,7 +1541,7 @@ impl Analyzer {
                     || self.collection.effects.contains(name)
                     || effect_row_from_marker(name).is_some()
             }
-            Expr::Call(callee, arguments) => {
+            Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
                 let Expr::Name(name) = callee.as_ref() else {
                     return false;
                 };
@@ -1583,7 +1586,7 @@ impl Analyzer {
                     || self.collection.struct_templates.contains_key(name)
                     || self.collection.enum_templates.contains_key(name)
             }
-            Expr::Call(_, _) => {
+            Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
                 let mut groups = Vec::new();
                 let root = flatten_call(expression, &mut groups);
                 let Expr::Name(name) = root else {

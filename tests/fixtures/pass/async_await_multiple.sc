@@ -9,23 +9,23 @@ let step = struct {
 extend(step, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll(i32).pending
+      poll<i32>.pending
     } else {
-      poll(i32).ready(self.value)
+      poll<i32>.ready(self.value)
     }
   }
 }
 
 let main(): i32 = {
   let mut future = async {
-    let first = await step { polls: 0, value: 10 }
-    let second = await step { polls: 0, value: 12 }
-    let third = await step { polls: 0, value: 20 }
+    let first = await step{ polls: 0, value: 10 }
+    let second = await step{ polls: 0, value: 12 }
+    let third = await step{ polls: 0, value: 20 }
     first + second + third
   }
 

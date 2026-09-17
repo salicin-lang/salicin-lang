@@ -21,7 +21,7 @@ Each runtime parameter lowers as follows:
 | `value: ()` | erased | none |
 | `value: borrow(())` | erased | none |
 | `value: borrow(t)` | `ptr` | caller |
-| `value: borrow(mut)(t)` | `ptr` | caller, exclusive for the loan |
+| `value: borrow<mut><t>` | `ptr` | caller, exclusive for the loan |
 | inferred or `copy value: t` | value representation of `t` | callee copy; caller retains source |
 | `move value: t` | value representation of `t` | transferred to callee |
 
@@ -47,8 +47,8 @@ Borrow returns are one pointer, or the audited slice reference record, and
 remain tied to a source parameter region. Semantic analysis rejects a returned
 borrow whose region cannot be traced to the function's borrow parameters.
 
-Unsized `slice(t)` is not a first-class parameter or return. It must cross a
-call behind `borrow`, `borrow(mut)`, or `ptr`. Struct, enum, global, parameter,
+Unsized `slice<t>` is not a first-class parameter or return. It must cross a
+call behind `borrow`, `borrow<mut>`, or `ptr`. Struct, enum, global, parameter,
 and return validation runs before LLVM emission and reports the source
 declaration.
 
@@ -59,10 +59,10 @@ declaration.
 Direct calls with algebraic effects are specialized into compiler-generated
 continuation control flow. The source effect row is not passed as a dictionary
 or hidden variadic argument. When a runtime action must be erased, it uses the
-audited owned `effect_callable(input, output, answer)` record; invoking it
+audited owned `effect_callable<input, output, answer>` record; invoking it
 consumes the active flag exactly once.
 
-`throwing(error)` requires the function's runtime result to be the matching
+`throwing<error>` requires the function's runtime result to be the matching
 `result(error)(output)` boundary. Ordinary completion constructs `ok(output)`;
 `throw` and propagated failure construct `err(error)`. Callers either forward
 that same boundary or destructure it under `try`. Error exits follow the same
@@ -76,8 +76,8 @@ capture environment according to its concrete compiler-private type. Borrowed
 captures remain caller-owned; copied or moved captures follow their selected
 mode.
 
-An erased `continuation(input, output)` or
-`effect_callable(input, output, answer)` is an owned four-pointer record:
+An erased `continuation<input, output>` or
+`effect_callable<input, output, answer>` is an owned four-pointer record:
 entry, drop entry, environment, and active flag. Invocation clears the flag
 before transferring the environment; abandonment invokes the drop entry.
 These records are compiler-private native values and cannot cross `foreign(c)`.

@@ -16,7 +16,7 @@ let score(mark: mark): i32 = { match mark
 
 let main(): i32 = {
   let mark = mark.value( value: 10 )
-  let pixels: array(pixel)(2) = [pixel { value: 20 }, pixel { value: 2 }]
+  let pixels: array<pixel><2> = [pixel{ value: 20 }, pixel{ value: 2 }]
   score(mark) + score(mark) + pixels[0].value + pixels[1].value
 }
 

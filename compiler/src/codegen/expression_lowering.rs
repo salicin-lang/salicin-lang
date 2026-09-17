@@ -551,7 +551,7 @@ impl Analyzer {
                     }
                     let Ty::Pointer { pointee, mutable } = &pointer.ty else {
                         self.error(format!(
-                            "raw pointer assignment requires `ptr(mut)(T)`, found `{}`",
+                            "raw pointer assignment requires `ptr<mut>(T)`, found `{}`",
                             pointer.ty
                         ));
                         return error_expr();
@@ -2360,6 +2360,7 @@ impl Analyzer {
                             || self.collection.struct_templates.contains_key(name)
                             || self.collection.enum_defs.contains_key(name)
                             || self.collection.enum_templates.contains_key(name)
+                            || self.collection.effect_defs.contains_key(name)
                 ) {
                     groups
                         .iter()

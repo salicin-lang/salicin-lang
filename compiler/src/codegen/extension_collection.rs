@@ -2781,7 +2781,7 @@ impl Analyzer {
             }
             _ => {
                 self.error(
-                    "generic `ptr` extend target must be `ptr(A)(T)`, `ptr(T)`, or `ptr(mut)(T)`",
+                    "generic `ptr` extend target must be `ptr(A)(T)`, `ptr(T)`, or `ptr<mut>(T)`",
                 );
                 return;
             }
@@ -2855,7 +2855,7 @@ impl Analyzer {
             return;
         }
         let [Type::Named(element, arguments)] = target_sources.as_slice() else {
-            self.error("generic `slice` extend target must be `slice(T)`");
+            self.error("generic `slice` extend target must be `slice<T>`");
             return;
         };
         if !arguments.is_empty()
@@ -2929,7 +2929,7 @@ impl Analyzer {
             return;
         }
         let [Type::Named(element, arguments)] = target_sources.as_slice() else {
-            self.error("generic `slice` trait target must be `slice(T)`");
+            self.error("generic `slice` trait target must be `slice<T>`");
             return;
         };
         if !arguments.is_empty()

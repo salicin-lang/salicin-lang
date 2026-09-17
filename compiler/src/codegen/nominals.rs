@@ -455,7 +455,7 @@ impl Analyzer {
                     Ok(None)
                 }
             }
-            Expr::Call(_, _) => {
+            Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
                 let mut groups = Vec::new();
                 let root = flatten_call(expression, &mut groups);
                 let Expr::Name(name) = root else {

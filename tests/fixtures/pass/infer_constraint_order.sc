@@ -1,5 +1,5 @@
-let accept_same(comptime t: type)(left: t, right: t): i32 = { 21 }
-let accept(comptime t: type)(value: t): i32 = { 21 }
+let accept_same<comptime t: type>(left: t, right: t): i32 = { 21 }
+let accept<comptime t: type>(value: t): i32 = { 21 }
 
 let main(): i32 = {
   let wide: i64 = 7

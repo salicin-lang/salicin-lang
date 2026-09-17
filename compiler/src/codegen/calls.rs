@@ -925,12 +925,20 @@ impl Analyzer {
         actual: &[GroupDelimiter],
         expected: &[GroupDelimiter],
     ) -> bool {
+        let mut expected_index = 0;
         for (index, actual) in actual.iter().enumerate() {
-            let expected = expected
-                .get(index)
-                .copied()
-                .unwrap_or(GroupDelimiter::Parenthesis);
-            if *actual != expected {
+            let exhausted_before_match = expected_index >= expected.len();
+            while expected.get(expected_index).is_some_and(|expected| expected != actual) {
+                expected_index += 1;
+            }
+            let Some(_) = expected.get(expected_index) else {
+                if exhausted_before_match && *actual == GroupDelimiter::Parenthesis {
+                    continue;
+                }
+                let expected = expected
+                    .get(index)
+                    .copied()
+                    .unwrap_or(GroupDelimiter::Parenthesis);
                 self.error(format!(
                     "argument group {} in call to `{name}` uses `{}` but the parameter group uses `{}`",
                     index + 1,
@@ -938,7 +946,8 @@ impl Analyzer {
                     expected.opening(),
                 ));
                 return false;
-            }
+            };
+            expected_index += 1;
         }
         true
     }

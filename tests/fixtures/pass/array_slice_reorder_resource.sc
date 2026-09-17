@@ -1,16 +1,16 @@
 let slice = core.memory.slice
 
 let resource = struct {
-  counter: ptr(mut)(i32),
+  counter: ptr<mut><i32>,
   value: i32,
 }
 
 extend(resource) {
-  let read(self: borrow(self))(): i32 = { self.value }
+  let read(self: borrow<self>)(): i32 = { self.value }
 }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -19,7 +19,7 @@ extend(resource, droppable) {
 
 let main(): i32 = {
   let counter = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   unsafe {
     *counter = 0
@@ -27,16 +27,16 @@ let main(): i32 = {
 
   let mut score = 0
   do {
-    let mut values: array(resource)(4) = [
-      resource { counter: counter, value: 1 },
-      resource { counter: counter, value: 2 },
-      resource { counter: counter, value: 3 },
-      resource { counter: counter, value: 4 },
+    let mut values: array<resource><4> = [
+      resource{ counter: counter, value: 1 },
+      resource{ counter: counter, value: 2 },
+      resource{ counter: counter, value: 3 },
+      resource{ counter: counter, value: 4 },
     ]
     values.swap(0, 3)
     values.swap(1, 1)
     do {
-      let view: borrow(mut)(slice(resource)) = borrow(mut)(values)
+      let view: borrow<mut><slice<resource>> = borrow<mut>(values)
       view.reverse()
     }
     let no_drops = unsafe {
@@ -67,7 +67,7 @@ let main(): i32 = {
     *counter
   }
   unsafe {
-    raw_dealloc(counter, size_of(i32), align_of(i32))
+    raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
   if drops == 4 { score + drops } else { 0 }
 }

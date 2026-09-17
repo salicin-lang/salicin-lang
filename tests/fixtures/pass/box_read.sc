@@ -1,6 +1,6 @@
 let box = alloc.boxed.box
 
-let read_box(comptime t: type)(boxed: borrow(box(t))): t
+let read_box<comptime t: type>(boxed: borrow<box<t>>): t
 = requires(t is copyable) { boxed.read() }
 
 let main(): i32 = {

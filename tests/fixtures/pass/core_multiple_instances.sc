@@ -2,10 +2,10 @@ let option = core.option
 let result = core.result
 
 let main(): i32 = {
-  let option_number = option(i32).some(20)
-  let option_flag = option(bool).some(true)
-  let result_ok = result(bool)(i32).ok(7)
-  let result_err = result(i32)(bool).err(5)
+  let option_number = option<i32>.some(20)
+  let option_flag = option<bool>.some(true)
+  let result_ok = result<bool><i32>.ok(7)
+  let result_err = result<i32><bool>.err(5)
 
   let first = match option_number
     { some(value) -> value }

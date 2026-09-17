@@ -3,49 +3,49 @@ let step = effect {
 }
 
 let state = struct {
-  values: array(i32)(2),
-  drops: ptr(mut)(i32),
+  values: array<i32><2>,
+  drops: ptr<mut><i32>,
 }
 
 extend(state, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let mark(calls: ptr(mut)(i32))(digit: i32): i32 = {
+let mark(calls: ptr<mut><i32>)(digit: i32): i32 = {
   unsafe {
     *calls = *calls * 10 + digit
     0
   }
 }
 
-let next_index(calls: ptr(mut)(i32)): usize = {
+let next_index(calls: ptr<mut><i32>): usize = {
   unsafe {
     *calls = *calls * 10 + 2
     1
   }
 }
 
-let update: with(step)(before: i32)(value: borrow(mut)(i32))(after: i32): () = {
+let update: with<step>(before: i32)(value: borrow<mut><i32>)(after: i32): () = {
   let delta = step.delta()
   value = value + delta + before + after
 }
 
-let program: with(step)(drops: ptr(mut)(i32))(calls: ptr(mut)(i32)): i32 = {
-  let mut state = state { values: [0, 40], drops: drops }
+let program: with<step>(drops: ptr<mut><i32>)(calls: ptr<mut><i32>): i32 = {
+  let mut state = state{ values: [0, 40], drops: drops }
   update(mark(calls)(1))(state.values[next_index(calls)])(mark(calls)(3))
   state.values[1]
 }
 
 let main(): i32 = {
   let drops = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   let calls = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   unsafe {
     *drops = 0
@@ -66,8 +66,8 @@ let main(): i32 = {
   let argument_order = unsafe { *calls }
 
   unsafe {
-    raw_dealloc(drops, size_of(i32), align_of(i32))
-    raw_dealloc(calls, size_of(i32), align_of(i32))
+    raw_dealloc(drops, size_of<i32>, align_of<i32>)
+    raw_dealloc(calls, size_of<i32>, align_of<i32>)
   }
   resumed + abandoned + drop_count + argument_order - 123164
 }

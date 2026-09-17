@@ -2,7 +2,7 @@ let resource = struct { value: i32 }
 let choice = enum { pair(resource, resource), none }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     let checked = 1 / self.value
     self.value = 0
   }
@@ -49,9 +49,9 @@ let guard_return(move choice: choice): i32 = { match choice
 }
 
 let main(): i32 = {
-  let first = guard_false(choice.pair(resource { value: 1 }, resource { value: 1 }))
-  let second = guard_true(choice.pair(resource { value: 1 }, resource { value: 1 }))
-  let third = guard_return(choice.pair(resource { value: 1 }, resource { value: 1 }))
+  let first = guard_false(choice.pair(resource{ value: 1 }, resource{ value: 1 }))
+  let second = guard_true(choice.pair(resource{ value: 1 }, resource{ value: 1 }))
+  let third = guard_return(choice.pair(resource{ value: 1 }, resource{ value: 1 }))
   first + second + third - 42
 }
 

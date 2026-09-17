@@ -4,7 +4,7 @@ Status: implemented for the 2026 edition<br>
 Accepted: 2026-07-29
 
 This contract defines in-place mutation shared by `array(t)(n)` and
-`slice(t)`.
+`slice<t>`.
 
 ## Operations and element bounds
 

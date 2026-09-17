@@ -6,14 +6,14 @@ extend(adder) {
   let add(self)(value: i32): i32 = { self.base + value }
 }
 
-let side_effect(count: borrow(mut)(i32)): i32 = {
+let side_effect(count: borrow<mut><i32>): i32 = {
   count = count + 1
   1
 }
 
 let main(): i32 = {
   let mut count = 0
-  let answer = result(bool)(adder).err(true)?.add(side_effect(count)) ?? 42
+  let answer = result<bool><adder>.err(true)?.add(side_effect(count)) ?? 42
   if count == 0 { answer } else { 0 }
 }
 

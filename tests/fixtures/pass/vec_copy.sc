@@ -1,8 +1,8 @@
 let vec = alloc.vec.vec
 
 let main(): i32 = {
-  let mut values: vec(i32) = vec(i32).new()
-  let reserved: vec(i32) = vec(i32).with_capacity(8)
+  let mut values: vec<i32> = vec<i32>.new()
+  let reserved: vec<i32> = vec<i32>.with_capacity(8)
   let started_empty = values.is_empty()
   values.reserve(8)
   values.push(10)

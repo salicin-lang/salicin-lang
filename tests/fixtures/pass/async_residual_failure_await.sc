@@ -11,28 +11,28 @@ let step = struct {
 extend(step, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll(i32).pending
+      poll<i32>.pending
     } else {
-      poll(i32).ready(self.value)
+      poll<i32>.ready(self.value)
     }
   }
 }
 
-let make_step: with(throwing(bool))(fail: bool): step = {
+let make_step: with<throwing<bool>>(fail: bool): step = {
   if fail {
     throw true
   } else {
-    step { polls: 0, value: 40 }
+    step{ polls: 0, value: 40 }
   }
 }
 
 let run(fail: bool): i32 = {
-  let result: result(bool)(i32) = try {
+  let result: result<bool><i32> = try {
     let mut future = async {
       let value = await make_step(fail)
       value + 2

@@ -11,24 +11,24 @@ let choice = enum {
 }
 
 let first = struct {
-  drops: ptr(mut)(i32),
+  drops: ptr<mut><i32>,
   polls: i32,
   value: i32,
 }
 
 let second = struct {
-  drops: ptr(mut)(i32),
+  drops: ptr<mut><i32>,
   polls: i32,
   value: i32,
 }
 
 let retained = struct {
-  drops: ptr(mut)(i32),
+  drops: ptr<mut><i32>,
   offset: i32,
 }
 
 extend(first, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 10
     }
@@ -36,7 +36,7 @@ extend(first, droppable) {
 }
 
 extend(second, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -44,7 +44,7 @@ extend(second, droppable) {
 }
 
 extend(retained, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 100
     }
@@ -54,14 +54,14 @@ extend(retained, droppable) {
 extend(first, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll(i32).pending
+      poll<i32>.pending
     } else {
-      poll(i32).ready(self.value)
+      poll<i32>.ready(self.value)
     }
   }
 }
@@ -69,24 +69,24 @@ extend(first, future(())) {
 extend(second, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll(i32).pending
+      poll<i32>.pending
     } else {
-      poll(i32).ready(self.value)
+      poll<i32>.ready(self.value)
     }
   }
 }
 
-let run(drops: ptr(mut)(i32), first: bool): i32 = {
+let run(drops: ptr<mut><i32>, first: bool): i32 = {
   let mut future = async {
     if first {
-      await first { drops: drops, polls: 0, value: ask.ask() }
+      await first{ drops: drops, polls: 0, value: ask.ask() }
     } else {
-      await second { drops: drops, polls: 0, value: ask.ask() }
+      await second{ drops: drops, polls: 0, value: ask.ask() }
     }
   }
   ask.handle ask { (resume) -> resume(40) } action {
@@ -100,13 +100,13 @@ let run(drops: ptr(mut)(i32), first: bool): i32 = {
     }
 }
 
-let cancel(drops: ptr(mut)(i32)): i32 = {
+let cancel(drops: ptr<mut><i32>): i32 = {
   ask.handle ask { (resume) -> resume(40) } action {
       let mut future = async {
         if false {
-          await first { drops: drops, polls: 0, value: ask.ask() }
+          await first{ drops: drops, polls: 0, value: ask.ask() }
         } else {
-          await second { drops: drops, polls: 0, value: ask.ask() }
+          await second{ drops: drops, polls: 0, value: ask.ask() }
         }
       }
       match future.poll()
@@ -115,13 +115,13 @@ let cancel(drops: ptr(mut)(i32)): i32 = {
     }
 }
 
-let run_match(drops: ptr(mut)(i32), move choice: choice): i32 = {
+let run_match(drops: ptr<mut><i32>, move choice: choice): i32 = {
   let mut future = async {
     match choice
       { use_first(offset) ->
-        await first { drops: drops, polls: 0, value: ask.ask() + offset } }
+        await first{ drops: drops, polls: 0, value: ask.ask() + offset } }
       { use_second(offset) ->
-        await second { drops: drops, polls: 0, value: ask.ask() + offset } }
+        await second{ drops: drops, polls: 0, value: ask.ask() + offset } }
   }
   ask.handle ask { (resume) -> resume(40) } action {
       let pending = future.poll()
@@ -134,14 +134,14 @@ let run_match(drops: ptr(mut)(i32), move choice: choice): i32 = {
     }
 }
 
-let run_wrapped(drops: ptr(mut)(i32), move choice: choice): i32 = {
+let run_wrapped(drops: ptr<mut><i32>, move choice: choice): i32 = {
   let mut future = async {
-    let retained = retained { drops: drops, offset: 2 }
+    let retained = retained{ drops: drops, offset: 2 }
     let value = await match choice
       { use_first(_) ->
-        first { drops: drops, polls: 0, value: ask.ask() } }
+        first{ drops: drops, polls: 0, value: ask.ask() } }
       { use_second(_) ->
-        second { drops: drops, polls: 0, value: ask.ask() } }
+        second{ drops: drops, polls: 0, value: ask.ask() } }
     value + retained.offset
   }
   ask.handle ask { (resume) -> resume(40) } action {
@@ -155,14 +155,14 @@ let run_wrapped(drops: ptr(mut)(i32), move choice: choice): i32 = {
     }
 }
 
-let cancel_wrapped(drops: ptr(mut)(i32)): i32 = {
+let cancel_wrapped(drops: ptr<mut><i32>): i32 = {
   ask.handle ask { (resume) -> resume(40) } action {
       let mut future = async {
-        let retained = retained { drops: drops, offset: 2 }
+        let retained = retained{ drops: drops, offset: 2 }
         let value = await if false {
-          first { drops: drops, polls: 0, value: ask.ask() }
+          first{ drops: drops, polls: 0, value: ask.ask() }
         } else {
-          second { drops: drops, polls: 0, value: ask.ask() }
+          second{ drops: drops, polls: 0, value: ask.ask() }
         }
         value + retained.offset
       }
@@ -174,7 +174,7 @@ let cancel_wrapped(drops: ptr(mut)(i32)): i32 = {
 
 let main(): i32 = {
   let drops = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   unsafe {
     *drops = 0
@@ -192,7 +192,7 @@ let main(): i32 = {
     *drops
   }
   unsafe {
-    raw_dealloc(drops, size_of(i32), align_of(i32))
+    raw_dealloc(drops, size_of<i32>, align_of<i32>)
   }
 
   if first == 40 && second == 40 && matched_first == 42 && matched_second == 42 && wrapped_first == 42 && wrapped_second == 42 && wrapped_cancelled == 42 && cancelled == 42 && drop_count == 335 {

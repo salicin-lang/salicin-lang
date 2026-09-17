@@ -665,7 +665,7 @@ impl Analyzer {
                     .map(|error| self.diagnostic_type_name(error))
                     .collect::<Vec<_>>();
                 self.error(format!(
-                    "async residual `throwing({})` requires poll/resume handler specialization for this suspension shape, which is not implemented yet",
+                    "async residual `throwing<{}>` requires poll/resume handler specialization for this suspension shape, which is not implemented yet",
                     errors.join(" | ")
                 ));
             }

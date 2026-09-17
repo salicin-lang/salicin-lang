@@ -1,7 +1,7 @@
-let wrong(comptime t: type): type = t
+let wrong<comptime t: type>: type = t
 
 let lend = trait {
-  let item(comptime a: access): type
+  let item<comptime a: access>: type
 }
 
 let cell = struct { value: i32 }

@@ -6,7 +6,7 @@ let fail: with(throwing(()))(): i32 = {
 }
 
 let main(): i32 = {
-  let result: result(())(i32) = try { fail() }
+  let result: result<()><i32> = try { fail() }
   result ?? 42
 }
 

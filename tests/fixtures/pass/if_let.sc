@@ -1,6 +1,6 @@
 let option = core.option
 
-let choose(value: option(i32)): i32 = {
+let choose(value: option<i32>): i32 = {
   match value
     { some(found) -> found }
     { none -> 2 }

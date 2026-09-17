@@ -20,7 +20,7 @@ fn resolves_user_closed_compile_parameter_types_across_modules() {
             "root.sc",
             &[],
             "use root.config.optimization as optimization\n\
-                 let select(comptime o: optimization)(value: i32): i32 = { value }\n\
+                 let select<comptime o: optimization>(value: i32): i32 = { value }\n\
                  let main(): i32 = { 0 }\n",
             true,
         ),
@@ -438,7 +438,7 @@ fn preserves_generic_extend_parameters_while_qualifying_the_target() {
         unit(
             "src/api.sc",
             &["api"],
-            "pub(package) let cell(comptime t: type) = struct { value: t }\n\
+            "pub(package) let cell<comptime t: type> = struct { value: t }\n\
                  extend(cell(t)) {\n\
                    let new(move value: t): cell(t) = { cell { value: value } }\n\
                    let take(move self)(): t = { self.value }\n\
@@ -489,7 +489,7 @@ fn reinfers_cross_module_extend_pattern_sorts_after_resolution() {
             "src/api.sc",
             &["api"],
             "pub let mode = sort(1) { shared unique }\n\
-                 pub let handle(comptime a: mode)(comptime t: type) = struct {}\n",
+                 pub let handle<comptime a: mode><comptime t: type> = struct {}\n",
             false,
         ),
     ])
@@ -649,7 +649,7 @@ let main(): i32 = { option {} }
     .unwrap_err();
 
     for expected in [
-        "module `option` cannot be used as a value or callable",
+        "module `option` cannot be used as a type or compile-time argument",
         "module `add` cannot be used as a type",
         "module `never` cannot be used as a type",
     ] {
@@ -1243,7 +1243,7 @@ fn rejects_nominal_types_that_are_narrower_than_function_and_global_apis() {
         "src/lib.sc",
         &[],
         "let hidden = struct {}\n\
-             pub let wrapper(comptime t: type) = struct {}\n\
+             pub let wrapper<comptime t: type> = struct {}\n\
              pub let expose(value: wrapper(hidden)): hidden = { value }\n\
              pub let shared: hidden = hidden {}\n",
         true,
@@ -1271,7 +1271,7 @@ fn canonicalizes_qualified_custom_effects_across_modules() {
         unit(
             "src/main.sc",
             &[],
-            "pub let screen(): i32 with(ui.ui) = { 0 }\n",
+            "pub let screen(): i32 with<ui.ui> = { 0 }\n",
             true,
         ),
         unit("src/ui.sc", &["ui"], "pub let ui = effect\n", false),
@@ -1290,7 +1290,7 @@ fn rejects_private_effects_exposed_by_public_callable_apis() {
         "src/lib.sc",
         &[],
         "let ui = effect\n\
-             pub let expose(action: (): i32 with(ui)): i32 with(ui) = { 0 }\n",
+             pub let expose(action: (): i32 with<ui>): i32 with<ui> = { 0 }\n",
         true,
     )])
     .unwrap_err();
@@ -1312,7 +1312,7 @@ fn rejects_traits_that_are_narrower_than_public_where_predicates() {
         "src/lib.sc",
         &[],
         "let hidden = trait {}\n\
-             pub let expose(comptime t: type)(value: t): t = requires(t is hidden) { value }\n",
+             pub let expose<comptime t: type>(value: t): t = requires(t is hidden) { value }\n",
         true,
     )])
     .unwrap_err();
@@ -1332,7 +1332,7 @@ fn rejects_traits_that_are_narrower_than_constrained_extension_members() {
         "src/lib.sc",
         &[],
         "let hidden = trait {}\n\
-             pub let cell(comptime t: type) = struct { pub value: t }\n\
+             pub let cell<comptime t: type> = struct { pub value: t }\n\
              extend(cell(t))(requires: t is hidden) {\n\
                let take(move self)(): t = { self.value }\n\
              }\n",
@@ -1423,9 +1423,9 @@ fn validates_trait_signatures_without_treating_bound_types_as_nominals() {
     let valid = resolve_sources(&[unit(
         "src/valid.sc",
         &[],
-        "pub let convert(comptime t: type) = trait {\n\
+        "pub let convert<comptime t: type> = trait {\n\
                let output: type = t\n\
-               let convert(comptime u: type)(self: borrow(self))(value: t): output\n\
+               let convert<comptime u: type>(self: borrow(self))(value: t): output\n\
              }\n",
         true,
     )]);
@@ -1465,7 +1465,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         &[],
         "use alloc.boxed.box as heap_box\nuse alloc.vec.vec\n\
              let keep(move boxed: heap_box(i32)): heap_box(i32) = { boxed }\n\
-             let empty(): vec(i32) = { vec(i32).new() }\n",
+             let empty(): vec<i32> = { vec<i32>.new() }\n",
         true,
     )])
     .unwrap();
@@ -1502,8 +1502,8 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         "let chain = core.flow.chain\n\
              let ops_coalesce = core.ops.coalesce\n\
              let legacy_coalesce = core.ops.coalesce\n\
-             let maybe(comptime t: type) = enum { some(t), none }\n\
-             let legacy_maybe(comptime t: type) = enum { some(t), none }\n\
+             let maybe<comptime t: type> = enum { some(t), none }\n\
+             let legacy_maybe<comptime t: type> = enum { some(t), none }\n\
              extend(maybe(t), chain) {}\n\
              extend(maybe(t), ops_coalesce) {}\n\
              extend(legacy_maybe(t), legacy_coalesce) {}\n",
@@ -1528,8 +1528,8 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
              let semigroup = std.algebra.semigroup
              let monoid = std.algebra.monoid
              let number = struct { value: i32 }\n\
-             let suspended(): i32 with(async) = { 0 }\n\
-             let invoke(move action: (): i32 with(async)): i32 with(async) = { action() }\n\
+             let suspended(): i32 with<async> = { 0 }\n\
+             let invoke(move action: (): i32 with<async>): i32 with<async> = { action() }\n\
              extend(number, semigroup) {\n\
                let combine(move left: number, move right: number): number = { number { value: left.value + right.value } }\n}\n\
              extend(number, monoid) {\n\
@@ -1563,7 +1563,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     let bare = resolve_sources(&[unit(
         "main.sc",
         &[],
-        "let make(): box(i32) = { box.new(1) }\n",
+        "let make(): box<i32> = { box.new(1) }\n",
         true,
     )])
     .unwrap_err();
@@ -1575,7 +1575,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     let bare_option = resolve_sources(&[unit(
         "option.sc",
         &[],
-        "let maybe(): option(i32) = { option.none }\n",
+        "let maybe(): option<i32> = { option.none }\n",
         true,
     )])
     .unwrap_err();
@@ -1615,7 +1615,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     let bare_flow = resolve_sources(&[unit(
         "flow.sc",
         &[],
-        "let maybe(comptime t: type) = enum { some(t), none }\n\
+        "let maybe<comptime t: type> = enum { some(t), none }\n\
              extend(maybe(t), chain) {}\n",
         true,
     )])
@@ -1628,7 +1628,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     let bare_effect = resolve_sources(&[unit(
         "effect.sc",
         &[],
-        "let suspended(): i32 with(async) = { 0 }\n",
+        "let suspended(): i32 with<async> = { 0 }\n",
         true,
     )])
     .unwrap_err();

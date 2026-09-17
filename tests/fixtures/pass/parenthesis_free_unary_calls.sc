@@ -13,7 +13,7 @@ let counter = struct {
 }
 
 extend(counter) {
-  let plus(self: borrow(self))(amount: i32): i32 = {
+  let plus(self: borrow<self>)(amount: i32): i32 = {
     self.value + amount
   }
 }
@@ -23,7 +23,7 @@ let main(): i32 = {
   let precedence = increment 38 + 1
   let second = choose first 41
   let third = apply second { (value: i32) -> value }
-  let counter = counter { value: third }
+  let counter = counter{ value: third }
   if precedence == 40 { counter.plus 1 } else { 0 }
 }
 

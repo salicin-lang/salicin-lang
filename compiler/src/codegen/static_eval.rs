@@ -649,7 +649,7 @@ impl Analyzer {
                 )?;
                 Self::evaluate_static_binary(left, *operator, right)?
             }
-            Expr::Call(callee, arguments) => {
+            Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
                 if let Some((name, variant)) = self.static_enum_variant(callee, expected, locals)? {
                     self.evaluate_static_enum_constructor(
                         &name,
@@ -1446,7 +1446,7 @@ impl Analyzer {
             .collection
             .enum_layouts
             .get(name)
-            .ok_or_else(|| format!("missing `option({target})` layout during ctfe"))?;
+            .ok_or_else(|| format!("missing `option<{target}>` layout during ctfe"))?;
         let variant_name = if converted.is_some() { "some" } else { "none" };
         let variant = layout
             .variants
@@ -1927,7 +1927,7 @@ impl Analyzer {
                     .static_expression_type_hint(left, locals)
                     .or_else(|| self.static_expression_type_hint(right, locals)),
             },
-            Expr::Call(callee, _) => {
+            Expr::Call(callee, _) | Expr::DelimitedCall { callee, .. } => {
                 if let Ok(Some((name, _))) = self.static_enum_variant(callee, None, locals) {
                     return Some(Ty::Enum(name));
                 }

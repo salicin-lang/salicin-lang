@@ -3,7 +3,7 @@ let boxed = struct { value: i32 }
 let consume(move boxed: boxed): () = {}
 
 let main(): i32 = {
-  let boxed = boxed { value: 42 }
+  let boxed = boxed{ value: 42 }
   if true {
     consume(boxed)
   } else {

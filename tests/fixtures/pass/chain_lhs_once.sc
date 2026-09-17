@@ -2,9 +2,9 @@ let option = core.option
 
 let boxed = struct { value: i32 }
 
-let make(count: borrow(mut)(i32)): option(boxed) = {
+let make(count: borrow<mut><i32>): option<boxed> = {
   count = count + 1
-  option(boxed).some(boxed { value: 42 })
+  option<boxed>.some(boxed{ value: 42 })
 }
 
 let main(): i32 = {

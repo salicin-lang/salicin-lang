@@ -1,6 +1,6 @@
 let add = core.ops.add
 
-let twice(comptime t: type)(copy value: t): t
+let twice<comptime t: type>(copy value: t): t
 = requires(t is add(t) && t.output == t && t is copyable) {
   let left = value
   let right = value

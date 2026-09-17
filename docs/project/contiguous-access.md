@@ -4,7 +4,7 @@ Status: implemented for the 2026 edition
 Accepted: 2026-07-28
 
 This contract defines the safe common access vocabulary for `array(t)(n)`,
-`slice(t)`, and `alloc.vec.vec(t)`.
+`slice<t>`, and `alloc.vec.vec<t>`.
 
 ## Common operations
 

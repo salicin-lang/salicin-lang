@@ -3,29 +3,29 @@ let future = core.async.future
 
 let left_step = struct {
   polled: bool,
-  remaining: ptr(mut)(i32)
+  remaining: ptr<mut><i32>
 }
 
 let right_step = struct {
   polled: bool,
-  remaining: ptr(mut)(i32)
+  remaining: ptr<mut><i32>
 }
 
 extend(left_step, future(())) {
   let output = bool
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(bool) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<bool> = {
     if self.polled {
       let done = unsafe {
         *self.remaining = *self.remaining - 1
         *self.remaining == 0
       }
-      poll(bool).ready(done)
+      poll<bool>.ready(done)
     } else {
       self.polled = true
-      poll(bool).pending
+      poll<bool>.pending
     }
   }
 }
@@ -33,28 +33,28 @@ extend(left_step, future(())) {
 extend(right_step, future(())) {
   let output = bool
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(bool) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<bool> = {
     if self.polled {
       let done = unsafe {
         *self.remaining = *self.remaining - 1
         *self.remaining == 0
       }
-      poll(bool).ready(done)
+      poll<bool>.ready(done)
     } else {
       self.polled = true
-      poll(bool).pending
+      poll<bool>.pending
     }
   }
 }
 
-let left(remaining: ptr(mut)(i32)): left_step = {
-  left_step { polled: false, remaining: remaining }
+let left(remaining: ptr<mut><i32>): left_step = {
+  left_step{ polled: false, remaining: remaining }
 }
 
-let right(remaining: ptr(mut)(i32)): right_step = {
-  right_step { polled: false, remaining: remaining }
+let right(remaining: ptr<mut><i32>): right_step = {
+  right_step{ polled: false, remaining: remaining }
 }
 
 let choice = enum {
@@ -64,7 +64,7 @@ let choice = enum {
 
 let main(): i32 = {
   let mut remaining = 3
-  let remaining_ptr = ptr(mut)(borrow(mut)(remaining))
+  let remaining_ptr = ptr<mut>(borrow<mut>(remaining))
   let mut future = async {
     loop {
       let done = if unsafe { *remaining_ptr % 2 == 0 } {
@@ -95,7 +95,7 @@ let main(): i32 = {
   let conditional = first + second + third + fourth
 
   let mut matched_remaining = 2
-  let matched_ptr = ptr(mut)(borrow(mut)(matched_remaining))
+  let matched_ptr = ptr<mut>(borrow<mut>(matched_remaining))
   let mut matched = async {
     loop {
       let choice = if unsafe { *matched_ptr == 2 } { choice.left } else { choice.right }

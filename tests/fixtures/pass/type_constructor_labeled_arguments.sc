@@ -1,16 +1,16 @@
-let pair(comptime k: type, comptime v: type) = struct { key: k, value: v }
+let pair<comptime k: type, comptime v: type> = struct { key: k, value: v }
 
 let pair_alias: (comptime key: type, comptime value: type): type = pair
 
-let holds(comptime item: type) = trait {
-  let get(self: borrow(self))(): item
+let holds<comptime item: type> = trait {
+  let get(self: borrow<self>)(): item
 }
 
 extend(pair(i32, bool), holds(item: i32)) {
-  let get(self: borrow(self))(): i32 = { self.key }
+  let get(self: borrow<self>)(): i32 = { self.key }
 }
 
-let read(comptime t: type)(value: borrow(t)): i32
+let read<comptime t: type>(value: borrow<t>): i32
 = requires(t is holds(item: i32)) {
   value.get()
 }

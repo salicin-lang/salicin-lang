@@ -1,7 +1,7 @@
 let resource = struct { value: i32 }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     let trapped = 1 / self.value
   }
 }
@@ -14,7 +14,7 @@ let main(): i32 = {
     consume(resource)
     base + value
   }
-  let pending = finish(resource { value: 0 })
+  let pending = finish(resource{ value: 0 })
   0
 }
 

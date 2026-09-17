@@ -1,8 +1,8 @@
 let slice = core.memory.slice
 
-let escape(): borrow(i32) = {
-  let values: array(i32)(1) = [42]
-  let slice: borrow(slice(i32)) = borrow(values)
+let escape(): borrow<i32> = {
+  let values: array<i32><1> = [42]
+  let slice: borrow<slice<i32>> = borrow(values)
   let mut iterator = slice.iter()
   match iterator.next()
     { some(value) -> value }

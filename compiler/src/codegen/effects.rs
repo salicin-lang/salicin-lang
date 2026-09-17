@@ -136,7 +136,7 @@ impl Analyzer {
                     &super::source_rewrite::source_type_expression(&error),
                 )
             })?;
-        Some(format!("throwing({error})"))
+        Some(format!("throwing<{error}>"))
     }
 
     pub(super) fn is_standard_unsafety_source(&self, effect: &Type) -> bool {
@@ -323,7 +323,7 @@ impl Analyzer {
             {
                 (name.clone(), Vec::new())
             }
-            Expr::Call(callee, arguments) => {
+            Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
                 let Expr::Name(name) = callee.as_ref() else {
                     return Ok(None);
                 };

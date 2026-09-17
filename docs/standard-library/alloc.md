@@ -19,17 +19,17 @@ canonical `alloc` paths rather than acquiring mirror paths in `std`.
 
 ## `alloc.boxed`
 
-`box(t)` owns one heap allocation. `box.new(value)` constructs it; `boxed.as_ref()` borrows the
+`box<t>` owns one heap allocation. `box.new(value)` constructs it; `boxed.as_ref()` borrows the
 pointee with shared access and `boxed.as_ref(mut)()` borrows it with exclusive access. The rest of
 the API covers replacement, `copyable` reads and writes, and consuming extraction. `boxed.into_raw()`
-consumes the owner without freeing its allocation; `unsafe { box(t).from_raw(pointer) }` restores
+consumes the owner without freeing its allocation; `unsafe { box<t>.from_raw(pointer) }` restores
 unique ownership from a pointer produced by `into_raw`. The caller must not rebuild more than one
 owner or pass any other pointer to `from_raw`. Destruction recursively drops the pointee before
 releasing storage.
 
 ## `alloc.vec`
 
-`vec(t)` owns contiguous storage and supports both copyable and resource elements. Its API includes
+`vec<t>` owns contiguous storage and supports both copyable and resource elements. Its API includes
 construction, capacity management, push/pop, insertion/removal, append, truncation, swaps, and
 in-place reversal. `values.at(index)` borrows an element with shared access and
 `values.at(mut)(index)` borrows it with exclusive access. Bounds and allocation-layout failures
@@ -41,7 +41,7 @@ overlap-safe `copy_within` share the array/slice mutation contract. Borrow
 checking rejects a source slice that aliases the mutable vector. Move-only
 elements use owned `push` and `append` instead of borrowed slice copying.
 
-`vec(t)` also implements `core.ops.index(u64)` in source. `values[index]`,
+`vec<t>` also implements `core.ops.index(u64)` in source. `values[index]`,
 `borrow(values[index])`, and `values[index] = replacement` share the same checked `at(a)`
 implementation and preserve its receiver loan.
 

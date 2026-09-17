@@ -824,7 +824,7 @@ fn failure_errors_report_their_cause() {
             "throw_omitted_return_type.sc",
             "handle it with `try { ... }`",
         ),
-        ("throw_error_type_mismatch.sc", "requires `throwing(i32)`"),
+        ("throw_error_type_mismatch.sc", "requires `throwing<i32>`"),
         (
             "throw_without_value.sc",
             "standard-library item `throw` is not in the prelude",

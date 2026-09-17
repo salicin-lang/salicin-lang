@@ -1272,8 +1272,8 @@ extend(number, secret) {
   let reveal(self: borrow(self))(): i32 = { self.value }
 }
 pub let make(): number = { number { value: 21 } }
-pub let maybe(): option(number) = { option(number).some(make()) }
-pub let reveal(comptime t: type)(move number: number): i32 = { number.reveal() }
+pub let maybe(): option<number> = { option<number>.some(make()) }
+pub let reveal<comptime t: type>(move number: number): i32 = { number.reveal() }
 pub let answer(): i32 = {
   let number = make()
   number.reveal()
@@ -1373,7 +1373,7 @@ extend(number, add(number)) {
 }
 pub let make(value: i32): number = { number { value: value } }
 pub let value(move number: number): i32 = { number.value }
-pub let maybe(value: i32): option(i32) = { option(i32).some(value) }
+pub let maybe(value: i32): option<i32> = { option<i32>.some(value) }
 "#,
     );
     workspace.write(
@@ -1395,14 +1395,14 @@ pub let maybe(value: i32): option(i32) = { option(i32).some(value) }
 
     workspace.write(
         "app/src/fake.sc",
-        r#"pub let option(comptime t: type) = enum { some(t), none }
-pub let make_option(): option(i32) = { option(i32).some(42) }
+        r#"pub let option<comptime t: type> = enum { some(t), none }
+pub let make_option(): option<i32> = { option<i32>.some(42) }
 
-pub let add(comptime rhs: type) = trait {
+pub let add<comptime rhs: type> = trait {
   let output: type
   let add(move self)(move rhs: rhs): output
 }
-pub let sub(comptime rhs: type) = trait {
+pub let sub<comptime rhs: type> = trait {
   let output: type
   let sub(move self)(move rhs: rhs): output
 }
@@ -1435,7 +1435,7 @@ pub let make_number(value: i32): number = { number { value: value } }
     );
     assert!(
         String::from_utf8_lossy(&fake_option.stderr)
-            .contains("type `fake::option(i32)` does not implement `coalesce`"),
+            .contains("type `fake::option<i32>` does not implement `coalesce`"),
         "{}",
         output_text(&fake_option)
     );

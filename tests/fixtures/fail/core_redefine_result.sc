@@ -1,6 +1,6 @@
 let result = core.result
 
-let result(e: type)(comptime t: type) = enum {
+let result<e: type><comptime t: type> = enum {
   ok(t),
   err(e),
 }

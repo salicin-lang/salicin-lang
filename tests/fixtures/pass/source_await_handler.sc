@@ -8,9 +8,9 @@ let step = struct { ready: bool }
 extend(step, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
     if self.ready {
       ready(42)
     } else {
@@ -24,7 +24,7 @@ let main(): i32 = {
   suspension.handle
     suspend { (resume) -> resume(()) }
     action {
-      await_source(step { ready: false })
+      await_source(step{ ready: false })
     }
 }
 

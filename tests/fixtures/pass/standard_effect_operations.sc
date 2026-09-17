@@ -3,38 +3,38 @@ let result = core.result
 let throwing = core.error.throwing
 let suspension = core.async.suspension
 
-let fail_with_answer: with(throwing(i32))(): never = {
-  throwing(i32).raise(42)
+let fail_with_answer: with<throwing<i32>>(): never = {
+  throwing<i32>.raise(42)
 }
 
-let fail_with_throw_sugar: with(throwing(i32))(): never = {
+let fail_with_throw_sugar: with<throwing<i32>>(): never = {
   throw(42)
 }
 
-let choose_with_throw_sugar: with(throwing(i32))(fail: bool): i32 = {
+let choose_with_throw_sugar: with<throwing<i32>>(fail: bool): i32 = {
   if fail { throw(42) } else { 1 }
 }
 
 let handled_throw(): i32 = {
-  throwing(i32).handle raise { (error) -> error } action {
+  throwing<i32>.handle raise { (error) -> error } action {
       fail_with_answer()
     }
 }
 
 let handled_throw_sugar_function(): i32 = {
-  throwing(i32).handle raise { (error) -> error } action {
+  throwing<i32>.handle raise { (error) -> error } action {
       fail_with_throw_sugar()
     }
 }
 
 let handled_throw_sugar_action(): i32 = {
-  throwing(i32).handle raise { (error) -> error } action {
+  throwing<i32>.handle raise { (error) -> error } action {
       throw(42)
     }
 }
 
 let tried_throw_sugar_function(): i32 = {
-  let result: result(i32)(i32) = try {
+  let result: result<i32><i32> = try {
     fail_with_throw_sugar()
   }
   match result
@@ -43,7 +43,7 @@ let tried_throw_sugar_function(): i32 = {
 }
 
 let tried_throw_sugar_action(): i32 = {
-  let result: result(i32)(i32) = try {
+  let result: result<i32><i32> = try {
     throw(42)
   }
   match result

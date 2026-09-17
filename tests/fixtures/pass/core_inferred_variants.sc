@@ -3,9 +3,9 @@ let result = core.result
 
 let main(): i32 = {
   let some = option.some(20)
-  let none: option(i32) = option.none
-  let ok = result(e: bool).ok(22)
-  let err: result(bool)(i32) = result.err(false)
+  let none: option<i32> = option.none
+  let ok = result<e: bool>.ok(22)
+  let err: result<bool><i32> = result.err(false)
 
   let from_some = match some
     { some(value) -> value }

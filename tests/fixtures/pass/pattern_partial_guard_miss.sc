@@ -6,10 +6,10 @@ let payload = struct {
 
 let main(): i32 = {
   let offset = 1
-  let choose: (option(payload)): core.control.attempt(option(payload))(i32) = {
+  let choose: (option<payload>): core.control.attempt(option<payload>)(i32) = {
     some(payload) if payload.value > 100 -> payload.value + offset
   }
-  let attempted = choose(option.some(payload { value: 42 }))
+  let attempted = choose(option.some(payload{ value: 42 }))
   match attempted
     { hit(_) -> 0 }
     { miss(remaining) -> match remaining

@@ -13,20 +13,20 @@ let step = struct {
 extend(step, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll(i32).pending
+      poll<i32>.pending
     } else {
-      poll(i32).ready(self.value)
+      poll<i32>.ready(self.value)
     }
   }
 }
 
-let make_step: with(ask)(): step = {
-  step { polls: 0, value: ask.ask() }
+let make_step: with<ask>(): step = {
+  step{ polls: 0, value: ask.ask() }
 }
 
 let main(): i32 = {

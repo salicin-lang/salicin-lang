@@ -361,7 +361,7 @@ pub enum Sort {
     Type,
     USize,
     Region,
-    /// A single nominal effect identity such as `Unsafe` or `throwing(Error)`.
+    /// A single nominal effect identity such as `Unsafe` or `throwing<Error>`.
     Effect,
     /// A normalized, order-insensitive row of zero or more effect identities.
     Effects,

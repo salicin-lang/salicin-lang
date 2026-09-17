@@ -7,9 +7,9 @@ let values = struct { done: bool }
 let choice = enum { some(i32), none }
 
 extend(values, iterator) {
-  let item = owned_item(choice)
+  let item = owned_item<choice>;
 
-  let next(comptime r: region)(self: borrow(mut)(r)(self))(): option(choice) = {
+  let next<comptime r: region>(self: borrow<mut><r><self>)(): option<choice> = {
     if self.done {
       none
     } else {
@@ -25,7 +25,7 @@ extend(values, into_iterator) {
 }
 
 let main(): i32 = {
-  for values { done: false } { choice.some(value) ->
+  for values{ done: false } { choice.some(value) ->
     value
   }
   0

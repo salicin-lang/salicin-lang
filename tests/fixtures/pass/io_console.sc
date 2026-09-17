@@ -1,4 +1,4 @@
-let main: with(std.io.io)(): i32 = {
+let main: with<std.io.io>(): i32 = {
   let text: string = "hello"
   let view = text.as_str()
   match std.io.println(view)

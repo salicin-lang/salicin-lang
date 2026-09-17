@@ -3,10 +3,10 @@ pub let chain = trait {
   /// Payload type read from the successful case.
   let item: type
   /// Type constructor used to rebuild the container with a new payload.
-  let rebind(comptime value: type): type
+  let rebind<comptime value: type>: type
 
   /// Applies `transform` to the successful payload or propagates the residual case.
-  let chain(comptime e: effects, comptime u: type): with(e)(self)(transform: with(e)((item): u)): rebind(u)
+  let chain<comptime e: effects, comptime u: type>: with<e>(self)(transform: with<e>((item): u)): rebind(u)
 }
 
 /// Trait used by `??` to extract a value or evaluate a fallback.
@@ -15,7 +15,7 @@ pub let coalesce = trait {
   let item: type
 
   /// Returns the successful payload or evaluates `fallback`.
-  let coalesce(comptime e: effects): with(e)(self)(fallback: with(e)((): item)): item
+  let coalesce<comptime e: effects>: with<e>(self)(fallback: with<e>((): item)): item
 }
 
 /// Trait used by postfix `!!` to assert success and extract a payload.
@@ -35,5 +35,5 @@ pub let raise = trait {
   let error: type
 
   /// Returns the successful payload or raises the stored error.
-  let raise: with(core.error.throwing(error))(move self): output
+  let raise: with<core.error.throwing<error>>(move self): output
 }

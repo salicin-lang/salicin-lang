@@ -1,4 +1,4 @@
-let choose(comptime t: type)(first: t)(second: t): t = { second }
+let choose<comptime t: type>(first: t)(second: t): t = { second }
 
 let main(): i32 = {
   let choose_after_zero = choose(0)

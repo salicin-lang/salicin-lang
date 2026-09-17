@@ -96,7 +96,7 @@ any of these standard namespaces.
 traits require ordinary aliases when
 named. Merely writing the corresponding operator token does not require importing its protocol.
 `core.flow.chain` and `core.flow.coalesce` require ordinary aliases when named directly.
-`throwing(e)`, `unsafety`, and `suspension` are ordinary standard effect declarations in `core.error`,
+`throwing<e>`, `unsafety`, and `suspension` are ordinary standard effect declarations in `core.error`,
 `core.unsafe`, and `core.async`. Source that names them binds them normally. `try` and `throw` target
 `core.error`; `unsafe` targets `core.unsafe`; structural control spellings such as `do` and `loop`
 target `core.control`. These contextual spellings do not inject module exports as ordinary

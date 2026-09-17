@@ -8,7 +8,7 @@ surface for contiguous collections.
 
 ## Shared kernel and order
 
-Borrowed `slice(t)` is the semantic kernel. Fixed arrays and `alloc.vec.vec(t)`
+Borrowed `slice<t>` is the semantic kernel. Fixed arrays and `alloc.vec.vec<t>`
 expose the same operations by creating a shared slice view and delegating to
 that kernel:
 
@@ -51,7 +51,7 @@ predicate.
 
 `find`, `position`, `any`, `all`, and `fold` infer and forward the callback's
 exact effect row. A pure callback keeps the operation pure. A callback with
-`throwing(error)`, a user effect, or `unsafety` requires the same handler or
+`throwing<error>`, a user effect, or `unsafety` requires the same handler or
 authority at the collection call. The algorithms introduce no additional
 effect or allocation.
 

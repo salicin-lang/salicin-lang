@@ -4,7 +4,9 @@ use std::error::Error;
 use std::fmt;
 use std::sync::OnceLock;
 
-use crate::ast::{Function, Item, PassMode, Program, Sort, StructDef, Type, Visibility};
+use crate::ast::{
+    Function, GroupDelimiter, Item, PassMode, Program, Sort, StructDef, Type, Visibility,
+};
 use crate::manifest::Edition;
 use crate::modules::{self, PackageId, SourceUnit};
 use crate::parser;
@@ -149,6 +151,7 @@ impl Error for AllocBundleError {}
 
 fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBundleError> {
     let mut diagnostics = crate::standard::naming_diagnostics(program, "alloc");
+    diagnostics.extend(crate::standard::delimiter_diagnostics(program, "alloc"));
     if program.items.len() != 56
         || program.item_visibilities.len() != 56
         || program.item_origins.len() != 56
@@ -179,48 +182,48 @@ fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBund
         match &program.items[0] {
             Item::Struct(definition) if valid_box(definition) => {}
             _ => diagnostics.push(
-                "alloc box must have shape `pub let box(T: type) = struct { pointer: ptr(mut)(t) }`"
+                "alloc box must have shape `pub let box<T: type> = struct { pointer: ptr<mut><t> }`"
                     .to_owned(),
             ),
         }
         match &program.items[1] {
             Item::Function(function) if valid_box_new(function) => {}
             _ => diagnostics.push(
-                "alloc box_new must be a generic owning constructor `(value: T): box(t)`"
+                "alloc box_new must be a generic owning constructor `(value: T): box<t>`"
                     .to_owned(),
             ),
         }
         match &program.items[2] {
             Item::Function(function) if valid_box_into_raw(function) => {}
             _ => diagnostics.push(
-                "alloc box_into_raw must consume `box(t)` and return its owned `ptr(mut)(t)`"
+                "alloc box_into_raw must consume `box<t>` and return its owned `ptr<mut><t>`"
                     .to_owned(),
             ),
         }
         match &program.items[3] {
             Item::Function(function) if valid_box_read(function) => {}
             _ => diagnostics.push(
-                "alloc box_read must borrow `box(t)`, require `t: copyable`, and return `t`"
+                "alloc box_read must borrow `box<t>`, require `t: copyable`, and return `t`"
                     .to_owned(),
             ),
         }
         match &program.items[4] {
             Item::Function(function) if valid_box_write(function) => {}
             _ => diagnostics.push(
-                "alloc box_write must mutably borrow `box(t)`, copy a `t`, require `t: copyable`, and return unit"
+                "alloc box_write must mutably borrow `box<t>`, copy a `t`, require `t: copyable`, and return unit"
                     .to_owned(),
             ),
         }
         match &program.items[5] {
             Item::Function(function) if valid_box_into_inner(function) => {}
             _ => diagnostics.push(
-                "alloc box_into_inner must consume `box(t)` and return its owned `t`".to_owned(),
+                "alloc box_into_inner must consume `box<t>` and return its owned `t`".to_owned(),
             ),
         }
         match &program.items[6] {
             Item::Function(function) if valid_box_replace(function) => {}
             _ => diagnostics.push(
-                "alloc box_replace must mutably borrow `box(t)`, consume a replacement `t`, and return the old `t`"
+                "alloc box_replace must mutably borrow `box<t>`, consume a replacement `t`, and return the old `t`"
                     .to_owned(),
             ),
         }
@@ -1464,7 +1467,11 @@ fn valid_vec_iterator_extension(extension: &crate::ast::ExtendDef) -> bool {
             crate::ast::ExtendMember::Function(next),
         ] if item.name == "item"
             && matches!(&item.value,
-                crate::ast::Expr::Call(callee, arguments)
+                crate::ast::Expr::DelimitedCall {
+                    callee,
+                    delimiter: GroupDelimiter::Angle,
+                    arguments,
+                }
                     if matches!(callee.as_ref(), crate::ast::Expr::Name(name) if name == "owned_item")
                         && matches!(arguments.as_slice(), [argument]
                             if argument.label.is_none()
@@ -1505,13 +1512,14 @@ fn valid_vec_into_iterator_extension(extension: &crate::ast::ExtendDef) -> bool 
             crate::ast::ExtendMember::Const(iter),
             crate::ast::ExtendMember::Function(method),
         ] if iter.name == "iter"
-            && iter.value == crate::ast::Expr::Call(
-                Box::new(crate::ast::Expr::Name("vec_into_iter".to_owned())),
-                vec![crate::ast::CallArg {
+            && iter.value == crate::ast::Expr::DelimitedCall {
+                callee: Box::new(crate::ast::Expr::Name("vec_into_iter".to_owned())),
+                delimiter: GroupDelimiter::Angle,
+                arguments: vec![crate::ast::CallArg {
                     label: None,
                     value: crate::ast::Expr::Name("t".to_owned()),
                 }],
-            )
+            }
             && valid_vec_receiver_method(
                 method,
                 "into_iter",
@@ -1587,8 +1595,8 @@ mod tests {
     #[test]
     fn rejects_box_write_without_its_copy_proof() {
         let source = alloc_source().replacen(
-            "let box_write(comptime t: type)(boxed: borrow(mut)(box(t)))(copy value: t): () = requires(t is copyable) {\n  unsafe {",
-            "let box_write(comptime t: type)(boxed: borrow(mut)(box(t)))(copy value: t): () = {\n  unsafe {",
+            "let box_write<comptime t: type>(boxed: borrow<mut><box<t>>)(copy value: t): () = requires(t is copyable) {\n  unsafe {",
+            "let box_write<comptime t: type>(boxed: borrow<mut><box<t>>)(copy value: t): () = {\n  unsafe {",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1599,8 +1607,8 @@ mod tests {
     #[test]
     fn rejects_box_from_raw_without_unsafety() {
         let source = alloc_source().replacen(
-            "let from_raw: with(core.unsafe.unsafety)(pointer: ptr(mut)(t)): box(t) = {",
-            "let from_raw(pointer: ptr(mut)(t)): box(t) = {",
+            "let from_raw: with<core.unsafe.unsafety>(pointer: ptr<mut><t>): box<t> = {",
+            "let from_raw(pointer: ptr<mut><t>): box<t> = {",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1611,8 +1619,8 @@ mod tests {
     #[test]
     fn rejects_box_into_raw_without_ownership_transfer() {
         let source = alloc_source().replacen(
-            "let box_into_raw(comptime t: type)(move boxed: box(t)): ptr(mut)(t)",
-            "let box_into_raw(comptime t: type)(boxed: borrow(box(t))): ptr(mut)(t)",
+            "let box_into_raw<comptime t: type>(move boxed: box<t>): ptr<mut><t>",
+            "let box_into_raw<comptime t: type>(boxed: borrow<box<t>>): ptr<mut><t>",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1623,8 +1631,8 @@ mod tests {
     #[test]
     fn rejects_a_malformed_copy_box_extension() {
         let source = alloc_source().replacen(
-            "let read(self: borrow(self))(): t = { box_read(self) }",
-            "let peek(self: borrow(self))(): t = { box_read(self) }",
+            "let read(self: borrow<self>)(): t = { box_read(self) }",
+            "let peek(self: borrow<self>)(): t = { box_read(self) }",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1644,8 +1652,8 @@ mod tests {
     #[test]
     fn rejects_a_malformed_vec_drop_extension() {
         let source = alloc_source().replacen(
-            "extend(vec(t), droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let drop(self: borrow(mut)(self))(): () = {",
-            "extend(vec(t), droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let release(self: borrow(mut)(self))(): () = {",
+            "extend(vec<t>, droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let drop(self: borrow<mut><self>)(): () = {",
+            "extend(vec<t>, droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let release(self: borrow<mut><self>)(): () = {",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1656,8 +1664,8 @@ mod tests {
     #[test]
     fn rejects_a_malformed_vec_owning_extension() {
         let source = alloc_source().replacen(
-            "let pop(self: borrow(mut)(self))(): option(t) = { vec_pop(self) }",
-            "let take(self: borrow(mut)(self))(): option(t) = { vec_pop(self) }",
+            "let pop(self: borrow<mut><self>)(): option<t> = { vec_pop(self) }",
+            "let take(self: borrow<mut><self>)(): option<t> = { vec_pop(self) }",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1668,8 +1676,8 @@ mod tests {
     #[test]
     fn rejects_a_malformed_copy_vec_extension() {
         let source = alloc_source().replacen(
-            "let read(self: borrow(self))(index: u64): t = { vec_read(self)(index) }",
-            "let peek(self: borrow(self))(index: u64): t = { vec_read(self)(index) }",
+            "let read(self: borrow<self>)(index: u64): t = { vec_read(self)(index) }",
+            "let peek(self: borrow<self>)(index: u64): t = { vec_read(self)(index) }",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))

@@ -30,7 +30,7 @@ impl Analyzer {
                         Some((payload, _)) => payload,
                         None => {
                             self.error(
-                                "cannot infer the success type of `try { ... }`; add a contextual `result(e)(t)` type",
+                                "cannot infer the success type of `try { ... }`; add a contextual `result<e><t>` type",
                             );
                             return None;
                         }
@@ -40,7 +40,7 @@ impl Analyzer {
                     Some((payload, _)) => payload,
                     None => {
                         self.error(
-                            "cannot infer the success type of `try { ... }`; add a contextual `result(e)(t)` type",
+                            "cannot infer the success type of `try { ... }`; add a contextual `result<e><t>` type",
                         );
                         return None;
                     }
@@ -48,7 +48,7 @@ impl Analyzer {
                 Expr::Throw(_) => Ty::Never,
                 _ => {
                     self.error(
-                        "cannot infer the success type of `try { ... }`; add a contextual `result(e)(t)` type",
+                        "cannot infer the success type of `try { ... }`; add a contextual `result<e><t>` type",
                     );
                     return None;
                 }
@@ -59,7 +59,7 @@ impl Analyzer {
         let error = match errors.len() {
             0 => {
                 self.error(
-                    "cannot infer `try { ... }` because its body has no escaping failure source; add a contextual `result(e)(t)` type",
+                    "cannot infer `try { ... }` because its body has no escaping failure source; add a contextual `result<e><t>` type",
                 );
                 return None;
             }
@@ -71,7 +71,7 @@ impl Analyzer {
                     .collect::<Vec<_>>();
                 names.sort();
                 self.error(format!(
-                    "cannot infer `try {{ ... }}` from multiple escaping error types: {}; convert them to one type or add a contextual `result(e)(t)` type",
+                    "cannot infer `try {{ ... }}` from multiple escaping error types: {}; convert them to one type or add a contextual `result<e><t>` type",
                     names
                         .iter()
                         .map(|name| format!("`{name}`"))
@@ -275,13 +275,13 @@ impl Analyzer {
         let Some(info) = self.standard_fallible_info_for_ty(&expected) else {
             let _ = self.lower_expr(body, None, context);
             self.error(format!(
-                "`try {{ ... }}` produces `result(e)(t)`, but this context expects `{expected}`"
+                "`try {{ ... }}` produces `result<e><t>`, but this context expects `{expected}`"
             ));
             return error_expr();
         };
         if info.kind != StandardFallibleKind::Result {
             let _ = self.lower_expr(body, None, context);
-            self.error("`try { ... }` requires `result(e)(t)`, not `option(t)`");
+            self.error("`try { ... }` requires `result<e><t>`, not `option<t>`");
             return error_expr();
         }
         let error = info.error.expect("Result has an error type");
@@ -1065,7 +1065,7 @@ impl Analyzer {
     ) -> HirExpr {
         let Some(active_error) = context.active_failure_error.clone() else {
             self.error(format!(
-                "call requires `throwing({thrown_error})`; propagate it from the current function or handle it with `try {{ ... }}`"
+                "call requires `throwing<{thrown_error}>`; propagate it from the current function or handle it with `try {{ ... }}`"
             ));
             return error_expr();
         };
@@ -1127,7 +1127,7 @@ impl Analyzer {
             }
             let _ = self.lower_expr(value, None, context);
             self.error(
-                "`throw` requires an enclosing `with(throwing(Error))` function or `try { ... }` handler",
+                "`throw` requires an enclosing `with<throwing<Error>>` function or `try { ... }` handler",
             );
             return error_expr();
         };
@@ -1209,7 +1209,7 @@ impl Analyzer {
                     .collect::<Vec<_>>();
                 rendered.sort();
                 self.error(format!(
-                    "`throw` under ordinary `failure` effects requires exactly one active `throwing(Error)` row; found {}: {}",
+                    "`throw` under ordinary `failure` effects requires exactly one active `throwing<Error>` row; found {}: {}",
                     rendered.len(),
                     rendered
                         .iter()

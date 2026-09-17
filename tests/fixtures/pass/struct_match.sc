@@ -10,7 +10,7 @@ let select(value: pair): i32 = {
 }
 
 let main(): i32 = {
-  select(pair { right: 42, left: 40 })
+  select(pair{ right: 42, left: 40 })
 }
 
 test("struct_match.sc") {

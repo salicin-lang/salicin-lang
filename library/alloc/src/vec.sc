@@ -6,9 +6,9 @@ let into_iterator = core.iter.into_iterator
 let owned_item = core.iter.owned_item
 
 /// Growable contiguous heap allocation for values of type `T`.
-pub let vec(comptime t: type) = struct {
+pub let vec<comptime t: type> = struct {
   /// Pointer to the start of the allocated storage.
-  pointer: ptr(mut)(t),
+  pointer: ptr<mut><t>,
   /// Number of initialized elements.
   length: u64,
   /// Number of elements that fit in the allocated storage.
@@ -16,8 +16,8 @@ pub let vec(comptime t: type) = struct {
 }
 
 /// Computes the byte size needed to store `capacity` elements of `T`.
-let vec_layout_size(comptime t: type)(capacity: u64): u64 = {
-  let element_size = size_of(t)
+let vec_layout_size<comptime t: type>(capacity: u64): u64 = {
+  let element_size = size_of<t>;
   if element_size != 0 && capacity > 18446744073709551615 / element_size {
     unsafe {
       raw_trap()
@@ -27,50 +27,50 @@ let vec_layout_size(comptime t: type)(capacity: u64): u64 = {
 }
 
 /// Allocates raw storage for `capacity` elements of `T`.
-let vec_allocate(comptime t: type)(capacity: u64): ptr(mut)(t) = {
+let vec_allocate<comptime t: type>(capacity: u64): ptr<mut><t> = {
   unsafe {
-    raw_alloc(t)(vec_layout_size(t: t)(capacity), align_of(t))
+    raw_alloc<t>(vec_layout_size<t: t>(capacity), align_of<t>)
   }
 }
 
 /// Deallocates raw vector storage previously allocated for `capacity` elements.
-let vec_deallocate(comptime t: type)(pointer: ptr(mut)(t), capacity: u64): () = {
+let vec_deallocate<comptime t: type>(pointer: ptr<mut><t>, capacity: u64): () = {
   unsafe {
-    raw_dealloc(t)(pointer, vec_layout_size(t: t)(capacity), align_of(t))
+    raw_dealloc<t>(pointer, vec_layout_size<t: t>(capacity), align_of<t>)
   }
 }
 
 /// Creates an empty vector with zero capacity.
-let vec_new(comptime t: type)(): vec(t) = {
-  vec(t) { pointer: vec_allocate(t: t)(0), length: 0, storage_capacity: 0 }
+let vec_new<comptime t: type>(): vec<t> = {
+  vec<t>{ pointer: vec_allocate<t: t>(0), length: 0, storage_capacity: 0 }
 }
 
 /// Creates an empty vector with storage for `capacity` elements.
-let vec_with_capacity(comptime t: type)(capacity: u64): vec(t) = {
-  vec(t) { pointer: vec_allocate(t: t)(capacity), length: 0, storage_capacity: capacity }
+let vec_with_capacity<comptime t: type>(capacity: u64): vec<t> = {
+  vec<t>{ pointer: vec_allocate<t: t>(capacity), length: 0, storage_capacity: capacity }
 }
 
 /// Returns the number of initialized elements in `values`.
-let vec_len(comptime t: type)(values: borrow(vec(t))): u64 = { values.length }
+let vec_len<comptime t: type>(values: borrow<vec<t>>): u64 = { values.length }
 
 /// Returns the number of elements that fit without reallocating.
-let vec_capacity(comptime t: type)(values: borrow(vec(t))): u64 = { values.storage_capacity }
+let vec_capacity<comptime t: type>(values: borrow<vec<t>>): u64 = { values.storage_capacity }
 
 /// Borrows the element at `index`, trapping if `index` is out of bounds.
-let vec_at(comptime a: access, comptime r: region, comptime t: type)
-  (values: borrow(a)(r)(vec(t)))(index: u64): borrow(a)(r)(t) = {
+let vec_at<comptime a: access, comptime r: region, comptime t: type>
+  (values: borrow<a><r><vec<t>>)(index: u64): borrow<a><r><t> = {
   if index >= values.length {
     unsafe {
       raw_trap()
     }
   }
   unsafe {
-    raw_borrow(a)(raw_offset(values.pointer, index), borrow(a)(values))
+    raw_borrow<a>(raw_offset(values.pointer, index), borrow<a>(values))
   }
 }
 
 /// Ensures that `values` can accept at least `additional` more elements.
-let vec_reserve(comptime t: type)(values: borrow(mut)(vec(t)))(additional: u64): () = {
+let vec_reserve<comptime t: type>(values: borrow<mut><vec<t>>)(additional: u64): () = {
   if additional > 18446744073709551615 - values.length {
     unsafe {
       raw_trap()
@@ -90,7 +90,7 @@ let vec_reserve(comptime t: type)(values: borrow(mut)(vec(t)))(additional: u64):
         new_capacity * 2
       }
     }
-    let new_pointer = vec_allocate(t)(new_capacity)
+    let new_pointer = vec_allocate<t>(new_capacity)
     let mut index: u64 = 0
     while { index < values.length } {
       let item = unsafe {
@@ -108,7 +108,7 @@ let vec_reserve(comptime t: type)(values: borrow(mut)(vec(t)))(additional: u64):
 }
 
 /// Appends `value` to the end of `values`.
-let vec_push(comptime t: type)(values: borrow(mut)(vec(t)))(value: t): () = {
+let vec_push<comptime t: type>(values: borrow<mut><vec<t>>)(value: t): () = {
   vec_reserve(values)(1)
   unsafe {
     raw_init(raw_offset(values.pointer, values.length), value)
@@ -117,7 +117,7 @@ let vec_push(comptime t: type)(values: borrow(mut)(vec(t)))(value: t): () = {
 }
 
 /// Replaces the element at `index` and returns the previous element.
-let vec_replace(comptime t: type)(values: borrow(mut)(vec(t)))(index: u64)(value: t): t = {
+let vec_replace<comptime t: type>(values: borrow<mut><vec<t>>)(index: u64)(value: t): t = {
   if index >= values.length {
     unsafe {
       raw_trap()
@@ -136,20 +136,20 @@ let vec_replace(comptime t: type)(values: borrow(mut)(vec(t)))(index: u64)(value
 }
 
 /// Removes and returns the last element, or `None` if the vector is empty.
-let vec_pop(comptime t: type)(values: borrow(mut)(vec(t))): option(t) = {
+let vec_pop<comptime t: type>(values: borrow<mut><vec<t>>): option<t> = {
   if values.length == 0 {
-    option(t).none
+    option<t>.none
   } else {
     values.length = values.length - 1
     let value = unsafe {
       raw_take(raw_offset(values.pointer, values.length))
     }
-    option(t).some(value)
+    option<t>.some(value)
   }
 }
 
 /// Drops elements from the end until the vector length is at most `new_length`.
-let vec_truncate(comptime t: type)(values: borrow(mut)(vec(t)))(new_length: u64): () = {
+let vec_truncate<comptime t: type>(values: borrow<mut><vec<t>>)(new_length: u64): () = {
   while { values.length > new_length } {
     values.length = values.length - 1
     let item = unsafe {
@@ -159,13 +159,13 @@ let vec_truncate(comptime t: type)(values: borrow(mut)(vec(t)))(new_length: u64)
 }
 
 /// Removes all elements from `values`.
-let vec_clear(comptime t: type)(values: borrow(mut)(vec(t))): () = { vec_truncate(values)(0) }
+let vec_clear<comptime t: type>(values: borrow<mut><vec<t>>): () = { vec_truncate(values)(0) }
 
 /// Returns whether `values` has no initialized elements.
-let vec_is_empty(comptime t: type)(values: borrow(vec(t))): bool = { values.length == 0 }
+let vec_is_empty<comptime t: type>(values: borrow<vec<t>>): bool = { values.length == 0 }
 
 /// Removes the element at `index` by moving the last element into its slot.
-let vec_swap_remove(comptime t: type)(values: borrow(mut)(vec(t)))(index: u64): t = {
+let vec_swap_remove<comptime t: type>(values: borrow<mut><vec<t>>)(index: u64): t = {
   if index >= values.length {
     unsafe {
       raw_trap()
@@ -188,7 +188,7 @@ let vec_swap_remove(comptime t: type)(values: borrow(mut)(vec(t)))(index: u64): 
 }
 
 /// Swaps the elements at `left` and `right`.
-let vec_swap(comptime t: type)(values: borrow(mut)(vec(t)))(left: u64, right: u64): () = {
+let vec_swap<comptime t: type>(values: borrow<mut><vec<t>>)(left: u64, right: u64): () = {
   if left >= values.length || right >= values.length {
     unsafe {
       raw_trap()
@@ -209,7 +209,7 @@ let vec_swap(comptime t: type)(values: borrow(mut)(vec(t)))(left: u64, right: u6
 }
 
 /// Reverses the order of initialized elements in place.
-let vec_reverse(comptime t: type)(values: borrow(mut)(vec(t))): () = {
+let vec_reverse<comptime t: type>(values: borrow<mut><vec<t>>): () = {
   let mut left: u64 = 0
   while { left < values.length / 2 } {
     let right = values.length - 1 - left
@@ -219,7 +219,7 @@ let vec_reverse(comptime t: type)(values: borrow(mut)(vec(t))): () = {
 }
 
 /// Inserts `value` at `index`, shifting later elements right.
-let vec_insert(comptime t: type)(values: borrow(mut)(vec(t)))(index: u64)(value: t): () = {
+let vec_insert<comptime t: type>(values: borrow<mut><vec<t>>)(index: u64)(value: t): () = {
   if index > values.length {
     unsafe {
       raw_trap()
@@ -244,7 +244,7 @@ let vec_insert(comptime t: type)(values: borrow(mut)(vec(t)))(index: u64)(value:
 }
 
 /// Removes and returns the element at `index`, shifting later elements left.
-let vec_remove(comptime t: type)(values: borrow(mut)(vec(t)))(index: u64): t = {
+let vec_remove<comptime t: type>(values: borrow<mut><vec<t>>)(index: u64): t = {
   if index >= values.length {
     unsafe {
       raw_trap()
@@ -269,7 +269,7 @@ let vec_remove(comptime t: type)(values: borrow(mut)(vec(t)))(index: u64): t = {
 }
 
 /// Moves all elements from `other` onto the end of `values`.
-let vec_append(comptime t: type)(values: borrow(mut)(vec(t)))(other: borrow(mut)(vec(t))): () = {
+let vec_append<comptime t: type>(values: borrow<mut><vec<t>>)(other: borrow<mut><vec<t>>): () = {
   let start = values.length
   let moved = other.length
   vec_reserve(values)(moved)
@@ -288,9 +288,9 @@ let vec_append(comptime t: type)(values: borrow(mut)(vec(t)))(other: borrow(mut)
 }
 
 /// Reallocates storage so capacity matches the current length.
-let vec_shrink_to_fit(comptime t: type)(values: borrow(mut)(vec(t))): () = {
+let vec_shrink_to_fit<comptime t: type>(values: borrow<mut><vec<t>>): () = {
   if values.length != values.storage_capacity {
-    let new_pointer = vec_allocate(t)(values.length)
+    let new_pointer = vec_allocate<t>(values.length)
     let mut index: u64 = 0
     while { index < values.length } {
       let item = unsafe {
@@ -308,7 +308,7 @@ let vec_shrink_to_fit(comptime t: type)(values: borrow(mut)(vec(t))): () = {
 }
 
 /// Copies the element at `index` out of `values`.
-let vec_read(comptime t: type)(values: borrow(vec(t)))(index: u64): t = requires(t is copyable) {
+let vec_read<comptime t: type>(values: borrow<vec<t>>)(index: u64): t = requires(t is copyable) {
   if index >= values.length {
     unsafe {
       raw_trap()
@@ -320,7 +320,7 @@ let vec_read(comptime t: type)(values: borrow(vec(t)))(index: u64): t = requires
 }
 
 /// Copies `value` into the element slot at `index`.
-let vec_write(comptime t: type)(values: borrow(mut)(vec(t)))(index: u64)(copy value: t): () = requires(t is copyable) {
+let vec_write<comptime t: type>(values: borrow<mut><vec<t>>)(index: u64)(copy value: t): () = requires(t is copyable) {
   if index >= values.length {
     unsafe {
       raw_trap()
@@ -332,127 +332,127 @@ let vec_write(comptime t: type)(values: borrow(mut)(vec(t)))(index: u64)(copy va
 }
 
 /// Provides inherent vector constructors and mutation operations.
-extend(vec(t)) {
+extend(vec<t>) {
   /// Creates an empty vector with zero capacity.
-  let new(): vec(t) = { vec_new() }
+  let new(): vec<t> = { vec_new() }
   /// Creates an empty vector with storage for `capacity` elements.
-  let with_capacity(capacity: u64): vec(t) = { vec_with_capacity(capacity) }
+  let with_capacity(capacity: u64): vec<t> = { vec_with_capacity(capacity) }
   /// Returns the number of initialized elements.
-  let len(self: borrow(self))(): u64 = { vec_len(self) }
+  let len(self: borrow<self>)(): u64 = { vec_len(self) }
   /// Borrows all initialized elements as a slice.
-  let as_slice(comptime a: access = shared)(self: borrow(a)(self))(): borrow(a)(slice(t)) = {
+  let as_slice<comptime a: access = shared>(self: borrow<a><self>)(): borrow<a><slice<t>> = {
     unsafe {
-      raw_slice(a)(self.pointer, self.length, borrow(a)(self))
+      raw_slice<a>(self.pointer, self.length, borrow<a>(self))
     }
   }
   /// Returns the number of elements that fit without reallocating.
-  let capacity(self: borrow(self))(): u64 = { vec_capacity(self) }
+  let capacity(self: borrow<self>)(): u64 = { vec_capacity(self) }
   /// Borrows the element at `index`, trapping if it is out of bounds.
-  let get(comptime a: access = shared)
-    (self: borrow(a)(self))
-    (index: u64): option(borrow(a)(t)) = {
+  let get<comptime a: access = shared>
+    (self: borrow<a><self>)
+    (index: u64): option<borrow<a><t>> = {
     if index >= self.length {
       option.none
     } else {
       option.some(unsafe {
-        raw_borrow(a)(raw_offset(self.pointer, index), borrow(a)(self))
+        raw_borrow<a>(raw_offset(self.pointer, index), borrow<a>(self))
       })
     }
   }
   /// Borrows the element at `index`, trapping if it is out of bounds.
-  let at(comptime a: access = shared)(self: borrow(a)(self))(index: u64): borrow(a)(t) = {
+  let at<comptime a: access = shared>(self: borrow<a><self>)(index: u64): borrow<a><t> = {
     if index >= self.length {
       unsafe {
         raw_trap()
       }
     }
     unsafe {
-      raw_borrow(a)(raw_offset(self.pointer, index), borrow(a)(self))
+      raw_borrow<a>(raw_offset(self.pointer, index), borrow<a>(self))
     }
   }
   /// Borrows the first element, or returns `none` when empty.
-  let first(comptime a: access = shared)
-    (self: borrow(a)(self))(): option(borrow(a)(t)) = {
-    self.get(a)(0)
+  let first<comptime a: access = shared>
+    (self: borrow<a><self>)(): option<borrow<a><t>> = {
+    self.get<a>(0)
   }
   /// Borrows the last element, or returns `none` when empty.
-  let last(comptime a: access = shared)
-    (self: borrow(a)(self))(): option(borrow(a)(t)) = {
+  let last<comptime a: access = shared>
+    (self: borrow<a><self>)(): option<borrow<a><t>> = {
     let length = self.length
     if length == 0 {
       option.none
     } else {
-      self.get(a)(length - 1)
+      self.get<a>(length - 1)
     }
   }
   /// Borrows the first element accepted by `predicate`.
-  let find(comptime e: effects): with(e)(self: borrow(self))(move predicate: with(e)((borrow(t)): bool)): option(borrow(t)) = {
+  let find<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): option<borrow<t>> = {
     let values = self.as_slice()
     values.find(predicate)
   }
   /// Returns the index of the first element accepted by `predicate`.
-  let position(comptime e: effects): with(e)(self: borrow(self))(move predicate: with(e)((borrow(t)): bool)): option(u64) = {
+  let position<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): option<u64> = {
     let values = self.as_slice()
     values.position(predicate)
   }
   /// Returns whether any element is accepted by `predicate`.
-  let any(comptime e: effects): with(e)(self: borrow(self))(move predicate: with(e)((borrow(t)): bool)): bool = {
+  let any<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): bool = {
     let values = self.as_slice()
     values.any(predicate)
   }
   /// Returns whether every element is accepted by `predicate`.
-  let all(comptime e: effects): with(e)(self: borrow(self))(move predicate: with(e)((borrow(t)): bool)): bool = {
+  let all<comptime e: effects>: with<e>(self: borrow<self>)(move predicate: with<e>((borrow<t>): bool)): bool = {
     let values = self.as_slice()
     values.all(predicate)
   }
   /// Folds elements from left to right into `initial`.
-  let fold(comptime e: effects, comptime accumulator: type): with(e)(self: borrow(self))(move initial: accumulator)(move combine: with(e)((accumulator, borrow(t)): accumulator)): accumulator = {
+  let fold<comptime e: effects, comptime accumulator: type>: with<e>(self: borrow<self>)(move initial: accumulator)(move combine: with<e>((accumulator, borrow<t>): accumulator)): accumulator = {
     let values = self.as_slice()
     values.fold(initial)(combine)
   }
   /// Ensures capacity for at least `additional` more elements.
-  let reserve(self: borrow(mut)(self))(additional: u64): () = { vec_reserve(self)(additional) }
+  let reserve(self: borrow<mut><self>)(additional: u64): () = { vec_reserve(self)(additional) }
   /// Appends `value` to the end of this vector.
-  let push(self: borrow(mut)(self))(value: t): () = { vec_push(self)(value) }
+  let push(self: borrow<mut><self>)(value: t): () = { vec_push(self)(value) }
   /// Replaces the element at `index` and returns the previous element.
-  let replace(self: borrow(mut)(self))(index: u64)(value: t): t = { vec_replace(self)(index)(value) }
+  let replace(self: borrow<mut><self>)(index: u64)(value: t): t = { vec_replace(self)(index)(value) }
   /// Removes and returns the last element, or `None` if empty.
-  let pop(self: borrow(mut)(self))(): option(t) = { vec_pop(self) }
+  let pop(self: borrow<mut><self>)(): option<t> = { vec_pop(self) }
   /// Drops elements from the end until the length is at most `new_length`.
-  let truncate(self: borrow(mut)(self))(new_length: u64): () = { vec_truncate(self)(new_length) }
+  let truncate(self: borrow<mut><self>)(new_length: u64): () = { vec_truncate(self)(new_length) }
   /// Removes all elements from this vector.
-  let clear(self: borrow(mut)(self))(): () = { vec_clear(self) }
+  let clear(self: borrow<mut><self>)(): () = { vec_clear(self) }
   /// Returns whether this vector has no initialized elements.
-  let is_empty(self: borrow(self))(): bool = { vec_is_empty(self) }
+  let is_empty(self: borrow<self>)(): bool = { vec_is_empty(self) }
   /// Removes an element by replacing it with the last element.
-  let swap_remove(self: borrow(mut)(self))(index: u64): t = { vec_swap_remove(self)(index) }
+  let swap_remove(self: borrow<mut><self>)(index: u64): t = { vec_swap_remove(self)(index) }
   /// Swaps the elements at `left` and `right`.
-  let swap(self: borrow(mut)(self))(left: u64, right: u64): () = { vec_swap(self)(left: left, right: right) }
+  let swap(self: borrow<mut><self>)(left: u64, right: u64): () = { vec_swap(self)(left: left, right: right) }
   /// Reverses the initialized elements in place.
-  let reverse(self: borrow(mut)(self))(): () = { vec_reverse(self) }
+  let reverse(self: borrow<mut><self>)(): () = { vec_reverse(self) }
   /// Inserts `value` at `index`, shifting later elements right.
-  let insert(self: borrow(mut)(self))(index: u64)(value: t): () = { vec_insert(self)(index)(value) }
+  let insert(self: borrow<mut><self>)(index: u64)(value: t): () = { vec_insert(self)(index)(value) }
   /// Removes and returns the element at `index`, shifting later elements left.
-  let remove(self: borrow(mut)(self))(index: u64): t = { vec_remove(self)(index) }
+  let remove(self: borrow<mut><self>)(index: u64): t = { vec_remove(self)(index) }
   /// Moves all elements from `other` onto the end of this vector.
-  let append(self: borrow(mut)(self))(other: borrow(mut)(vec(t))): () = { vec_append(self)(other) }
+  let append(self: borrow<mut><self>)(other: borrow<mut><vec<t>>): () = { vec_append(self)(other) }
   /// Replaces this vector with an empty one and returns its previous allocation.
-  let take(self: borrow(mut)(self))(): vec(t) = {
-    let previous = vec(t) { pointer: self.pointer, length: self.length, storage_capacity: self.storage_capacity }
+  let take(self: borrow<mut><self>)(): vec<t> = {
+    let previous = vec<t>{ pointer: self.pointer, length: self.length, storage_capacity: self.storage_capacity }
     self.pointer = vec_allocate(0)
     self.length = 0
     self.storage_capacity = 0
     previous
   }
   /// Reallocates storage so capacity matches the current length.
-  let shrink_to_fit(self: borrow(mut)(self))(): () = { vec_shrink_to_fit(self) }
+  let shrink_to_fit(self: borrow<mut><self>)(): () = { vec_shrink_to_fit(self) }
 }
 
 /// Provides copy-based slice extension and mutation operations.
-extend(vec(t))
+extend(vec<t>)
 (requires: t is copyable) {
   /// Copies every element of `source` onto the end of this vector.
-  let extend_from_slice(self: borrow(mut)(self))(source: borrow(slice(t))): () = {
+  let extend_from_slice(self: borrow<mut><self>)(source: borrow<slice<t>>): () = {
     let additional = source.len()
     vec_reserve(self)(additional)
     if additional > 0 {
@@ -473,74 +473,74 @@ extend(vec(t))
     }
   }
   /// Copies the element at `index` out of this vector.
-  let read(self: borrow(self))(index: u64): t = { vec_read(self)(index) }
+  let read(self: borrow<self>)(index: u64): t = { vec_read(self)(index) }
   /// Copies `value` into the element slot at `index`.
-  let write(self: borrow(mut)(self))(index: u64)(copy value: t): () = { vec_write(self)(index)(value) }
+  let write(self: borrow<mut><self>)(index: u64)(copy value: t): () = { vec_write(self)(index)(value) }
   /// Replaces every initialized element with a copy of `value`.
-  let fill(self: borrow(mut)(self))(copy value: t): () = {
-    let values = self.as_slice(mut)()
+  let fill(self: borrow<mut><self>)(copy value: t): () = {
+    let values = self.as_slice<mut>()
     values.fill(value)
   }
   /// Copies an equally sized source slice into the initialized elements.
-  let copy_from(self: borrow(mut)(self))(source: borrow(slice(t))): () = {
-    let values = self.as_slice(mut)()
+  let copy_from(self: borrow<mut><self>)(source: borrow<slice<t>>): () = {
+    let values = self.as_slice<mut>()
     values.copy_from(source)
   }
   /// Copies an initialized range within this vector with overlap-safe semantics.
-  let copy_within(self: borrow(mut)(self))
+  let copy_within(self: borrow<mut><self>)
     (source_start: u64, source_end: u64, destination_start: u64): () = {
-    let values = self.as_slice(mut)()
+    let values = self.as_slice<mut>()
     values.copy_within(source_start, source_end, destination_start)
   }
 }
 
 /// Owning iterator over a vector.
-pub let vec_into_iter(comptime t: type) = struct {
-  pointer: ptr(mut)(t),
+pub let vec_into_iter<comptime t: type> = struct {
+  pointer: ptr<mut><t>,
   next_index: u64,
   length: u64,
   storage_capacity: u64,
 }
 
 /// Routes bracket access through the source-defined indexing protocol.
-extend(vec(t), index(u64)) {
+extend(vec<t>, index<u64>) {
   let output = t
-  let index(comptime a: access)
-    (self: borrow(a)(self))
-    (key: u64): borrow(a)(t) = {
-    self.at(a)(key)
+  let index<comptime a: access>
+    (self: borrow<a><self>)
+    (key: u64): borrow<a><t> = {
+    self.at<a>(key)
   }
 }
 
 /// Advances an owning vector iterator in source order.
-extend(vec_into_iter(t), iterator) {
-  let item = owned_item(t)
-  let next(comptime r: region)(self: borrow(mut)(r)(self))(): option(t) = {
+extend(vec_into_iter<t>, iterator) {
+  let item = owned_item<t>;
+  let next<comptime r: region>(self: borrow<mut><r><self>)(): option<t> = {
     if self.next_index == self.length {
-      option(t).none
+      option.none
     } else {
       let value = unsafe {
         raw_take(raw_offset(self.pointer, self.next_index))
       }
       self.next_index = self.next_index + 1
-      option(t).some(value)
+      option.some(value)
     }
   }
 }
 
 /// Consumes a vector into an owning iterator.
-extend(vec(t), into_iterator) {
-  let iter = vec_into_iter(t)
-  let into_iter(move self)(): vec_into_iter(t) = {
-    let iterator = vec_into_iter(t) { pointer: self.pointer, next_index: 0, length: self.length, storage_capacity: self.storage_capacity }
+extend(vec<t>, into_iterator) {
+  let iter = vec_into_iter<t>;
+  let into_iter(move self)(): vec_into_iter<t> = {
+    let iterator = vec_into_iter<t>{ pointer: self.pointer, next_index: 0, length: self.length, storage_capacity: self.storage_capacity }
     forget(self)
     iterator
   }
 }
 
 /// Drops elements not yet yielded and releases the transferred vector storage.
-extend(vec_into_iter(t), droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+extend(vec_into_iter<t>, droppable) {
+  let drop(self: borrow<mut><self>)(): () = {
     while { self.next_index < self.length } {
       let item = unsafe {
         raw_take(raw_offset(self.pointer, self.next_index))
@@ -552,9 +552,9 @@ extend(vec_into_iter(t), droppable) {
 }
 
 /// Drops initialized elements and releases vector storage.
-extend(vec(t), droppable) {
+extend(vec<t>, droppable) {
   /// Drops all initialized elements and deallocates storage.
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     let mut index: u64 = 0
     while { index < self.length } {
       let item = unsafe {
@@ -568,23 +568,23 @@ extend(vec(t), droppable) {
 
 /// Rebuilds vector ownership from initialized storage supplied by another
 /// adapter in this package.
-pub(package) let vec_from_raw_parts(comptime t: type): with(core.unsafe.unsafety)(pointer: ptr(mut)(t), length: u64, capacity: u64): vec(t) = {
-  vec(t) { pointer: pointer, length: length, storage_capacity: capacity }
+pub(package) let vec_from_raw_parts<comptime t: type>: with<core.unsafe.unsafety>(pointer: ptr<mut><t>, length: u64, capacity: u64): vec<t> = {
+  vec<t>{ pointer: pointer, length: length, storage_capacity: capacity }
 }
 
 /// Consumes a vector and transfers its allocation to another package adapter.
-pub(package) let vec_into_raw_parts(comptime t: type)
-  (move values: vec(t)): (ptr(mut)(t), u64, u64) = {
+pub(package) let vec_into_raw_parts<comptime t: type>
+  (move values: vec<t>): (ptr<mut><t>, u64, u64) = {
   let parts = (values.pointer, values.length, values.storage_capacity)
   forget(values)
   parts
 }
 
 /// Provides equality-based membership for vectors.
-extend(vec(t))
-(requires: t is copyable && t is core.cmp.eq(t)) {
+extend(vec<t>)
+(requires: t is copyable && t is core.cmp.eq<t>) {
   /// Returns whether this vector contains an element equal to `needle`.
-  let contains(self: borrow(self))(copy needle: t): bool = {
+  let contains(self: borrow<self>)(copy needle: t): bool = {
     let values = self.as_slice()
     values.contains(needle)
   }

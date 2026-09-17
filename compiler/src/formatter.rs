@@ -263,6 +263,7 @@ fn analyze_layout(source: &str, source_layout: &SourceLayout) -> Result<Vec<Line
             || declaration_continuation
                 && matches!(line.first, Some(TokenKind::Colon | TokenKind::Equal));
         let operator_continuation = index != 0
+            && !continues_declaration
             && line.first.is_some()
             && previous_last.as_ref().is_some_and(is_continuation_operator)
             && line.delimiter_indent == 0;
@@ -454,8 +455,8 @@ mod tests {
 
     #[test]
     fn indents_parameter_groups_and_match_arms_as_continuations() {
-        let source = "let apply(comptime e: effects): with(e)\n(action: with(e)((i32): i32))\n(value: i32): i32 = { action(value) }\n\nlet main: (): i32 = {\nmatch true\n{ true -> match false\n{ false -> apply()(42) }\n{ true -> 0 } }\n{ false -> 0 }\n}\n";
-        let expected = "let apply(comptime e: effects): with(e)\n  (action: with(e)((i32): i32))\n  (value: i32): i32 = { action(value) }\n\nlet main: (): i32 = {\n  match true\n    { true -> match false\n      { false -> apply()(42) }\n      { true -> 0 } }\n    { false -> 0 }\n}\n";
+        let source = "let apply<comptime e: effects>: with<e>\n(action: with<e>((i32): i32))\n(value: i32): i32 = { action(value) }\n\nlet main: (): i32 = {\nmatch true\n{ true -> match false\n{ false -> apply()(42) }\n{ true -> 0 } }\n{ false -> 0 }\n}\n";
+        let expected = "let apply<comptime e: effects>: with<e>\n  (action: with<e>((i32): i32))\n  (value: i32): i32 = { action(value) }\n\nlet main: (): i32 = {\n  match true\n    { true -> match false\n      { false -> apply()(42) }\n      { true -> 0 } }\n    { false -> 0 }\n}\n";
         let formatted = format_source(source).expect("format continuations");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -466,8 +467,8 @@ mod tests {
 
     #[test]
     fn formats_delimiters_where_clauses_and_expression_continuations() {
-        let source = "let marker = trait {}\nlet duplicate(comptime t: type)(value: t): t = requires(t is copyable && t is marker) {\nvalue\n}\n\nlet add(\nleft: i32,\nright: i32,\n): i32 = {\nleft +\nright\n}\n\nlet main(): i32 = {\nlet values = [\n40,\n2,\n]\nlet grouped =\n(values[0] + values[1])\nadd(\nvalues[0],\nvalues[1],\n) + grouped - 42\n}\n";
-        let expected = "let marker = trait {}\nlet duplicate(comptime t: type)(value: t): t = requires(t is copyable && t is marker) {\n  value\n}\n\nlet add(\n  left: i32,\n  right: i32,\n): i32 = {\n  left +\n    right\n}\n\nlet main(): i32 = {\n  let values = [\n    40,\n    2,\n  ]\n  let grouped =\n    (values[0] + values[1])\n  add(\n    values[0],\n    values[1],\n  ) + grouped - 42\n}\n";
+        let source = "let marker = trait {}\nlet duplicate<comptime t: type>(value: t): t = requires(t is copyable && t is marker) {\nvalue\n}\n\nlet add(\nleft: i32,\nright: i32,\n): i32 = {\nleft +\nright\n}\n\nlet main(): i32 = {\nlet values = [\n40,\n2,\n]\nlet grouped =\n(values[0] + values[1])\nadd(\nvalues[0],\nvalues[1],\n) + grouped - 42\n}\n";
+        let expected = "let marker = trait {}\nlet duplicate<comptime t: type>(value: t): t = requires(t is copyable && t is marker) {\n  value\n}\n\nlet add(\n  left: i32,\n  right: i32,\n): i32 = {\n  left +\n    right\n}\n\nlet main(): i32 = {\n  let values = [\n    40,\n    2,\n  ]\n  let grouped =\n    (values[0] + values[1])\n  add(\n    values[0],\n    values[1],\n  ) + grouped - 42\n}\n";
         let formatted = format_source(source).expect("format syntax continuations");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -484,8 +485,8 @@ mod tests {
 
     #[test]
     fn preserves_minimal_syntax_contract_tokens_idempotently() {
-        let source = "let marker = trait {}\nlet bounded = trait(requires: self is marker) {\n}\nlet cell(comptime t: type) = struct { value: t }\nextend(cell(t))\n(requires: t is marker) {\n}\nlet guarded(comptime t: type)(value: t): t = requires(t is marker) {\nvalue\n}\ntest(\"minimal contracts\") {\nlet value = 1\n}\n";
-        let expected = "let marker = trait {}\nlet bounded = trait(requires: self is marker) {\n}\nlet cell(comptime t: type) = struct { value: t }\nextend(cell(t))\n(requires: t is marker) {\n}\nlet guarded(comptime t: type)(value: t): t = requires(t is marker) {\n  value\n}\ntest(\"minimal contracts\") {\n  let value = 1\n}\n";
+        let source = "let marker = trait {}\nlet bounded = trait(requires: self is marker) {\n}\nlet cell<comptime t: type> = struct { value: t }\nextend(cell(t))\n(requires: t is marker) {\n}\nlet guarded<comptime t: type>(value: t): t = requires(t is marker) {\nvalue\n}\ntest(\"minimal contracts\") {\nlet value = 1\n}\n";
+        let expected = "let marker = trait {}\nlet bounded = trait(requires: self is marker) {\n}\nlet cell<comptime t: type> = struct { value: t }\nextend(cell(t))\n(requires: t is marker) {\n}\nlet guarded<comptime t: type>(value: t): t = requires(t is marker) {\n  value\n}\ntest(\"minimal contracts\") {\n  let value = 1\n}\n";
         let formatted = format_source(source).expect("format minimal syntax contracts");
         assert_eq!(formatted, expected);
         assert_eq!(

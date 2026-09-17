@@ -7,8 +7,8 @@ let owned_item = core.iter.owned_item
 let once = struct { done: bool }
 
 extend(once, iterator) {
-  let item = owned_item(i32)
-  let next(comptime r: region)(self: borrow(mut)(r)(self))(): option(i32) = {
+  let item = owned_item<i32>;
+  let next<comptime r: region>(self: borrow<mut><r><self>)(): option<i32> = {
     if self.done {
       none
     } else {
@@ -23,7 +23,7 @@ extend(once, into_iterator) {
   let into_iter(move self)(): once = { self }}
 
 let main(): i32 = {
-  for once { done: false } { value ->
+  for once{ done: false } { value ->
     break(value)
   }
   0

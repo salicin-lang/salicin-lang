@@ -65,7 +65,7 @@ test_registration =
 A test registration cannot have an attribute or visibility. Its string must be
 non-empty, and the trailing block is the test body. `test` remains an ordinary
 identifier outside this top-level form. The edition-owned
-`pub let test(comptime name: string)(move body: with(core.error.throwing(core.string.string))((): ())): () = builtin()`
+`pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()`
 declaration validates the static name and body contract.
 
 ### 2.0.1 Declaration and guard forms
@@ -75,7 +75,7 @@ These three spellings occupy different grammatical categories:
 - `test("name") { ... }` is a declaration form backed by the source-visible
   `core.test` contract above. Its metadata name is consumed by syntax and its
   body has type
-  `with(core.error.throwing(core.string.string))((): ())`.
+  `with<core.error.throwing<core.string.string>>((): ())`.
 - `extend(pattern, ...) { ... }` is an implementation declaration. Its
   optional `(requires: condition)` entry is a compile-time `bool` header
   parameter; `extend` itself has no fake function declaration in `core`.
@@ -333,14 +333,14 @@ corresponding `extend` function or language item.
 An associated type projection equality follows the trait constraint whose
 evidence owns that projection. A generic associated constructor equation
 declares its local binders on the projection, for example
-`t is iterator && t.item(comptime r: region) == borrow(r)(i32)`.
+`t is iterator && t.item<comptime r: region> == borrow(r)(i32)`.
 
 An extension requirement group is evaluated after the target pattern binds
 its compile-time parameters. A function applies the same compiler-owned
 `requires` guard to its body:
 
 ```sc fragment
-let duplicate(comptime t: type)(value: t): (t, t) = requires(t is copyable) {
+let duplicate<comptime t: type>(value: t): (t, t) = requires(t is copyable) {
   (value, value)
 }
 ```
@@ -385,9 +385,9 @@ Trait requirements, effect operations, and user opaque types remain
 bodyless declarations rather than builtin definitions.
 
 The root `core` module also contains the public overloads
-`pub let foreign(comptime abi: abi): never = builtin()` and
-`pub let foreign(comptime abi: abi, comptime symbol: string): never = builtin()`, plus
-`pub let test(comptime name: string)(move body: with(core.error.throwing(core.string.string))((): ())): () = builtin()`
+`pub let foreign<comptime abi: abi>: never = builtin()` and
+`pub let foreign<comptime abi: abi, comptime symbol: string>: never = builtin()`, plus
+`pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()`
 and the generic `requires(condition, body)` contract. They authorize the
 `foreign(c, ...)` initializer, top-level test registration, and function-body
 guard respectively;
@@ -459,10 +459,10 @@ edition's validated `array` type form; other constructor arguments remain type e
 `static_usize_expression` admits literals, static names, checked operators, and calls to eligible
 ordinary pure functions.
 
-`with(E)(F)` accepts only a callable `F` and applies one normalized effect row
-to the complete multi-group call. `with()((a): b)` is equivalent to the pure
+`with<E>(F)` accepts only a callable `F` and applies one normalized effect row
+to the complete multi-group call. `with<>((a): b)` is equivalent to the pure
 callable `(a): b`. An effectful declaration uses a `:` callable-type/body
-boundary before `with(E)`; the final `:` introduces the callable result.
+boundary before `with<E>`; the final `:` introduces the callable result.
 Pure declarations retain the compact `let f(a): b` form and do not require
 that boundary.
 

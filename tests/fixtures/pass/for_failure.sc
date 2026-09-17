@@ -8,9 +8,9 @@ let owned_item = core.iter.owned_item
 let counter = struct { current: i32, end: i32 }
 
 extend(counter, iterator) {
-  let item = owned_item(i32)
+  let item = owned_item<i32>;
 
-  let next(comptime r: region)(self: borrow(mut)(r)(self))(): option(i32) = {
+  let next<comptime r: region>(self: borrow<mut><r><self>)(): option<i32> = {
     if self.current < self.end {
       let value = self.current
       self.current = self.current + 1
@@ -29,22 +29,22 @@ extend(counter, into_iterator) {
   }
 }
 
-let check: with(throwing(bool))(value: i32): () = {
+let check: with<throwing<bool>>(value: i32): () = {
   if value < 0 { throw(true) } else { () }
 }
 
-let visit: with(throwing(bool))(start: i32): i32 = {
-  for counter { current: start, end: 4 } { value ->
+let visit: with<throwing<bool>>(start: i32): i32 = {
+  for counter{ current: start, end: 4 } { value ->
     check(value)
   }
   42
 }
 
 let main(): i32 = {
-  let success: result(bool)(i32) = try {
+  let success: result<bool><i32> = try {
     visit(0)
   }
-  let failure: result(bool)(i32) = try {
+  let failure: result<bool><i32> = try {
     visit(-1)
   }
   (success ?? 0) + (failure ?? 0)

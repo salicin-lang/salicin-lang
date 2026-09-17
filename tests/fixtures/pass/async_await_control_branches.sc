@@ -9,14 +9,14 @@ let step = struct {
 extend(step, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
     if self.polled {
-      poll(i32).ready(self.value)
+      poll<i32>.ready(self.value)
     } else {
       self.polled = true
-      poll(i32).pending
+      poll<i32>.pending
     }
   }
 }
@@ -29,24 +29,24 @@ let other_step = struct {
 extend(other_step, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
     if self.polled {
-      poll(i32).ready(self.value)
+      poll<i32>.ready(self.value)
     } else {
       self.polled = true
-      poll(i32).pending
+      poll<i32>.pending
     }
   }
 }
 
 let step(value: i32): step = {
-  step { polled: false, value: value }
+  step{ polled: false, value: value }
 }
 
 let other_step(value: i32): other_step = {
-  other_step { polled: false, value: value }
+  other_step{ polled: false, value: value }
 }
 
 let choice = enum {

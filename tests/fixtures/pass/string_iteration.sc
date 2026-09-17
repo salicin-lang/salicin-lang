@@ -1,5 +1,5 @@
 let scalar_is(
-  value: core.option(core.string.unicode_scalar),
+  value: core.option<core.string.unicode_scalar>,
   expected: u32,
 ): bool = {
   match value

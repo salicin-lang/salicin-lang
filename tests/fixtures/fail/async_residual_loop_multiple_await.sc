@@ -12,15 +12,15 @@ let step = struct {
 extend(step, future(())) {
   let output = bool
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(bool) = {
-    poll(bool).ready(self.done)
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<bool> = {
+    poll<bool>.ready(self.done)
   }
 }
 
-let make_step: with(ask)(): step = {
-  step { done: ask.ask() }
+let make_step: with<ask>(): step = {
+  step{ done: ask.ask() }
 }
 
 let main(): i32 = {

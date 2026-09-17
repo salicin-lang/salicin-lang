@@ -7,7 +7,7 @@ let child() = {
 
 let main(): i32 = {
   let value = 41
-  let reference: borrow(i32) = borrow(value)
+  let reference: borrow<i32> = borrow(value)
   let mut future = async {
     let awaited = await child()
     reference + awaited

@@ -9,7 +9,7 @@ let main(): i32 = {
   let finish = { (move payload: payload)(tail: i32) ->
     base + take(payload) + tail
   }
-  let pending = finish(payload { value: 40 })
+  let pending = finish(payload{ value: 40 })
   pending(1)
 }
 

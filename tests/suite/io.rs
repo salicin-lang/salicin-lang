@@ -34,14 +34,14 @@ let main(): i32 = { 42 }"#,
 fn explicit_close_failure_invalidates_before_the_single_host_attempt() {
     let source = r#"let close_calls(): i32 = foreign(c, "close_calls")
 
-let abandon: with(std.io.io)
+let abandon: with<std.io.io>
   (path: borrow(core.string.str)): () = {
   match std.io.open(path)(std.io.open_options.read_only())
     { ok(value) -> () }
     { err(_) -> () }
 }
 
-let main: with(std.io.io)(): i32 = {
+let main: with<std.io.io>(): i32 = {
   let path: string = "/dev/null"
   let view = path.as_str()
   let input = match std.io.open(view)(std.io.open_options.read_only())
@@ -78,7 +78,7 @@ fn native_console_and_process_contracts_preserve_bytes_and_utf8() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "io.sc",
-        r#"let main: with(std.io.io)(): i32 = {
+        r#"let main: with<std.io.io>(): i32 = {
   let argument = match std.io.argument_bytes(1)
     { some(value) -> value }
     { none -> return(1) }
@@ -147,7 +147,7 @@ fn native_io_helpers_report_eof_and_broken_pipe() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "io-errors.sc",
-        r#"let main: with(std.io.io)(): i32 = {
+        r#"let main: with<std.io.io>(): i32 = {
   let mode = match std.io.argument_bytes(1)
     { some(value) -> value }
     { none -> return(1) }
@@ -165,7 +165,7 @@ fn native_io_helpers_report_eof_and_broken_pipe() {
       }
       { ok(_) -> 3 }
   } else {
-    let mut bytes = alloc.vec.vec(u8).with_capacity(1048576)
+    let mut bytes = alloc.vec.vec<u8>.with_capacity(1048576)
     let mut index: u64 = 0
     while { index < 1048576 } {
       bytes.push(120)
@@ -214,7 +214,7 @@ fn native_file_owners_support_options_seek_flush_limits_and_close() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "files.sc",
-        r#"let main: with(std.io.io)(): i32 = {
+        r#"let main: with<std.io.io>(): i32 = {
   let mut arguments = match std.io.arguments()
     { ok(value) -> value }
     { err(_) -> return(1) }
@@ -270,7 +270,7 @@ fn native_file_owners_support_options_seek_flush_limits_and_close() {
         { _ -> return(18) }
     }
     { ok(_) -> return(19) }
-  let mut nul_bytes = alloc.vec.vec(u8).new()
+  let mut nul_bytes = alloc.vec.vec<u8>.new()
   nul_bytes.push(97)
   nul_bytes.push(0)
   nul_bytes.push(98)

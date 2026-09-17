@@ -1,13 +1,13 @@
 let vec = alloc.vec.vec
 
-let resource = struct { counter: ptr(mut)(i32), value: i32 }
+let resource = struct { counter: ptr<mut><i32>, value: i32 }
 
 extend(resource) {
-  let read(self: borrow(self))(): i32 = { self.value }
+  let read(self: borrow<self>)(): i32 = { self.value }
 }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -16,21 +16,21 @@ extend(resource, droppable) {
 
 let main(): i32 = {
   let counter = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   unsafe {
     *counter = 0
   }
   let mut score = 0
   do {
-    let mut empty: vec(resource) = vec(resource).new()
+    let mut empty: vec<resource> = vec<resource>.new()
     empty.reverse()
 
-    let mut values: vec(resource) = vec(resource).new()
-    values.push(resource { counter: counter, value: 1 })
-    values.push(resource { counter: counter, value: 2 })
-    values.push(resource { counter: counter, value: 3 })
-    values.push(resource { counter: counter, value: 4 })
+    let mut values: vec<resource> = vec<resource>.new()
+    values.push(resource{ counter: counter, value: 1 })
+    values.push(resource{ counter: counter, value: 2 })
+    values.push(resource{ counter: counter, value: 3 })
+    values.push(resource{ counter: counter, value: 4 })
     values.swap(0, 3)
     values.swap(1, 1)
     values.reverse()
@@ -61,7 +61,7 @@ let main(): i32 = {
     *counter
   }
   unsafe {
-    raw_dealloc(counter, size_of(i32), align_of(i32))
+    raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
   if drops == 4 { score + drops } else { 0 }
 }

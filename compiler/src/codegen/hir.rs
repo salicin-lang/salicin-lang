@@ -248,7 +248,7 @@ impl fmt::Display for Ty {
                 write!(
                     f,
                     "{}({pointee})",
-                    if *mutable { "ptr(mut)" } else { "ptr" }
+                    if *mutable { "ptr<mut>" } else { "ptr" }
                 )
             }
             Self::Reference {
@@ -256,7 +256,7 @@ impl fmt::Display for Ty {
                 mutable,
                 region,
             } => {
-                let qualifier = if *mutable { "borrow(mut)" } else { "borrow" };
+                let qualifier = if *mutable { "borrow<mut>" } else { "borrow" };
                 if let Some(region) = region {
                     write!(
                         f,
@@ -268,8 +268,8 @@ impl fmt::Display for Ty {
                 }
             }
             Self::Str => f.write_str("str"),
-            Self::Slice(element) => write!(f, "slice({element})"),
-            Self::Array(element, length) => write!(f, "array({element})({length})"),
+            Self::Slice(element) => write!(f, "slice<{element}>"),
+            Self::Array(element, length) => write!(f, "array<{element}><{length}>"),
             Self::Struct(name) | Self::Enum(name) => f.write_str(name),
             Self::Never => f.write_str("never"),
             Self::Error => f.write_str("<error>"),
@@ -296,10 +296,10 @@ impl fmt::Display for Ty {
                     effects.insert(0, "unsafety".to_owned());
                 }
                 if let Some(error) = &function.failure_error {
-                    effects.push(format!("throwing({error})"));
+                    effects.push(format!("throwing<{error}>"));
                 }
                 if !effects.is_empty() {
-                    write!(f, " with({})", effects.join(", "))?;
+                    write!(f, " with<{}>", effects.join(", "))?;
                 }
                 Ok(())
             }
@@ -322,12 +322,12 @@ impl fmt::Display for Ty {
                     effects.insert(0, "unsafety".to_owned());
                 }
                 if let Some(error) = failure_error {
-                    effects.push(format!("throwing({error})"));
+                    effects.push(format!("throwing<{error}>"));
                 }
                 if effects.is_empty() {
                     f.write_str("pure")
                 } else {
-                    write!(f, "with({})", effects.join(", "))
+                    write!(f, "with<{}>", effects.join(", "))
                 }
             }
         }

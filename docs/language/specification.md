@@ -135,13 +135,13 @@ test("arithmetic") {
 test target during compilation; it is not an ordinary runtime call and does
 not introduce a user binding. The form is authorized by the private edition
 contract
-`pub let test(comptime name: string)(move body: with(core.error.throwing(core.string.string))((): ())): () = builtin()`.
+`pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()`.
 The name must be a non-empty
 string literal and is used in diagnostics. Registrations are private to their
 source package and cannot have visibility or attributes.
 
 The body is evaluated as a parameterless function returning `()` with the
-exact `core.error.throwing(core.string.string)` effect. Normal return passes;
+exact `core.error.throwing<core.string.string>` effect. Normal return passes;
 `core.error.throw(message)` and the `std.test` assertion helpers transfer an
 owned `string` message to the registration handler. Boolean-returning bodies
 are rejected. All other
@@ -181,7 +181,7 @@ let optimization = sort(1) {
 
 let empty = sort(1) {}
 
-let select(comptime mode: optimization)(value: i32): i32 = { value }
+let select<comptime mode: optimization>(value: i32): i32 = { value }
 let answer = select(optimization.release)(42)
 ```
 
@@ -227,8 +227,8 @@ Compiler-owned types and type constructors use the same form:
 
 ```sc fragment
 pub let i32: type = builtin()
-pub let array(comptime t: type)(comptime l: usize): type = builtin()
-pub let size_of(comptime t: type): u64 = builtin()
+pub let array<comptime t: type><comptime l: usize>: type = builtin()
+pub let size_of<comptime t: type>: u64 = builtin()
 ```
 
 `builtin()` is private to `core`. User functions, types, extension methods,
@@ -240,10 +240,10 @@ implementations.
 The same root module publicly declares the other syntax-owned contracts:
 
 ```sc fragment
-pub let foreign(comptime abi: abi): never = builtin()
-pub let foreign(comptime abi: abi, comptime symbol: string): never = builtin()
-pub let test(comptime name: string)(move body: with(core.error.throwing(core.string.string))((): ())): () = builtin()
-pub let requires(comptime condition: bool, comptime e: effects, comptime result: type): with(e)(move body: with(e)((): result)): result = builtin()
+pub let foreign<comptime abi: abi>: never = builtin()
+pub let foreign<comptime abi: abi, comptime symbol: string>: never = builtin()
+pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()
+pub let requires<comptime condition: bool, comptime e: effects, comptime result: type>: with<e>(move body: with<e>((): result)): result = builtin()
 ```
 
 `foreign(c, ...)` passes the finite `abi.c` value (using the contextual short spelling `c`) as
@@ -280,8 +280,8 @@ Arrays, borrows, raw pointers, tuples, function types, structs, and enums are ty
 Compile-time parameters occur in their own parameter groups:
 
 ```sc fragment
-let identity(comptime t: type)(value: t): t = { value }
-let first(comptime t: type, comptime l: usize)(values: array(t)(l)): t = { values[0] }
+let identity<comptime t: type>(value: t): t = { value }
+let first<comptime t: type, comptime l: usize>(values: array(t)(l)): t = { values[0] }
 ```
 
 Supported compile-time parameter sorts include:
@@ -307,8 +307,8 @@ underconstrained inference are distinct errors.
 Each parenthesized compile-time group is a distinct constructor layer:
 
 ```sc fragment
-pub let array(comptime t: type)(comptime l: usize): type = core.memory.array(t)(l)
-let result(comptime error: type)(comptime value: type) = enum {
+pub let array<comptime t: type><comptime l: usize>: type = core.memory.array(t)(l)
+let result<comptime error: type><comptime value: type> = enum {
   ok(value)
   err(error)
 }
@@ -320,8 +320,8 @@ A type alias is transparent and preserves the identity of its target:
 
 ```sc fragment
 let scalar = i32
-let family(comptime t: type): type = core.option(t)
-let constructor: (comptime t: type): type = core.option
+let family<comptime t: type>: type = core.option<t>
+let constructor: <comptime t: type>: type = core.option
 ```
 
 Alias expansion must terminate. Cyclic aliases and arity or sort mismatches are rejected.
@@ -343,9 +343,9 @@ fixed 16,384-step and 128-active-call limits; an equal repeated call is an
 immediate cycle error.
 
 ```sc fragment
-let next(comptime value: usize): usize = { value + 1 }
+let next<comptime value: usize>: usize = { value + 1 }
 
-let buffer(comptime element: type)(comptime length: usize) = struct {
+let buffer<comptime element: type><comptime length: usize> = struct {
   values: array(element)(next(length))
 }
 ```
@@ -373,16 +373,16 @@ against the compilation target rather than the compiler host.
 The safe reference constructor is:
 
 ```sc fragment
-borrow(comptime a: access = shared)(comptime r: region)(comptime t: type)
+borrow<comptime a: access = shared><comptime r: region><comptime t: type>
 ```
 
 When omitted, access is `shared` and the region is inferred. The common forms are `borrow(t)`,
-`borrow(mut)(t)`, and `borrow(r)(t)`.
+`borrow<mut><t>`, and `borrow<r><t>`.
 
 The raw pointer family is:
 
 ```sc fragment
-ptr(comptime a: access = shared)(comptime t: type)
+ptr<comptime a: access = shared><comptime t: type>
 ```
 
 Raw pointer dereference, arithmetic that can leave an allocation, initialization, and ownership
@@ -391,7 +391,7 @@ reconstruction require an `unsafe` boundary.
 The fixed-size array family is:
 
 ```sc fragment
-array(comptime t: type)(comptime l: usize)
+array<comptime t: type><comptime l: usize>
 ```
 
 Array length is part of the type. Array indexing requires `usize`, evaluates
@@ -403,15 +403,15 @@ Array and string literals are target-typed construction protocols declared in
 implementation whose associated `output` matches the expected type:
 
 ```sc fragment
-pub let array_literal(comptime element: type) = trait {
+pub let array_literal<comptime element: type> = trait {
   let output: type
-  let from_array_literal(comptime length: usize)
+  let from_array_literal<comptime length: usize>
     (move values: array(element)(length)): output
 }
 
 pub let string_literal = trait {
   let output: type
-  let from_string_literal(comptime length: usize)
+  let from_string_literal<comptime length: usize>
     (move utf8: array(u8)(length)): output
 }
 ```
@@ -419,7 +419,7 @@ pub let string_literal = trait {
 Without an expected type, array literals default to their fixed-size backing
 array and string literals default to `string`. Core provides implementations
 for fixed arrays and slices; a slice result is always used through
-`borrow(slice(T))`, because `slice(T)` is dynamically sized. User-defined
+`borrow(slice<T>)`, because `slice<T>` is dynamically sized. User-defined
 nominal types may implement either trait. Implementations receive the exact
 literal length as a compile-time argument.
 
@@ -430,7 +430,7 @@ chooses one of four delimiters, `()`, `[]`, `<>`, or `{}`, and application must 
 delimiter at that group position:
 
 ```sc fragment
-let map(comptime t: type, comptime u: type)(value: t)(transform: (t): u): u = {
+let map<comptime t: type, comptime u: type>(value: t)(transform: (t): u): u = {
   transform(value)
 }
 ```
@@ -507,7 +507,7 @@ if condition then {
 A function type records each runtime group's delimiter, its result, and effect row:
 
 ```sc fragment
-let apply(comptime t: type, comptime u: type)(value: t)(function: (t): u): u = {
+let apply<comptime t: type, comptime u: type>(value: t)(function: (t): u): u = {
   function(value)
 }
 ```
@@ -530,12 +530,12 @@ Every runtime parameter has a passing mode:
 - `copy` duplicates a `copyable` value;
 - `move` transfers ownership of a `movable` value;
 - `borrow` creates a shared loan;
-- `borrow(mut)` creates an exclusive loan.
+- `borrow<mut>` creates an exclusive loan.
 
 ```sc fragment
-let consume(comptime t: type)(move value: t): () = { ... }
-let inspect(comptime t: type)(value: borrow(t)): () = { ... }
-let update(comptime t: type)(value: borrow(mut)(t)): () = { ... }
+let consume<comptime t: type>(move value: t): () = { ... }
+let inspect<comptime t: type>(value: borrow(t)): () = { ... }
+let update<comptime t: type>(value: borrow<mut><t>): () = { ... }
 ```
 
 An omitted mode uses the type's default: `copyable` values are copied and resource values are moved.
@@ -564,7 +564,7 @@ initialization cleanup.
 An `comptime a: access` parameter selects shared or mutable borrowing without defining two APIs:
 
 ```sc fragment
-let view(comptime a: access)(comptime t: type)(value: borrow(a)(t)): borrow(a)(t) = {
+let view<comptime a: access><comptime t: type>(value: borrow(a)(t)): borrow(a)(t) = {
   value
 }
 ```
@@ -610,7 +610,7 @@ padding rules determine `size_of` and `align_of`.
 Enums are nominal closed sums:
 
 ```sc fragment
-let option(comptime t: type) = enum {
+let option<comptime t: type> = enum {
   none
   some(t)
 }
@@ -625,9 +625,9 @@ type. A match over a closed type must be exhaustive.
 
 ```sc fragment
 match value {
-  option(i32).some(number) -> number
+  option<i32>.some(number) -> number
 } {
-  option(i32).none -> 0
+  option<i32>.none -> 0
 }
 ```
 
@@ -643,8 +643,8 @@ A trait declares associated types and required or default methods:
 
 ```sc fragment
 let iterator = trait {
-  let item(comptime r: region): type
-  let next(comptime r: region)(self: borrow(mut)(r)(self)): core.option(item(r))
+  let item<comptime r: region>: type
+  let next<comptime r: region>(self: borrow<mut><r><self>): core.option<item<r>>
 }
 ```
 
@@ -677,7 +677,7 @@ implements its relation to `constraint`:
 pub let constraint: sort(2)
 
 pub let is(comptime right: sort(2)) = trait(comptime self: sort(2)) {
-  let is(comptime left: self, comptime right: right): bool
+  let is<comptime left: self, comptime right: right>: bool
 }
 
 extend(type, is(constraint)) {
@@ -699,7 +699,7 @@ extend(cell(t), copyable)
 A function applies the compiler-owned `requires` guard to its body:
 
 ```sc fragment
-let duplicate(comptime t: type)(value: t): (t, t) = requires(t is copyable) {
+let duplicate<comptime t: type>(value: t): (t, t) = requires(t is copyable) {
   (value, value)
 }
 ```
@@ -710,7 +710,7 @@ under the query's proof. A false concrete query rejects the instantiation.
 Associated type equalities are written as separate projection constraints:
 
 ```sc fragment
-let produce(comptime t: type)(value: t): i32 =
+let produce<comptime t: type>(value: t): i32 =
 requires(t is produce && t.item == i32) {
   value.produce()
 }
@@ -727,8 +727,8 @@ Projection constraints can equate a generic associated constructor with a
 type expression by declaring alpha-renamable binders on the projection:
 
 ```sc fragment
-let borrow_item(comptime t: type)(value: t): () =
-requires(t is iterator && t.item(comptime r: region) == borrow(r)(i32)) { ... }
+let borrow_item<comptime t: type>(value: t): () =
+requires(t is iterator && t.item<comptime r: region> == borrow(r)(i32)) { ... }
 ```
 
 The binder groups and sorts must exactly match the associated declaration. The right side may use
@@ -763,20 +763,20 @@ let absolute = if value < 0 {
 The principal source contracts in `core.control` are:
 
 ```sc fragment
-pub let if(comptime e: effects, comptime t: type): with(e)
+pub let if<comptime e: effects, comptime t: type>: with<e>
   (condition: bool)
-  (move then: with(e)((): t))
-  (move else: with(e)((): t)): t
+  (move then: with<e>((): t))
+  (move else: with<e>((): t)): t
 
-pub let while(comptime e: effects): with(e)
-  (move condition: with(e)((): bool))
-  (move do: with(e)((): ())): ()
+pub let while<comptime e: effects>: with<e>
+  (move condition: with<e>((): bool))
+  (move do: with<e>((): ())): ()
 ```
 
 The surface forms supply their branch, condition, and body blocks as lazy callable groups. The
 canonical declarations for `do`, `loop`, `match`, and `for` are validated in the same way.
 `break`, `continue`, and `return` resolve to the canonical `core.control` functions, which introduce
-the corresponding `loop_exit(t)`, `iteration_skip`, or `function_exit(t)` effect before the enclosing construct
+the corresponding `loop_exit<t>`, `iteration_skip`, or `function_exit<t>` effect before the enclosing construct
 handles it. A same-named user declaration cannot redirect any of these forms. The complete
 contracts and their lowering obligations are specified in [Control-flow contracts](control-flow.md).
 
@@ -807,36 +807,36 @@ let counter = effect {
 }
 ```
 
-`with(E)(F)` is the effect-row type constructor for a callable `F`. In a
+`with<E>(F)` is the effect-row type constructor for a callable `F`. In a
 declaration, the colon after the name and compile-time parameter groups is the
 callable-type/body boundary; the final colon introduces its result:
 
 ```sc fragment
-let read: with(counter)(): i32 = {
+let read: with<counter>(): i32 = {
   counter.next()
 }
 
-let apply(comptime e: effects): with(e)
-  (action: with(e)((i32): i32))
+let apply<comptime e: effects>: with<e>
+  (action: with<e>((i32): i32))
   (value: i32): i32 = {
   action(value)
 }
 ```
 
-The corresponding function value type is `with(counter)((): i32)`.
-`with()((a): b)` is equivalent to the pure callable `(a): b`, and one row
-always covers the complete multi-group invocation. `with(E)` cannot wrap an
+The corresponding function value type is `with<counter>((): i32)`.
+`with<>((a): b)` is equivalent to the pure callable `(a): b`, and one row
+always covers the complete multi-group invocation. `with<E>` cannot wrap an
 ordinary result type.
 
 An operation transfers control to the nearest matching handler. A resumable clause receives a
 single-use continuation. Resuming supplies the operation result and eventually returns the
 handler's answer type. Abandoning the continuation cleans its captured state exactly once.
 
-`throwing(error)` is the standard abortive error effect. `throw(error)` invokes its `raise`
+`throwing<error>` is the standard abortive error effect. `throw(error)` invokes its `raise`
 operation. `try { ... }` handles that effect and materializes `core.result(error)(value)`.
 
 ```sc fragment
-let parse: with(throwing(parse_error))(): i32 = { ... }
+let parse: with<throwing<parse_error>>(): i32 = { ... }
 
 let result = try {
   parse()
@@ -844,9 +844,9 @@ let result = try {
 ```
 
 `effect` and `effects` are deliberately distinct sorts. A value of `effect` is exactly one nominal
-identity, such as `counter` or `throwing(parse_error)`; this is the sort used by
-`handle(comptime self: effect)`. A value of `effects` is a normalized zero-or-more row: `pure` is the empty
-row, and `with(...)` combines identities and row variables without order or duplicates.
+identity, such as `counter` or `throwing<parse_error>`; this is the sort used by
+`handle<comptime self: effect>`. A value of `effects` is a normalized zero-or-more row: `pure` is the empty
+row, and `with<...>` combines identities and row variables without order or duplicates.
 
 Handling one identity removes it from the row and preserves every other requirement. Parameters
 such as `comptime e: effects` are compile-time row variables and are instantiated before runtime lowering.
@@ -868,16 +868,16 @@ polling that completed future again traps. The completed state no longer drops t
 captures. An unhandled `unsafety` requirement is inferred from the body and attached to the
 generated future's `poll` contract; creating the future remains pure, while polling requires an
 unsafe handler. A body without suspension may retain a custom residual effect,
-including standard `throwing(error)`, with by-value `copyable`, move-only,
+including standard `throwing<error>`, with by-value `copyable`, move-only,
 shared-borrow, or mutable-borrow captures.
 Borrow captures store the reference value in future state and retain their
 ordinary loan until that state is consumed or dropped. Polling inside the
 corresponding handler specializes the generated poll and resume source before
 runtime lowering. Move-only capture fields transfer once and completed future
-cleanup does not drop them again. A residual `throwing(error)` poll may be
+cleanup does not drop them again. A residual `throwing<error>` poll may be
 handled by `try { future.poll() }`; both successful ready and thrown paths
 preserve capture cleanup. A suspended body may also retain a custom residual
-effect, including `throwing(error)`, when its first segment ends in one `await`.
+effect, including `throwing<error>`, when its first segment ends in one `await`.
 It may either return that value directly or run a finite linear sequence of
 continuations and awaits after ready. Every segment may capture by-value
 `copyable` or move-only values, or retain a region-checked shared or mutable
@@ -938,11 +938,11 @@ Postfix `value!` invokes the validated source trait `core.flow.raise`:
 pub let raise = trait {
   let output: type
   let error: type
-  let raise: with(core.error.throwing(error))(move self): output
+  let raise: with<core.error.throwing<error>>(move self): output
 }
 ```
 
-It propagates the stored error through the active `throwing(error)` effect. Postfix `value!!` invokes
+It propagates the stored error through the active `throwing<error>` effect. Postfix `value!!` invokes
 the separately validated `core.flow.unwrap` contract:
 
 ```sc fragment
@@ -1011,7 +1011,7 @@ Salicin guarantees left-to-right evaluation for:
 An expression is evaluated at most once unless its source construct explicitly repeats it, such as
 a loop condition.
 
-Recoverable failures use `throwing(error)` or another declared effect. Contract violations without a
+Recoverable failures use `throwing<error>` or another declared effect. Contract violations without a
 recoverable API, including bounds failures and forced unwrap failures, trap and terminate the
 process. Cleanup is deterministic for ordinary and handled exits; a process trap is not a
 recoverable unwind mechanism.
@@ -1033,13 +1033,13 @@ target mapping and cross-language evidence are specified by the
 ```sc fragment
 let read(
   fd: i32,
-  buffer: ptr(mut)(u8),
+  buffer: ptr<mut><u8>,
   comptime count: usize,
 ): isize = foreign(c)
 
 let c_read(
   fd: i32,
-  buffer: ptr(mut)(u8),
+  buffer: ptr<mut><u8>,
   comptime count: usize,
 ): isize = foreign(c, "read")
 ```

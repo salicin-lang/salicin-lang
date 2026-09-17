@@ -1,7 +1,7 @@
 let vec = alloc.vec.vec
 
 let valid_conversion(): bool = {
-  let mut bytes = vec(u8).with_capacity(8)
+  let mut bytes = vec<u8>.with_capacity(8)
   bytes.push(65)
   bytes.push(230)
   bytes.push(159)
@@ -23,7 +23,7 @@ let valid_conversion(): bool = {
 }
 
 let invalid_conversion(): bool = {
-  let mut bytes = vec(u8).with_capacity(7)
+  let mut bytes = vec<u8>.with_capacity(7)
   bytes.push(65)
   bytes.push(226)
   bytes.push(40)
@@ -44,7 +44,7 @@ let invalid_conversion(): bool = {
 }
 
 let truncated_conversion(): bool = {
-  let mut bytes = vec(u8).new()
+  let mut bytes = vec<u8>.new()
   bytes.push(65)
   bytes.push(226)
   bytes.push(130)
@@ -56,7 +56,7 @@ let truncated_conversion(): bool = {
 }
 
 let edge_conversion(): bool = {
-  let empty = vec(u8).new()
+  let empty = vec<u8>.new()
   let empty_ok = match alloc.string.string_from_utf8(empty)
     { ok(text) -> text.is_empty() }
     { err(_) -> false }

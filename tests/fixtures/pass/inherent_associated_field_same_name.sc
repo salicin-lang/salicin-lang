@@ -5,7 +5,7 @@ extend(answer) {
 }
 
 let main(): i32 = {
-  let value = answer { answer: 40 }
+  let value = answer{ answer: 40 }
   value.answer + answer.answer
 }
 

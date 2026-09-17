@@ -1,18 +1,18 @@
 let result = core.result
 let throwing = core.error.throwing
 
-let read: with(throwing(bool))(fail: bool): i32 = {
+let read: with<throwing<bool>>(fail: bool): i32 = {
   if fail { throw(true) } else { 40 }
 }
 
 let main(): i32 = {
-  let propagated: result(bool)(i32) = try {
+  let propagated: result<bool><i32> = try {
     read(true) + 2
   }
-  let thrown: result(bool)(i32) = try {
+  let thrown: result<bool><i32> = try {
     throw(true)
   }
-  let success: result(bool)(i32) = try {
+  let success: result<bool><i32> = try {
     read(false) + 2
   }
   let propagation_ok = match propagated

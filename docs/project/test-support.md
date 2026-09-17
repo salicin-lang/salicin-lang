@@ -17,7 +17,7 @@ test("parses a count") {
 ```
 
 Its body has the conceptual callable type
-`with(core.error.throwing(core.string.string))((): ())`. Normal return of `()`
+`with<core.error.throwing<core.string.string>>((): ())`. Normal return of `()`
 passes. A failure throws an owned UTF-8 `string`, normally through a
 `std.test` assertion or `std.test.fail`. Every other effect must be handled
 inside the body; the registration boundary does not grant I/O, allocation,
@@ -35,7 +35,7 @@ let outcome = enum {
 }
 
 let run(
-  move action: with(core.error.throwing(string))((): ()),
+  move action: with<core.error.throwing<string>>((): ()),
 ): outcome
 ```
 
@@ -74,7 +74,7 @@ Failure messages are deterministic:
 The generated runner invokes registrations one at a time in source order.
 For each registration it:
 
-1. enters a fresh `throwing(string)` handler;
+1. enters a fresh `throwing<string>` handler;
 2. calls the body exactly once;
 3. lets return or effect transfer run the body's cleanup exactly once;
 4. converts the result to one `outcome`;
@@ -154,7 +154,7 @@ for invalid CLI, package, or target selection.
 ## Diagnostics and Migration
 
 - A test body whose normal result is not `()` receives a source diagnostic.
-- An effect other than `core.error.throwing(core.string.string)` that escapes the body is diagnosed
+- An effect other than `core.error.throwing<core.string.string>` that escapes the body is diagnosed
   at the registration.
 - A failure is reported with the source registration name and exact message.
   Compiler-generated `$test$...` names are never printed.

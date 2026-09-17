@@ -13,4 +13,4 @@ let classify(event: event): i32 = { match event
     { event.empty -> 0 }
 }
 
-let main(): i32 = { classify(event.value( value: payload { value: 42 } )) }
+let main(): i32 = { classify(event.value( value: payload{ value: 42 } )) }

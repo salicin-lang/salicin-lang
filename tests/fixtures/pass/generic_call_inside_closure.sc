@@ -1,6 +1,6 @@
-let identity(comptime t: type)(move value: t): t = { value }
+let identity<comptime t: type>(move value: t): t = { value }
 
-let through_closure(comptime t: type)(move value: t): t = {
+let through_closure<comptime t: type>(move value: t): t = {
   let apply = { (item: t) -> identity(t)(item) }
   apply(value)
 }

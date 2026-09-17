@@ -3,7 +3,7 @@ let bundle = struct { left: resource, right: resource }
 let choice = enum { some(bundle, resource), none }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     let trapped = 1 / self.value
   }
 }
@@ -11,8 +11,8 @@ extend(resource, droppable) {
 let consume(move value: resource): () = { () }
 
 let main(): i32 = { match choice.some(
-    bundle { left: resource { value: 1 }, right: resource { value: 0 } },
-    resource { value: 1 }
+    bundle{ left: resource{ value: 1 }, right: resource{ value: 0 } },
+    resource{ value: 1 }
   )
     { some(bundle(left: left, right: _), _) -> do {
         consume(left)

@@ -5,9 +5,9 @@ extend(number, copyable) {}
 let consume(move number: number): i32 = { number.value }
 
 let main(): i32 = {
-  let mut number = number { value: 20 }
+  let mut number = number{ value: 20 }
   let first = consume(number)
-  number = number { value: 22 }
+  number = number{ value: 22 }
   first + consume(number)
 }
 

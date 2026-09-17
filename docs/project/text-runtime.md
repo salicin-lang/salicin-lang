@@ -51,7 +51,7 @@ runtime literals.
 ## Borrowed views and regions
 
 `string.as_str` returns a shared `borrow(r)(str)` tied to the receiver borrow
-region `r`. Checked UTF-8 conversion from `borrow(r)(slice(u8))` returns a
+region `r`. Checked UTF-8 conversion from `borrow(r)(slice<u8>)` returns a
 view with the same region. A successful subview is tied to its source view's
 region. No safe conversion from a mutable byte slice yields a mutable text
 view; callers retain the byte loan while the shared view exists.

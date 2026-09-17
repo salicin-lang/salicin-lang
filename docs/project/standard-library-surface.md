@@ -51,10 +51,10 @@ a callable. Public embedded-library names therefore follow this vocabulary:
 | value or variant | state or value noun/adjective | `pending`, `ready`, `none` |
 | sort | the classified concept | `type`, `effect`, `effects`, `parameters` |
 
-The standard effects are named `throwing(error)`, `suspension`, `unsafety`,
-`loop_exit(t)`, `iteration_skip`, and `function_exit(t)`. The enclosing module
+The standard effects are named `throwing<error>`, `suspension`, `unsafety`,
+`loop_exit<t>`, `iteration_skip`, and `function_exit<t>`. The enclosing module
 and use position provide any further qualification, for example
-`with(core.error.throwing(e))`. Names such as `async_effect`,
+`with<core.error.throwing<e>>`. Names such as `async_effect`,
 `iterator_trait`, and `message_type` are rejected in embedded public library
 source. This restriction is a standard-library quality gate, not a restriction
 on ordinary user declarations.
@@ -111,9 +111,9 @@ added when a declaration moves.
 
 | Public module | Responsibility |
 | --- | --- |
-| `alloc.boxed` | the owning `box(t)` allocation |
-| `alloc.vec` | `vec(t)` and consuming vector iteration |
-| `alloc.string` | ownership-preserving `vec(u8)`/`string` conversion and conversion errors |
+| `alloc.boxed` | the owning `box<t>` allocation |
+| `alloc.vec` | `vec<t>` and consuming vector iteration |
+| `alloc.string` | ownership-preserving `vec<u8>`/`string` conversion and conversion errors |
 | `alloc.fmt` | `string_writer` and allocation-backed formatting helpers |
 
 `alloc.raw` remains package-private. Safe source cannot call the allocator or
@@ -200,14 +200,14 @@ Public APIs use these modes consistently:
 | Intent | Receiver or parameter | Result |
 | --- | --- | --- |
 | inspect a value | `borrow(t)` | copied scalar or a borrow tied to the receiver |
-| mutate in place | `borrow(mut)(t)` | `()` or a borrow tied to the exclusive receiver |
+| mutate in place | `borrow<mut><t>` | `()` or a borrow tied to the exclusive receiver |
 | transfer ownership | `move value: t` | a new owner or ownership-preserving error |
 | accept cheap reusable input | automatic passing, with an explicit `copyable` bound when required | never silently consumes a non-copy value |
-| expose immutable contiguous data | `slice(t)` or `str` | shared borrow only |
-| expose mutable contiguous data | `slice(mut)(t)` | exclusive borrow; never for UTF-8 bytes |
-| create a resource | host operation `with(io)` | `result(io_error)(owner)` |
-| operate on a resource | borrow the owner `with(io)` | result value; no hidden ownership transfer |
-| close a resource | `move` the owner `with(io)` | `result(io_error)(())` |
+| expose immutable contiguous data | `slice<t>` or `str` | shared borrow only |
+| expose mutable contiguous data | `slice<mut>(t)` | exclusive borrow; never for UTF-8 bytes |
+| create a resource | host operation `with<io>` | `result(io_error)(owner)` |
+| operate on a resource | borrow the owner `with<io>` | result value; no hidden ownership transfer |
+| close a resource | `move` the owner `with<io>` | `result(io_error)(())` |
 
 Borrowed views retain the source loan. An iterator yielding borrowed elements
 cannot outlive that loan. Mutable iteration keeps one exclusive source loan
@@ -216,7 +216,7 @@ mutable UTF-8 bytes.
 
 A consuming conversion that can fail returns the original owner in its error
 when doing so is necessary to avoid data loss. `string.from_utf8(move bytes)`
-therefore returns a `from_utf8_error` that owns the rejected `vec(u8)`.
+therefore returns a `from_utf8_error` that owns the rejected `vec<u8>`.
 
 Resource destruction is deterministic. `file.close(move self)` attempts one
 close, consumes the logical handle even on error, and reports the error.
@@ -231,9 +231,9 @@ condition.
 | Form | Use |
 | --- | --- |
 | plain value | total operation for all valid inputs |
-| `option(t)` | ordinary absence with no useful error detail, such as `get`, `first`, `last`, `find`, or `pop` |
+| `option<t>` | ordinary absence with no useful error detail, such as `get`, `first`, `last`, `find`, or `pop` |
 | `result(e)(t)` | malformed external data, checked conversion, allocation-independent parsing, or recoverable host failure |
-| `with(effects)` | observable capability or control effect; never a substitute for a recoverable error value |
+| `with<effects>` | observable capability or control effect; never a substitute for a recoverable error value |
 | trap | violated checked precondition, impossible safe invariant, fixed arithmetic trap, invalid allocation layout, or allocation failure |
 
 Every trapping collection operation has a nearby checked alternative:
@@ -286,7 +286,7 @@ The detailed Edition 2026 rules are fixed by the accepted
 boundary may install its host handler. Naming a user effect `io`, declaring a
 same-shaped operation, or forging a file value grants no authority.
 
-The entry function may be pure or declare `with(io)`. The native launcher
+The entry function may be pure or declare `with<io>`. The native launcher
 handles only the validated standard `io` identity and converts an unhandled
 entry failure into a deterministic nonzero exit. Library functions remain
 effect-polymorphic where possible and acquire no host authority by import.
@@ -314,15 +314,15 @@ canonical identity in the layer and definition module that owns it.
 
 | Area | Required surface |
 | --- | --- |
-| `option(t)` | `is_some`, `is_none`, `as_ref`, `as_ref(mut)`, `map`, `and_then`, `unwrap_or`, `unwrap_or_else`, `ok_or` |
+| `option<t>` | `is_some`, `is_none`, `as_ref`, `as_ref(mut)`, `map`, `and_then`, `unwrap_or`, `unwrap_or_else`, `ok_or` |
 | `result(e)(t)` | `is_ok`, `is_err`, `as_ref`, `as_ref(mut)`, `map`, `map_error`, `and_then`, `unwrap_or`, `unwrap_or_else`, `ok`, `err` |
 | integers | `min`, `max`, `clamp`, sign queries, checked width conversions, decimal parse, decimal display |
 | `str` | byte `len`, `is_empty`, `as_bytes`, equality, boundary check, checked slice, prefix/suffix, find, byte iteration, scalar iteration |
 | `unicode_scalar` | checked construction from `u32`, `to_u32`, UTF-8 encoded length, encode into caller storage |
 | `string` | `new`, capacity construction, `from_str`, `from_utf8`, `as_str`, `push`, `push_str`, truncate at boundary, search, clear, byte recovery |
 | `array(t)(n)` | `len`, `is_empty`, `get`, `at`, `first`, `last`, shared/mutable slice, shared/mutable iteration, swap, reverse, copy/fill where bounded |
-| `slice(t)` | the same non-owning access and iteration vocabulary as arrays, plus checked subslicing |
-| `vec(t)` | array/slice vocabulary where applicable, capacity, push/pop, insert/remove, append, truncate, extend from slice, consuming iteration |
+| `slice<t>` | the same non-owning access and iteration vocabulary as arrays, plus checked subslicing |
+| `vec<t>` | array/slice vocabulary where applicable, capacity, push/pop, insert/remove, append, truncate, extend from slice, consuming iteration |
 | iteration | `find`, `position`, `contains`, `any`, `all`, and `fold`, with early-exit cleanup and forwarded effects |
 | formatting | `parse`, `display`, `debug`, byte/text `writer`, `string_writer`, and allocation-backed `to_string` |
 | byte I/O | `reader.read`, `reader.read_exact`, `writer.write`, `writer.write_all`, and `writer.flush` |

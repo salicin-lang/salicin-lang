@@ -2,18 +2,18 @@ let resource = struct { value: i32 }
 let holder = struct { resource: resource, tail: resource }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     let trapped = 1 / self.value
   }
 }
 
-let replace(target: borrow(mut)(holder))(move replacement: resource): () = {
+let replace(target: borrow<mut><holder>)(move replacement: resource): () = {
   target.resource = replacement
 }
 
 let main(): i32 = {
-  let mut holder = holder { resource: resource { value: 0 }, tail: resource { value: 1 } }
-  replace(holder)(resource { value: 1 })
+  let mut holder = holder{ resource: resource{ value: 0 }, tail: resource{ value: 1 } }
+  replace(holder)(resource{ value: 1 })
   0
 }
 

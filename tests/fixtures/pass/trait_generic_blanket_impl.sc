@@ -1,21 +1,21 @@
 let read = trait {
-  let read(self: borrow(self))(): i32
+  let read(self: borrow<self>)(): i32
 }
 
 let leaf = struct { value: i32 }
 
 extend(leaf, read) {
-  let read(self: borrow(self))(): i32 = { self.value }
+  let read(self: borrow<self>)(): i32 = { self.value }
 }
 
-let cell(comptime t: type) = struct { value: t }
+let cell<comptime t: type> = struct { value: t }
 
 extend(cell(t), read)
 (requires: t is read) {
-  let read(self: borrow(self))(): i32 = { self.value.read() }
+  let read(self: borrow<self>)(): i32 = { self.value.read() }
 }
 
-let read_cell(comptime t: type)(cell: borrow(cell(t))): i32
+let read_cell<comptime t: type>(cell: borrow<cell<t>>): i32
 = requires(t is read) { cell.read() }
 
 let value = trait {
@@ -29,10 +29,10 @@ extend(cell(t), value) {
 }
 
 let main(): i32 = {
-  let cell = cell { value: leaf { value: 42 } }
+  let cell = cell{ value: leaf{ value: 42 } }
   let read = read_cell(cell)
   let leaf = cell.take()
-  let wrapped = cell { value: leaf }
+  let wrapped = cell{ value: leaf }
   wrapped.read() + read - 42
 }
 

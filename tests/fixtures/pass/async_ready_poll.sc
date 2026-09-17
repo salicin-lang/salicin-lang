@@ -2,10 +2,10 @@ let poll = core.async.poll
 let future = core.async.future
 let unsafety = core.unsafe.unsafety
 
-let resource = struct { counter: ptr(mut)(i32) }
+let resource = struct { counter: ptr<mut><i32> }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -14,15 +14,15 @@ extend(resource, droppable) {
 
 let consume(move resource: resource): () = { () }
 
-let allocate: with(unsafety)(): ptr(mut)(i32) = {
+let allocate: with<unsafety>(): ptr<mut><i32> = {
   unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
 }
 
-let release: with(unsafety)(counter: ptr(mut)(i32)): () = {
+let release: with<unsafety>(counter: ptr<mut><i32>): () = {
   unsafe {
-    raw_dealloc(counter, size_of(i32), align_of(i32))
+    raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
 }
 
@@ -31,7 +31,7 @@ let main(): i32 = {
     let counter = allocate()
     *counter = 0
 
-    let resource = resource { counter: counter }
+    let resource = resource{ counter: counter }
     let mut future = async {
       consume(resource)
     }

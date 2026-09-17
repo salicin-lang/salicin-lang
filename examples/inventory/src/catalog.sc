@@ -2,7 +2,7 @@ let vec = alloc.vec.vec
 
 /// Collection of owned products.
 pub let inventory = struct {
-  pub products: vec(model.product),
+  pub products: vec<model.product>,
 }
 
 /// Consumes a collection and summarizes all entries through their trait API.
@@ -18,10 +18,10 @@ pub let summary = struct {
 
 extend(inventory) {
   let new(): inventory = {
-    inventory { products: vec(model.product).new() }
+    inventory{ products: vec<model.product>.new() }
   }
 
-  let push(self: borrow(mut)(self))(move product: model.product): () = {
+  let push(self: borrow<mut><self>)(move product: model.product): () = {
     self.products.push(product)
   }
 }
@@ -38,12 +38,12 @@ extend(inventory, summarize) {
       total = total + product.value()
       name_bytes = name_bytes + product.name_bytes()
     }
-    summary { count: count, total: total, name_bytes: name_bytes }
+    summary{ count: count, total: total, name_bytes: name_bytes }
   }
 }
 
 test("inventory combines arrays slices vectors and Unicode") {
-  let expected_name_bytes: array(u64)(2) = [1, 3]
+  let expected_name_bytes: array<u64><2> = [1, 3]
   let byte_view = expected_name_bytes.as_slice()
   let first_bytes: u64 = match byte_view.first()
     { some(value) -> value }

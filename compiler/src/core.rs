@@ -107,25 +107,25 @@ pub(crate) fn incremental_sources(
 
 #[cfg(test)]
 const TEST_ASSIGNMENT_OPS: &str = r#"
-pub let add_assign(comptime rhs: type) = trait { let add_assign(self: borrow(mut)(self))
+pub let add_assign<comptime rhs: type> = trait { let add_assign(self: borrow<mut><self>)
   (rhs: rhs): () }
-pub let sub_assign(comptime rhs: type) = trait { let sub_assign(self: borrow(mut)(self))
+pub let sub_assign<comptime rhs: type> = trait { let sub_assign(self: borrow<mut><self>)
   (rhs: rhs): () }
-pub let mul_assign(comptime rhs: type) = trait { let mul_assign(self: borrow(mut)(self))
+pub let mul_assign<comptime rhs: type> = trait { let mul_assign(self: borrow<mut><self>)
   (rhs: rhs): () }
-pub let div_assign(comptime rhs: type) = trait { let div_assign(self: borrow(mut)(self))
+pub let div_assign<comptime rhs: type> = trait { let div_assign(self: borrow<mut><self>)
   (rhs: rhs): () }
-pub let rem_assign(comptime rhs: type) = trait { let rem_assign(self: borrow(mut)(self))
+pub let rem_assign<comptime rhs: type> = trait { let rem_assign(self: borrow<mut><self>)
   (rhs: rhs): () }
-pub let bit_and_assign(comptime rhs: type) = trait { let bit_and_assign(self: borrow(mut)(self))
+pub let bit_and_assign<comptime rhs: type> = trait { let bit_and_assign(self: borrow<mut><self>)
   (rhs: rhs): () }
-pub let bit_or_assign(comptime rhs: type) = trait { let bit_or_assign(self: borrow(mut)(self))
+pub let bit_or_assign<comptime rhs: type> = trait { let bit_or_assign(self: borrow<mut><self>)
   (rhs: rhs): () }
-pub let bit_xor_assign(comptime rhs: type) = trait { let bit_xor_assign(self: borrow(mut)(self))
+pub let bit_xor_assign<comptime rhs: type> = trait { let bit_xor_assign(self: borrow<mut><self>)
   (rhs: rhs): () }
-pub let shl_assign(comptime rhs: type) = trait { let shl_assign(self: borrow(mut)(self))
+pub let shl_assign<comptime rhs: type> = trait { let shl_assign(self: borrow<mut><self>)
   (rhs: rhs): () }
-pub let shr_assign(comptime rhs: type) = trait { let shr_assign(self: borrow(mut)(self))
+pub let shr_assign<comptime rhs: type> = trait { let shr_assign(self: borrow<mut><self>)
   (rhs: rhs): () }
 "#;
 
@@ -133,18 +133,18 @@ pub let shr_assign(comptime rhs: type) = trait { let shr_assign(self: borrow(mut
 const TEST_CHAIN_OPS: &str = r#"
 pub let chain = trait {
   let item: type
-  let rebind(comptime value: type): type
+  let rebind<comptime value: type>: type
 
-  let chain(comptime e: effects, comptime u: type)
+  let chain<comptime e: effects, comptime u: type>
     (self)
-    (transform: (item): u with(e)): rebind(u) with(e)
+    (transform: (item): u with<e>): rebind(u) with<e>
 }
 pub let coalesce = trait {
   let item: type
 
-  let coalesce(comptime e: effects)
+  let coalesce<comptime e: effects>
     (self)
-    (fallback: (): item with(e)): item with(e)
+    (fallback: (): item with<e>): item with<e>
 }
 pub let unwrap = trait {
   let output: type
@@ -153,7 +153,7 @@ pub let unwrap = trait {
 pub let raise = trait {
   let output: type
   let error: type
-  let raise(move self): output with(throwing(error))
+  let raise(move self): output with<throwing<error>>
 }
 "#;
 
@@ -1261,7 +1261,7 @@ impl CoreBundle {
         // Most contract tests isolate one prelude/operator declaration. Keep
         // independently tested capability modules present in those fixtures.
         let source = format!(
-            "{source}\n{TEST_ASSIGNMENT_OPS}\n{TEST_CHAIN_OPS}\n{EDITION_2026_EFFECT}\n{EDITION_2026_ERROR}\n{EDITION_2026_UNSAFE}\n{EDITION_2026_ASYNC}\n{EDITION_2026_PRIMITIVES}\n{EDITION_2026_SORTS}\n{EDITION_2026_FOREIGN}\n{EDITION_2026_PASSING}\n{EDITION_2026_BORROW}\n{EDITION_2026_CONTROL}\n{EDITION_2026_ITER}\n{EDITION_2026_MEMORY}\nlet builtin() = builtin()\npub let test(comptime name: string)(move body: with(core.error.throwing(core.string.string))((): ())): () = builtin()\npub let requires(comptime condition: bool, comptime e: effects, comptime result: type): with(e)(move body: with(e)((): result)): result = builtin()"
+            "{source}\n{TEST_ASSIGNMENT_OPS}\n{TEST_CHAIN_OPS}\n{EDITION_2026_EFFECT}\n{EDITION_2026_ERROR}\n{EDITION_2026_UNSAFE}\n{EDITION_2026_ASYNC}\n{EDITION_2026_PRIMITIVES}\n{EDITION_2026_SORTS}\n{EDITION_2026_FOREIGN}\n{EDITION_2026_PASSING}\n{EDITION_2026_BORROW}\n{EDITION_2026_CONTROL}\n{EDITION_2026_ITER}\n{EDITION_2026_MEMORY}\nlet builtin() = builtin()\npub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()\npub let requires<comptime condition: bool, comptime e: effects, comptime result: type>: with<e>(move body: with<e>((): result)): result = builtin()"
         );
         let mut program = parser::parse(&source).map_err(|error| {
             CoreBundleError::new(
@@ -1563,6 +1563,7 @@ pub const fn embedded_iter_source(edition: Edition) -> &'static str {
 
 fn validate_program(edition: Edition, program: &Program) -> Result<LangItems, CoreBundleError> {
     let mut diagnostics = crate::standard::naming_diagnostics(program, "core");
+    diagnostics.extend(crate::standard::delimiter_diagnostics(program, "core"));
 
     if program.items.len() != program.item_visibilities.len()
         || program.items.len() != program.item_origins.len()
@@ -1990,7 +1991,7 @@ fn validate_constraint_query_contract(program: &Program, diagnostics: &mut Vec<S
     );
     if !valid {
         diagnostics.push(
-            "compile-time constraint query must have shape `extend(type, is(constraint)) { let is(comptime left: type, comptime right: constraint): bool = builtin() }`"
+            "compile-time constraint query must have shape `extend(type, is(constraint)) { let is<comptime left: type, comptime right: constraint>: bool = builtin() }`"
                 .to_owned(),
         );
     }
@@ -2226,7 +2227,7 @@ fn validate_defer_support(function: &Function, diagnostics: &mut Vec<String>) {
         && function.body.is_none();
     if !valid {
         diagnostics.push(
-            "compiler-owned support function `defer` must have shape `pub let defer(comptime e: effects)(move action: (): () with(e)): () with(e) = builtin()`"
+            "compiler-owned support function `defer` must have shape `pub let defer<comptime e: effects>(move action: (): () with<e>): () with<e> = builtin()`"
                 .to_owned(),
         );
     }
@@ -2455,7 +2456,7 @@ fn validate_item_shape(kind: LangItemKind, item: &Item, diagnostics: &mut Vec<St
                 && definition.values.is_empty();
             if !valid {
                 diagnostics.push(
-                    "lang item `continuation` must have shape `pub let continuation(comptime input: type, comptime output: type): type`"
+                    "lang item `continuation` must have shape `pub let continuation<comptime input: type, comptime output: type>: type`"
                         .to_owned(),
                 );
             }
@@ -2470,7 +2471,7 @@ fn validate_item_shape(kind: LangItemKind, item: &Item, diagnostics: &mut Vec<St
                 && definition.values.is_empty();
             if !valid {
                 diagnostics.push(
-                    "lang item `effect_callable` must have shape `pub let effect_callable(comptime input: type, comptime output: type, comptime answer: type): type`"
+                    "lang item `effect_callable` must have shape `pub let effect_callable<comptime input: type, comptime output: type, comptime answer: type>: type`"
                         .to_owned(),
                 );
             }
@@ -2583,7 +2584,7 @@ fn validate_parameter_modifier(name: &str, function: &Function, diagnostics: &mu
         && function.body.is_none();
     if !valid {
         diagnostics.push(format!(
-            "parameter modifier `{name}` must have shape `pub let {name}(comptime p: parameters): parameters`"
+            "parameter modifier `{name}` must have shape `pub let {name}<comptime p: parameters>: parameters`"
         ));
     }
 }
@@ -2667,13 +2668,13 @@ fn validate_syntax_contract(
     if !valid {
         let shape = match kind {
             LangItemKind::Foreign => {
-                "pub let foreign(comptime abi: abi): never = builtin()` or `pub let foreign(comptime abi: abi, comptime symbol: string): never = builtin()"
+                "pub let foreign<comptime abi: abi>: never = builtin()` or `pub let foreign<comptime abi: abi, comptime symbol: string>: never = builtin()"
             }
             LangItemKind::Test => {
-                "pub let test(comptime name: string)(move body: with(core.error.throwing(core.string.string))((): ())): () = builtin()"
+                "pub let test<comptime name: string>(move body: with<core.error.throwing<core.string.string>>((): ())): () = builtin()"
             }
             LangItemKind::Requires => {
-                "pub let requires(comptime condition: bool, comptime e: effects, comptime result: type): with(e)(move body: with(e)((): result)): result = builtin()"
+                "pub let requires<comptime condition: bool, comptime e: effects, comptime result: type>: with<e>(move body: with<e>((): result)): result = builtin()"
             }
             _ => unreachable!(),
         };
@@ -2745,7 +2746,7 @@ fn validate_borrow_type_form(definition: &TypeFormDef, diagnostics: &mut Vec<Str
         definition.compile_groups == borrow_compile_groups() && definition.values.is_empty();
     if !valid {
         diagnostics.push(
-            "lang item `borrow` type form must have shape `pub let borrow(comptime a: access = shared)(comptime r: region)(comptime t: type): type`"
+            "lang item `borrow` type form must have shape `pub let borrow<comptime a: access = shared><comptime r: region><comptime t: type>: type`"
                 .to_owned(),
         );
     }
@@ -2768,7 +2769,7 @@ fn validate_borrow_value_form(function: &Function, diagnostics: &mut Vec<String>
         );
     if !valid {
         diagnostics.push(
-            "lang item `borrow` value form must have shape `pub let borrow(comptime a: access = shared)(comptime r: region)(comptime t: type)(value: t): borrow(a)(r)(t)`"
+            "lang item `borrow` value form must have shape `pub let borrow<comptime a: access = shared><comptime r: region><comptime t: type>(value: t): borrow<a><r><t>`"
                 .to_owned(),
         );
     }
@@ -2779,7 +2780,7 @@ fn validate_pointer_type_form(definition: &TypeFormDef, diagnostics: &mut Vec<St
         definition.compile_groups == pointer_compile_groups() && definition.values.is_empty();
     if !valid {
         diagnostics.push(
-            "lang item `ptr` type form must have shape `pub let ptr(comptime a: access = shared)(comptime t: type): type`"
+            "lang item `ptr` type form must have shape `pub let ptr<comptime a: access = shared><comptime t: type>: type`"
                 .to_owned(),
         );
     }
@@ -2791,7 +2792,7 @@ fn validate_array_type_form(definition: &TypeFormDef, diagnostics: &mut Vec<Stri
         && definition.values.is_empty();
     if !valid {
         diagnostics.push(
-            "lang item `array` type form must have shape `pub let array(comptime t: type)(comptime l: usize): type`"
+            "lang item `array` type form must have shape `pub let array<comptime t: type><comptime l: usize>: type`"
                 .to_owned(),
         );
     }
@@ -2802,7 +2803,7 @@ fn validate_slice_type_form(definition: &TypeFormDef, diagnostics: &mut Vec<Stri
         && definition.values.is_empty();
     if !valid {
         diagnostics.push(
-            "lang item `slice` type form must have shape `pub let slice(comptime t: type): type`"
+            "lang item `slice` type form must have shape `pub let slice<comptime t: type>: type`"
                 .to_owned(),
         );
     }
@@ -2829,7 +2830,7 @@ fn validate_pointer_value_form(function: &Function, diagnostics: &mut Vec<String
         );
     if !valid {
         diagnostics.push(
-            "lang item `ptr` value form must have shape `pub let ptr(comptime a: access = shared)(comptime t: type)(value: borrow(a)(t)): ptr(a)(t)`"
+            "lang item `ptr` value form must have shape `pub let ptr<comptime a: access = shared><comptime t: type>(value: borrow<a><t>): ptr<a><t>`"
                 .to_owned(),
         );
     }
@@ -2845,7 +2846,7 @@ fn validate_layout_query(kind: LangItemKind, function: &Function, diagnostics: &
         && function.body.is_none();
     if !valid {
         diagnostics.push(format!(
-            "lang item `{name}` must have shape `pub let {name}(comptime t: type): u64`"
+            "lang item `{name}` must have shape `pub let {name}<comptime t: type>: u64`"
         ));
     }
 }
@@ -2867,7 +2868,7 @@ fn validate_assignment_operator(
         );
     if !valid {
         diagnostics.push(format!(
-            "lang item `{kind}` must have shape `pub let {kind}(comptime rhs: type) = trait {{ let {method}(self: borrow(mut)(self))(rhs: rhs): () }}`"
+            "lang item `{kind}` must have shape `pub let {kind}<comptime rhs: type> = trait {{ let {method}(self: borrow<mut><self>)(rhs: rhs): () }}`"
         ));
     }
 }
@@ -2910,7 +2911,7 @@ fn validate_iterator(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `iterator` must declare `item(r: region): type` and `next(r: region)(self: borrow(mut)(r)(self))(): option(item(r))`"
+            "lang item `iterator` must declare `item<r: region>: type` and `next<r: region>(self: borrow<mut><r><self>)(): option<item<r>>`"
                 .to_owned(),
         );
     }
@@ -2990,7 +2991,7 @@ fn validate_index(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `index` must have shape `pub let index(comptime key: type) = trait { let output: type; let index(comptime a: access)(self: borrow(a)(self))(key: key): borrow(a)(output) }`"
+            "lang item `index` must have shape `pub let index<comptime key: type> = trait { let output: type; let index<comptime a: access>(self: borrow(a)(self))(key: key): borrow(a)(output) }`"
                 .to_owned(),
         );
     }
@@ -3076,7 +3077,7 @@ fn validate_chain(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `chain` must declare `item`, `rebind(value: type): type`, and `chain(e: effects, u: type) (self) (transform: (item): u with(e)): rebind(u) with(e)`"
+            "lang item `chain` must declare `item`, `rebind(value: type): type`, and `chain(e: effects, u: type) (self) (transform: (item): u with<e>): rebind(u) with<e>`"
                 .to_owned(),
         );
     }
@@ -3124,7 +3125,7 @@ fn validate_coalesce(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `coalesce` must declare `item` and `coalesce(e: effects) (self) (fallback: (): item with(e)): item with(e)`"
+            "lang item `coalesce` must declare `item` and `coalesce(e: effects) (self) (fallback: (): item with<e>): item with<e>`"
                 .to_owned(),
         );
     }
@@ -3221,7 +3222,7 @@ fn validate_raise(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `raise` must declare `output`, `error`, and `raise(move self): output with(throwing(error))`"
+            "lang item `raise` must declare `output`, `error`, and `raise(move self): output with<throwing<error>>`"
                 .to_owned(),
         );
     }
@@ -3283,7 +3284,7 @@ fn validate_effect(
         let shape = match kind {
             LangItemKind::UnsafeEffect => "pub let unsafety = effect {}",
             LangItemKind::ThrowsEffect => {
-                "pub let throwing(comptime error: type) = effect { let raise(move error: error): never }"
+                "pub let throwing<comptime error: type> = effect { let raise(move error: error): never }"
             }
             LangItemKind::AsyncEffect => "pub let async = effect { let suspend(): () }",
             _ => unreachable!(),
@@ -3351,11 +3352,11 @@ fn validate_control_effect(
     if !valid {
         let shape = match kind {
             LangItemKind::BreakEffect => {
-                "pub let break(comptime t: type) = effect { let exit(move value: t): never }"
+                "pub let break<comptime t: type> = effect { let exit(move value: t): never }"
             }
             LangItemKind::ContinueEffect => "pub let continue = effect { let next(): never }",
             LangItemKind::ReturnEffect => {
-                "pub let return(comptime t: type) = effect { let exit(move value: t): never }"
+                "pub let return<comptime t: type> = effect { let exit(move value: t): never }"
             }
             _ => unreachable!(),
         };
@@ -3918,7 +3919,7 @@ fn validate_handle(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `handle` must have shape `pub let handle = trait(comptime self: effect) { let clauses(comptime value: type, comptime answer: type): parameters; let handle(comptime value: type, comptime answer: type, comptime rest: effects) ...clauses(value, answer) (move action: (): value with(self, rest)): answer with(rest) }`"
+            "lang item `handle` must have shape `pub let handle = trait<comptime self: effect> { let clauses<comptime value: type, comptime answer: type>: parameters; let handle<comptime value: type, comptime answer: type, comptime rest: effects> ...clauses(value, answer) (move action: (): value with<self, rest>): answer with<rest> }`"
                 .to_owned(),
         );
     }
@@ -4007,7 +4008,7 @@ fn validate_option(definition: &EnumDef, diagnostics: &mut Vec<String>) {
     ];
     if definition.compile_groups != expected_groups || definition.variants != expected_variants {
         diagnostics.push(
-            "lang item `option` must have shape `pub let option(comptime t: type) = enum { some(t), none }`"
+            "lang item `option` must have shape `pub let option<comptime t: type> = enum { some(t), none }`"
                 .to_owned(),
         );
     }
@@ -4021,7 +4022,7 @@ fn validate_result(definition: &EnumDef, diagnostics: &mut Vec<String>) {
     ];
     if definition.compile_groups != expected_groups || definition.variants != expected_variants {
         diagnostics.push(
-            "lang item `result` must have shape `pub let result(comptime e: type)(comptime t: type) = enum { ok(t), err(e) }`"
+            "lang item `result` must have shape `pub let result<comptime e: type><comptime t: type> = enum { ok(t), err(e) }`"
                 .to_owned(),
         );
     }
@@ -4038,7 +4039,7 @@ fn validate_attempt(definition: &EnumDef, diagnostics: &mut Vec<String>) {
     ];
     if definition.compile_groups != expected_groups || definition.variants != expected_variants {
         diagnostics.push(
-            "lang item `attempt` must have shape `pub let attempt(comptime input: type)(comptime output: type) = enum { hit(output), miss(input) }`"
+            "lang item `attempt` must have shape `pub let attempt<comptime input: type><comptime output: type> = enum { hit(output), miss(input) }`"
                 .to_owned(),
         );
     }
@@ -4074,7 +4075,7 @@ fn validate_poll(definition: &EnumDef, diagnostics: &mut Vec<String>) {
             ]
     {
         diagnostics.push(
-            "lang item `poll` must have shape `pub let poll(comptime t: type) = enum { pending, ready(t) }`"
+            "lang item `poll` must have shape `pub let poll<comptime t: type> = enum { pending, ready(t) }`"
                 .to_owned(),
         );
     }
@@ -4125,7 +4126,7 @@ pub(crate) fn copy_trait_has_required_shape(definition: &TraitDef) -> bool {
 fn validate_drop(definition: &TraitDef, diagnostics: &mut Vec<String>) {
     if !drop_trait_has_required_shape(definition) {
         diagnostics.push(
-            "lang item `droppable` must have shape `pub let droppable = trait { let drop(self: borrow(mut)(self))(): () }`"
+            "lang item `droppable` must have shape `pub let droppable = trait { let drop(self: borrow<mut><self>)(): () }`"
                 .to_owned(),
         );
     }
@@ -4184,7 +4185,7 @@ fn validate_future(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `future` must declare `output` and `poll(r: region)(self: borrow(mut)(r)(self))(): poll(output) with(e)`, with `self: movable`"
+            "lang item `future` must declare `output` and `poll<r: region>(self: borrow<mut><r><self>)(): poll<output> with<e>`, with `self: movable`"
                 .to_owned(),
         );
     }
@@ -4255,7 +4256,7 @@ fn validate_executor(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `executor` must declare `run(e: effects, f: type, t: type)` with `f: future(e, output = t)`"
+            "lang item `executor` must declare `run(e: effects, f: type, t: type)` with `f: future<e, output = t>`"
                 .to_owned(),
         );
     }
@@ -4342,13 +4343,13 @@ fn validate_operator(kind: LangItemKind, definition: &TraitDef, diagnostics: &mu
     if !operator_trait_has_required_shape(kind, definition) {
         let shape = match kind {
             LangItemKind::Eq => format!(
-                "pub let eq(comptime rhs: type) = trait {{ let {method}(self: borrow(self))(rhs: borrow(rhs)): bool }}"
+                "pub let eq<comptime rhs: type> = trait {{ let {method}(self: borrow(self))(rhs: borrow(rhs)): bool }}"
             ),
             LangItemKind::PartialOrd => format!(
-                "pub let partial_ord(comptime rhs: type) = trait {{ let {method}(self: borrow(self))(rhs: borrow(rhs)): partial_ordering }}"
+                "pub let partial_ord<comptime rhs: type> = trait {{ let {method}(self: borrow(self))(rhs: borrow(rhs)): partial_ordering }}"
             ),
             _ => format!(
-                "pub let {kind}(comptime rhs: type) = trait {{ let output: type; let {method}(self)(rhs: rhs): output }}"
+                "pub let {kind}<comptime rhs: type> = trait {{ let output: type; let {method}(self)(rhs: rhs): output }}"
             ),
         };
         diagnostics.push(format!("lang item `{kind}` must have shape `{shape}`"));

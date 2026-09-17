@@ -6,11 +6,11 @@ let ask = effect {
 }
 
 let resource = struct {
-  drops: ptr(mut)(i32),
+  drops: ptr<mut><i32>,
 }
 
 extend(resource, droppable) {
-  let drop(self: borrow(mut)(self))(): () = {
+  let drop(self: borrow<mut><self>)(): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -26,27 +26,27 @@ let step = struct {
 extend(step, future(())) {
   let output = i32
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(i32) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<i32> = {
     if self.polls == 0 {
       self.polls = 1
-      poll(i32).pending
+      poll<i32>.pending
     } else {
-      poll(i32).ready(self.value)
+      poll<i32>.ready(self.value)
     }
   }
 }
 
-let request: with(ask)(): i32 = {
+let request: with<ask>(): i32 = {
   ask.ask()
 }
 
-let make_step: with(ask)(drops: ptr(mut)(i32)): step = {
-  step { polls: 0, value: request(), resource: resource { drops: drops } }
+let make_step: with<ask>(drops: ptr<mut><i32>): step = {
+  step{ polls: 0, value: request(), resource: resource{ drops: drops } }
 }
 
-let run(drops: ptr(mut)(i32)): i32 = {
+let run(drops: ptr<mut><i32>): i32 = {
   ask.handle
     ask { (resume) -> resume(40) }
     action {
@@ -63,7 +63,7 @@ let run(drops: ptr(mut)(i32)): i32 = {
     }
 }
 
-let cancel(drops: ptr(mut)(i32)): () = {
+let cancel(drops: ptr<mut><i32>): () = {
   ask.handle
     ask { (resume) -> resume(2) }
     action {
@@ -79,7 +79,7 @@ let cancel(drops: ptr(mut)(i32)): () = {
 
 let main(): i32 = {
   let drops = unsafe {
-    raw_alloc(i32)(size_of(i32), align_of(i32))
+    raw_alloc(i32)(size_of<i32>, align_of<i32>)
   }
   unsafe {
     *drops = 0
@@ -91,7 +91,7 @@ let main(): i32 = {
     *drops
   }
   unsafe {
-    raw_dealloc(drops, size_of(i32), align_of(i32))
+    raw_dealloc(drops, size_of<i32>, align_of<i32>)
   }
   value + drop_count
 }

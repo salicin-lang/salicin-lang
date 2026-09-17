@@ -2,30 +2,30 @@ let poll = core.async.poll
 let future = core.async.future
 
 let step = struct {
-  remaining: ptr(mut)(i32)
+  remaining: ptr<mut><i32>
 }
 
 extend(step, future(())) {
   let output = bool
 
-  let poll(comptime r: region)
-    (self: borrow(mut)(r)(self))
-    (): poll(bool) = {
+  let poll<comptime r: region>
+    (self: borrow<mut><r><self>)
+    (): poll<bool> = {
     let done = unsafe {
       *self.remaining = *self.remaining - 1
       *self.remaining == 0
     }
-    poll(bool).ready(done)
+    poll<bool>.ready(done)
   }
 }
 
-let step(remaining: ptr(mut)(i32)): step = {
-  step { remaining: remaining }
+let step(remaining: ptr<mut><i32>): step = {
+  step{ remaining: remaining }
 }
 
 let main(): i32 = {
   let mut remaining = 4
-  let remaining_ptr = ptr(mut)(borrow(mut)(remaining))
+  let remaining_ptr = ptr<mut>(borrow<mut>(remaining))
   let mut future = async {
     loop {
       if unsafe { *remaining_ptr % 2 == 0 } {

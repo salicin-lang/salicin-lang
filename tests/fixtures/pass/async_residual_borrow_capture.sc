@@ -5,20 +5,20 @@ let ask = effect {
   let ask(): i32
 }
 
-let request: with(ask)(): i32 = {
+let request: with<ask>(): i32 = {
   ask.ask()
 }
 
-let poll_once(comptime e: effects, comptime f: type, comptime t: type): with(e)(future: borrow(mut)(f)): poll(t) = requires(f is future(e) && f.output == t) {
+let poll_once<comptime e: effects, comptime f: type, comptime t: type>: with<e>(future: borrow<mut><f>): poll<t> = requires(f is future<e> && f.output == t) {
   future.poll()
 }
 
-let program(offset: borrow(i32)): i32 = {
+let program(offset: borrow<i32>): i32 = {
   let mut future = async {
     request() + offset
   }
   ask.handle ask { (resume) -> resume(40) } action {
-      let polled: poll(i32) = poll_once(future)
+      let polled: poll<i32> = poll_once(future)
       match polled
         { ready(value) -> value }
         { pending -> 0 }

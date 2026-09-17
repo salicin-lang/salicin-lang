@@ -4,7 +4,7 @@ Status: implemented for the 2026 edition<br>
 Accepted: 2026-07-29
 
 This contract completes the common checked-access and slice-copy surface for
-`alloc.vec.vec(t)`.
+`alloc.vec.vec<t>`.
 
 ## Operations and bounds
 

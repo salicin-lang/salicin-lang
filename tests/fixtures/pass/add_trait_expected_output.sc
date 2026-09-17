@@ -13,7 +13,7 @@ extend(number, add(i64)) {
 }
 
 let main(): i32 = {
-  let answer: i64 = number { value: 40 } + 2
+  let answer: i64 = number{ value: 40 } + 2
   if answer == 42 { 42 } else { 0 }
 }
 
