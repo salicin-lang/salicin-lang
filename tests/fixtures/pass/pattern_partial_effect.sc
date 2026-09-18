@@ -11,9 +11,8 @@ let main(): i32 = {
   let attempted = unsafe {
     choose(true)
   }
-  match attempted
-    { Hit(value) -> value }
-    { Miss(_) -> 0 }
+  match(attempted) { Hit(value) => value, Miss(_) => 0,
+  }
 }
 
 test("pattern_partial_effect.sc") {

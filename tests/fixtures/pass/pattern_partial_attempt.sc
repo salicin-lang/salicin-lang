@@ -6,15 +6,14 @@ let main(): i32 = {
   }
   let hit = choose(Option.Some(40))
   let miss = choose(Option.None)
-  let left = match hit
-    { Hit(value) -> value }
-    { Miss(_) -> 0 }
-  let right = match miss
-    { Hit(_) -> 0 }
-    { Miss(remaining) -> match remaining
-      { Some(_) -> 0 }
-      { None -> 1 }
-    }
+  let left = match(hit) { Hit(value) => value, Miss(_) => 0,
+  }
+  let right = match(miss) {
+    Hit(_) => 0, Miss(remaining) => do {
+      match(remaining) { Some(_) => 0, None => 1,
+      }
+    },
+  }
   left + right
 }
 

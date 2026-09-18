@@ -17,15 +17,18 @@ let request: with<ask, supply, throwing<bool>, unsafety>(): i32 = {
 
 let run: with<supply, throwing<bool>>(): i32 = {
   unsafe {
-    ask.handle value { (resume) -> resume(42) } action {
+    ask.handle{
+      value: { (resume) -> resume(42) },
+      action: {
         request()
-      }
+      },
+    }
   }
 }
 
 let main(): i32 = {
   let result: Result<bool><i32> = try {
-    supply.handle seed { (resume) -> resume(0) } action { run() }
+    supply.handle{seed: { (resume) -> resume(0) }, action: { run() }}
   }
   result ?? 0
 }

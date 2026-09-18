@@ -7,9 +7,12 @@ let program: with<read>(): i32 = {
 }
 
 let main(): i32 = {
-  read.handle read { (resume) -> resume(40) + 1 } action {
+  read.handle{
+    read: { (resume) -> resume(40) + 1 },
+    action: {
       program() + 1
-    }
+    },
+  }
 }
 
 test("algebraic_effect_post_resume.sc") {

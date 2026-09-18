@@ -6,7 +6,6 @@ let main(): i32 = {
   let mut iterator = Slice.iter<mut>()
   let first = iterator.next()
   let second = iterator.next()
-  match first
-    { Some(value) -> value }
-    { None -> 0 }
+  match(first) { Some(value) => value, None => 0,
+}
 }

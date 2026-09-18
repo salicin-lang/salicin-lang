@@ -11,12 +11,12 @@ extend(pair<i32, bool>, holds<item: i32>) {
 }
 
 let read<t: type>(value: Borrow<t>): i32
-= requires(t is holds<item: i32>) {
+  = requires(t is holds<item: i32>) {
   value.get()
 }
 
 let make(): pair_alias<value: bool, key: i32> = {
-  pair<k: i32, v: bool> { key: 41, value: true }
+  pair<k: i32, v: bool>{ key: 41, value: true }
 }
 
 let main(): i32 = {

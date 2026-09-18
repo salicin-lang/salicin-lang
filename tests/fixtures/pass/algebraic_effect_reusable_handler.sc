@@ -4,9 +4,13 @@ let ask = effect {
 }
 
 let run(action: with<ask>((i32): i32))(input: i32): i32 = {
-  ask.handle value { (resume) -> resume(10) } stop { (resume) -> 40 } action {
+  ask.handle{
+    value: { (resume) -> resume(10) },
+    stop: { (resume) -> 40 },
+    action: {
       action(input)
-    }
+    },
+  }
 }
 
 let left: with<ask>(input: i32): i32 = { ask.value() + input }

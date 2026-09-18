@@ -888,7 +888,7 @@ edition = "2026"
         "src/api.sc",
          "pub(package) let cell<t: type> = struct { value: t }\n\
           extend(cell<t>) {\n\
-            let new(move value: t): cell<t> = { cell { value: value } }\n\
+            let new(move value: t): cell<t> = { cell{ value: value } }\n\
            let take(move self)(): t = { self.value }\n\
          }\n",
     );
@@ -928,7 +928,7 @@ edition = "2026"
            }\n\
          }\n\
          extend(cell) {\n\
-           let new(): cell = { cell {} }\n\
+            let new(): cell = { cell{} }\n\
          }\n",
     );
 
@@ -1112,18 +1112,12 @@ let exercise: with<core.error.throwing<core.string.String>>(fail: bool): () = {
 
 let main(): i32 = {
   let success: core.Result<core.string.String><()> = try { exercise(false) }
-  match success
-    { Err(_) -> return(1) }
-    { Ok(_) -> () }
+  match(success) { Err(_) => return(1), Ok(_) => (), }
   if unsafe { live_allocations() } != 0 { return(2) }
 
   let failure: core.Result<core.string.String><()> = try { exercise(true) }
-  match failure
-    { Ok(_) -> return(3) }
-    { Err(message) ->
-      let expected: String = "stop"
-      if message != expected { return(4) }
-    }
+  match(failure) { Ok(_) => return(3), Err(message) => do { let expected: String = "stop"
+      if message != expected { return(4) } }, }
   if unsafe { live_allocations() } == 0 { 42 } else { 5 }
 }"#,
     );
@@ -1250,8 +1244,8 @@ fn type_constructor_aliases_cross_module_boundaries() {
         "src/main.sc",
         "use types.{family, constructor, scalar}\n\n\
          let main(): scalar = {\n\
-           let left: family<i32> = family<i32> { value: 40 }\n\
-           let right = constructor<i32> { value: 2 }\n\
+            let left: family<i32> = family<i32>{ value: 40 }\n\
+            let right = constructor<i32>{ value: 2 }\n\
            left.value + right.value\n\
          }\n",
     );
@@ -2077,6 +2071,10 @@ fn m1_local_closure_errors_report_their_cause() {
         (
             "pattern_partial_missing_context.sc",
             "requires a function type annotation",
+        ),
+        (
+            "consecutive_pattern_closures.sc",
+            "a trailing pattern closure must be the final trailing closure group",
         ),
         ("pattern_partial_fnonce_twice.sc", "consumed"),
         ("closure_move_capture_source_use.sc", "moved"),

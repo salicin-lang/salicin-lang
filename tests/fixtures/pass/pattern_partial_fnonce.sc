@@ -12,9 +12,8 @@ let main(): i32 = {
     true -> take(payload)
   }
   let attempted = choose(true)
-  match attempted
-    { Hit(value) -> value }
-    { Miss(_) -> 0 }
+  match(attempted) { Hit(value) => value, Miss(_) => 0,
+  }
 }
 
 test("pattern_partial_fnonce.sc") {

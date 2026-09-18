@@ -19,7 +19,9 @@ let main(): i32 = {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *counter = 0 }
-  let result = abort.handle stop { (resume) -> 40 } action {
+  let result = abort.handle{
+    stop: { (resume) -> 40 },
+    action: {
       let left_resource = resource{ counter: counter }
       let right_resource = resource{ counter: counter }
       let left: with<abort>((): i32)  = { () ->
@@ -32,7 +34,8 @@ let main(): i32 = {
       }
       let action: with<abort>((): i32)  = if true { left } else { right }
       action()
-    }
+    },
+  }
   let drops = unsafe { *counter }
   unsafe {
     raw_dealloc(counter, size_of<i32>, align_of<i32>)

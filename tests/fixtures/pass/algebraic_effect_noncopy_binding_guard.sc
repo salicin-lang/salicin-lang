@@ -20,13 +20,14 @@ let event = enum {
 let consume(move resource: resource): i32 = { 20 }
 
 let evaluate(counter: Ptr<mut><i32>, accepted: bool): i32 = {
-  check.handle accept { (resume) -> resume(accepted) } action {
+  check.handle{
+    accept: { (resume) -> resume(accepted) },
+    action: {
       let event = event.value( value: resource{ counter: counter } )
-      match event
-        { event.value( value: resource ) if check.accept() -> consume(resource) }
-        { event.value( value: resource ) -> consume(resource) }
-        { event.Empty -> 0 }
-    }
+      match(event) { event.value( value: resource ) if check.accept() => consume(resource), event.value( value: resource ) => consume(resource), event.Empty => 0,
+      }
+    },
+  }
 }
 
 let main(): i32 = {

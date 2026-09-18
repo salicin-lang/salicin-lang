@@ -12,9 +12,8 @@ extend(stored, Raise) {
   let Error = bool;
 
   let raise: with<throwing<bool>>(move self): i32 = {
-    match self
-      { value(value) -> value }
-      { failure(error) -> throw(error) }
+    match(self) { value(value) => value, failure(error) => throw(error),
+    }
   }
 }
 

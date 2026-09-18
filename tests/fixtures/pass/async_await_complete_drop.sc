@@ -57,9 +57,8 @@ let main(): i32 = {
         consume(resource)
         value
       }
-      match future.poll()
-        { Pending -> 0 }
-        { Ready(value) -> value }
+      match(future.poll()) { Pending => 0, Ready(value) => value,
+      }
     }
 
     let drops = *counter

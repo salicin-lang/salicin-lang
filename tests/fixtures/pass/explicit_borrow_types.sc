@@ -2,7 +2,7 @@ let pair = struct { left: i32, right: i32 }
 let cell<t: type> = struct { value: t }
 
 let read<t: type>(cell: Borrow<cell<t>>): t
-= requires(t is Copyable) {
+  = requires(t is Copyable) {
   let alias: Borrow<cell<t>> = borrow(cell)
   alias.value
 }

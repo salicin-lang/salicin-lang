@@ -161,7 +161,7 @@ let c_fill_record(record: Ptr<mut><Record>): () = foreign(c)
 
 let main(): i32 = {
   let byte: u8 = 31
-  let mut record = Record { tag: 7, inner: Inner { small: -3, wide: 1000 }, huge: -4000, values: [11, 13, 17], next: ptr(borrow(byte)) }
+  let mut record = Record{ tag: 7, inner: Inner{ small: -3, wide: 1000 }, huge: -4000, values: [11, 13, 17], next: ptr(borrow(byte)) }
   let verified = unsafe {
     c_record_size() == size_of<Record> &&
     c_record_align() == align_of<Record> &&

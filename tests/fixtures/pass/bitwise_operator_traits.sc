@@ -28,7 +28,7 @@ extend(bits, Shr<bits>) {
 }
 
 let mask<t: type>(move left: t)(move right: t): t
-= requires(t is BitAnd<t> && t.Output == t) { left & right }
+  = requires(t is BitAnd<t> && t.Output == t) { left & right }
 
 let unsigned_shift(value: u32): u32 = { value >> 2 }
 

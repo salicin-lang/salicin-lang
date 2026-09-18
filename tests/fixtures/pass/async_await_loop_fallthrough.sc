@@ -3,7 +3,7 @@ let Future = core.async.Future
 
 let step = struct {
   remaining: Ptr<mut><i32>
-}
+  }
 
 extend(step, Future<()>) {
   let Output = bool;
@@ -34,9 +34,8 @@ let main(): i32 = {
       }
     }
   }
-  let implicit_value = match implicit.poll()
-    { Pending -> 0 }
-    { Ready(value) -> value }
+  let implicit_value = match(implicit.poll()) { Pending => 0, Ready(value) => value,
+  }
 
   let mut explicit_remaining = 3
   let mut fallthroughs = 0
@@ -54,9 +53,8 @@ let main(): i32 = {
       }
     }
   }
-  let explicit_value = match explicit.poll()
-    { Pending -> 0 }
-    { Ready(value) -> value }
+  let explicit_value = match(explicit.poll()) { Pending => 0, Ready(value) => value,
+  }
 
   implicit_value + explicit_value + unsafe { *fallthroughs_ptr } - 2
 }

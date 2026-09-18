@@ -5,7 +5,7 @@ let lend = trait {
 
   let view<a: access, r: region>
     (self: Borrow<a><r><self>)(): Item<a><r>
-}
+  }
 
 let cell = struct { value: i32 }
 

@@ -8,9 +8,13 @@ let choose: with<ask>(): i32 = {
 }
 
 let main(): i32 = {
-  ask.handle value { (left, resume) -> resume(left) } value { (right, resume) -> resume(right) } action {
+  ask.handle{
+    value: { (left, resume) -> resume(left) },
+    value: { (right, resume) -> resume(right) },
+    action: {
       choose()
-    }
+    },
+  }
 }
 
 test("algebraic_effect_named_overload.sc") {

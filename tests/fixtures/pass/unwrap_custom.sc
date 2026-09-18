@@ -8,8 +8,8 @@ extend(present, Unwrap) {
   let Output = i32;
 
   let unwrap(move self): i32 = {
-    match self
-      { value(value) -> value }
+    match(self) { value(value) => value,
+    }
   }
 }
 

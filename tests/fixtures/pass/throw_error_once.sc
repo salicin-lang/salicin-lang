@@ -13,9 +13,11 @@ let fail: with<throwing<bool>>(): i32 = {
 
 let main(): i32 = {
   let result: Result<bool><i32> = try { fail() }
-  match result
-    { Ok(_) -> 0 }
-    { Err(error) -> if error { 42 } else { 0 } }
+  match(result) {
+    Ok(_) => 0, Err(error) => do {
+      if error { 42 } else { 0 }
+    },
+  }
 }
 
 test("throw_error_once.sc") {

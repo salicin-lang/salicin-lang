@@ -10,16 +10,17 @@ extend(resource, Droppable) {
 
 let consume(move value: resource): () = { () }
 
-let main(): i32 = { match choice.Some(
-    bundle{ left: resource{ value: 1 }, right: resource{ value: 0 } },
-    resource{ value: 1 }
-  )
-    { Some(bundle(left: left, right: _), _) -> do {
+let main(): i32 = { match(choice.Some(
+      bundle{ left: resource{ value: 1 }, right: resource{ value: 0 } },
+      resource{ value: 1 }
+  )) {
+    Some(bundle(left: left, right: _), _) => do {
+      do {
         consume(left)
         0
       }
-    }
-    { None -> 0 }
+    }, None => 0,
+  }
 }
 
 test("drop_match_nested_trap.sc") {

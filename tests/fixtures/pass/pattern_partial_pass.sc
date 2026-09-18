@@ -8,9 +8,8 @@ let apply(
 
 let main(): i32 = {
   let attempted = apply({ Some(value) -> value })(Option.Some(42))
-  match attempted
-    { Hit(value) -> value }
-    { Miss(_) -> 0 }
+  match(attempted) { Hit(value) => value, Miss(_) => 0,
+  }
 }
 
 test("pattern_partial_pass.sc") {

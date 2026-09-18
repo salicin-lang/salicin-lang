@@ -18,14 +18,14 @@ let main(): i32 = {
   let mut counter = counter{ current: 0, end: 7 }
   let mut total = 24
   loop {
-    match counter.next()
-      { Some(value) ->
+    match(counter.next()) {
+      Some(value) => do {
         if value < 3 {
           continue()
         }
         total = total + value
-      }
-      { None -> break() }
+      }, None => break(),
+    }
   }
   total
 }

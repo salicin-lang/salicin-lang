@@ -4,7 +4,7 @@ extend(value, Copyable) {}
 extend(value, marker) {}
 
 let duplicate<t: type>(copy value: t): t
-= requires(t is Copyable && t is marker) {
+  = requires(t is Copyable && t is marker) {
   let first = value
   value
 }

@@ -38,7 +38,7 @@ extend(step, Future<()>) {
 
 let make_step: with<throwing<bool>>(fail: bool): step = {
   if fail {
-    throw true
+    throw(true)
   } else {
     step{ polls: 0, value: 2 }
   }
@@ -54,15 +54,15 @@ let run_success(drops: Ptr<mut><i32>): i32 = {
     }
     let first = future.poll()
     let second = future.poll()
-    match first
-      { Pending -> match second
-        { Ready(value) -> value }
-        { Pending -> 0 } }
-      { Ready(_) -> 0 }
+    match(first) {
+      Pending => do {
+        match(second) { Ready(value) => value, Pending => 0,
+        }
+      }, Ready(_) => 0,
+    }
   }
-  match result
-    { Ok(value) -> value }
-    { Err(_) -> 0 }
+  match(result) { Ok(value) => value, Err(_) => 0,
+  }
 }
 
 let run_throwing(drops: Ptr<mut><i32>): i32 = {
@@ -73,13 +73,14 @@ let run_throwing(drops: Ptr<mut><i32>): i32 = {
       let value = await make_step(true)
       outer.value + inner.value + value
     }
-    match future.poll()
-      { Pending -> 0 }
-      { Ready(value) -> value }
+    match(future.poll()) { Pending => 0, Ready(value) => value,
+    }
   }
-  match result
-    { Ok(_) -> 0 }
-    { Err(error) -> if error { 42 } else { 0 } }
+  match(result) {
+    Ok(_) => 0, Err(error) => do {
+      if error { 42 } else { 0 }
+    },
+  }
 }
 
 let run_cancelled(drops: Ptr<mut><i32>): i32 = {
@@ -90,13 +91,11 @@ let run_cancelled(drops: Ptr<mut><i32>): i32 = {
       let value = await make_step(false)
       outer.value + inner.value + value
     }
-    match future.poll()
-      { Pending -> 42 }
-      { Ready(_) -> 0 }
+    match(future.poll()) { Pending => 42, Ready(_) => 0,
+    }
   }
-  match result
-    { Ok(value) -> value }
-    { Err(_) -> 0 }
+  match(result) { Ok(value) => value, Err(_) => 0,
+  }
 }
 
 let main(): i32 = {

@@ -722,9 +722,8 @@ extend(String) {
   /// Copies a checked UTF-8 byte range into a new owning String.
   let substring(self: Borrow<self>)(start: u64, end: u64): core.Option<String> = {
     let view = self.as_str()
-    match view.get(start, end)
-      { Some(part) -> core.Option.Some(string_copy_from_str(part)) }
-      { None -> core.Option.None }
+    match(view.get(start, end)) { Some(part) => core.Option.Some(string_copy_from_str(part)), None => core.Option.None,
+    }
   }
 
   /// Returns whether this String begins with `prefix`.

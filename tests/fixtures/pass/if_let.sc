@@ -1,9 +1,8 @@
 let Option = core.Option
 
 let choose(value: Option<i32>): i32 = {
-  match value
-    { Some(found) -> found }
-    { None -> 2 }
+  match(value) { Some(found) => found, None => 2,
+  }
 }
 
 let main(): i32 = {

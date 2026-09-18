@@ -7,9 +7,12 @@ let state = struct {
 }
 
 let run(state: Borrow<mut><state>)(move action: with<ask>((): i32)): i32 = {
-  ask.handle value { (resume) -> resume(1) } action {
+  ask.handle{
+    value: { (resume) -> resume(1) },
+    action: {
       action() + state.value
-    }
+    },
+  }
 }
 
 let main(): i32 = {

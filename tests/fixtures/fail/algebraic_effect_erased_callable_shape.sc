@@ -7,9 +7,12 @@ let apply: with<ask>(action: with<ask>((): i32)): i32 = {
 }
 
 let run(move action: with<ask>((): i32)): i32 = {
-  ask.handle value { (resume) -> resume(42) } action {
+  ask.handle{
+    value: { (resume) -> resume(42) },
+    action: {
       apply(action)
-    }
+    },
+  }
 }
 
 let main(): i32 = {

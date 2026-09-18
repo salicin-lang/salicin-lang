@@ -185,7 +185,7 @@ let optimization = sort<1> {
 let empty = sort<1> {}
 
 let select<mode: optimization>(value: i32): i32 = { value }
-let answer = select(optimization.release)(42)
+let answer = select<optimization.release>(42)
 ```
 
 An abstract sort and an empty defined sort are different. `let name = sort` is invalid:
@@ -340,8 +340,8 @@ forms and guards, field or tuple projection, bounds-checked `usize` array indexi
 other eligible source functions. Calls may retain multiple runtime groups and
 labels, explicitly select or infer generic arguments, cross module boundaries,
 and target a statically resolved inherent or unique trait method or associated
-function. `return` exits the interpreted function through nested immutable
-blocks, `if`, and `match`. Value-changing recursion is admitted within the
+function. `return` exits the interpreted function through nested immutable closure
+bodies, `if`, and `match`. Value-changing recursion is admitted within the
 fixed 16,384-step and 128-active-call limits; an equal repeated call is an
 immediate cycle error.
 
@@ -463,13 +463,14 @@ group mixes compile-time and runtime parameters.
 An explicit opener is a postfix call only when it is byte-adjacent to the callee token. Comparison
 operators require whitespace on both sides, so `a < b` compares and `a<b>` calls an angle group.
 Postfix `[]` is a square call; indexable values retain bounds checks, borrowing, assignment-place
-lowering, and user index protocol dispatch. Tight `{}` is a brace call; struct callees retain
-struct construction. An uncalled `[...]` remains an array literal, an uncalled `{...}` remains a
-block or closure, and a whitespace-separated trailing closure continues to supply a `()` group.
+lowering, and user index protocol dispatch. Tight `callee{...}` is always parsed as a Brace
+`DelimitedCall`; if name resolution later identifies the callee as a struct type, that call becomes
+struct construction. An uncalled `[...]` remains an array literal. An ordinary `{...}` expression
+is a closure, and spaced `callee {...}` always supplies that closure as a trailing argument.
 When two angle groups are open, a tight `>>` is split into two closing delimiters. A
 whitespace-separated `a >> b` remains the shift operator.
 
-### 5.1 Unary Groups, Labels, and Trailing Closures
+### 5.1 Labels and Trailing Closures
 
 Runtime parameters may be labeled. Positional arguments must precede labeled arguments, and each
 parameter is supplied exactly once.
@@ -479,27 +480,15 @@ let clamp(value: i32, min lower: i32, max upper: i32): i32 = { ... }
 let bounded = clamp(42, min: 0, max: 100)
 ```
 
-One positional argument may omit its parentheses when it supplies a runtime
-group containing exactly one parameter:
+A call supplies every ordinary argument group with its declared explicit
+delimiter; parenthesis-free ordinary calls do not exist. A trailing closure
+uses its braces as the explicit delimiter for the next unapplied closure group,
+including a first group as in `run { action() }`. Multiple trailing closures
+supply successive groups. A named trailing closure requires `label: { ... }`;
+an identifier without the colon is not a label.
 
 ```sc fragment
-let increment(value: i32): i32 = { value + 1 }
-let apply(value: i32)(move action: (i32): i32): i32 = { action(value) }
-
-let answer = apply 40 { (value: i32) -> increment value }
-```
-
-Each bare argument supplies a separate group, so `f x y` means `f(x)(y)`.
-Application binds more tightly than infix operators. Parentheses remain
-required for empty groups, groups with multiple parameters, labeled
-arguments, and a compound expression intended as one bare argument.
-
-A trailing closure supplies the next unapplied function group. It may supply the first group
-directly (`run { action() }`) without a preceding parenthesized group. Multiple trailing closures
-supply successive groups. A label may precede a trailing closure.
-
-```sc fragment
-if condition then {
+if condition {
   on_true()
 } else {
   on_false()
@@ -516,12 +505,19 @@ let apply<T: type, U: type>(value: T)(function: (T): U): U = {
 }
 ```
 
-Closure literals use block syntax when an expected function type determines their parameters, or
+Closure literals use brace syntax when an expected function type determines their parameters, or
 an explicit parameter list when needed:
 
 ```sc fragment
 let increment: (i32): i32 = { value -> value + 1 }
 ```
+
+A single refutable-pattern partial closure remains available as
+`{ Pattern [if guard] -> expression }`. Calling it produces
+`core.control.Attempt<Input><Output>`: a successful pattern produces `Hit`,
+while a failed pattern or guard produces `Miss` with the input. Consecutive
+pattern-partial calls such as `callee { P -> ... } { Q -> ... }` are removed;
+they do not form a multi-case call.
 
 Closures capture referenced outer bindings. Shared captures can be copied when their complete
 environment is copyable. Mutable and owning captures obey the same exclusivity and move rules as
@@ -586,7 +582,7 @@ let Point = struct {
   y: i32,
 }
 
-let origin = Point { x: 0, y: 0 }
+let origin = Point{x: 0, y: 0}
 ```
 
 Fields are initialized left to right. Every required field must appear exactly once. Field access
@@ -628,10 +624,21 @@ pattern succeeds. Arms must agree on a result type, except that `never` coerces 
 type. A match over a closed type must be exhaustive.
 
 ```sc fragment
-match value {
-  Option<i32>.Some(number) -> number
-} {
-  Option<i32>.None -> 0
+match(value) {
+  Option<i32>.Some(number) => number,
+  Option<i32>.None => 0,
+}
+```
+
+The brace after `match(value)` is a multi-partial closure, not a Brace
+`DelimitedCall`. Each comma-separated arm is a partial function consisting of
+a pattern, optional `if` guard, and expression body. It replaces the removed
+consecutive pattern-partial spelling:
+
+```sc fragment
+match(value) {
+  P => first,
+  Q => second,
 }
 ```
 
@@ -657,7 +664,7 @@ An `extend` block adds inherent members or implements a trait:
 ```sc fragment
 extend(Point) {
   let translated(self: Borrow<self>)(dx: i32, dy: i32): Point = {
-    Point { x: self.x + dx, y: self.y + dy }
+    Point{x: self.x + dx, y: self.y + dy}
   }
 }
 ```
@@ -748,10 +755,11 @@ cannot intercept operator dispatch. In particular, prefix `!value` invokes the v
 `core.ops.bit.not.not` contract; this is distinct from the postfix propagation operator described
 in section 11.
 
-## 9. Blocks and Control Flow
+## 9. Closures and Control Flow
 
-A block evaluates statements in order. Its final expression is the block value. An explicit
-semicolon turns the preceding expression into `()`.
+An ordinary brace expression creates a closure; braces are not generic eager blocks. When that
+closure is invoked, its body evaluates statements in order and returns its final expression. An
+explicit semicolon turns the preceding expression into `()`.
 
 `if`, `match`, loops, and exits are expression forms supplied through validated control contracts.
 Conditions have type `bool`.
@@ -777,7 +785,8 @@ pub let while<e: effects>: with<e>
   (move do: with<e>((): ())): ()
 ```
 
-The surface forms supply their branch, condition, and body blocks as lazy callable groups. The
+Dedicated control forms consume their branch, condition, and body closures and invoke them
+immediately or lazily as required by the control contract. The
 canonical declarations for `do`, `loop`, `match`, and `for` are validated in the same way.
 `break`, `continue`, and `return` resolve to the canonical `core.control` functions, which introduce
 the corresponding `loop_exit<T>`, `iteration_skip`, or `function_exit<T>` effect before the enclosing construct
@@ -792,9 +801,9 @@ the validated source traits `core.iter.IntoIterator` and `core.iter.Iterator`, t
 `return(value)` exits the nearest named function or closure. `break(value)` exits the nearest
 loop. `continue()` starts its next iteration. These exits have type `never`.
 
-`defer { action }` registers a zero-argument trailing closure for the current lexical block. Registration
+`defer { action }` registers a zero-argument trailing closure for the current lexical scope. Registration
 evaluates and captures the action immediately. Registered actions run in reverse registration
-order after the block result or exit value is evaluated and before control leaves the block.
+order after the scope result or exit value is evaluated and before control leaves the scope.
 They run on normal completion, `return`, `break`, `continue`, and `throw`. `defer` is a statement,
 not a value-producing expression.
 
@@ -835,6 +844,19 @@ ordinary result type.
 An operation transfers control to the nearest matching handler. A resumable clause receives a
 single-use continuation. Resuming supplies the operation result and eventually returns the
 handler's answer type. Abandoning the continuation cleans its captured state exactly once.
+
+A source handler invocation is one adjacent Brace `DelimitedCall` whose
+arguments are semantically interpreted as handler clauses:
+
+```sc fragment
+counter.handle{
+  next: { resume -> resume(41) },
+  action: { read() },
+}
+```
+
+This is ordinary call syntax, not parser-special named trailing groups. Clause
+labels and separating commas are required, and `action` is the final argument.
 
 `throwing<Error>` is the standard abortive error effect. `throw(error)` invokes its `raise`
 operation. `try { ... }` handles that effect and materializes `core.Result<Error><Value>`.

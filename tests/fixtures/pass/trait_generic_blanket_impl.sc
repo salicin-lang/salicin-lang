@@ -16,7 +16,7 @@ extend(cell<t>, read)
 }
 
 let read_cell<t: type>(cell: Borrow<cell<t>>): i32
-= requires(t is read) { cell.read() }
+  = requires(t is read) { cell.read() }
 
 let value = trait {
   let Item: type

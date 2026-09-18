@@ -9,18 +9,20 @@ extend(resource, Droppable) {
 
 let consume(move value: resource): () = { () }
 
-let main(): i32 = { match choice.pair(resource{ value: 1 }, resource{ value: 0 })
-    { pair(left, _) if left.value == 0 -> do {
+let main(): i32 = {
+  match(choice.pair(resource{ value: 1 }, resource{ value: 0 })) {
+    pair(left, _) if left.value == 0 => do {
+      do {
         consume(left)
         0
       }
-    }
-    { pair(left, _) -> do {
+    }, pair(left, _) => do {
+      do {
         consume(left)
         0
       }
-    }
-    { None -> 0 }
+    }, None => 0,
+  }
 }
 
 test("drop_match_guarded_trap.sc") {

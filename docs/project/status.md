@@ -313,12 +313,12 @@ arguments select concrete source instances before interpretation. Direct
 dependent syntax and calls nested in interpreted bodies share this path.
 Statically resolved inherent or unique trait methods and associated functions,
 overload selection by runtime labels, and canonical cross-module declarations
-are supported. Immutable blocks, `if`, exhaustive `match`, guards, and
+are supported. Immutable closure bodies, `if`, exhaustive `match`, guards, and
 function `return` preserve selected-path evaluation. Repeated equal calls fail
 as cycles; value-changing recursion may proceed within the fixed 16,384-step
 and 128-active-call limits.
 
-Effectful calls, borrow parameters or expressions, closures, mutation,
+Effectful calls, borrow parameters or expressions, first-class closure values, mutation,
 foreign or builtin bodies without a specified CTFE rule, and unavailable
 source remain outside CTFE. Dependent array lengths and global constants use
 the same source evaluator and typed normalized values. Globals can call the
@@ -359,9 +359,9 @@ their container.
 
 Implemented data and control features include:
 
-- parenthesis-free application for one-parameter runtime groups, including
-  curried groups, methods, and trailing closures, with application binding
-  above infix operators and logical newlines ending the call;
+- explicit-delimiter application for runtime groups, including curried groups
+  and methods, plus spaced brace trailing closures and colon-labeled named
+  trailing closures;
 - nominal structs and closed enums;
 - target-layout `struct(c)` data with recursive field validation for integers,
   raw pointers, non-zero fixed arrays, nested C structs, and concrete generic

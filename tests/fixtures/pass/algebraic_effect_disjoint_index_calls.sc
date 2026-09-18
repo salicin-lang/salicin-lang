@@ -33,16 +33,22 @@ let main(): i32 = {
   }
   unsafe { *drops = 0 }
 
-  let resumed = step.handle delta { (resume) ->
+  let resumed = step.handle{
+    delta: { (resume) ->
       resume(1)
-    } action {
+    },
+    action: {
       program(drops)
-    }
-  let abandoned = step.handle delta { (_) ->
+    },
+  }
+  let abandoned = step.handle{
+    delta: { (_) ->
       40
-    } action {
+    },
+    action: {
       program(drops)
-    }
+    },
+  }
   let drop_count = unsafe { *drops }
 
   unsafe {

@@ -294,40 +294,19 @@ impl Analyzer {
         if input.label.is_some() {
             self.error("`match` input must be unlabeled");
         }
-        let mut arms = Vec::with_capacity(case_groups.len());
-        for (index, group) in case_groups.iter().enumerate() {
-            let [case] = *group else {
-                self.error(format!(
-                    "`match` case group {} requires exactly one pattern closure",
-                    index + 1
-                ));
-                return error_expr();
-            };
-            if case.label.is_some() {
-                self.error(format!(
-                    "`match` case group {} must be unlabeled",
-                    index + 1
-                ));
-            }
-            let Expr::PatternClosure {
-                pattern,
-                guard,
-                body,
-            } = &case.value
-            else {
-                self.error(format!(
-                    "`match` case group {} requires `{{ Pattern [if guard] -> body }}`",
-                    index + 1
-                ));
-                return error_expr();
-            };
-            arms.push(MatchArm {
-                pattern: pattern.clone(),
-                guard: guard.as_deref().cloned(),
-                body: (**body).clone(),
-            });
-        }
-        self.lower_match(&input.value, &arms, expected, context)
+        let [case_group] = case_groups else {
+            self.error("`match` requires one multi-arm partial closure");
+            return error_expr();
+        };
+        let [CallArg {
+            label: None,
+            value: Expr::PartialClosure(arms),
+        }] = *case_group
+        else {
+            self.error("`match` cases must use `{ Pattern [if guard] => expression, ... }`");
+            return error_expr();
+        };
+        self.lower_match(&input.value, arms, expected, context)
     }
 
     pub(super) fn lower_if_match_call(
@@ -407,31 +386,19 @@ impl Analyzer {
         else {
             return None;
         };
-        let arms = case_groups
-            .iter()
-            .map(|group| {
-                let [CallArg {
-                    label: None,
-                    value:
-                        Expr::PatternClosure {
-                            pattern,
-                            guard,
-                            body,
-                        },
-                }] = *group
-                else {
-                    return None;
-                };
-                Some(MatchArm {
-                    pattern: pattern.clone(),
-                    guard: guard.as_deref().cloned(),
-                    body: (**body).clone(),
-                })
-            })
-            .collect::<Option<Vec<_>>>()?;
+        let [case_group] = case_groups else {
+            return None;
+        };
+        let [CallArg {
+            label: None,
+            value: Expr::PartialClosure(arms),
+        }] = *case_group
+        else {
+            return None;
+        };
         Some(Expr::Match {
             scrutinee: Box::new(input.clone()),
-            arms,
+            arms: arms.clone(),
         })
     }
 

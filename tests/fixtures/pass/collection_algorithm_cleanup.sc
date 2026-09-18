@@ -15,8 +15,9 @@ extend(token, Droppable) {
 let read(value: Borrow<i32>): i32 = { value }
 
 let add_state(move state: (token, i32), value: Borrow<i32>): (token, i32) = {
-  match state {
-    (owner, total) -> (owner, total + read(value))
+  match(state) {
+    (owner, total) => do { (owner, total + read(value))
+    },
   }
 }
 
@@ -31,8 +32,9 @@ let main(): i32 = {
   let view: Borrow<Slice<i32>> = borrow(values)
 
   let success = view.fold((token{ drops: drops }, 0))(add_state)
-  let success_total = match success {
-    (owner, total) -> total
+  let success_total = match(success) {
+    (owner, total) => do { total
+    },
   }
   let drop_count = unsafe {
     *drops

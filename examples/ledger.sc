@@ -50,12 +50,8 @@ extend(Batch, Iterator) {
   let Item = OwnedItem<Transaction>;
 
   let next<r: region>(self: Borrow<mut><r><self>)(): Option<Transaction> = {
-    let transaction: Option<Transaction> = match self.index
-      { 0 -> Some(Transaction.Credit(30)) }
-      { 1 -> Some(Transaction.Debit(8)) }
-      { 2 -> Some(Transaction.Credit(25)) }
-      { 3 -> Some(Transaction.Debit(5)) }
-      { _ -> None }
+    let transaction: Option<Transaction> = match(self.index) { 0 => Some(Transaction.Credit(30)), 1 => Some(Transaction.Debit(8)), 2 => Some(Transaction.Credit(25)), 3 => Some(Transaction.Debit(5)), _ => None,
+    }
     self.index = self.index + 1
     transaction
   }
@@ -78,15 +74,15 @@ let count_batch(move batch: Batch): i32 = {
 }
 
 let apply: with<overdraft>(ledger: Borrow<mut><Ledger>)(move transaction: Transaction): () = {
-  match transaction
-    { Credit(amount) -> ledger.credit(amount) }
-    { Debit(amount) ->
+  match(transaction) {
+    Credit(amount) => ledger.credit(amount), Debit(amount) => do {
       if amount > ledger.balance {
         overdraft.reject()
       } else {
         ledger.debit(amount)
       }
-    }
+    },
+  }
 }
 
 let process: with<overdraft>(move batch: Batch): i32 = {
@@ -98,8 +94,11 @@ let process: with<overdraft>(move batch: Batch): i32 = {
 }
 
 let main(): i32 = {
-  let balance = overdraft.handle reject { () -> 1 } action {
-    process(Batch{ index: 0 })
+  let balance = overdraft.handle{
+    reject: { () -> 1 },
+    action: {
+      process(Batch{ index: 0 })
+    },
   }
   let count = count_batch(Batch{ index: 0 })
   if balance == 42 && count == 4 { 42 } else { 1 }

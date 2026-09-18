@@ -3,9 +3,12 @@ let ask = effect {
 }
 
 let run(seed: i32)(move action: with<ask>((): i32)): i32 = {
-  ask.handle value { (resume) -> resume(20) } action {
+  ask.handle{
+    value: { (resume) -> resume(20) },
+    action: {
       action() + seed
-    }
+    },
+  }
 }
 
 let prepare(order: Borrow<mut><i32>): i32 = {

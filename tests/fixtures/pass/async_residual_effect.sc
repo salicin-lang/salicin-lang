@@ -18,12 +18,14 @@ let main(): i32 = {
   let mut future = async {
     request() + offset
   }
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let polled: Poll<i32> = poll_once(future)
-      match polled
-        { Ready(value) -> value }
-        { Pending -> 0 }
-    }
+      match(polled) { Ready(value) => value, Pending => 0,
+      }
+    },
+  }
 }
 
 test("async_residual_effect.sc") {

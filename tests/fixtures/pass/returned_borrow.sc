@@ -3,7 +3,7 @@ let holder<t: type> = struct { value: t }
 
 let right_view = trait {
   let view<r: region>(self: Borrow<r><self>)(): Borrow<r><i32>
-}
+  }
 
 let left<r: region>(pair: Borrow<r><pair>): Borrow<r><i32> = { borrow(pair.left) }
 

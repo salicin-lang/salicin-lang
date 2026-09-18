@@ -12,10 +12,13 @@ let update: with<step>(left: Borrow<mut><i32>, right: Borrow<mut><i32>): () = {
 
 let main(): i32 = {
   let mut pair = pair{ left: 20, right: 20 }
-  step.handle tick { (resume) ->
+  step.handle{
+    tick: { (resume) ->
       resume(())
-    } action {
+    },
+    action: {
       update(pair.left, pair.left)
       pair.left
-    }
+    },
+  }
 }

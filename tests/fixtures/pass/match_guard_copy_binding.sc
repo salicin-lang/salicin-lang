@@ -9,10 +9,9 @@ let event = enum {
 
 let is_answer(payload: payload): bool = { payload.value == 42 }
 
-let classify(event: event): i32 = { match event
-    { event.value( value: payload ) if is_answer(payload) -> payload.value }
-    { event.value( value: _ ) -> 0 }
-    { event.Empty -> 0 }
+let classify(event: event): i32 = {
+  match(event) { event.value( value: payload ) if is_answer(payload) => payload.value, event.value( value: _ ) => 0, event.Empty => 0,
+  }
 }
 
 let main(): i32 = { classify(event.value( value: payload{ value: 42 } )) }

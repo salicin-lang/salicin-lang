@@ -20,7 +20,10 @@ let main(): i32 = {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *counter = 0 }
-  let result = abort.handle choose { (resume) -> resume(false) } stop { (resume) -> 39 } action {
+  let result = abort.handle{
+    choose: { (resume) -> resume(false) },
+    stop: { (resume) -> 39 },
+    action: {
       let left_resource = resource{ counter: counter }
       let middle_resource = resource{ counter: counter }
       let right_resource = resource{ counter: counter }
@@ -31,7 +34,8 @@ let main(): i32 = {
       let second: with<abort>((): i32)  = if false { middle } else { right }
       let combined: with<abort>((): i32)  = if abort.choose() { first } else { second }
       combined()
-    }
+    },
+  }
   let drops = unsafe { *counter }
   unsafe {
     raw_dealloc(counter, size_of<i32>, align_of<i32>)

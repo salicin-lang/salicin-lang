@@ -19,12 +19,14 @@ let program(value: Borrow<mut><i32>): i32 = {
     value = value + amount
     value
   }
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let polled: Poll<i32> = poll_once(future)
-      match polled
-        { Ready(result) -> result }
-        { Pending -> 0 }
-    }
+      match(polled) { Ready(result) => result, Pending => 0,
+      }
+    },
+  }
 }
 
 let main(): i32 = {

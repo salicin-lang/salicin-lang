@@ -344,11 +344,14 @@ when crossing named effectful frames or another reusable handler. The source clo
 shared, mutable, or moved captures, but the erased owner itself is always one-shot and cannot escape
 with a borrow-capturing environment. `handle` is an effect-kinded lang trait automatically satisfied by every source
 `effect` declaration. Its `Clauses` associated parameter schema names the compiler-derived labeled
-clause groups used by `.handle`; `...` expands that schema into an ordered sequence of runtime
-parameter groups. Consequently source calls use named trailing closures directly, for example
-`state<i32>.handle get { ... } put { ... } action { ... }`, while the generated implementation has exactly the
-shape declared by the trait. These low-level operations and generated handler implementations are
-not ordinary source-level standard-library functions.
+clause arguments used by `.handle`; `...` expands that schema for semantic
+checking. A source invocation is an ordinary adjacent Brace `DelimitedCall`,
+for example `state<i32>.handle{get: { ... }, put: { ... }, action: { ... }}`.
+The labeled arguments belong to one brace group rather than parser-special
+named trailing groups. Labels and commas are required, and `action` must be
+the final argument. The generated implementation still has exactly the shape
+declared by the trait. These low-level operations and generated handler
+implementations are not ordinary source-level standard-library functions.
 
 `core.async` makes the asynchronous model explicit in source. `Future<e>` is a `Movable` trait with an
 associated `Output` and a mutable-borrowing `poll` method returning `Poll`. `Executor.run` is
@@ -390,9 +393,10 @@ pub let do<e: effects>: with<e>
   (move action: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): ()))
   (move while: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)): () = {
   loop {
-    core.control.iteration_skip.handle
-      next { () }
-      action { action() }
+    core.control.iteration_skip.handle{
+      next: { () },
+      action: { action() },
+    }
     if while() { continue() } else { break() }
   }
 }
@@ -411,9 +415,10 @@ pub let if<e: effects, T: type>: with<e>
   (condition: bool)
   (move then: with<e>((): T))
   (move else: with<e>((): T)): T = {
-  match condition
-    { true -> then() }
-    { false -> else() }
+  match(condition) {
+    true => then(),
+    false => else(),
+  }
 }
 pub let match<Input: type, Output: type, e: effects, ...cases: parameters>: with<e>
   (move input: Input)
@@ -443,8 +448,10 @@ pub let do<e: effects, T: type>: with<e>
 
 pub let try<f: effects, T: type, E: type>: with<f>
   (move action: with<core.error.throwing<E>, f>((): T)): core.Result<E><T> = {
-  core.error.throwing<E>.handle raise { (error) -> core.Result.Err(error) } done { (value) -> core.Result.Ok(value) } action {
-    action()
+  core.error.throwing<E>.handle{
+    raise: { (error) -> core.Result.Err(error) },
+    done: { (value) -> core.Result.Ok(value) },
+    action: { action() },
   }
 }
 
@@ -549,7 +556,7 @@ generic nominal constructors. Method implementations are registered as generic f
 and validated, for example
 `extend(Carrier, Functor) { let map<e: effects, A: type, B: type> ... }`.
 Receiver methods
-dispatch from concrete nominal instances, so `Carrier<i32> { value: 41 }.map(add_one)` selects the
+dispatch from concrete nominal instances, so `Carrier<i32>{value: 41}.map(add_one)` selects the
 `Carrier: Functor` implementation and instantiates the generic method template. Constructor
 associated functions without a receiver can still be called from the bare constructor; for example,
 `Carrier.pure(...)` is available once `Carrier` implements `Applicative`. Trait-level `where`

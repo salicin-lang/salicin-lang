@@ -52,11 +52,14 @@ let main(): i32 = {
 
   let captured = 0
   let effect_resource = resource{ counter: counter, value: 1 }
-  let effectful = ask.handle value { (resume) -> resume(3) } action {
+  let effectful = ask.handle{
+    value: { (resume) -> resume(3) },
+    action: {
       effect_once<ask>({
         ask.value() + captured + consume(effect_resource) - 1
       })
-    }
+    },
+  }
 
   let unsafety = unsafe {
     effect_once<unsafety>({ *counter - *counter })

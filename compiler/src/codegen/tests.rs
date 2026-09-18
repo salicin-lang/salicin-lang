@@ -183,7 +183,7 @@ fn validates_delimiters_for_direct_indirect_and_partial_calls() {
          let main(): i32 = { identity(i32)(42) }\n",
         "let cell<t: type> = struct { value: t }\n\
          extend(cell<t>) {\n\
-           let make<u: type>(value: t)(marker: u): cell<t> = { cell<t> { value: value } }\n\
+           let make<u: type>(value: t)(marker: u): cell<t> = { cell<t>{ value: value } }\n\
          }\n\
          let main(): i32 = { cell.make(t: i32)(u: bool)(42)(true).value }\n",
     ] {
@@ -242,9 +242,9 @@ fn inferred_and_explicit_type_arguments_share_instance_cache_keys() {
         "let identity<t: type>(move value: t): t = { value }\n\
          let cell<t: type> = struct { value: t }\n\
          let main(): i32 = {\n\
-           let explicit = cell<i32> { value: identity<i32>(20) }\n\
+           let explicit = cell<i32>{ value: identity<i32>(20) }\n\
            let inferred_value = identity(22)\n\
-           let inferred = cell { value: inferred_value }\n\
+           let inferred = cell{ value: inferred_value }\n\
            explicit.value + inferred.value\n\
          }\n",
     )
@@ -282,7 +282,7 @@ fn generic_inherent_extensions_materialize_members_per_nominal_instance() {
     let program = crate::parser::parse(
         "let cell<t: type> = struct { value: t }\n\
          extend(cell<t>) {\n\
-           let new(move value: t): cell<t> = { cell { value: value } }\n\
+           let new(move value: t): cell<t> = { cell{ value: value } }\n\
            let take(move self)(): t = { self.value }\n\
          }\n\
          let main(): i32 = { let cell = cell.new(42); cell.take() }\n",
@@ -327,7 +327,7 @@ extend(buffer<t><l>) {
   let second(self: Borrow<self>)(): t = { self.values[1] }
 }
 let main(): i32 = {
-  let buffer = buffer<i32><2> { values: [40, 2] }
+  let buffer = buffer<i32><2>{ values: [40, 2] }
   buffer.second()
 }
 ";
@@ -339,7 +339,7 @@ fn nominal_fields_can_store_borrows_without_losing_the_loan() {
     let source = "\
 let holder<t: type> = struct { value: Borrow<t> }
 let hold<t: type>(value: Borrow<t>): holder<t> = {
-  holder<t> { value: value }
+  holder<t>{ value: value }
 }
 let read(value: Borrow<i32>): i32 = { value }
 let main(): i32 = {
@@ -358,7 +358,7 @@ fn nominal_borrow_fields_cannot_escape_a_local_source() {
 let holder<t: type> = struct { value: Borrow<t> }
 let escape(): holder<i32> = {
   let value = 42
-  holder<i32> { value: Borrow<value> }
+  holder<i32>{ value: Borrow<value> }
 }
 let main(): i32 = { 42 }
 ",
@@ -375,7 +375,7 @@ fn nominal_borrow_fields_keep_the_source_borrowed() {
         "\
 let holder<t: type> = struct { value: Borrow<t> }
 let hold<t: type>(value: Borrow<t>): holder<t> = {
-  holder<t> { value: value }
+  holder<t>{ value: value }
 }
 let read(value: Borrow<i32>): i32 = { value }
 let main(): i32 = {
@@ -401,10 +401,10 @@ fn inference_reifies_and_decomposes_generic_nominal_types() {
         "let cell<t: type> = struct { value: t }\n\
          let unwrap<t: type>(move value: cell<t>): t = { value.value }\n\
          let main(): i32 = {\n\
-           let inner = cell<i32> { value: 42 }\n\
-           let outer = cell { value: inner }\n\
+           let inner = cell<i32>{ value: 42 }\n\
+           let outer = cell{ value: inner }\n\
            let nested = unwrap(outer.value)\n\
-           let direct = unwrap(cell<i32> { value: 0 })\n\
+           let direct = unwrap(cell<i32>{ value: 0 })\n\
            nested + direct\n\
          }\n",
     )
@@ -480,7 +480,7 @@ fn explicit_generic_enum_values_are_available_to_outer_inference() {
                   let main(): i32 = {\n\
                     let some = identity(maybe<i32>.Some(42))\n\
                     let none: maybe<i32> = identity(maybe<i32>.None)\n\
-                    some match { Some(value) => value, None => 0 }\n\
+                    match(some) { Some(value) => value, None => 0 }\n\
                   }\n";
     compile_text(source).expect("outer inference over enum constructors must compile");
 }
@@ -490,7 +490,7 @@ fn inference_conflicts_do_not_materialize_instances() {
     let program = crate::parser::parse(
         "let identity<t: type>(move value: t): t = { value }\n\
          let cell<t: type> = struct { value: t }\n\
-         let main(): bool = { identity(cell<i32> { value: 42 }) }\n",
+         let main(): bool = { identity(cell<i32>{ value: 42 }) }\n",
     )
     .expect("conflicting inference source must parse");
     let mut analyzer = Analyzer::new(&program);
@@ -695,7 +695,7 @@ fn registers_plain_nominals_and_deduplicates_generic_nominal_instances() {
     let program = crate::parser::parse(
         "let plain = struct { value: i32 }\n\
          let cell<t: type> = struct { value: t }\n\
-         let main(): i32 = { cell<i32> { value: plain { value: 40 }.value }.value + cell<i32> { value: 2 }.value }\n",
+         let main(): i32 = { cell<i32>{ value: plain{ value: 40 }.value }.value + cell<i32>{ value: 2 }.value }\n",
     )
     .expect("generic nominal source must parse");
     let mut analyzer = Analyzer::new(&program);
@@ -756,7 +756,7 @@ fn allows_same_named_struct_and_constructor_function() {
     let ir = compile_unresolved_text(
         r#"
 let pair = struct { left: i32, right: i32 }
-let pair(left: i32, right: i32): pair = { pair { left: left, right: right } }
+let pair(left: i32, right: i32): pair = { pair{ left: left, right: right } }
 let main(): i32 = {
   let pair = pair(40, 2)
   pair.left + pair.right
@@ -777,7 +777,7 @@ let main(): i32 = {
 fn materializes_nested_generic_struct_layouts_in_dependency_order() {
     let program = crate::parser::parse(
         "let cell<t: type> = struct { value: t }\n\
-         let main(): i32 = { cell<cell<i32>> { value: cell<i32> { value: 42 } }.value.value }\n",
+         let main(): i32 = { cell<cell<i32>>{ value: cell<i32>{ value: 42 } }.value.value }\n",
     )
     .expect("nested generic nominal source must parse");
     let mut analyzer = Analyzer::new(&program);
@@ -831,7 +831,7 @@ fn lowers_generic_enum_type_heads_unit_variants_and_short_patterns() {
          } else {\n\
            maybe<i32>.None\n\
          } }\n\
-         let unwrap(move value: maybe<i32>): i32 = { value match {\n\
+         let unwrap(move value: maybe<i32>): i32 = { match(value) {\n\
            Some(item) => item,\n\
            None => 0,\n\
          } }\n\
@@ -1131,11 +1131,11 @@ fn constructs_infers_and_matches_core_option_and_result() {
 let Option = core.Option
 let Result = core.Result
 
-let unwrap_option(move value: Option<i32>): i32 = { value match {
+let unwrap_option(move value: Option<i32>): i32 = { match(value) {
   Some(item) => item,
   None => 0,
 } }
-let unwrap_result(move value: Result<bool><i32>): i32 = { value match {
+let unwrap_result(move value: Result<bool><i32>): i32 = { match(value) {
   Ok(item) => item,
   Err(_) => 0,
 } }
@@ -1168,8 +1168,8 @@ fn empty_enums_are_uninhabited_and_never_supports_empty_match() {
     let ir = compile_library_text(
         r#"
 let empty = enum {}
-let from_never(move value: never): i32 = { value match {} }
-let from_empty(move value: empty): bool = { value match {} }
+let from_never(move value: never): i32 = { match(value) {} }
+let from_empty(move value: empty): bool = { match(value) {} }
 let stop(): never = { loop {} }
 let choose(flag: bool): i32 = { if flag { 42 } else { stop() } }
 "#,
@@ -1257,7 +1257,7 @@ let invoke(action: (bool): i32 with<throwing<bool>>)(fail: bool): i32 with<throw
   action(fail) }
 let main(): i32 = {
   let result: Result<bool><i32> = try { invoke(forward)(false) }
-  result match {
+  match(result) {
 Ok(value) => value,
 Err(_) => 0
   }
@@ -1312,7 +1312,7 @@ extend(failure) {
   let raise(self: Borrow<self>)(): i32 with<throwing<bool>> = { throw(true) }
 }
 let main(): i32 = {
-  let failure = failure { code: 1 }
+  let failure = failure{ code: 1 }
   let result: Result<bool><i32> = try { failure.raise() }
   result ?? 42
 }
@@ -1352,7 +1352,7 @@ let fail(): i32 with<throwing<bool>> = { throw(true) }
 let main(): i32 = {
   let inner = try { fail() }
   let outer = try { inner }
-  outer match { Ok(_) => 0, Err(_) => 1 }
+  match(outer) { Ok(_) => 0, Err(_) => 1 }
 }
 "#,
     )
@@ -1468,8 +1468,8 @@ extend(counter, Copyable) {}
 extend(counter) {
   let add(self: Borrow<self>)(left: i32): i32 = { self.value + left }
   let add(self: Borrow<self>)(right: i32): i32 = { self.value + right + 1 }
-  let make(left: i32): counter = { counter { value: left } }
-  let make(right: i32): counter = { counter { value: right + 1 } }
+  let make(left: i32): counter = { counter{ value: left } }
+  let make(right: i32): counter = { counter{ value: right + 1 } }
 }
 let main(): i32 = {
   let counter = counter.make(right: 19)
@@ -1490,7 +1490,7 @@ extend(counter) {
   let add(self: Borrow<self>)(left: i32): i32 = { self.value + left }
   let add(self: Borrow<self>)(right: i32): i32 = { self.value + right }
 }
-let main(): i32 = { counter { value: 40 }.add(2) }
+let main(): i32 = { counter{ value: 40 }.add(2) }
 "#,
     )
     .unwrap_err();
@@ -1512,7 +1512,7 @@ if fail { throw(true) } else { self.value }
   let read(self: Borrow<self>)(fallback: i32): i32 = { fallback }
 }
 let main(): i32 = {
-  let counter = counter { value: 42 }
+  let counter = counter{ value: 42 }
   let result: Result<bool><i32> = try { counter.read(fail: false) }
   result ?? 0
 }
@@ -1530,7 +1530,7 @@ extend(counter) {
   let add<t: type>(self: Borrow<self>)(right: t): t = { right }
 }
 let main(): i32 = {
-  counter.choose(left: 20) + counter { value: 0 }.add<i32>(right: 22)
+  counter.choose(left: 20) + counter{ value: 0 }.add<i32>(right: 22)
 }
 "#,
     )
@@ -1546,7 +1546,7 @@ extend(cell<t>) {
   let add(self: Borrow<self>)(right: t): t = { right }
 }
 let main(): i32 = {
-  cell.choose(left: 20) + cell<i32> { value: 0 }.add(right: 22)
+  cell.choose(left: 20) + cell<i32>{ value: 0 }.add(right: 22)
 }
 "#,
     )
@@ -1570,7 +1570,7 @@ extend(counter, select) {
   let make(left: i32): i32 = { left }
   let make(right: i32): i32 = { right + 1 }
 }
-let main(): i32 = { counter { value: 0 }.pick(right: 20) + counter.make(right: 20) }
+let main(): i32 = { counter{ value: 0 }.pick(right: 20) + counter.make(right: 20) }
 "#,
     )
     .expect("named parameters should select trait method and associated-function overloads");
@@ -1586,7 +1586,7 @@ extend(counter, select) {
   let pick(self: Borrow<self>)(left: i32): i32 = { self.value + left }
   let pick(self: Borrow<self>)(right: i32): i32 = { self.value + right }
 }
-let main(): i32 = { counter { value: 40 }.pick(2) }
+let main(): i32 = { counter{ value: 40 }.pick(2) }
 "#,
     )
     .unwrap_err();
@@ -1608,7 +1608,7 @@ extend(counter, select) {}
 let select<t: type>(value: Borrow<t>): i32 = requires(t is select) {
   value.pick(right: 41)
 }
-let main(): i32 = { select(counter { value: 0 }) }
+let main(): i32 = { select(counter{ value: 0 }) }
 "#,
     )
     .expect("default overloads should dispatch through an assumed where-bound implementation");
@@ -1624,7 +1624,7 @@ extend(cell<t>, select) {
   let pick(self: Borrow<self>)(left: i32): i32 = { left }
   let pick(self: Borrow<self>)(right: i32): i32 = { right + 1 }
 }
-let main(): i32 = { cell<i32> { value: 0 }.pick(right: 41) }
+let main(): i32 = { cell<i32>{ value: 0 }.pick(right: 41) }
 "#,
     )
     .expect("blanket trait implementations should preserve overload identities");
@@ -1640,7 +1640,7 @@ extend(counter, left) {
 extend(counter, right) {
   let pick(self: Borrow<self>)(right: i32): i32 = { self.value + right + 1 }
 }
-let main(): i32 = { counter { value: 20 }.pick(right: 21) }
+let main(): i32 = { counter{ value: 20 }.pick(right: 21) }
 "#,
     )
     .expect("named arguments should disambiguate same-named methods from distinct traits");
@@ -1761,7 +1761,7 @@ extend(boxed, apply) {
 value
   }
 }
-let main(): i32 = { boxed { value: 40 }.apply<i32>(2) }
+let main(): i32 = { boxed{ value: 40 }.apply<i32>(2) }
 "#,
     )
     .expect("generic concrete trait method source must parse");
@@ -1816,7 +1816,7 @@ extend(boxed<i32>, choose) {
     value
   }
 }
-let main(): i32 = { boxed<i32> { value: 0 }.choose<i32>(42) }
+let main(): i32 = { boxed<i32>{ value: 0 }.choose<i32>(42) }
 "#,
     )
     .expect("method type binders should compare by position and sort");
@@ -1832,7 +1832,7 @@ extend(boxed<item>, choose) {
     value
   }
 }
-let main(): i32 = { boxed<i32> { value: 0 }.choose<i32>(42) }
+let main(): i32 = { boxed<i32>{ value: 0 }.choose<i32>(42) }
 "#,
     )
     .expect("blanket implementation method binders should be alpha-equivalent");
@@ -1851,7 +1851,7 @@ extend(runner, run) {
     action()
   }
 }
-let main(): i32 = { runner {}.run<pure>({ 42 }) }
+let main(): i32 = { runner{}.run<pure>({ 42 }) }
 "#,
     )
     .expect("method effect binders should be alpha-equivalent");
@@ -1867,7 +1867,7 @@ extend(picker, first) {
     42
   }
 }
-let main(): i32 = { picker {}.first<1>([42]) }
+let main(): i32 = { picker{}.first<1>([42]) }
 "#,
     )
     .expect("method usize binders should be alpha-equivalent");
@@ -1884,7 +1884,7 @@ extend(selector, select) {
   let select<result: type>(self: Borrow<self>)(move value: result): result
     = requires(result is Copyable) { value }
 }
-let main(): i32 = { selector {}.select<i32>(42) }
+let main(): i32 = { selector{}.select<i32>(42) }
 "#,
     )
     .expect("method where predicates should alpha-normalize their binders");
@@ -1904,7 +1904,7 @@ extend(cell, view) {
 }
 let read(value: Borrow<i32>): i32 = { value }
 let main(): i32 = {
-  let cell = cell { value: 42 }
+  let cell = cell{ value: 42 }
   let value = cell.view<shared>()
   read(value)
 }
@@ -1921,7 +1921,7 @@ let identity = trait {
 }
 let unit = struct {}
 extend(unit, identity) {}
-let main(): i32 = { unit {}.identity<i32>(42) }
+let main(): i32 = { unit{}.identity<i32>(42) }
 "#,
     )
     .expect("default generic trait methods should instantiate through the selected implementation");
@@ -1963,11 +1963,11 @@ extend(boxed, choose) {
   let choose<result: type>
     (move self: boxed<result>)
     (move value: result): boxed<result> = {
-    boxed<result> { value: value }
+    boxed<result>{ value: value }
   }
 }
 let main(): i32 = {
-  boxed<i32> { value: 0 }.choose<i32>(42).value
+  boxed<i32>{ value: 0 }.choose<i32>(42).value
 }
 "#,
     )
@@ -2021,7 +2021,7 @@ extend(selector, select) {
   }
 }
 let main(): i32 = {
-  selector {}.select<wrapped>(wrapped { value: 42 }).value
+  selector{}.select<wrapped>(wrapped{ value: 42 }).value
 }
 "#,
     )
@@ -2097,7 +2097,7 @@ let resource = struct { value: i32 }
 let consume(move value: resource): i32 = { value.value }
 let invoke(move action: (): i32): i32 = { action() }
 let main(): i32 = {
-  let resource = resource { value: 42 }
+  let resource = resource{ value: 42 }
   invoke({ consume(resource) })
 }
 "#,
@@ -2158,7 +2158,7 @@ extend(choice, Coalesce) {
   let coalesce<e: effects>
     (self)
     (fallback: (): i32 with<e>): i32 with<e> = {
-self match {
+match(self) {
   present(value) => value,
   missing => fallback(),
 }
@@ -2215,15 +2215,15 @@ extend(maybe<boxed>, Chain) {
   let chain<e: effects, u: type>
     (self)
     (transform: (boxed): u with<e>): maybe<u> with<e> = {
-self match {
+match(self) {
   Some(value) => maybe<u>.Some(transform(value)),
   None => maybe<u>.None,
 }
   }}
 
 let main(): i32 = {
-  let value = maybe<boxed>.Some(boxed { value: 40 }).chain<pure, i32>({ (item: boxed) -> item.value + 2 })
-  value match { Some(answer) => answer, None => 0 }
+  let value = maybe<boxed>.Some(boxed{ value: 40 }).chain<pure, i32>({ (item: boxed) -> item.value + 2 })
+  match(value) { Some(answer) => answer, None => 0 }
 }
 "#,
     );
@@ -2310,7 +2310,7 @@ extend(maybe<boxed>, Chain) {
   let chain<e: effects, u: type>
     (self)
     (transform: (boxed): u with<e>): maybe<u> with<e> = {
-self match {
+match(self) {
   Some(value) => maybe<u>.Some(transform(value)),
   None => maybe<u>.None,
 }
@@ -2318,8 +2318,8 @@ self match {
 
 let main(): i32 = {
   let amount = 2
-  let value = maybe<boxed>.Some(boxed { value: 40 })?.plus(amount)
-  value match { Some(answer) => answer, None => 0 }
+  let value = maybe<boxed>.Some(boxed{ value: 40 })?.plus(amount)
+  match(value) { Some(answer) => answer, None => 0 }
 }
 "#,
     );
@@ -2370,15 +2370,15 @@ extend(maybe<t>, Chain) {
   let chain<e: effects, u: type>
     (self)
     (transform: (t): u with<e>): maybe<u> with<e> = {
-self match {
+match(self) {
   Some(value) => maybe<u>.Some(transform(value)),
   None => maybe<u>.None,
 }
   }}
 
 let main(): i32 = {
-  let value = maybe<boxed>.Some(boxed { value: 42 })?.value
-  value match { Some(answer) => answer, None => 0 }
+  let value = maybe<boxed>.Some(boxed{ value: 42 })?.value
+  match(value) { Some(answer) => answer, None => 0 }
 }
 "#,
     );
@@ -2436,7 +2436,7 @@ let main(): i32 = {
   let first = Option<i32>.None
   let second = Option<i32>.Some(42)
   let scalar = identity(Option.None ?? 42)
-  let boxed = identity(Option.None ?? boxed(i32) { value: 42 })
+  let boxed = identity(Option.None ?? boxed<i32>{ value: 42 })
   let wide = identity(Result<T: i64>.Err(false) ?? 42)
   identity(first ?? second ?? 0) + scalar + boxed.value - 84
 }
@@ -2502,7 +2502,7 @@ let Result = core.Result
 let main(): i32 = {
   let value = Result<bool><i32>.Ok(42)
   let answer = value ?? 0
-  value match { Ok(item) => item, Err(_) => answer }
+  match(value) { Ok(item) => item, Err(_) => answer }
 }
 "#,
     )
@@ -2521,7 +2521,7 @@ let Option = core.Option
 let boxed = struct { value: i32 }
 let consume(move value: boxed): i32 = { value.value }
 let main(): i32 = {
-  let spare = boxed { value: 41 }
+  let spare = boxed{ value: 41 }
   let choice = Option<i32>.Some(1)
   let answer = choice ?? consume(spare)
   consume(spare) + answer
@@ -2546,10 +2546,10 @@ let main(): i32 = {
   let flag = Option.Some(true)
   let first: Result<bool><i32> = Result.Ok(42)
   let second: Result<i32><bool> = Result.Err(0)
-  let value = number match { Some(item) => item, None => 0 }
-  let enabled = flag match { Some(item) => item, None => false }
-  let left = first match { Ok(item) => item, Err(_) => 0 }
-  let right = second match { Ok(_) => 0, Err(item) => item }
+  let value = match(number) { Some(item) => item, None => 0 }
+  let enabled = match(flag) { Some(item) => item, None => false }
+  let left = match(first) { Ok(item) => item, Err(_) => 0 }
+  let right = match(second) { Ok(_) => 0, Err(item) => item }
   if enabled { value + left - right - 42 } else { 0 }
 }
 "#,
@@ -2833,7 +2833,7 @@ let measurable = trait {
   let measure(move self)(): usize
 }
 extend(counter) {
-  let new(value: usize): counter = { counter { value: value } }
+  let new(value: usize): counter = { counter{ value: value } }
   let add(move self)(amount: usize): usize = { self.value + amount }
 }
 extend(counter, measurable) {
@@ -2843,7 +2843,7 @@ let select(left: usize): usize = { left }
 let select(right: usize): usize = { right + 1 }
 let choose(value: usize): usize = {
   if value == 0 {
-    return counter.new(3).add(2) + select(right: 1) + counter.new(3).measure()
+    return(counter.new(3).add(2) + select(right: 1) + counter.new(3).measure())
   }
   value
 }
@@ -2943,7 +2943,7 @@ let buffer<element: type><length: usize> = struct {
   values: Array<element><next(length)>,
 }
 let main(): i32 = {
-  let buffer = buffer(i32)(2) { values: [40, 1, 1] }
+  let buffer = buffer<i32><2>{ values: [40, 1, 1] }
   buffer.values[0]
 }
 "#,
@@ -2986,14 +2986,17 @@ let scalar_length(seed: usize): usize = {
   let unsigned128: u128 = keep_u128(340282366920938463463374607431768211455)
   let unsigned_pointer: usize = keep_usize(18446744073709551615)
   let truth: bool = keep_bool(true)
-  let unit_matches = match unit_value
-    { _ -> true }
-  let signed_matches = match signed8
-    { -128 -> true }
-    { _ -> false }
-  let unsigned_matches = match unsigned128
-    { 340282366920938463463374607431768211455 -> true }
-    { _ -> false }
+  let unit_matches = match(unit_value) {
+    _ => true,
+  }
+  let signed_matches = match(signed8) {
+    -128 => true,
+    _ => false,
+  }
+  let unsigned_matches = match(unsigned128) {
+    340282366920938463463374607431768211455 => true,
+    _ => false,
+  }
   if truth &&
     unit_matches &&
     signed_matches &&
@@ -3070,10 +3073,10 @@ fn ctfe_evaluates_nested_tuples_and_fixed_arrays() {
     let llvm = compile_text(
         r#"
 let unpack(value: (i8, (usize, bool))): usize = {
-  match value
-    { (_, (length, true)) -> length }
-    { _ -> 0 }
-}
+  match(value) {
+    (_, (length, true)) => length,
+    _ => 0,
+  }}
 
 let keep_array(
   values: Array<usize><3>
@@ -3094,10 +3097,10 @@ let composite_length(seed: usize): usize = {
   let values: Array<usize><3> = keep_array([0, unpack(tuple), 9])
   let combined: (Array<usize><3>, (usize, bool)) =
     (values, (projected, true))
-  match combined
-    { (items, (length, true)) -> select(items, 1) + length - seed }
-    { _ -> 0 }
-}
+  match(combined) {
+    (items, (length, true)) => select(items, 1) + length - seed,
+    _ => 0,
+  }}
 
 let read(values: Array<i32><composite_length(3)>): i32 = { values[0] }
 let main(): i32 = { 0 }
@@ -3122,20 +3125,18 @@ let tagged<value: type> = struct {
 }
 
 let make(seed: usize): tagged<point> = {
-  let result = tagged<point> { tag: 9,
-    value: point { y: seed + 1, x: seed },
+  let result = tagged<point>{ tag: 9,
+    value: point{ y: seed + 1, x: seed },
   }
   result
 }
 
 let select(value: tagged<point>): usize = {
   let projected: usize = value.value.x
-  match value
-    { tagged(value: point(x: left, y: right), tag: 9) ->
-        left + right - projected
-    }
-    { _ -> 0 }
-}
+  match(value) {
+    tagged(value: point(x: left, y: right), tag: 9) => left + right - projected,
+    _ => 0,
+  }}
 
 let read(values: Array<i32><select(make(3))>): i32 = { values[0] }
 let main(): i32 = { 0 }
@@ -3152,7 +3153,7 @@ fn ctfe_rejects_structs_that_require_runtime_storage_or_destruction() {
 let Slice = core.memory.Slice
 let address = struct { value: Ptr<i32> }
 let invalid_length(): usize = {
-  let value: address = address { value: unsafe {
+  let value: address = address{ value: unsafe {
     raw_alloc(i32)(size_of(i32), align_of(i32))
   } }
   1
@@ -3176,7 +3177,7 @@ extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = {}
 }
 let invalid_length(): usize = {
-  let value: resource = resource { value: 1 }
+  let value: resource = resource{ value: 1 }
   value.value
 }
 let read(values: Array<i32><invalid_length()>): i32 = { values[0] }
@@ -3198,7 +3199,7 @@ let main(): i32 = { 0 }
 let Slice = core.memory.Slice
 let view = struct { values: Slice<i32> }
 let invalid_length(): usize = {
-  let value: view = view { values: loop {} }
+  let value: view = view{ values: loop {} }
   1
 }
 let read(values: Array<i32><invalid_length()>): i32 = { values[0] }
@@ -3218,7 +3219,7 @@ let main(): i32 = { 0 }
 let Box = alloc.boxed.Box
 let owner = struct { value: Box<usize> }
 let invalid_length(): usize = {
-  let value: owner = owner { value: Box.new(1) }
+  let value: owner = owner{ value: Box.new(1) }
   1
 }
 let read(values: Array<i32><invalid_length()>): i32 = { values[0] }
@@ -3253,35 +3254,35 @@ let choice<value: type> = enum {
 let make(seed: usize): choice<point> = {
   let value = choice<point>.named(
     right: seed + 1,
-    left: point { value: seed },
+    left: point{ value: seed },
   )
   value
 }
 
 let evaluate(value: choice<point>): usize = {
-  match value
-    { choice.named(right: right, left: point(value: left)) if right > left ->
-        right
-    }
-    { choice.single(point(value: item)) -> item }
-    { choice.empty -> 0 }
-    { _ -> 0 }
-}
+  match(value) {
+    choice.named(right: right, left: point(value: left)) if right > left => right,
+    choice.single(point(value: item)) => item,
+    choice.empty => 0,
+    _ => 0,
+  }}
 
 let standard(seed: usize): usize = {
   let present: Option<usize> = Option.Some(seed)
   let absent: Option<usize> = Option.None
   let outcome: Result<bool><usize> = Result.Ok(
-    match present
-      { Some(value) -> value }
-      { None -> 0 }
-  )
-  let selected: usize = match outcome
-    { Ok(value) -> value }
-    { Err(_) -> 0 }
-  let missing: usize = match absent
-    { Some(value) -> value }
-    { None -> 0 }
+    match(present) {
+      Some(value) => value,
+      None => 0,
+    })
+  let selected: usize = match(outcome) {
+    Ok(value) => value,
+    Err(_) => 0,
+  }
+  let missing: usize = match(absent) {
+    Some(value) => value,
+    None => 0,
+  }
   selected + missing
 }
 
@@ -3291,7 +3292,7 @@ let unit_value(seed: usize): usize = {
 }
 
 let positional(seed: usize): usize = {
-  evaluate(choice(point).single(point { value: seed }))
+  evaluate(choice<point>.single(point{ value: seed }))
 }
 
 let read(
@@ -3319,10 +3320,10 @@ let choice = enum {
 }
 let invalid_length(): usize = {
   let value: choice = choice.empty
-  match value
-    { empty -> 1 }
-    { owned(_) -> 2 }
-}
+  match(value) {
+    empty => 1,
+    owned(_) => 2,
+  }}
 let read(values: Array<i32><invalid_length()>): i32 = { values[0] }
 let main(): i32 = { 0 }
 "#,
@@ -3364,10 +3365,10 @@ fn ctfe_rejects_an_executed_non_exhaustive_guarded_pattern() {
     let errors = compile_unresolved_text(
         r#"
 let select(value: bool): usize = {
-  match value
-    { true if false -> 1 }
-    { false -> 2 }
-}
+  match(value) {
+    true if false => 1,
+    false => 2,
+  }}
 let read(values: Array<i32><select(true)>): i32 = { values[0] }
 let main(): i32 = { 0 }
 "#,
@@ -3481,10 +3482,10 @@ let oversized = enum {
 }
 let length(): usize = {
   let value: oversized = oversized.empty
-  match value
-    { empty -> 1 }
-    { payload(_) -> 2 }
-}
+  match(value) {
+    empty => 1,
+    payload(_) => 2,
+  }}
 let read(values: Array<i32><length()>): i32 = { values[0] }
 let main(): i32 = { 0 }
 "#,
@@ -3505,10 +3506,10 @@ let oversized = enum {
 }
 let length(): usize = {
   let value: oversized = oversized.empty
-  match value
-    { empty -> 1 }
-    { payload(_) -> 2 }
-}
+  match(value) {
+    empty => 1,
+    payload(_) => 2,
+  }}
 let read(values: Array<i32><length()>): i32 = { values[0] }
 let main(): i32 = { 0 }
 "#,
@@ -3550,7 +3551,7 @@ fn type_parameters_shadow_core_lang_item_names_in_type_heads() {
 fn generic_function_validation_rolls_back_temporary_nominal_instances() {
     let program = crate::parser::parse(
         "let cell<t: type> = struct { value: t }\n\
-         let wrap<t: type>(move value: t): cell<t> = { cell<t> { value: value } }\n\
+         let wrap<t: type>(move value: t): cell<t> = { cell<t>{ value: value } }\n\
          let main(): i32 = { wrap<i32>(42).value }\n",
     )
     .expect("generic function and nominal source must parse");
@@ -3627,7 +3628,7 @@ fn where_bound_validation_rolls_back_assumed_trait_implementations() {
          }\n\
          let read<t: type>(value: Borrow<t>): i32\n\
          = requires(t is measure) { value.measure() }\n\
-         let main(): i32 = { let value = measured_value { value: 42 }; read(value) }\n",
+         let main(): i32 = { let value = measured_value{ value: 42 }; read(value) }\n",
     )
     .expect("where-bound method source must parse");
     let mut analyzer = Analyzer::new(&program);
@@ -3678,7 +3679,7 @@ fn rejects_invalid_generic_nominal_forms_without_instantiating_them() {
         ),
         (
             "let cell<t: type> = struct { value: t }\n\
-             let main(): i32 = { cell<u: i32> { value: cell<i32> { value: 42 } }.value.value }\n",
+             let main(): i32 = { cell<u: i32>{ value: cell<i32>{ value: 42 } }.value.value }\n",
             "expects exactly one argument group",
         ),
         (
@@ -3928,8 +3929,8 @@ let choice = enum {
   pair(left: pair),
   empty,
 }
-let global: pair = pair { left: 40, right: 2 }
-let read(choice: choice): i32 = { choice match {
+let global: pair = pair{ left: 40, right: 2 }
+let read(choice: choice): i32 = { match(choice) {
   choice.pair(left: pair) => pair.left + pair.right,
   choice.empty => 0,
 } }
@@ -3956,8 +3957,8 @@ let choice = enum {
   pair(pair),
   empty,
 }
-let global: choice = choice.pair(pair { left: 40, right: 2 })
-let read(value: choice): i32 = { value match {
+let global: choice = choice.pair(pair{ left: 40, right: 2 })
+let read(value: choice): i32 = { match(value) {
   pair(value) => value.left + value.right,
   empty => 0,
 } }
@@ -3978,7 +3979,7 @@ fn global_constants_use_the_shared_source_ctfe_call_path() {
         r#"
 let pair<value: type> = struct { left: value, right: value }
 let make<value: type>(left: value)(right: value): pair<value> = {
-  pair<value> { left: left, right: right }
+  pair<value>{ left: left, right: right }
 }
 let sum(value: pair<i32>): i32 = { value.left + value.right }
 let global: pair<i32> = make<i32>(40)(2)
@@ -4023,7 +4024,7 @@ fn shared_ctfe_consumers_ignore_paths_declaration_order_and_module_traversal() {
     let model_forward = r#"
 pub let packet<t: type> = struct { pub value: t, pub width: usize }
 pub let make<t: type>(value: t)(width: usize): packet<t> = {
-  packet<t> { value: value, width: width }
+  packet<t>{ value: value, width: width }
 }
 pub let dimension(value: usize): usize = { value + 2 }
 pub let layout_size<t: type>(): u64 = { size_of<t> }
@@ -4032,7 +4033,7 @@ pub let layout_size<t: type>(): u64 = { size_of<t> }
 pub let layout_size<t: type>(): u64 = { size_of<t> }
 pub let dimension(value: usize): usize = { value + 2 }
 pub let make<t: type>(value: t)(width: usize): packet<t> = {
-  packet<t> { value: value, width: width }
+  packet<t>{ value: value, width: width }
 }
 pub let packet<t: type> = struct { pub value: t, pub width: usize }
 "#;
@@ -4243,15 +4244,15 @@ fn rejects_private_fields_across_module_boundaries_for_read_construct_and_patter
     let errors = compile_with_origins(
         r#"
 pub let record = struct { value: i32 }
-pub let make_record(): record = { record { value: 40 } }
+pub let make_record(): record = { record{ value: 40 } }
 pub let event = enum {
   value(value: i32),
   empty,
 }
 pub let make_event(): event = { event.value(value: 2) }
 let read(): i32 = { make_record().value }
-let build(): record = { record { value: 0 } }
-let unpack(): i32 = { make_event() match {
+let build(): record = { record{ value: 0 } }
+let unpack(): i32 = { match(make_event()) {
   event.value(value: item) => item,
   event.empty => 0,
 } }
@@ -4282,9 +4283,9 @@ fn permits_package_fields_in_sibling_modules_and_public_fields_across_packages()
     compile_with_origins(
         r#"
 pub let package_record = struct { pub(package) value: i32 }
-pub let make_package(): package_record = { package_record { value: 40 } }
+pub let make_package(): package_record = { package_record{ value: 40 } }
 pub let public_record = struct { pub value: i32 }
-pub let make_public(): public_record = { public_record { value: 2 } }
+pub let make_public(): public_record = { public_record{ value: 2 } }
 let sibling(): i32 = { make_package().value }
 let external(): i32 = { make_public().value }
 let main(): i32 = { sibling() }
@@ -4307,11 +4308,11 @@ fn rejects_package_fields_from_other_packages_and_keeps_public_positional_payloa
     let errors = compile_with_origins(
         r#"
 pub let package_record = struct { pub(package) value: i32 }
-pub let make_package(): package_record = { package_record { value: 40 } }
+pub let make_package(): package_record = { package_record{ value: 40 } }
 pub let event = enum { value(value: i32), empty }
 pub let make_event(): event = { event.value(value: 2) }
 let forbidden(): i32 = { make_package().value }
-let allowed(): i32 = { make_event() match {
+let allowed(): i32 = { match(make_event()) {
   event.value(value: value) => value,
   event.empty => 0,
 } }
@@ -4343,9 +4344,9 @@ fn rejects_inferred_public_function_and_global_types_that_leak_private_nominals(
 let Option = core.Option
 
 let hidden = struct {}
-pub let expose() = { hidden {} }
-pub let wrapped() = { Option<hidden>.Some(hidden {}) }
-pub let shared = hidden {}
+pub let expose() = { hidden{} }
+pub let wrapped() = { Option<hidden>.Some(hidden{}) }
+pub let shared = hidden{}
 let main(): i32 = { 0 }
 "#,
         vec![
@@ -4376,7 +4377,7 @@ fn permits_package_apis_to_infer_root_private_types() {
     compile_with_origins(
         r#"
 let root_secret = struct {}
-pub(package) let make() = { root_secret {} }
+pub(package) let make() = { root_secret{} }
 let main(): i32 = { 0 }
 "#,
         vec![origin(1, &[]), origin(1, &["child"]), origin(1, &[])],
@@ -4391,8 +4392,8 @@ fn rejects_private_generic_fields_before_inference_and_through_optional_chaining
 let Option = core.Option
 
 pub let cell<t: type> = struct { value: t }
-pub let make(): Option<cell<i32>> = { Option<cell<i32>>.Some(cell<i32> { value: 42 }) }
-let infer(): cell<i32> = { cell { value: 0 } }
+pub let make(): Option<cell<i32>> = { Option<cell<i32>>.Some(cell<i32>{ value: 42 }) }
+let infer(): cell<i32> = { cell{ value: 0 } }
 let chain(): Option<i32> = { make()?.value }
 let main(): i32 = { 0 }
 "#,
@@ -4441,8 +4442,8 @@ fn inherent_members_inherit_the_target_api_boundary_for_leak_checks() {
 let hidden = struct {}
 pub let public = struct {}
 extend(public) {
-  let reveal(self: Borrow<self>)() = { hidden {} }
-  let secret = hidden {}
+  let reveal(self: Borrow<self>)() = { hidden{} }
+  let secret = hidden{}
 }
 let main(): i32 = { 0 }
 "#,
@@ -4463,11 +4464,11 @@ fn generic_inherent_member_boundaries_include_concrete_type_arguments() {
 let hidden = struct { value: i32 }
 pub let cell<t: type> = struct { pub value: t }
          extend(cell<t>) {
-           let new(move value: t): cell<t> = { cell { value: value } }
+           let new(move value: t): cell<t> = { cell{ value: value } }
   let take(move self)(): t = { self.value }
 }
 let use_hidden(): i32 = {
-  let cell = cell.new(hidden { value: 42 })
+  let cell = cell.new(hidden{ value: 42 })
   cell.take().value
 }
 let main(): i32 = { use_hidden() }
@@ -4502,7 +4503,7 @@ pub let convert = trait {
 }
 extend(public, convert) {
   let Output = hidden
-  let convert(self: Borrow<self>)(): hidden = { hidden {} }}
+  let convert(self: Borrow<self>)(): hidden = { hidden{} }}
 let main(): i32 = { 0 }
 "#,
     )
@@ -4523,7 +4524,7 @@ pub let convert = trait {
 }
 extend(private, convert) {
   let Output = hidden
-  let convert(self: Borrow<self>)(): hidden = { hidden {} }}
+  let convert(self: Borrow<self>)(): hidden = { hidden{} }}
 let main(): i32 = { 0 }
 "#,
     )
@@ -4560,10 +4561,10 @@ extend(cell<t>, value) {
 }
 
 let main(): i32 = {
-  let cell_value = cell { value: leaf { value: 42 } }
+  let cell_value = cell{ value: leaf{ value: 42 } }
   let read_value = read_cell(cell_value)
   let leaf_value = cell_value.take()
-  let wrapped = cell { value: leaf_value }
+  let wrapped = cell{ value: leaf_value }
   wrapped.read() + read_value - 42
 }
 "#,
@@ -4582,7 +4583,7 @@ extend(cell<t>, read)
   let read(self: Borrow<self>)(): i32 = { self.value.read() }
 }
 let main(): i32 = {
-  let cell = cell { value: leaf { value: 42 } }
+  let cell = cell{ value: leaf{ value: 42 } }
   cell.read()
 }
 "#,
@@ -4625,7 +4626,7 @@ extend(cell<t>, convert<i64>) {
   let convert(self: Borrow<self>)(): i64 = { 2 }
 }
 let main(): i32 = {
-  let cell = cell { value: true }
+  let cell = cell{ value: true }
   42
 }
 "#,
@@ -4729,7 +4730,7 @@ extend(cell<t>, Copyable)
 (requires: t is Copyable) {}
 let sum(copy cell: cell<i32>): i32 = { cell.value }
 let main(): i32 = {
-  let cell = cell { value: 42 }
+  let cell = cell{ value: 42 }
   let first = cell
   sum(cell) + first.value - 42
 }
@@ -4745,7 +4746,7 @@ let maybe<t: type> = enum {
 }
 extend(maybe<t>, Copyable)
 (requires: t is Copyable) {}
-let read(copy value: maybe<i32>): i32 = { value match {
+let read(copy value: maybe<i32>): i32 = { match(value) {
   Some(number) => number,
   None => 0,
 } }
@@ -4767,7 +4768,7 @@ let cell<t: type> = struct { value: t }
 extend(cell<t>, Copyable)
 (requires: t is Copyable) {}
 let main(): i32 = {
-  let cell = cell { value: resource { value: 42 } }
+  let cell = cell{ value: resource{ value: 42 } }
   let moved = cell
   moved.value.value
 }
@@ -4798,7 +4799,7 @@ extend(cell<t>, Copyable)
 extend(cell<t>, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
 let main(): i32 = {
-  let cell = cell { value: 42 }
+  let cell = cell{ value: 42 }
   42
 }
 "#,
@@ -5036,7 +5037,7 @@ let inferred(value: pair): i32 = { value.left + value.right }
 let explicit(copy value: pair): i32 = { value.left + value.right }
 
 let main(): i32 = {
-  let pair = pair { left: 19, right: 23 }
+  let pair = pair{ left: 19, right: 23 }
   let duplicate = pair
   let first = inferred(pair)
   let second = explicit(pair)
@@ -5087,7 +5088,7 @@ let resource = struct { value: i32 }
 extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
 let main(): i32 = {
-  let mut value = resource { value: 0 }
+  let mut value = resource{ value: 0 }
   value.drop()
   0
 }
@@ -5157,7 +5158,7 @@ let choice = enum { Some(wrapper), None }
 extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { self.value = 0 }}
 let main(): i32 = {
-  let value = choice.Some(wrapper { resource: resource { value: 42 }, plain: 1 })
+  let value = choice.Some(wrapper{ resource: resource{ value: 42 }, plain: 1 })
   0
 }
 "#;
@@ -5201,7 +5202,7 @@ let wrapper = struct { resource: resource, plain: i32 }
 extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
 let main(): i32 = {
-  let wrapper = wrapper { resource: resource { value: 1 }, plain: 0 }
+  let wrapper = wrapper{ resource: resource{ value: 1 }, plain: 0 }
   let resource = wrapper.resource
   0
 }
@@ -5216,7 +5217,7 @@ extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
 let consume_i32(move value: i32): () = { () }
 let main(): i32 = {
-  let resource = resource { value: 1 }
+  let resource = resource{ value: 1 }
   consume_i32(resource.value)
   0
 }
@@ -5233,7 +5234,7 @@ let resource = struct { value: i32 }
 let choice = enum { Some(resource), None }
 extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
-let main(): i32 = { choice.Some(resource { value: 1 }) match {
+let main(): i32 = { match(choice.Some(resource{ value: 1 })) {
   Some(resource) => 1,
   None => 0
 } }
@@ -5249,7 +5250,7 @@ extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
 extend(choice, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
-let main(): i32 = { choice.Some(resource { value: 1 }) match {
+let main(): i32 = { match(choice.Some(resource{ value: 1 })) {
   Some(resource) => 1,
   None => 0
 } }
@@ -5265,7 +5266,7 @@ let main(): i32 = { choice.Some(resource { value: 1 }) match {
 let choice = enum { Some(i32), None }
 extend(choice, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
-let main(): i32 = { choice.Some(1) match {
+let main(): i32 = { match(choice.Some(1)) {
   whole if true => 1,
   _ => 0
 } }
@@ -5279,7 +5280,7 @@ let resource = struct { value: i32 }
 let choice = enum { Some(resource), None }
 extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
-let main(): i32 = { choice.Some(resource { value: 1 }) match {
+let main(): i32 = { match(choice.Some(resource{ value: 1 })) {
   Some(resource) if false => 1,
   Some(_) => 2,
   None => 0
@@ -5297,7 +5298,7 @@ extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
 extend(wrapper, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
-let main(): i32 = { choice.Some(wrapper { resource: resource { value: 1 } }) match {
+let main(): i32 = { match(choice.Some(wrapper{ resource: resource{ value: 1 } })) {
   Some(wrapper(resource: resource)) => 1,
   None => 0
 } }
@@ -5318,7 +5319,7 @@ let pair = struct { left: i32, right: i32 }
 extend(pair, Copyable) {}
 let consume(move value: pair): i32 = { value.left + value.right }
 let main(): i32 = {
-  let pair = pair { left: 19, right: 23 }
+  let pair = pair{ left: 19, right: 23 }
   let answer = consume(pair)
   answer + pair.left
 }
@@ -5335,10 +5336,10 @@ fn reinitializes_a_moved_root_and_preserves_rhs_ordering() {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): i32 = { boxed.value }
 let main(): i32 = {
-  let mut boxed = boxed { value: 21 }
-  let first = consume(boxed)
-  boxed = boxed { value: 21 }
-  first + consume(boxed)
+  let mut item = boxed{ value: 21 }
+  let first = consume(item)
+  item = boxed{ value: 21 }
+  first + consume(item)
 }
 "#,
     )
@@ -5349,10 +5350,10 @@ let main(): i32 = {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): i32 = { boxed.value }
 let main(): i32 = {
-  let mut boxed = boxed { value: 42 }
-  consume(boxed)
-  boxed = boxed
-  boxed.value
+  let mut item = boxed{ value: 42 }
+  consume(item)
+  item = item
+  item.value
 }
 "#,
     )
@@ -5368,11 +5369,11 @@ let payload = struct { value: i32 }
 let pair = struct { left: payload, right: payload }
 let consume(move pair: pair): i32 = { pair.left.value + pair.right.value }
 let main(): i32 = {
-  let mut pair = pair { left: payload { value: 1 }, right: payload { value: 2 } }
+  let mut pair = pair{ left: payload{ value: 1 }, right: payload{ value: 2 } }
   let old = consume(pair)
-  pair.left = payload { value: 19 }
+  pair.left = payload{ value: 19 }
   let restored = pair.left.value
-  pair.right = payload { value: 23 }
+  pair.right = payload{ value: 23 }
   old + restored + consume(pair) - 3 - 19
 }
 "#,
@@ -5385,9 +5386,9 @@ let payload = struct { value: i32 }
 let pair = struct { left: payload, right: payload }
 let consume(move pair: pair): () = { () }
 let main(): i32 = {
-  let mut pair = pair { left: payload { value: 1 }, right: payload { value: 2 } }
+  let mut pair = pair{ left: payload{ value: 1 }, right: payload{ value: 2 } }
   consume(pair)
-  pair.left = payload { value: 42 }
+  pair.left = payload{ value: 42 }
   pair.left.value + pair.right.value
 }
 "#,
@@ -5403,10 +5404,10 @@ fn joins_reinitialization_across_branches_exactly() {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): () = { () }
 let choose(flag: bool): i32 = {
-  let mut boxed = boxed { value: 0 }
-  consume(boxed)
-  if flag { boxed = boxed { value: 19 } } else { boxed = boxed { value: 23 } }
-  boxed.value
+  let mut item = boxed{ value: 0 }
+  consume(item)
+  if flag { item = boxed{ value: 19 } } else { item = boxed{ value: 23 } }
+  item.value
 }
 let main(): i32 = { choose(true) + choose(false) }
 "#,
@@ -5418,10 +5419,10 @@ let main(): i32 = { choose(true) + choose(false) }
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): () = { () }
 let choose(flag: bool): i32 = {
-  let mut boxed = boxed { value: 0 }
-  consume(boxed)
-  if flag { boxed = boxed { value: 42 } }
-  boxed.value
+  let mut item = boxed{ value: 0 }
+  consume(item)
+  if flag { item = boxed{ value: 42 } }
+  item.value
 }
 let main(): i32 = { choose(true) }
 "#,
@@ -5438,7 +5439,7 @@ let pair = struct { left: payload, right: payload }
 let consume_payload(move payload: payload): () = { () }
 let consume_pair(move pair: pair): () = { () }
 let choose(flag: bool): () = {
-  let pair = pair { left: payload { value: 19 }, right: payload { value: 23 } }
+  let pair = pair{ left: payload{ value: 19 }, right: payload{ value: 23 } }
   if flag { consume_payload(pair.left) } else { consume_payload(pair.right) }
   consume_pair(pair)
 }
@@ -5518,13 +5519,13 @@ fn records_assignment_initialization_kinds_in_hir() {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): () = { () }
 let classify(flag: bool): i32 = {
-  let mut boxed = boxed { value: 0 }
-  boxed = boxed { value: 1 }
-  consume(boxed)
-  boxed = boxed { value: 2 }
-  if flag { consume(boxed) }
-  boxed = boxed { value: 42 }
-  boxed.value
+  let mut item = boxed{ value: 0 }
+  item = boxed{ value: 1 }
+  consume(item)
+  item = boxed{ value: 2 }
+  if flag { consume(item) }
+  item = boxed{ value: 42 }
+  item.value
 }
 let main(): i32 = { classify(false) }
 "#,
@@ -5570,14 +5571,14 @@ fn accepts_a_move_reinitialize_loop_backedge() {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): i32 = { boxed.value }
 let main(): i32 = {
-  let mut boxed = boxed { value: 0 }
+  let mut item = boxed{ value: 0 }
   let mut iteration = 0
   while { iteration < 2 } {
-let previous = consume(boxed)
-boxed = boxed { value: previous + 21 }
+let previous = consume(item)
+item = boxed{ value: previous + 21 }
 iteration = iteration + 1
   }
-  consume(boxed)
+  consume(item)
 }
 "#,
     )
@@ -5591,12 +5592,12 @@ fn match_guards_only_move_copy_pattern_bindings() {
 let payload = struct { value: i32 }
 let event = enum { value(value: payload), empty }
 let accept(move payload: payload): bool = { payload.value == 42 }
-let classify(event: event): i32 = { event match {
+let classify(event: event): i32 = { match(event) {
   event.value(value: payload) if accept(payload) => 42,
   event.value(value: _) => 0,
   event.empty => 0,
 } }
-let main(): i32 = { classify(event.value(value: payload { value: 42 })) }
+let main(): i32 = { classify(event.value(value: payload{ value: 42 })) }
 "#,
     )
     .expect_err("a false guard must not consume a reusable non-copyable payload");
@@ -5608,7 +5609,7 @@ let main(): i32 = { classify(event.value(value: payload { value: 42 })) }
         r#"
 let event = enum { value(value: i32), empty }
 let accept(move value: i32): bool = { value == 42 }
-let classify(event: event): i32 = { event match {
+let classify(event: event): i32 = { match(event) {
   event.value(value: value) if accept(value) => 42,
   event.value(value: value) => value,
   event.empty => 0,
@@ -5633,14 +5634,14 @@ extend(choice, Copyable) {}
 extend(outer, Copyable) {}
 extend(inner, Copyable) {}
 let main(): i32 = {
-  let values = [outer { inner: inner { value: 19 } }, outer { inner: inner { value: 23 } }]
-  let holder = holder { values: values }
+  let values = [outer{ inner: inner{ value: 19 } }, outer{ inner: inner{ value: 23 } }]
+  let holder = holder{ values: values }
   let duplicate = holder
   let choice = choice.value(value: holder.values[1])
   let copied = choice
   let left = holder.values[0].inner.value
   let right = duplicate.values[1].inner.value
-  copied match {
+  match(copied) {
 value(value: _) => left + right,
 _ => 0,
   }
@@ -5672,7 +5673,7 @@ let cell<t: type> = struct { value: t }
 extend(cell<i32>, Copyable) {}
 let consume(value: cell<bool>): bool = { value.value }
 let main(): i32 = {
-  let cell = cell<bool> { value: true }
+  let cell = cell<bool>{ value: true }
   let answer = consume(cell)
   if answer && cell.value { 42 } else { 0 }
 }
@@ -5732,7 +5733,7 @@ fn reports_a_value_moved_on_only_one_if_path_as_possibly_moved() {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): i32 = { boxed.value }
 let choose(flag: bool): i32 = {
-  let boxed = boxed { value: 42 }
+  let boxed = boxed{ value: 42 }
   if flag {
 consume(boxed)
   }
@@ -5754,7 +5755,7 @@ fn discards_moves_on_an_if_path_that_returns() {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): i32 = { boxed.value }
 let choose(flag: bool): i32 = {
-  let boxed = boxed { value: 42 }
+  let boxed = boxed{ value: 42 }
   if flag {
 consume(boxed)
 return(0)
@@ -5775,7 +5776,7 @@ fn reports_a_value_moved_on_both_if_paths_as_moved() {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): i32 = { boxed.value }
 let choose(flag: bool): i32 = {
-  let boxed = boxed { value: 42 }
+  let boxed = boxed{ value: 42 }
   if flag {
 consume(boxed)
   } else {
@@ -5802,7 +5803,7 @@ fn reports_a_move_on_a_short_circuit_rhs_as_possible() {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): bool = { boxed.value == 42 }
 let choose(flag: bool): i32 = {
-  let boxed = boxed { value: 42 }
+  let boxed = boxed{ value: 42 }
   flag && consume(boxed)
   boxed.value
 }
@@ -5822,7 +5823,7 @@ fn analyzes_mutually_exclusive_if_arms_from_the_same_entry_flow() {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): i32 = { boxed.value }
 let choose(flag: bool): i32 = {
-  let boxed = boxed { value: 42 }
+  let boxed = boxed{ value: 42 }
   if flag {
 consume(boxed)
   } else {
@@ -5847,8 +5848,8 @@ let choice = enum {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): i32 = { boxed.value }
 let choose(choice: choice): i32 = {
-  let boxed = boxed { value: 42 }
-  choice match {
+  let boxed = boxed{ value: 42 }
+  match(choice) {
 choice.first => consume(boxed),
 choice.second => boxed.value,
   }
@@ -5869,8 +5870,8 @@ let choice = enum {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): bool = { boxed.value == 0 }
 let choose(choice: choice): i32 = {
-  let boxed = boxed { value: 42 }
-  choice match {
+  let boxed = boxed{ value: 42 }
+  match(choice) {
 choice.only if consume(boxed) => 0,
 choice.only => boxed.value,
   }
@@ -6021,9 +6022,9 @@ fn algebraic_handlers_preserve_operation_and_frame_residual_effects() {
         r#"
 let io = effect
 let ask = effect { let value(): i32 with<io> }
-let run(): i32 with<io> = { ask.handle value { (resume) -> resume(42) } action {
+let run(): i32 with<io> = { ask.handle{value: { (resume) -> resume(42) }, action: {
   ask.value()
-} }
+}} }
 let main(): i32 = { 0 }
 "#,
     )
@@ -6034,9 +6035,9 @@ let main(): i32 = { 0 }
 let supply = effect { let seed(): i32 }
 let ask = effect { let value(): i32 with<supply> }
 let main(): i32 = {
-  supply.handle seed { (resume) -> resume(0) } action {
-ask.handle value { (resume) -> resume(42) } action { ask.value() }
-  }
+  supply.handle{seed: { (resume) -> resume(0) }, action: {
+ask.handle{value: { (resume) -> resume(42) }, action: { ask.value() }}
+  }}
 }
 "#,
     )
@@ -6048,10 +6049,10 @@ let supply = effect { let seed(): i32 }
 let ask = effect { let value(): i32 with<supply> }
 let request(): i32 with<ask, supply> = { ask.value() }
 let inner(): i32 with<supply> = {
-  ask.handle value { (resume) -> resume(42) } action { request() }
+  ask.handle{value: { (resume) -> resume(42) }, action: { request() }}
 }
 let main(): i32 = {
-  supply.handle seed { (resume) -> resume(0) } action { inner() }
+  supply.handle{seed: { (resume) -> resume(0) }, action: { inner() }}
 }
 "#,
     )
@@ -6066,11 +6067,11 @@ let supply = effect { let seed(): i32 }
 let ask = effect { let value(): i32 with<supply, throwing<bool>> }
 let request(): i32 with<ask, supply, throwing<bool>> = { ask.value() }
 let inner(): i32 with<supply, throwing<bool>> = {
-  ask.handle value { (resume) -> resume(42) } action { request() }
+  ask.handle{value: { (resume) -> resume(42) }, action: { request() }}
 }
 let main(): i32 = {
   let result: Result<bool><i32> = try {
-supply.handle seed { (resume) -> resume(0) } action { inner() }
+supply.handle{seed: { (resume) -> resume(0) }, action: { inner() }}
   }
   result ?? 0
 }
@@ -6082,9 +6083,9 @@ supply.handle seed { (resume) -> resume(0) } action { inner() }
         r#"
 let io = effect
 let ask = effect { let value(): i32 with<io> }
-let run(): i32 = { ask.handle value { (resume) -> resume(42) } action {
+let run(): i32 = { ask.handle{value: { (resume) -> resume(42) }, action: {
   ask.value()
-} }
+}} }
 let main(): i32 = { run() }
 "#,
     )
@@ -6098,9 +6099,9 @@ let main(): i32 = { run() }
 let io = effect
 let ask = effect { let value(): i32 }
 let request(): i32 with<ask, io> = { ask.value() }
-let run(): i32 = { ask.handle value { (resume) -> resume(42) } action {
+let run(): i32 = { ask.handle{value: { (resume) -> resume(42) }, action: {
   request()
-} }
+}} }
 let main(): i32 = { run() }
 "#,
     )
@@ -6115,17 +6116,17 @@ let throwing = core.error.throwing
 let unsafe = core.unsafe.unsafety
 
 let ask_unsafe = effect { let value(): i32 with<unsafe> }
-let unsafe_run(): i32 = { unsafe { ask_unsafe.handle value { (resume) -> resume(42) } action {
+let unsafe_run(): i32 = { unsafe { ask_unsafe.handle{value: { (resume) -> resume(42) }, action: {
   ask_unsafe.value()
-} } }
+}} } }
 let ask_failure = effect { let value(): i32 with<throwing<bool>> }
 let throwing_run(): i32 with<throwing<bool>> = {
-  ask_failure.handle value { (resume) -> resume(42) } action { ask_failure.value() }
+  ask_failure.handle{value: { (resume) -> resume(42) }, action: { ask_failure.value() }}
 }
 let ask_frame = effect { let value(): i32 }
 let throwing_request(): i32 with<ask_frame, throwing<bool>> = { ask_frame.value() }
 let throwing_frame(): i32 with<throwing<bool>> = {
-  ask_frame.handle value { (resume) -> resume(42) } action { throwing_request() }
+  ask_frame.handle{value: { (resume) -> resume(42) }, action: { throwing_request() }}
 }
 let main(): i32 = { 0 }
 "#,
@@ -6138,7 +6139,7 @@ let Result = core.Result
 let unsafe = core.unsafe.unsafety
 
 let ask = effect { let value(): i32 with<unsafe> }
-let run(): i32 = { ask.handle value { (resume) -> resume(42) } action { ask.value() } }
+let run(): i32 = { ask.handle{value: { (resume) -> resume(42) }, action: { ask.value() }} }
 let main(): i32 = { run() }
 "#,
     )
@@ -6153,7 +6154,7 @@ let Result = core.Result
 let throwing = core.error.throwing
 
 let ask = effect { let value(): i32 with<throwing<bool>> }
-let run(): i32 = { ask.handle value { (resume) -> resume(42) } action { ask.value() } }
+let run(): i32 = { ask.handle{value: { (resume) -> resume(42) }, action: { ask.value() }} }
 let main(): i32 = { run() }
 "#,
     )
@@ -6173,7 +6174,7 @@ let ask = effect {
   let value(right: i32): i32
 }
 let choose(): i32 with<ask> = { ask.value(left: 19) + ask.value(right: 23) }
-let main(): i32 = { ask.handle value { (left, resume) -> resume(left) } value { (right, resume) -> resume(right) } action { choose() } }
+let main(): i32 = { ask.handle{value: { (left, resume) -> resume(left) }, value: { (right, resume) -> resume(right) }, action: { choose() }} }
 "#,
     )
     .expect("named arguments and clause parameters should select effect operation overloads");
@@ -6200,11 +6201,11 @@ fn algebraic_effect_function_aliases_stay_static_and_handler_local() {
         r#"
 let ask = effect { let value(): i32 }
 let ask(): i32 with<ask> = { ask.value() }
-let main(): i32 = { ask.handle value { (resume) -> resume(42) } action {
+let main(): i32 = { ask.handle{value: { (resume) -> resume(42) }, action: {
   let action = ask
   let forwarded = action
   forwarded()
-} }
+}} }
 "#,
     )
     .expect("a chained local alias should retain its statically known effectful target");
@@ -6214,10 +6215,10 @@ let main(): i32 = { ask.handle value { (resume) -> resume(42) } action {
 let ask = effect { let value(): i32 }
 let ask(): i32 with<ask> = { ask.value() }
 let consume(action: (): i32 with<ask>): i32 with<ask> = { action() }
-let main(): i32 = { ask.handle value { (resume) -> resume(42) } action {
+let main(): i32 = { ask.handle{value: { (resume) -> resume(42) }, action: {
   let action = ask
   consume(action)
-} }
+}} }
 "#,
     )
     .expect("a known function argument should specialize a higher-order effectful frame");
@@ -6228,11 +6229,11 @@ let ask = effect { let value(): i32 }
 let ask_left(): i32 with<ask> = { ask.value() }
 let ask_right(): i32 with<ask> = { ask.value() }
 let consume(action: (): i32 with<ask>): i32 with<ask> = { action() }
-let main(): i32 = { ask.handle value { (resume) -> resume(42) } action {
+let main(): i32 = { ask.handle{value: { (resume) -> resume(42) }, action: {
   let action: (): i32 with<ask> = if true { ask_left } else { ask_right }
   let forwarded = action
   consume(forwarded)
-} }
+}} }
 "#,
     )
     .expect("an aliased dynamic target should specialize a higher-order resumable frame");
@@ -6242,11 +6243,11 @@ let main(): i32 = { ask.handle value { (resume) -> resume(42) } action {
 let ask = effect { let value(): i32 }
 let ask_left(): i32 with<ask> = { ask.value() }
 let ask_right(): i32 with<ask> = { ask.value() }
-let main(): i32 = { ask.handle value { (resume) -> resume(42) } action {
+let main(): i32 = { ask.handle{value: { (resume) -> resume(42) }, action: {
   let action: (): i32 with<ask> = if true { ask_left } else { ask_right }
   let escaped = action
   escaped()
-} }
+}} }
 "#,
     )
     .expect("a dynamic selection tag may be copied into an immutable handler-local alias");
@@ -6256,13 +6257,13 @@ let main(): i32 = { ask.handle value { (resume) -> resume(42) } action {
 let ask = effect { let value(): i32 }
 let ask_left(): i32 with<ask> = { ask.value() }
 let ask_right(): i32 with<ask> = { ask.value() }
-let main(): i32 = { ask.handle value { (resume) -> resume(42) } action {
+let main(): i32 = { ask.handle{value: { (resume) -> resume(42) }, action: {
   let action: (): i32 with<ask> = if true { ask_left } else { ask_right }
   let other: (): i32 with<ask> = if true { ask_right } else { ask_left }
   let mut changed = action
   changed = other
   changed()
-} }
+}} }
 "#,
     )
     .expect("mutable dynamic aliases remap assignments between equal finite target sets");
@@ -6273,13 +6274,13 @@ let ask = effect { let value(): i32 }
 let first(): i32 with<ask> = { ask.value() }
 let second(): i32 with<ask> = { ask.value() }
 let third(): i32 with<ask> = { ask.value() }
-let main(): i32 = { ask.handle value { (resume) -> resume(42) } action {
+let main(): i32 = { ask.handle{value: { (resume) -> resume(42) }, action: {
   let left: (): i32 with<ask> = if true { first } else { second }
   let right: (): i32 with<ask> = if true { first } else { third }
   let mut changed = left
   changed = right
   changed()
-} }
+}} }
 "#,
     )
     .expect_err("mutable dynamic aliases require equal finite target sets");
@@ -6293,7 +6294,7 @@ let ask = effect {
   let choose(): bool
   let value(): i32
 }
-let main(): i32 = { ask.handle choose { (resume) -> resume(false) } value { (resume) -> resume(40) } action {
+let main(): i32 = { ask.handle{choose: { (resume) -> resume(false) }, value: { (resume) -> resume(40) }, action: {
   let left_base = 1
   let right_base = 2
   let left: (): i32 with<ask> = { () -> ask.value() + left_base }
@@ -6302,7 +6303,7 @@ let main(): i32 = { ask.handle choose { (resume) -> resume(false) } value { (res
   let second: (): i32 with<ask> = if false { right } else { left }
   let combined: (): i32 with<ask> = if ask.choose() { first } else { second }
   combined()
-} }
+}} }
 "#,
     )
     .expect("effectful union selectors forward capturing closure environments");
@@ -6315,15 +6316,15 @@ fn dynamic_resumable_closure_selection_preserves_fn_once_consumption() {
 let ask = effect { let value(): i32 }
 let payload = struct { value: i32 }
 let consume(move payload: payload): i32 = { payload.value }
-let main(): i32 = { ask.handle value { (resume) -> resume(1) } action {
-  let left_payload = payload { value: 20 }
-  let right_payload = payload { value: 21 }
+let main(): i32 = { ask.handle{value: { (resume) -> resume(1) }, action: {
+  let left_payload = payload{ value: 20 }
+  let right_payload = payload{ value: 21 }
   let left: (): i32 with<ask> = { () -> ask.value() + consume(left_payload) }
   let right: (): i32 with<ask> = { () -> ask.value() + consume(right_payload) }
   let action: (): i32 with<ask> = if true { left } else { right }
   let first = action()
   first + action()
-} }
+}} }
 "#,
     )
     .expect_err("a selected fn_once resumable closure cannot be invoked twice");
@@ -6340,14 +6341,14 @@ fn effectful_guards_inspect_noncopy_inputs_without_committing_payload_moves() {
 let ask = effect { let accept(): bool }
 let payload = struct { value: i32 }
 let event = enum { value(value: payload), empty }
-let main(): i32 = { ask.handle accept { (resume) -> resume(false) } action {
-  let event = event.value(value: payload { value: 42 })
-  event match {
+let main(): i32 = { ask.handle{accept: { (resume) -> resume(false) }, action: {
+  let event = event.value(value: payload{ value: 42 })
+  match(event) {
 event.value(value: _) if ask.accept() => 0,
 event.value(value: _) => 42,
 event.empty => 0,
   }
-} }
+}} }
 "#,
     )
     .expect("a binding-free effectful guard may inspect a non-copyable enum input");
@@ -6358,14 +6359,14 @@ let ask = effect { let accept(): bool }
 let payload = struct { value: i32 }
 let event = enum { value(value: payload), empty }
 let consume(move payload: payload): i32 = { payload.value }
-let main(): i32 = { ask.handle accept { (resume) -> resume(false) } action {
-  let event = event.value(value: payload { value: 42 })
-  event match {
+let main(): i32 = { ask.handle{accept: { (resume) -> resume(false) }, action: {
+  let event = event.value(value: payload{ value: 42 })
+  match(event) {
 event.value(value: payload) if ask.accept() => consume(payload),
 event.value(value: payload) => consume(payload),
 event.empty => 0,
   }
-} }
+}} }
 "#,
     )
     .expect("a successful guard path can commit non-copyable bindings before entering its body");
@@ -6375,14 +6376,14 @@ event.empty => 0,
 let ask = effect { let accept(): bool }
 let payload = struct { value: i32 }
 let event = enum { value(value: payload), empty }
-let main(): i32 = { ask.handle accept { (resume) -> resume(false) } action {
-  let event = event.value(value: payload { value: 42 })
-  event match {
+let main(): i32 = { ask.handle{accept: { (resume) -> resume(false) }, action: {
+  let event = event.value(value: payload{ value: 42 })
+  match(event) {
 event.value(value: payload) if ask.accept() && payload.value > 0 => 1,
 event.value(value: _) => 42,
 event.empty => 0,
   }
-} }
+}} }
 "#,
     )
     .expect("a suspended guard reconstructs projected non-copyable bindings from its owned input");
@@ -6393,14 +6394,14 @@ let ask = effect { let accept(): bool }
 let payload = struct { value: i32 }
 let event = enum { value(value: payload), empty }
 let consume(move payload: payload): bool = { payload.value > 0 }
-let main(): i32 = { ask.handle accept { (resume) -> resume(false) } action {
-  let event = event.value(value: payload { value: 42 })
-  event match {
+let main(): i32 = { ask.handle{accept: { (resume) -> resume(false) }, action: {
+  let event = event.value(value: payload{ value: 42 })
+  match(event) {
 event.value(value: payload) if ask.accept() && consume(payload) => 1,
 event.value(value: _) => 42,
 event.empty => 0,
   }
-} }
+}} }
 "#,
     )
     .expect_err("a guard may inspect but not move its reconstructed payload view");
@@ -6529,10 +6530,10 @@ let forward<e: effects>(move action: (): i32 with<e>): i32 with<e> = {
 }
 
 let main(): i32 = {
-  ask.handle value { (resume) -> resume(42) } action {
+  ask.handle{value: { (resume) -> resume(42) }, action: {
     let captured = 0
     forward<ask>({ ask.value() + captured })
-  }
+  }}
 }
 "#,
     )
@@ -6553,9 +6554,9 @@ let forward<e: effects>(move action: (): i32 with<e>): i32 with<e> = {
 }
 
 let main(): i32 = {
-  ask.handle value { (resume) -> resume(42) } action {
+  ask.handle{value: { (resume) -> resume(42) }, action: {
     forward<tell>({ ask.value() })
-  }
+  }}
 }
 "#,
     )
@@ -6652,7 +6653,7 @@ extend(reader, read) {
 }
 let main(): i32 = {
   let value = 42
-  let reader = reader { pointer: ptr(borrow(value)) }
+  let reader = reader{ pointer: ptr(borrow(value)) }
   unsafe { reader.read() }
 }
 "#,
@@ -6904,7 +6905,7 @@ extend(value) {
   let tagged<e: effects>(self: Borrow<self>)(): i32 with<e> = { self.value }
 }
 let main(): i32 = {
-  let item = value { value: 42 }
+  let item = value{ value: 42 }
   unsafe { item.tagged<unsafe>() }
 }
 "#,
@@ -7136,7 +7137,7 @@ fn stores_and_consumes_an_fn_once_nominal_capture() {
 let payload = struct { value: i32 }
 let take(move payload: payload): i32 = { payload.value }
 let main(): i32 = {
-  let payload = payload { value: 42 }
+  let payload = payload{ value: 42 }
   let invoke = { take(payload) }
   invoke()
 }
@@ -7160,7 +7161,7 @@ fn rejects_calling_an_fn_once_closure_twice() {
 let payload = struct { value: i32 }
 let take(move payload: payload): i32 = { payload.value }
 let main(): i32 = {
-  let payload = payload { value: 42 }
+  let payload = payload{ value: 42 }
   let invoke = { take(payload) }
   invoke()
   invoke()
@@ -7182,7 +7183,7 @@ extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
 let finish(move resource: resource)(value: i32): i32 = { value }
 let main(): i32 = {
-  let pending = finish(resource { value: 1 })
+  let pending = finish(resource{ value: 1 })
   pending(1)
   pending(2)
 }
@@ -7201,7 +7202,7 @@ fn moves_an_fn_once_source_when_the_closure_is_created() {
 let payload = struct { value: i32 }
 let take(move payload: payload): i32 = { payload.value }
 let main(): i32 = {
-  let payload = payload { value: 42 }
+  let payload = payload{ value: 42 }
   let invoke = { take(payload) }
   payload.value
 }
@@ -7259,7 +7260,7 @@ extend(counter) {
   let answer = 1
 }
 let main(): i32 = {
-  let mut value = counter { value: 42 }
+  let mut value = counter{ value: 42 }
   let read_value = value.read()
   value.reset()
   read_value + value.take() + counter.answer
@@ -7294,12 +7295,10 @@ let main(): i32 = { run { 42 } }
 }
 
 #[test]
-fn multiple_and_named_trailing_closures_lower_as_successive_calls() {
+fn ordinary_curried_closures_lower_as_successive_calls() {
     for call in [
         "choose(0) { true } { 42 }",
-        "choose(0) condition { true } body { 42 }",
-        "choose 0 { true } { 42 }",
-        "choose 0 condition { true } body { 42 }",
+        "choose(0) condition: { true } body: { 42 }",
     ] {
         let program = crate::parser::parse(&format!(
             r#"
@@ -7317,7 +7316,7 @@ let main(): i32 = {{ {call} }}
 
     for while_expression in [
         "while { value < 42 } { value += 1 }",
-        "while condition { value < 42 } do { value += 1 }",
+        "while condition: { value < 42 } do: { value += 1 }",
     ] {
         let program = crate::parser::parse(&format!(
             "let main(): i32 = {{ let mut value = 0; {while_expression}; value }}\n"
@@ -7337,12 +7336,43 @@ let main(): i32 = {{ {call} }}
 
     for if_expression in [
         "if true { 42 } { 0 }",
-        "if true then { 42 } else { 0 }",
+        "if true then: { 42 } else: { 0 }",
         "if false { 0 } else if true { 42 } else { 0 }",
     ] {
         let program = crate::parser::parse(&format!("let main(): i32 = {{ {if_expression} }}\n"))
             .expect("multi-trailing-closure if source must parse");
         compile(&program).expect("multi-trailing-closure if must lower");
+    }
+}
+
+#[test]
+fn algebraic_handlers_require_one_labeled_brace_group_with_action_last() {
+    for (call, expected) in [
+        (
+            "ask.handle{value: { (resume) -> resume(42) }}",
+            "exactly one `action` argument",
+        ),
+        (
+            "ask.handle{action: { ask.value() }, value: { (resume) -> resume(42) }}",
+            "exactly one `action` argument, in final position",
+        ),
+        (
+            "ask.handle{value: { (resume) -> resume(42) }, action: { ask.value() }, action: { ask.value() }}",
+            "exactly one `action` argument",
+        ),
+        (
+            "ask.handle{value: 42, action: { ask.value() }}",
+            "all be labeled closures",
+        ),
+    ] {
+        let errors = compile_text(&format!(
+            "let ask = effect {{ let value(): i32 }}\nlet main(): i32 = {{ {call} }}\n"
+        ))
+        .expect_err("invalid handler argument shape must be rejected");
+        assert!(
+            errors.iter().any(|error| error.message.contains(expected)),
+            "{errors:?}"
+        );
     }
 }
 
@@ -7360,7 +7390,7 @@ extend(Number, Convert<i32>) {
   let convert(self: Borrow<self>)(move rhs: i32): i32 = { self.value + rhs }
 }
 let main(): i32 = {
-  let number = Number { value: 40 }
+  let number = Number{ value: 40 }
   number.convert(2)
 }
 "#,
@@ -7455,7 +7485,7 @@ let applicative = trait<self: <value: type>: type>(requires: self is functor) {
 let carrier<t: type> = struct { value: t }
 extend(carrier, applicative) {
   let pure<a: type>(move value: a): carrier<a> = {
-carrier<a> { value: value }
+carrier<a>{ value: value }
   }}
 let main(): i32 = { 0 }
 "#;
@@ -7479,7 +7509,7 @@ let applicative = trait<self: <value: type>: type>(requires: self is functor) {
 let carrier<t: type> = struct { value: t }
 extend(carrier, applicative) {
   let pure<a: type>(move value: a): carrier<a> = {
-carrier<a> { value: value }
+carrier<a>{ value: value }
   }}
 	extend(carrier, functor) {
   let map<e: effects, a: type, b: type>(
@@ -7487,7 +7517,7 @@ carrier<a> { value: value }
 	  )(
 	    transform: (a): b with<e>,
 	  ): carrier<b> with<e> = {
-	    carrier<b> { value: transform(self.value) }
+	    carrier<b>{ value: transform(self.value) }
 	  }}
 let main(): i32 = { 0 }
 "#,
@@ -7508,7 +7538,7 @@ let keep<m: <value: type>: type, a: type>(move value: m<a>): m<a>
 }
 
 let main(): i32 = {
-  let kept = keep<m: carrier>(carrier<i32> { value: 42 })
+  let kept = keep<m: carrier>(carrier<i32>{ value: 42 })
   kept.value
 }
 "#,
@@ -7575,7 +7605,7 @@ fn constructor_trait_implementation_headers_support_marker_traits() {
     let program = crate::parser::parse(
         r#"
 let higher = trait<self: <value: type>: type> {}
-let tagged<tag: type> = trait<self: <value: type>: type> {}
+let tagged<tag: type> = trait<self: <value: type>: type>{}
 let carrier<t: type> = struct { value: t }
 extend(carrier, higher) {}
 extend(carrier, tagged<i32>) {}
@@ -7637,7 +7667,7 @@ let carrier<t: type> = struct { value: t }
 	  )(
 	    transform: (a): b with<e>,
 	  ): carrier<b> with<e> = {
-	    carrier<b> { value: transform(self.value) }
+	    carrier<b>{ value: transform(self.value) }
 	  }}
 let main(): i32 = { 0 }
 "#,
@@ -7701,11 +7731,11 @@ let carrier<t: type> = struct { value: t }
 	  )(
 	    transform: (a): b with<e>,
 	  ): carrier<b> with<e> = {
-	    carrier<b> { value: transform(self.value) }
+	    carrier<b>{ value: transform(self.value) }
 	  }}
 let add_one(x: i32): i32 = { x + 1 }
 let main(): i32 = {
-	  let value = carrier<i32> { value: 41 }.map(add_one)
+	  let value = carrier<i32>{ value: 41 }.map(add_one)
   value.value
 }
 "#,
@@ -7770,14 +7800,14 @@ let result_next(value: i32): Result<bool><i32> = {
 }
 
 let read_option(value: Option<i32>): i32 = {
-  value match {
+  match(value) {
 Some(number) => number,
 None => 0,
   }
 }
 
 let read_result(value: Result<bool><i32>): i32 = {
-  value match {
+  match(value) {
 Ok(number) => number,
 Err(_) => 0,
   }
@@ -7981,7 +8011,7 @@ extend(number, Add<number>) {
   let Output = i32
   let add(self)(rhs: number): i32 = { self.value + rhs.value }
 }
-let main(): i32 = { number { value: 40 } + number { value: 2 } }
+let main(): i32 = { number{ value: 40 } + number{ value: 2 } }
 "#,
     );
     let key = TraitImplKey {
@@ -8011,24 +8041,24 @@ let Rem = core.ops.Rem
 let number = struct { value: i32 }
 extend(number, Sub<number>) {
   let Output = number
-  let sub(self)(rhs: number): number = { number { value: self.value - rhs.value } }
+  let sub(self)(rhs: number): number = { number{ value: self.value - rhs.value } }
 }
 extend(number, Mul<number>) {
   let Output = number
-  let mul(self)(rhs: number): number = { number { value: self.value * rhs.value } }
+  let mul(self)(rhs: number): number = { number{ value: self.value * rhs.value } }
 }
 extend(number, Div<number>) {
   let Output = number
-  let div(self)(rhs: number): number = { number { value: self.value / rhs.value } }
+  let div(self)(rhs: number): number = { number{ value: self.value / rhs.value } }
 }
 extend(number, Rem<number>) {
   let Output = number
-  let rem(self)(rhs: number): number = { number { value: self.value % rhs.value } }
+  let rem(self)(rhs: number): number = { number{ value: self.value % rhs.value } }
 }
 let main(): i32 = {
-  let a = number { value: 18 }
-  let b = number { value: 5 }
-  (((a - b) * number { value: 2 }) / number { value: 3 } % number { value: 4 }).value
+  let a = number{ value: 18 }
+  let b = number{ value: 5 }
+  (((a - b) * number{ value: 2 }) / number{ value: 3 } % number{ value: 4 }).value
 }
 "#,
     );
@@ -8065,8 +8095,8 @@ extend(number, eq<number>) {
   let eq(self: Borrow<self>)(rhs: Borrow<number>): bool = { self.value == rhs.value }
 }
 let main(): i32 = {
-  let left = number { value: 21 }
-  let right = number { value: 21 }
+  let left = number{ value: 21 }
+  let right = number{ value: 21 }
   if left == right && !(left != right) { 42 } else { 0 }
 }
 "#,
@@ -8099,9 +8129,9 @@ else if self.value > rhs.value { Greater }
 else { Equal } }
 }
 let main(): i32 = {
-  let low = number { value: 1, unordered: false }
-  let high = number { value: 2, unordered: false }
-  let none = number { value: 0, unordered: true }
+  let low = number{ value: 1, unordered: false }
+  let high = number{ value: 2, unordered: false }
+  let none = number{ value: 0, unordered: true }
   if low < high && low <= high && high > low && high >= low &&
 !(none < low) && !(none <= low) && !(none > low) && !(none >= low) {
 42
@@ -8145,7 +8175,7 @@ extend(flag, Not) {
 let negate<t: type>(move value: t): t = requires(t is Neg && t.Output == t) { -value }
 let invert<t: type>(move value: t): t = requires(t is Not && t.Output == t) { !value }
 let main(): i32 = { if invert(false) {
-  !flag { value: false } + -number { value: 0 } + negate(0)
+  !flag{ value: false } + -number{ value: 0 } + negate(0)
 } else { 0 } }
 "#,
     );
@@ -8178,29 +8208,29 @@ let Shr = core.ops.Shr
 let bits = struct { value: i32 }
 extend(bits, BitAnd<bits>) {
   let Output = bits
-  let bit_and(self)(rhs: bits): bits = { bits { value: self.value & rhs.value } }
+  let bit_and(self)(rhs: bits): bits = { bits{ value: self.value & rhs.value } }
 }
 extend(bits, BitOr<bits>) {
   let Output = bits
-  let bit_or(self)(rhs: bits): bits = { bits { value: self.value | rhs.value } }
+  let bit_or(self)(rhs: bits): bits = { bits{ value: self.value | rhs.value } }
 }
 extend(bits, BitXor<bits>) {
   let Output = bits
-  let bit_xor(self)(rhs: bits): bits = { bits { value: self.value ^ rhs.value } }
+  let bit_xor(self)(rhs: bits): bits = { bits{ value: self.value ^ rhs.value } }
 }
 extend(bits, Shl<bits>) {
   let Output = bits
-  let shl(self)(rhs: bits): bits = { bits { value: self.value << rhs.value } }
+  let shl(self)(rhs: bits): bits = { bits{ value: self.value << rhs.value } }
 }
 extend(bits, Shr<bits>) {
   let Output = bits
-  let shr(self)(rhs: bits): bits = { bits { value: self.value >> rhs.value } }
+  let shr(self)(rhs: bits): bits = { bits{ value: self.value >> rhs.value } }
 }
 let mask<t: type>(move left: t)(move right: t): t
 = requires(t is BitAnd<t> && t.Output == t) { left & right }
 let unsigned_shift(value: u32): u32 = { value >> 2 }
 let main(): i32 = {
-  let value = ((((mask(bits { value: 6 })(bits { value: 3 }) | bits { value: 8 }) ^ bits { value: 3 }) << bits { value: 1 }) >> bits { value: 1 }).value
+  let value = ((((mask(bits{ value: 6 })(bits{ value: 3 }) | bits{ value: 8 }) ^ bits{ value: 3 }) << bits{ value: 1 }) >> bits{ value: 1 }).value
   let builtins = (6 & 3) == 2 && (2 | 8) == 10 && (10 ^ 3) == 9 &&
 (9 << 1) == 18 && (-8 >> 2) == -2 && unsigned_shift(8) == 2
   if value == 9 && builtins { 42 } else { 0 }
@@ -8236,7 +8266,7 @@ let main(): i32 = {
 #[test]
 fn unary_operator_traits_report_missing_output_and_auto_move_errors() {
     let missing = compile_resolved_text(
-        "let number = struct { value: i32 }\nlet main(): i32 = { (-number { value: 1 }).value }\n",
+        "let number = struct { value: i32 }\nlet main(): i32 = { (-number{ value: 1 }).value }\n",
     )
     .unwrap_err();
     assert!(missing.iter().any(|error| {
@@ -8252,7 +8282,7 @@ let number = struct { value: i32 }
 extend(number, Neg) {
   let Output = i32
   let neg(self)(): i32 = { -self.value }}
-let main(): bool = { -number { value: 1 } }
+let main(): bool = { -number{ value: 1 } }
 "#,
     )
     .unwrap_err();
@@ -8270,7 +8300,7 @@ extend(resource, Neg) {
   let Output = resource
   let neg(self)(): resource = { self }}
 let main(): i32 = {
-  let value = resource { value: 42 }
+  let value = resource{ value: 42 }
   let negated = -value
   negated.value + value.value
 }
@@ -8355,7 +8385,7 @@ extend(number, Add<i32>) {
   let Output = bool
   let add(self)(rhs: i32): bool = { self.value == rhs }
 }
-let main(): i32 = { number { value: 42 } + 42 }
+let main(): i32 = { number{ value: 42 } + 42 }
 "#,
     )
     .expect_err("a unique add implementation cannot ignore its expected output");
@@ -8376,7 +8406,7 @@ extend(number, Sub<i32>) {
   let Output = never
   let sub(self)(rhs: i32): never = { loop {} }
 }
-let main(): i32 = { number { value: 42 } - 1 }
+let main(): i32 = { number{ value: 42 } - 1 }
 "#,
     )
     .expect("an uninhabited operator output must coerce to the expected type");
@@ -8396,7 +8426,7 @@ extend(number, Sub<i64>) {
   let Output = i32
   let sub(self)(rhs: i64): i32 = { 42 }
 }
-let main(): i32 = { number { value: 42 } - 1 }
+let main(): i32 = { number{ value: 42 } - 1 }
 "#,
     );
     let exact = TraitImplKey {
@@ -8438,7 +8468,7 @@ extend(number, Sub<bool>) {
   let Output = i32
   let sub(self)(rhs: bool): i32 = { if rhs { 42 } else { 0 } }
 }
-let main(): i32 = { number { value: 1 } - do {
+let main(): i32 = { number{ value: 1 } - do {
   let flag = true
   flag
 } }
@@ -8481,7 +8511,7 @@ extend(number, Sub<i32>) {
 }
 let identity<t: type>(move value: t): t = { value }
 let main(): i32 = {
-  let answer = identity(number { value: 44 } - 2)
+  let answer = identity(number{ value: 44 } - 2)
   if answer == 42 { 42 } else { 0 }
 }
 "#,
@@ -8505,7 +8535,7 @@ extend(number, Add<i32>) {
   let add(self)(rhs: i32): i32 = { self.value + rhs }
 }
 let identity<t: type>(move value: t): t = { value }
-let main(): i32 = { identity(number { value: 40 } + 2) }
+let main(): i32 = { identity(number{ value: 40 } + 2) }
 "#,
     )
     .expect("add output must be visible to generic inference");
@@ -8531,7 +8561,7 @@ extend(number, Add<i64>) {
   let add(self)(rhs: i64): i64 = { rhs }
 }
 let main(): i32 = {
-  let answer: i64 = number { value: 0 } + do { 2147483648 }
+  let answer: i64 = number{ value: 0 } + do { 2147483648 }
   if answer == 2147483648 { 42 } else { 0 }
 }
 "#,
@@ -8565,13 +8595,13 @@ let Add = core.ops.Add
 let number = struct { value: i32 }
 extend(number, Add<number>) {
   let Output = number
-  let add(self)(rhs: number): number = { number { value: self.value + rhs.value } }
+  let add(self)(rhs: number): number = { number{ value: self.value + rhs.value } }
 }
 let main(): i32 = {
-  let answer = make() + number { value: 2 }
+  let answer = make() + number{ value: 2 }
   answer.value
 }
-let make() = { number { value: 40 } }
+let make() = { number{ value: 40 } }
 "#,
     );
     let key = TraitImplKey {
@@ -8612,7 +8642,7 @@ extend(number, Add<i64>) {
   let Output = bool
   let add(self)(rhs: i64): bool = { true }
 }
-let main(): i32 = { number { value: 40 } + 2 }
+let main(): i32 = { number{ value: 40 } + 2 }
 "#,
     )
     .expect_err("expected output must reject every add candidate");
@@ -8634,10 +8664,10 @@ let factory<t: type> = trait {
 let maker = struct { seed: i32 }
 extend(maker, factory<i32>) {
   let Output = cell<i32>
-  let make(self: Borrow<self>)(move value: i32): cell<i32> = { cell<i32> { value: value + self.seed } }
+  let make(self: Borrow<self>)(move value: i32): cell<i32> = { cell<i32>{ value: value + self.seed } }
 }
 let main(): i32 = {
-  let maker = maker { seed: 0 }
+  let maker = maker{ seed: 0 }
   maker.make(42).value
 }
 "#,
@@ -8660,7 +8690,7 @@ let construct<t: type> = trait {
 }
 let number = struct { value: i32 }
 extend(number, construct<i32>) {
-  let construct(move value: i32): number = { number { value: value } }
+  let construct(move value: i32): number = { number{ value: value } }
 }
 let main(): i32 = { number.construct(42).value }
 "#,
@@ -8679,11 +8709,11 @@ let throwing = core.error.throwing
 
 let failure = struct { code: i32 }
 let read(fail: bool): i32 with<throwing<failure>> = {
-  if fail { throw(failure { code: 1 }) } else { 40 } }
+  if fail { throw(failure{ code: 1 }) } else { 40 } }
 let run(fail: bool): i32 with<throwing<failure>> = { read(fail) + 2 }
 let main(): i32 = {
   let result: Result<failure><i32> = try { run(false) }
-  result match { Ok(value) => value, Err(_) => 0 }
+  match(result) { Ok(value) => value, Err(_) => 0 }
 }
 "#,
     )
@@ -8708,7 +8738,7 @@ extend(number) {
   let answer(self: Borrow<self>)(): i32 = { self.value }
 }
 let main(): i32 = {
-  let number = number { value: 42 }
+  let number = number{ value: 42 }
   number.answer()
 }
 "#,
@@ -8851,8 +8881,8 @@ extend(host, reader) {
 }
 extend(cell<i32>, Copyable) {}
 let main(): i32 = {
-  let host = host { value: 19 }
-  let cell = cell<i32> { value: 23 }
+  let host = host{ value: 19 }
+  let cell = cell<i32>{ value: 23 }
   host.read(cell) + cell.value - 23
 }
 "#,
@@ -8874,7 +8904,7 @@ let relocate<t: type>(move value: t): t
 }
 
 let main(): i32 = {
-  let value = resource { value: 42 }
+  let value = resource{ value: 42 }
   let relocated = relocate<resource>(value)
   relocated.value
 }
@@ -9028,7 +9058,7 @@ extend(flag, Future<()>) {
 }
 let main(): i32 = {
   let future = async {
-    if true { await number {} } else { await flag {} }
+    if true { await number{} } else { await flag{} }
   }
   0
 }
@@ -9090,10 +9120,10 @@ let poll_once<e: effects, f: type, t: type>
 let main(): i32 = {
   let mut future = async { 42 }
   let result: Poll<i32> = poll_once(future)
-  match result
-    { Ready(value) -> value }
-    { Pending -> 0 }
-}
+  match(result) {
+    Ready(value) => value,
+    Pending => 0,
+  }}
 "#,
     )
     .expect("a compiler-generated future must implement future and poll to poll.Ready");
@@ -9111,9 +9141,10 @@ let dangerous(): i32 with<unsafe> = { unsafe { 42 } }
 let main(): i32 = {
   let mut future = async { dangerous() }
   unsafe {
-    match future.poll()
-      { Ready(value) -> value }
-      { Pending -> 0 }
+    match(future.poll()) {
+      Ready(value) => value,
+      Pending => 0,
+    }
   }
 }
 "#,
@@ -9151,11 +9182,12 @@ let dangerous(): i32 with<unsafe> = { unsafe { 42 } }
 
 let main(): i32 = { unsafe {
   let mut future = async {
-    await async { dangerous() }
+    await(async { dangerous() })
   }
-  match future.poll()
-    { Ready(value) -> value }
-    { Pending -> 0 }
+  match(future.poll()) {
+    Ready(value) => value,
+    Pending => 0,
+  }
 } }
 "#,
     )
@@ -9232,7 +9264,7 @@ let boxed = struct { value: i32 }
 extend(boxed) {
   let identity(value: self): self = { value }
 }
-let main(): i32 = { boxed.identity(boxed { value: 42 }).value }
+let main(): i32 = { boxed.identity(boxed{ value: 42 }).value }
 "#,
     )
     .unwrap();
@@ -9248,7 +9280,7 @@ extend(number) {
   let value(): i32 = { 2 }
 }
 let main(): i32 = {
-  let number = number { raw: 40 }
+  let number = number{ raw: 40 }
   number.value() + number.value()
 }
 "#,
@@ -9366,7 +9398,7 @@ fn permits_a_move_that_only_reaches_a_break_exit() {
 let boxed = struct { value: i32 }
 let consume(move value: boxed): i32 = { value.value }
 let main(): i32 = {
-  let boxed = boxed { value: 42 }
+  let boxed = boxed{ value: 42 }
   loop {
 break(consume(boxed))
   }
@@ -9424,7 +9456,7 @@ fn lowers_for_through_validated_iteration_lang_items() {
            let into_iter(move self)(): counter = { self }\n}\n\
          let main(): i32 = {\n\
            let mut sum = 0\n\
-           for counter { current: 0, end: 4 } { value ->\n\
+           for counter{ current: 0, end: 4 } { value ->\n\
              sum = sum + value\n\
            }\n\
            sum\n\
@@ -9500,9 +9532,9 @@ let read(value: Option<payload>): Option<i32> = { value?.value }
 let nested(value: Option<payload>): Option<Option<i32>> = { value?.nested }
 let call(value: Result<bool><payload>): Result<bool><i32> = { value?.add(2) }
 let main(): i32 = {
-  let boxed = payload { value: 40, nested: Option<i32>.Some(42) }
+  let boxed = payload{ value: 40, nested: Option<i32>.Some(42) }
   let left = read(Option<payload>.Some(boxed)) ?? 0
-  let right = call(Result<bool><payload>.Ok(payload { value: 0, nested: Option<i32>.None })) ?? 0
+  let right = call(Result<bool><payload>.Ok(payload{ value: 0, nested: Option<i32>.None })) ?? 0
   left + right
 }
 "#,
@@ -9519,7 +9551,7 @@ fn optional_chain_expected_result_only_constrains_the_base_error_type() {
 let Result = core.Result
 
 let boxed = struct { value: i32 }
-let read(): Result<bool><i32> = { Result.Ok(boxed { value: 42 })?.value }
+let read(): Result<bool><i32> = { Result.Ok(boxed{ value: 42 })?.value }
 let main(): i32 = { read() ?? 0 }
 "#,
     )
@@ -9660,7 +9692,7 @@ fn cleanup_plan_materializes_resource_constructor_fields() {
         r#"
 let boxed = struct { value: i32 }
 let spin(): i32 = { loop {} }
-let make(): boxed = { boxed { value: spin() } }
+let make(): boxed = { boxed{ value: spin() } }
 "#,
         "make",
     );
@@ -9678,8 +9710,8 @@ fn cleanup_plan_transfers_resource_loop_break_between_scopes() {
         r#"
 let boxed = struct { value: i32 }
 let make(flag: bool): boxed = { loop {
-  if flag { break(boxed { value: 41 }) }
-  break(boxed { value: 42 })
+  if flag { break(boxed{ value: 41 }) }
+  break(boxed{ value: 42 })
 } }
 "#,
         "make",
@@ -9730,7 +9762,7 @@ fn cleanup_plan_nested_break_abandons_the_outer_partial_value() {
 let payload = struct { value: i32 }
 let pair = struct { left: payload, right: payload }
 let make(): pair = { loop {
-  break(pair { left: payload { value: 1 }, right: break(pair { left: payload { value: 2 }, right: payload { value: 3 } }) })
+  break(pair{ left: payload{ value: 1 }, right: break(pair{ left: payload{ value: 2 }, right: payload{ value: 3 } }) })
 } }
 "#,
         "make",
@@ -9843,7 +9875,7 @@ let discard(move payload: payload): () = {
     let global = cleanup_plan_text(
         r#"
 let payload = struct { value: i32 }
-let payload = payload { value: 42 }
+let payload = payload{ value: 42 }
 let get(): payload = { payload }
 "#,
         "get",
@@ -9981,7 +10013,7 @@ let choice = enum { Some(bundle), None }
 extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
 let consume(move value: resource): () = { () }
-let inspect(move choice: choice): i32 = { choice match {
+let inspect(move choice: choice): i32 = { match(choice) {
   Some(bundle(left: left, right: _)) if left.value == 1 => do {
 consume(left)
 1
@@ -10045,7 +10077,7 @@ fn cleanup_plan_keeps_borrow_aliases_out_of_owned_cleanup() {
         r#"
 let boxed = struct { value: i32 }
 let read(): i32 = {
-  let value = boxed { value: 42 }
+  let value = boxed{ value: 42 }
   let alias = borrow(value)
   alias.value
 }
@@ -10078,7 +10110,7 @@ fn cleanup_plan_does_not_materialize_a_borrow_as_an_owned_resource() {
         r#"
 let boxed = struct { value: i32 }
 let inspect(): () = {
-  let value = boxed { value: 42 }
+  let value = boxed{ value: 42 }
   let alias = borrow(value)
   ()
 }
@@ -10107,7 +10139,7 @@ fn cleanup_plan_uses_struct_array_enum_and_capture_projections() {
         r#"
 let payload = struct { value: i32 }
 let choice = enum { value(value: payload), empty }
-let make(): choice = { choice.value(value: payload { value: 7 }) }
+let make(): choice = { choice.value(value: payload{ value: 7 }) }
 "#,
         "make",
     );
@@ -10128,7 +10160,7 @@ let make(): choice = { choice.value(value: payload { value: 7 }) }
         r#"
 let payload = struct { value: i32 }
 extend(payload, Copyable) {}
-let make(): Array<payload><2> = { [payload { value: 1 }, payload { value: 2 }] }
+let make(): Array<payload><2> = { [payload{ value: 1 }, payload{ value: 2 }] }
 "#,
         "make",
     );
@@ -10237,7 +10269,7 @@ fn cleanup_plan_stages_field_bases_before_transfer_and_copies_index_results() {
         r#"
 let payload = struct { value: i32 }
 let pair = struct { left: payload, right: payload }
-let take(): payload = { pair { left: payload { value: 1 }, right: payload { value: 2 } }.left }
+let take(): payload = { pair{ left: payload{ value: 1 }, right: payload{ value: 2 } }.left }
 "#,
         "take",
     );
@@ -10259,7 +10291,7 @@ let take(): payload = { pair { left: payload { value: 1 }, right: payload { valu
         r#"
 let payload = struct { value: i32 }
 extend(payload, Copyable) {}
-let take(): payload = { [payload { value: 1 }, payload { value: 2 }][1] }
+let take(): payload = { [payload{ value: 1 }, payload{ value: 2 }][1] }
 "#,
         "take",
     );
@@ -10333,7 +10365,7 @@ fn cleanup_plan_moves_a_resource_out_of_a_temporary_array() {
     let plan = cleanup_plan_text(
         r#"
 let payload = struct { value: i32 }
-let take(): payload = { [payload { value: 1 }, payload { value: 2 }][1] }
+let take(): payload = { [payload{ value: 1 }, payload{ value: 2 }][1] }
 "#,
         "take",
     );
@@ -10407,7 +10439,7 @@ fn cleanup_plan_keeps_staged_early_call_arguments_when_a_later_call_diverges() {
 let payload = struct { value: i32 }
 let stop(): never = { loop {} }
 let choose(move value: payload, code: i32): payload = { value }
-let make(): payload = { choose(payload { value: 1 }, stop()) }
+let make(): payload = { choose(payload{ value: 1 }, stop()) }
 "#,
         "make",
     );
@@ -10442,8 +10474,8 @@ fn cleanup_plan_does_not_overwrite_assignment_destination_when_rhs_returns() {
 let payload = struct { value: i32 }
 let pair = struct { left: payload, right: payload }
 let update(): pair = {
-  let mut old = pair { left: payload { value: 0 }, right: payload { value: 1 } }
-  old = pair { left: payload { value: 2 }, right: return(pair { left: payload { value: 3 }, right: payload { value: 4 } }) }
+  let mut old = pair{ left: payload{ value: 0 }, right: payload{ value: 1 } }
+  old = pair{ left: payload{ value: 2 }, right: return(pair{ left: payload{ value: 3 }, right: payload{ value: 4 } }) }
   old
 }
 "#,
@@ -10519,7 +10551,7 @@ fn cleanup_plan_keeps_partial_aggregate_state_out_of_the_return_place() {
         r#"
 let payload = struct { value: i32 }
 let pair = struct { left: payload, right: payload }
-let make(): pair = { pair { left: payload { value: 1 }, right: return(pair { left: payload { value: 2 }, right: payload { value: 3 } }) } }
+let make(): pair = { pair{ left: payload{ value: 1 }, right: return(pair{ left: payload{ value: 2 }, right: payload{ value: 3 } }) } }
 "#,
         "make",
     );
@@ -10529,7 +10561,7 @@ let make(): pair = { pair { left: payload { value: 1 }, right: return(pair { lef
         r#"
 let payload = struct { value: i32 }
 let choice = enum { pair(payload, payload) }
-let make(): choice = { choice.pair(payload { value: 1 }, return(choice.pair(payload { value: 2 }, payload { value: 3 }))) }
+let make(): choice = { choice.pair(payload{ value: 1 }, return(choice.pair(payload{ value: 2 }, payload{ value: 3 }))) }
 "#,
         "make",
     );
@@ -10545,7 +10577,7 @@ let make(): choice = { choice.pair(payload { value: 1 }, return(choice.pair(payl
         r#"
 let payload = struct { value: i32 }
 extend(payload, Copyable) {}
-let make(): Array<payload><2> = { [payload { value: 1 }, return([payload { value: 2 }, payload { value: 3 }])] }
+let make(): Array<payload><2> = { [payload{ value: 1 }, return([payload{ value: 2 }, payload{ value: 3 }])] }
 "#,
         "make",
     );
@@ -10588,11 +10620,11 @@ fn cleanup_plan_stages_implicit_and_explicit_returns_before_return_place() {
     }
 
     let implicit = cleanup_plan_text(
-        "let payload = struct { value: i32 }\nlet make(): payload = { payload { value: 1 } }\n",
+        "let payload = struct { value: i32 }\nlet make(): payload = { payload{ value: 1 } }\n",
         "make",
     );
     let explicit = cleanup_plan_text(
-        "let payload = struct { value: i32 }\nlet make(): payload = { return(payload { value: 1 }) }\n",
+        "let payload = struct { value: i32 }\nlet make(): payload = { return(payload{ value: 1 }) }\n",
         "make",
     );
     for plan in [&implicit, &explicit] {
@@ -10641,7 +10673,7 @@ fn cleanup_plan_forwards_one_destination_through_block_if_and_match() {
         r#"
 let payload = struct { value: i32 }
 let choose(flag: bool): payload = {
-  if flag { payload { value: 1 } } else { payload { value: 2 } }
+  if flag { payload{ value: 1 } } else { payload{ value: 2 } }
 }
 "#,
         "choose",
@@ -10660,9 +10692,9 @@ let choose(flag: bool): payload = {
         r#"
 let choice = enum { first, second }
 let payload = struct { value: i32 }
-let choose(choice: choice): payload = { choice match {
-  choice.first => payload { value: 1 },
-  choice.second => payload { value: 2 },
+let choose(choice: choice): payload = { match(choice) {
+  choice.first => payload{ value: 1 },
+  choice.second => payload{ value: 2 },
 } }
 "#,
         "choose",
@@ -10685,8 +10717,8 @@ fn cleanup_plan_nested_loops_keep_distinct_shared_break_destinations() {
 let payload = struct { value: i32 }
 let choose(flag: bool): payload = { loop {
   let inner = loop {
-if flag { break(payload { value: 1 }) }
-break(payload { value: 2 })
+if flag { break(payload{ value: 1 }) }
+break(payload{ value: 2 })
   }
   break(inner)
 } }
@@ -10737,7 +10769,7 @@ fn cleanup_plan_materializes_discarded_calls_and_partial_captures() {
     let discarded = cleanup_plan_text(
         r#"
 let payload = struct { value: i32 }
-let make(): payload = { payload { value: 1 } }
+let make(): payload = { payload{ value: 1 } }
 let discard(): () = {
   make()
   ()
@@ -10779,7 +10811,7 @@ extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
 let consume(move value: resource): () = { () }
 let run(): () = {
-  let resource = resource { value: 1 }
+  let resource = resource{ value: 1 }
   let once = { consume(resource) }
 }
 "#,
@@ -10799,7 +10831,7 @@ extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
 let finish(move resource: resource)(value: i32): i32 = { value }
 let main(): i32 = {
-  let pending = finish(resource { value: 1 })
+  let pending = finish(resource{ value: 1 })
   let alias = pending
   alias(42)
 }
@@ -10926,7 +10958,7 @@ fn cleanup_plan_does_not_move_out_discarded_copy_projections() {
     let field_plan = cleanup_plan_text(
         r#"
 let boxed = struct { value: i32 }
-let make(): boxed = { boxed { value: 42 } }
+let make(): boxed = { boxed{ value: 42 } }
 let discard(): () = {
   make().value
   ()
@@ -11220,13 +11252,13 @@ fn cleanup_plan_records_assignment_kinds_moves_and_maybe_overwrite_state() {
 let boxed = struct { value: i32 }
 let consume(move boxed: boxed): () = { () }
 let classify(flag: bool): i32 = {
-  let mut boxed = boxed { value: 0 }
-  boxed = boxed { value: 1 }
-  consume(boxed)
-  boxed = boxed { value: 2 }
-  if flag { consume(boxed) }
-  boxed = boxed { value: 42 }
-  boxed.value
+  let mut item = boxed{ value: 0 }
+  item = boxed{ value: 1 }
+  consume(item)
+  item = boxed{ value: 2 }
+  if flag { consume(item) }
+  item = boxed{ value: 42 }
+  item.value
 }
 "#,
         "classify",
@@ -11267,7 +11299,7 @@ extend(boxed, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = { () }}
 let consume(move value: boxed): () = { () }
 let finish(flag: bool): () = {
-  let boxed = boxed { value: 42 };
+  let boxed = boxed{ value: 42 };
   if flag { consume(boxed) };
   ()
 }
@@ -11296,7 +11328,7 @@ let finish(flag: bool): () = {
         r#"
 let plain = struct { value: i32 }
 extend(plain, Copyable) {}
-let finish(): () = { let value = plain { value: 42 }; () }
+let finish(): () = { let value = plain{ value: 42 }; () }
 "#,
         "finish",
     );
@@ -11373,7 +11405,7 @@ fn reusable_handler_capturing_action_materializes_direct_literals() {
         r#"
 let ask = effect { let value(): i32 }
 let run()(move action: (): i32 with<ask>): i32 = {
-  ask.handle value { (resume) -> resume(10) } action { action() }
+  ask.handle{value: { (resume) -> resume(10) }, action: { action() }}
 }
 let main(): i32 = {
   let mut base = 31
@@ -11394,7 +11426,7 @@ fn reusable_handler_materializes_arguments_before_direct_action() {
         r#"
 let ask = effect { let value(): i32 }
 let run(seed: i32)(move action: (): i32 with<ask>): i32 = {
-  ask.handle value { (resume) -> resume(20) } action { action() + seed }
+  ask.handle{value: { (resume) -> resume(20) }, action: { action() + seed }}
 }
 let prepare(order: Borrow<mut><i32>): i32 = {
   order = order + 1
@@ -11419,10 +11451,10 @@ fn reusable_handler_stages_borrowed_arguments_before_direct_action() {
         r#"
 let ask = effect { let value(): i32 }
 let run(left: Borrow<i32>, right: Borrow<mut><i32>)(move action: (): i32 with<ask>): i32 = {
-  ask.handle value { (resume) -> resume(2) } action {
+  ask.handle{value: { (resume) -> resume(2) }, action: {
     right = right + action()
     left + right
-  }
+  }}
 }
 
 let main(): i32 = {
@@ -11451,7 +11483,7 @@ extend(total, ArrayLiteral<i32>) {
 
   let from_array_literal<length: usize>
     (move values: Array<i32><length>): Output = {
-    total { value: 42 }
+    total{ value: 42 }
   }
 }
 
@@ -11475,7 +11507,7 @@ extend(tag, StringLiteral) {
 
   let from_string_literal<length: usize>
     (move utf8: Array<u8><length>): Output = {
-    tag { first: 83 }
+    tag{ first: 83 }
   }
 }
 

@@ -40,7 +40,9 @@ let next(calls: Ptr<mut><i32>): bool = {
 }
 
 let run_true(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
-  ask.handle ask { (resume) -> resume(next(calls)) } action {
+  ask.handle{
+    ask: { (resume) -> resume(next(calls)) },
+    action: {
       let mut future = async {
         while { true } {
           let done = await make_step(drops)
@@ -53,16 +55,20 @@ let run_true(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
       }
       let first = future.poll()
       let second = future.poll()
-      match first
-        { Pending -> match second
-          { Ready(_) -> 42 }
-          { Pending -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(first) {
+        Pending => do {
+          match(second) { Ready(_) => 42, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let run_false(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
-  ask.handle ask { (resume) -> resume(next(calls)) } action {
+  ask.handle{
+    ask: { (resume) -> resume(next(calls)) },
+    action: {
       let mut future = async {
         while { false } {
           let done = await make_step(drops)
@@ -73,14 +79,16 @@ let run_false(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
           }
         }
       }
-      match future.poll()
-        { Ready(_) -> 42 }
-        { Pending -> 0 }
-    }
+      match(future.poll()) { Ready(_) => 42, Pending => 0,
+      }
+    },
+  }
 }
 
 let run_post(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
-  ask.handle ask { (resume) -> resume(next(calls)) } action {
+  ask.handle{
+    ask: { (resume) -> resume(next(calls)) },
+    action: {
       let mut future = async {
         do {
           let ignored = await make_step(drops)
@@ -91,12 +99,14 @@ let run_post(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
       }
       let first = future.poll()
       let second = future.poll()
-      match first
-        { Pending -> match second
-          { Ready(_) -> 42 }
-          { Pending -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(first) {
+        Pending => do {
+          match(second) { Ready(_) => 42, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let main(): i32 = {

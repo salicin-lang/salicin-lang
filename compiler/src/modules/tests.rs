@@ -1,5 +1,5 @@
 use super::*;
-use crate::ast::CallArg;
+use crate::ast::{CallArg, GroupDelimiter};
 
 fn unit(path: &str, module_path: &[&str], source: &str, is_root: bool) -> SourceUnit {
     SourceUnit {
@@ -84,7 +84,7 @@ fn function_tail(function: &Function) -> &Expr {
     tail.unlocated()
 }
 
-fn match_cases(expression: &Expr) -> Vec<&Expr> {
+fn match_cases(expression: &Expr) -> &[MatchArm] {
     fn flatten<'a>(expression: &'a Expr, groups: &mut Vec<&'a [CallArg]>) -> &'a Expr {
         let expression = expression.unlocated();
         if let Expr::Call(callee, arguments) = expression {
@@ -101,16 +101,17 @@ fn match_cases(expression: &Expr) -> Vec<&Expr> {
         flatten(expression, &mut groups),
         &Expr::Name("$lang$match".into())
     );
-    groups
-        .into_iter()
-        .skip(1)
-        .map(|group| {
-            let [CallArg { label: None, value }] = group else {
-                panic!("expected one unlabeled match case");
-            };
-            value
-        })
-        .collect()
+    let [_, cases] = groups.as_slice() else {
+        panic!("expected match input and partial closure");
+    };
+    let [CallArg {
+        label: None,
+        value: Expr::PartialClosure(arms),
+    }] = *cases
+    else {
+        panic!("expected one unlabeled partial closure");
+    };
+    arms
 }
 
 #[test]
@@ -191,7 +192,7 @@ fn flattens_modules_and_rewrites_calls_and_dotted_types() {
             "src/geometry.sc",
             &["geometry"],
             "pub(package) let point = struct { x: i32, y: i32 }\n\
-                 pub(package) let make(): point = { point { x: 1, y: 2 } }\n",
+                 pub(package) let make(): point = { point{ x: 1, y: 2 } }\n",
             false,
         ),
     ])
@@ -219,7 +220,7 @@ fn flattens_modules_and_rewrites_calls_and_dotted_types() {
     );
     assert!(matches!(
         function_tail(make),
-        Expr::StructLiteral { constructor, .. }
+        Expr::DelimitedCall { callee: constructor, delimiter: GroupDelimiter::Brace, .. }
             if constructor.as_ref() == &Expr::Name("geometry::point".into())
     ));
 }
@@ -237,7 +238,7 @@ fn resolves_longest_declaration_prefix_and_preserves_fields() {
             "src/data.sc",
             &["data"],
             "pub(package) let point = struct { pub(package) x: i32 }\n\
-                 pub(package) let origin = point { x: 1 }\n",
+                 pub(package) let origin = point{ x: 1 }\n",
             false,
         ),
     ])
@@ -259,7 +260,7 @@ fn local_parameters_blocks_closures_and_match_bindings_shadow_modules() {
             "use core.option.Option\n\
                  let keep(math: i32): i32 = {\n\
                    let local = { (math: i32) -> math }\n\
-                   Option.Some(math) match { Option.Some(math) => local(math), _ => math }\n\
+                   match(Option.Some(math)) { Option.Some(math) => local(math), _ => math }\n\
                  }\n",
             true,
         ),
@@ -286,11 +287,8 @@ fn local_parameters_blocks_closures_and_match_bindings_shadow_modules() {
         Expr::Block(_, Some(value)) if value.unlocated() == &Expr::Name("math".into())
     ));
     let cases = match_cases(tail);
-    let Expr::PatternClosure { body, .. } = cases[0] else {
-        panic!("expected pattern closure");
-    };
     assert!(matches!(
-        body.as_ref(),
+        &cases[0].body,
         Expr::Call(_, arguments)
             if arguments[0].value == Expr::Name("math".into())
     ));
@@ -440,7 +438,7 @@ fn preserves_generic_extend_parameters_while_qualifying_the_target() {
             &["api"],
             "pub(package) let cell<t: type> = struct { value: t }\n\
                  extend(cell<t>) {\n\
-                   let new(move value: t): cell<t> = { cell { value: value } }\n\
+                   let new(move value: t): cell<t> = { cell{ value: value } }\n\
                    let take(move self)(): t = { self.value }\n\
                  }\n",
             false,
@@ -640,7 +638,7 @@ extend(number, Add<number>) {
 }
 
 let stop(): never = { loop {} }
-let main(): i32 = { Option {} }
+let main(): i32 = { Option{} }
 "#,
             true,
         ),
@@ -649,7 +647,7 @@ let main(): i32 = { Option {} }
     .unwrap_err();
 
     for expected in [
-        "module `Option` cannot be used as a type or compile-time argument",
+        "module `Option` cannot be used as a value or callable",
         "module `Add` cannot be used as a type",
         "module `never` cannot be used as a type",
     ] {
@@ -1245,7 +1243,7 @@ fn rejects_nominal_types_that_are_narrower_than_function_and_global_apis() {
         "let hidden = struct {}\n\
              pub let wrapper<t: type> = struct {}\n\
              pub let expose(value: wrapper<hidden>): hidden = { value }\n\
-             pub let shared: hidden = hidden {}\n",
+             pub let shared: hidden = hidden{}\n",
         true,
     )])
     .unwrap_err();
@@ -1485,7 +1483,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
              let number = struct { value: i32 }\n\
              extend(number, plus<number>) {\n\
                let output = number\n\
-               let add(self)(rhs: number): number = { number { value: self.value + rhs.value } }\n\
+               let add(self)(rhs: number): number = { number{ value: self.value + rhs.value } }\n\
              }\n",
         true,
     )])
@@ -1531,9 +1529,9 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
              let suspended(): i32 with<async> = { 0 }\n\
              let invoke(move action: (): i32 with<async>): i32 with<async> = { action() }\n\
               extend(number, Semigroup) {\n\
-               let combine(move left: number, move right: number): number = { number { value: left.value + right.value } }\n}\n\
+               let combine(move left: number, move right: number): number = { number{ value: left.value + right.value } }\n}\n\
               extend(number, Monoid) {\n\
-               let empty(): number = { number { value: 0 } }\n}\n",
+               let empty(): number = { number{ value: 0 } }\n}\n",
             true,
         )])
         .unwrap();
@@ -1910,6 +1908,14 @@ fn expression_names(expression: Option<&Expr>) -> HashSet<String> {
                     visit(guard, names);
                 }
                 visit(body, names);
+            }
+            Expr::PartialClosure(arms) => {
+                for arm in arms {
+                    if let Some(guard) = &arm.guard {
+                        visit(guard, names);
+                    }
+                    visit(&arm.body, names);
+                }
             }
             Expr::If {
                 condition,

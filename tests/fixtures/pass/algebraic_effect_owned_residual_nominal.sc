@@ -32,16 +32,22 @@ let audit_outside(
   abandon_step: bool,
 ): i32 = {
   let mut state = state{ value: 20, drops: drops }
-  audit.handle adjust { (resume) ->
+  audit.handle{
+    adjust: { (resume) ->
       if abandon_audit { 40 } else { resume(1) }
-    } action {
-      step.handle delta { (resume) ->
-        if abandon_step { 40 } else { resume(1) }
-      } action {
-        let value = update(state)
-        value + state.value
+    },
+    action: {
+      step.handle{
+        delta: { (resume) ->
+          if abandon_step { 40 } else { resume(1) }
+        },
+        action: {
+          let value = update(state)
+          value + state.value
+        },
       }
-    }
+    },
+  }
 }
 
 let step_outside(
@@ -50,16 +56,22 @@ let step_outside(
   abandon_step: bool,
 ): i32 = {
   let mut state = state{ value: 20, drops: drops }
-  step.handle delta { (resume) ->
+  step.handle{
+    delta: { (resume) ->
       if abandon_step { 40 } else { resume(1) }
-    } action {
-      audit.handle adjust { (resume) ->
-        if abandon_audit { 40 } else { resume(1) }
-      } action {
-        let value = update(state)
-        value + state.value
+    },
+    action: {
+      audit.handle{
+        adjust: { (resume) ->
+          if abandon_audit { 40 } else { resume(1) }
+        },
+        action: {
+          let value = update(state)
+          value + state.value
+        },
       }
-    }
+    },
+  }
 }
 
 let main(): i32 = {

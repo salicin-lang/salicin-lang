@@ -22,17 +22,18 @@ let main(): i32 = {
     consume(pair.0)
     pair.0 = resource{ counter: counter }
   }
-  match (resource{ counter: counter }, resource{ counter: counter })
-    { (left, right) ->
+  match((resource{ counter: counter }, resource{ counter: counter })) {
+    (left, right) => do {
       consume(left)
       consume(right)
-    }
-  match (resource{ counter: counter }, resource{ counter: counter })
-    { (left, _) if false -> consume(left) }
-    { (left, right) ->
+    },
+  }
+  match((resource{ counter: counter }, resource{ counter: counter })) {
+    (left, _) if false => consume(left), (left, right) => do {
       consume(left)
       consume(right)
-    }
+    },
+  }
   let drops = unsafe {
     *counter
   }

@@ -95,21 +95,28 @@ fn flatten_test_call<'a>(expression: &'a Expr, groups: &mut Vec<&'a [CallArg]>) 
     }
 }
 
-fn match_call_parts(expression: &Expr) -> (&Expr, Vec<&Expr>) {
+fn match_call_parts(expression: &Expr) -> (&Expr, &[MatchArm]) {
     let mut groups = Vec::new();
     let root = flatten_test_call(expression, &mut groups);
     assert_eq!(root, &Parser::core_match_function());
-    assert!(groups.len() >= 2, "expected an input and at least one case");
-    let values = groups
-        .into_iter()
-        .map(|group| {
-            let [CallArg { label: None, value }] = group else {
-                panic!("expected a single unlabeled match argument");
-            };
-            value
-        })
-        .collect::<Vec<_>>();
-    (values[0], values[1..].to_vec())
+    let [input_group, cases_group] = groups.as_slice() else {
+        panic!("expected an input and one partial closure");
+    };
+    let [CallArg {
+        label: None,
+        value: input,
+    }] = *input_group
+    else {
+        panic!("expected one unlabeled match input");
+    };
+    let [CallArg {
+        label: None,
+        value: Expr::PartialClosure(arms),
+    }] = *cases_group
+    else {
+        panic!("expected one unlabeled partial closure");
+    };
+    (input, arms)
 }
 
 fn if_call_parts(expression: &Expr) -> (&Expr, &Expr, &Expr) {
@@ -455,7 +462,7 @@ fn rejects_misplaced_ordinary_path_anchors() {
     for source in [
         "let bad(): foo.root.value = { 0 }\n",
         "let bad(): i32 = { root.super.value }\n",
-        "let bad(value: root.option): i32 = { value match { root.super.Option.None => 0 } }\n",
+        "let bad(value: root.option): i32 = { match(value) { root.super.Option.None => 0 } }\n",
     ] {
         let error = parse(source).unwrap_err();
         assert!(error.message.contains("first path segment"), "{error:?}");
@@ -471,7 +478,7 @@ fn rejects_misplaced_ordinary_path_anchors() {
 fn accepts_root_super_and_contextual_self_in_ordinary_paths() {
     let program = parse(
             "let resolve(value: root.model.value): super.model.result = { root.api.call(super.value) }\n\
-             let unwrap(value: root.option): i32 = { value match { root.option.Some(self) => self } }\n",
+             let unwrap(value: root.option): i32 = { match(value) { root.option.Some(self) => self } }\n",
         )
         .unwrap();
 
@@ -501,11 +508,8 @@ fn accepts_root_super_and_contextual_self_in_ordinary_paths() {
         panic!("expected function");
     };
     let (_, cases) = match_call_parts(function_tail(unwrap));
-    let Expr::PatternClosure { pattern, .. } = cases[0] else {
-        panic!("expected pattern closure");
-    };
     assert!(matches!(
-        pattern,
+        &cases[0].pattern,
         Pattern::Constructor { path, fields: PatternFields::Positional(fields) }
             if path == &vec!["root".to_owned(), "option".to_owned(), "Some".to_owned()]
                 && fields == &vec![Pattern::Binding("self".into())]
@@ -982,9 +986,9 @@ fn rejects_runtime_parameter_groups_on_associated_types() {
 #[test]
 fn rejects_removed_underscore_inference_syntax() {
     for source in [
-        "let value: cell<_> = cell<i32> { value: 20 }\n",
-        "let value = cell<_> { value: 20 }\n",
-        "let value = cell<cell<_>> { value: cell<i32> { value: 20 } }\n",
+        "let value: cell<_> = cell<i32>{ value: 20 }\n",
+        "let value = cell<_>{ value: 20 }\n",
+        "let value = cell<cell<_>>{ value: cell<i32>{ value: 20 } }\n",
         "let value = _\n",
         "let value: Array<i32><_> = []\n",
     ] {
@@ -1021,7 +1025,7 @@ fn parses_unsafe_raw_pointer_dereference_and_assignment() {
             ))
     ));
 
-    let program = parse("let main(): () = { unsafe do {} }\n").unwrap();
+    let program = parse("let main(): () = { unsafe(do {}) }\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -1054,8 +1058,8 @@ fn keeps_generic_construction_and_variant_heads_as_angle_postfix_expressions() {
     }
 
     let program = parse(
-        "let cell = cell<i32> { value: 42 }\n\
-             let nested = cell<cell<i32>> { value: 42 }\n\
+        "let cell = cell<i32>{ value: 42 }\n\
+             let nested = cell<cell<i32>>{ value: 42 }\n\
              let some = maybe<i32>.Some(42)\n\
              let none = maybe<i32>.None\n",
     )
@@ -1066,9 +1070,10 @@ fn keeps_generic_construction_and_variant_heads_as_angle_postfix_expressions() {
     };
     assert_eq!(
         cell.value,
-        Expr::StructLiteral {
-            constructor: Box::new(type_head("cell", Expr::Name("i32".into()))),
-            fields: vec![argument(Some("value"), Expr::Integer(42))],
+        Expr::DelimitedCall {
+            callee: Box::new(type_head("cell", Expr::Name("i32".into()))),
+            delimiter: GroupDelimiter::Brace,
+            arguments: vec![argument(Some("value"), Expr::Integer(42))],
         }
     );
 
@@ -1077,12 +1082,13 @@ fn keeps_generic_construction_and_variant_heads_as_angle_postfix_expressions() {
     };
     assert_eq!(
         nested.value,
-        Expr::StructLiteral {
-            constructor: Box::new(type_head(
+        Expr::DelimitedCall {
+            callee: Box::new(type_head(
                 "cell",
                 type_head("cell", Expr::Name("i32".into())),
             )),
-            fields: vec![argument(Some("value"), Expr::Integer(42))],
+            delimiter: GroupDelimiter::Brace,
+            arguments: vec![argument(Some("value"), Expr::Integer(42))],
         }
     );
 
@@ -1113,7 +1119,7 @@ fn keeps_generic_construction_and_variant_heads_as_angle_postfix_expressions() {
 }
 
 #[test]
-fn parses_tight_struct_literals_after_angle_applications() {
+fn adjacent_braces_are_delimited_calls_even_when_empty_or_labeled() {
     let program = parse(
         "let cell = wrapper<i32>{ value: 42 }\n\
          let empty = marker{}\n",
@@ -1125,7 +1131,7 @@ fn parses_tight_struct_literals_after_angle_applications() {
     };
     assert!(matches!(
         &cell.value,
-        Expr::StructLiteral { constructor, fields }
+        Expr::DelimitedCall { callee: constructor, delimiter: GroupDelimiter::Brace, arguments: fields }
             if matches!(
                 constructor.as_ref(),
                 Expr::DelimitedCall {
@@ -1141,9 +1147,21 @@ fn parses_tight_struct_literals_after_angle_applications() {
     };
     assert!(matches!(
         &empty.value,
-        Expr::StructLiteral { constructor, fields }
+        Expr::DelimitedCall { callee: constructor, delimiter: GroupDelimiter::Brace, arguments: fields }
             if constructor.as_ref() == &Expr::Name("marker".into()) && fields.is_empty()
     ));
+}
+
+#[test]
+fn spaced_braces_are_trailing_closures_not_construction() {
+    assert!(parse("let value = marker { field: 42 }\n").is_err());
+
+    let program = parse("let value = marker { 42 }\n").unwrap();
+    let Item::Global(binding) = &program.items[0] else {
+        panic!("expected value binding");
+    };
+    assert!(matches!(&binding.value, Expr::Call(_, arguments)
+        if matches!(arguments.as_slice(), [CallArg { label: None, value: Expr::Closure(_, _) }])));
 }
 
 #[test]
@@ -1463,26 +1481,7 @@ fn parses_throw_as_a_core_error_function() {
         )
     );
 
-    let program = parse("let fail(): Result<bool><i32> = { throw false }\n").unwrap();
-    let Item::Function(function) = &program.items[0] else {
-        panic!("expected function");
-    };
-    assert_eq!(
-        function_tail(function),
-        &Expr::Call(
-            Box::new(Expr::Member(
-                Box::new(Expr::Member(
-                    Box::new(Expr::Name("core".to_owned())),
-                    "error".to_owned(),
-                )),
-                "throw".to_owned(),
-            )),
-            vec![CallArg {
-                label: None,
-                value: Expr::Bool(false),
-            }],
-        )
-    );
+    assert!(parse("let fail(): Result<bool><i32> = { throw false }\n").is_err());
 }
 
 #[test]
@@ -1512,7 +1511,7 @@ fn parses_do_and_try_as_distinct_immediate_handlers() {
         Expr::Member(_, name) if name == "try"
     ));
 
-    let program = parse("let value: Result<bool><i32> = try do { 42 }\n").unwrap();
+    let program = parse("let value: Result<bool><i32> = try(do { 42 })\n").unwrap();
     let Item::Global(binding) = &program.items[0] else {
         panic!("expected global");
     };
@@ -1528,66 +1527,14 @@ fn parses_do_and_try_as_distinct_immediate_handlers() {
 }
 
 #[test]
-fn parses_parenthesis_free_unary_call_groups() {
-    let program = parse(
-        "let value = transform input\n\
-             let curried = combine left right\n\
-             let mapped = map values { (value: i32) -> value + 1 }\n\
-             let method = receiver.shift amount\n",
-    )
-    .unwrap();
-    let values = program
-        .items
-        .iter()
-        .map(|item| match item {
-            Item::Global(binding) => &binding.value,
-            _ => panic!("expected global"),
-        })
-        .collect::<Vec<_>>();
-    assert!(matches!(
-        values[0],
-        Expr::Call(callee, arguments)
-            if matches!(callee.as_ref(), Expr::Name(name) if name == "transform")
-                && matches!(arguments.as_slice(), [CallArg {
-                    value: Expr::Name(name),
-                    ..
-                }] if name == "input")
-    ));
-    assert!(matches!(
-        values[1],
-        Expr::Call(callee, right)
-            if matches!(right.as_slice(), [CallArg {
-                value: Expr::Name(name),
-                ..
-            }] if name == "right")
-                && matches!(
-                    callee.as_ref(),
-                    Expr::Call(inner, left)
-                        if matches!(inner.as_ref(), Expr::Name(name) if name == "combine")
-                            && matches!(left.as_slice(), [CallArg {
-                                value: Expr::Name(name),
-                                ..
-                            }] if name == "left")
-                )
-    ));
-    assert!(matches!(
-        values[2],
-        Expr::Call(callee, closure)
-            if matches!(closure.as_slice(), [CallArg {
-                value: Expr::Closure(_, _),
-                ..
-            }])
-                && matches!(
-                    callee.as_ref(),
-                    Expr::Call(_, values) if values.len() == 1
-                )
-    ));
-    assert!(matches!(
-        values[3],
-        Expr::Call(callee, arguments)
-            if matches!(callee.as_ref(), Expr::Member(_, member) if member == "shift")
-                && arguments.len() == 1
-    ));
+fn rejects_parenthesis_free_ordinary_calls() {
+    for source in [
+        "let value = transform input\n",
+        "let value = combine(left) right\n",
+        "let value = receiver.shift amount\n",
+    ] {
+        assert!(parse(source).is_err(), "bare call parsed: {source}");
+    }
 }
 
 #[test]
@@ -1640,26 +1587,11 @@ fn multiple_trailing_closures_create_successive_call_groups() {
     assert_eq!(first_group.len(), 1);
     assert!(matches!(first_call.as_ref(), Expr::Call(_, arguments) if arguments.is_empty()));
 
-    let program = parse("let value = choose true { 1 } { 0 }\n").unwrap();
-    let Item::Global(binding) = &program.items[0] else {
-        panic!("expected global");
-    };
-    let Expr::Call(second_call, _) = &binding.value else {
-        panic!("expected second trailing group");
-    };
-    let Expr::Call(first_call, _) = second_call.as_ref() else {
-        panic!("expected first trailing group");
-    };
-    assert!(matches!(
-        first_call.as_ref(),
-        Expr::Call(_, arguments)
-            if matches!(arguments.as_slice(), [CallArg { value: Expr::Bool(true), .. }])
-    ));
 }
 
 #[test]
 fn named_trailing_closures_create_labeled_call_groups() {
-    let program = parse("let value = choose() condition { true } body { 1 }\n").unwrap();
+    let program = parse("let value = choose() condition: { true } body: { 1 }\n").unwrap();
     let Item::Global(binding) = &program.items[0] else {
         panic!("expected global");
     };
@@ -1674,13 +1606,14 @@ fn named_trailing_closures_create_labeled_call_groups() {
 }
 
 #[test]
-fn handler_member_accepts_implicit_named_trailing_groups() {
+fn handler_member_accepts_one_labeled_brace_call() {
     let program = parse(
         "let run(): i32 = {\n\
-               ask.handle\n\
-                 value { (resume) -> resume(42) }\n\
-                 done { (answer) -> answer }\n\
-                 action { ask.value() }\n\
+               ask.handle{\n\
+                 value: { (resume) -> resume(42) },\n\
+                 done: { (answer) -> answer },\n\
+                 action: { ask.value() },\n\
+               }\n\
              }\n",
     )
     .unwrap();
@@ -1690,28 +1623,25 @@ fn handler_member_accepts_implicit_named_trailing_groups() {
     let Some(Expr::Block(_, Some(value))) = &function.body else {
         panic!("expected function body");
     };
-    let Expr::Call(done_call, action_group) = value.unlocated() else {
-        panic!("expected action group");
+    let Expr::DelimitedCall { callee, delimiter, arguments } = value.unlocated() else {
+        panic!("expected brace-delimited handler call");
     };
-    assert_eq!(action_group[0].label.as_deref(), Some("action"));
-    let Expr::Call(value_call, done_group) = done_call.as_ref() else {
-        panic!("expected done group");
-    };
-    assert_eq!(done_group[0].label.as_deref(), Some("done"));
-    let Expr::Call(handler, value_group) = value_call.as_ref() else {
-        panic!("expected value group");
-    };
-    assert_eq!(value_group[0].label.as_deref(), Some("value"));
-    assert!(matches!(handler.as_ref(), Expr::Member(_, member) if member == "handle"));
+    assert_eq!(*delimiter, GroupDelimiter::Brace);
+    assert_eq!(
+        arguments.iter().map(|argument| argument.label.as_deref()).collect::<Vec<_>>(),
+        [Some("value"), Some("done"), Some("action")]
+    );
+    assert!(matches!(callee.as_ref(), Expr::Member(_, member) if member == "handle"));
 }
 
 #[test]
-fn handler_action_ends_the_trailing_group_sequence() {
+fn handler_brace_call_ends_before_the_following_statement() {
     let program = parse(
         "let run(): i32 = {\n\
-               let ignored = iteration_skip.handle\n\
-                 next { () }\n\
-                 action { () }\n\
+               let ignored = iteration_skip.handle{\n\
+                 next: { () },\n\
+                 action: { () },\n\
+               }\n\
                if true { 42 } else { 0 }\n\
              }\n",
     )
@@ -1730,38 +1660,32 @@ fn handler_action_ends_the_trailing_group_sequence() {
 }
 
 #[test]
-fn rejects_legacy_handler_and_for_forms() {
-    for (source, expected) in [
-        (
-            "let run(): i32 = { ask.handle(value: { (resume) -> resume(42) }) { ask.value() } }\n",
-            "`handle` clauses use named trailing groups",
-        ),
-        (
-            "let run(): i32 = { ask.handle value { (resume) -> resume(42) } { ask.value() } }\n",
-            "handler action must use the named trailing group",
-        ),
-        (
-            "let run(values: values): () = { for value in values { consume(value) } }\n",
-            "trailing pattern closure",
-        ),
+fn rejects_old_successive_handler_groups() {
+    assert!(parse(
+        "let run(): i32 = { ask.handle value: { (resume) -> resume(42) } action: { ask.value() } }\n"
+    )
+    .is_err());
+}
+
+#[test]
+fn rejects_trailing_groups_after_a_pattern_closure() {
+    for source in [
+        "let value = consume() { value -> value } { 42 }\n",
+        "let value = consume() { value if true -> value } next: { 42 }\n",
     ] {
         let error = parse(source).unwrap_err();
-        assert!(error.message.contains(expected), "{}", error.message);
+        assert!(error.message.contains("final trailing closure group"), "{error:?}");
     }
 }
 
 #[test]
-fn named_nested_trailing_calls_are_implicitly_closed() {
-    let program =
-        parse("let value = choose(true) { 1 } otherwise choose(false) { 2 } { 3 }\n").unwrap();
-    let Item::Global(binding) = &program.items[0] else {
-        panic!("expected global");
-    };
-    let Expr::Call(_, group) = &binding.value else {
-        panic!("expected named trailing group");
-    };
-    assert_eq!(group[0].label.as_deref(), Some("otherwise"));
-    assert!(matches!(group[0].value, Expr::Closure(_, _)));
+fn rejects_colonless_named_trailing_closures() {
+    for source in [
+        "let value = choose() condition { true }\n",
+        "let run(): i32 = { ask.handle get { (resume) -> resume(42) } action { ask.get() } }\n",
+    ] {
+        assert!(parse(source).is_err(), "colonless label parsed: {source}");
+    }
 }
 
 #[test]
@@ -1880,7 +1804,7 @@ fn parses_labeled_construction_member_access_and_assignment() {
     let program = parse(
         "let point = struct { x: i32, y: i32 }\n\
              let main(): i32 = {\n\
-               let mut point = point { x: 1, y: 2 }\n\
+               let mut point = point{ x: 1, y: 2 }\n\
                point.x = 3\n\
                point.x\n\
              }\n",
@@ -1898,7 +1822,7 @@ fn parses_labeled_construction_member_access_and_assignment() {
     };
     assert!(matches!(
         &binding.value,
-        Expr::StructLiteral { fields, .. }
+        Expr::DelimitedCall { delimiter: GroupDelimiter::Brace, arguments: fields, .. }
             if fields.iter().map(|argument| argument.label.as_deref()).collect::<Vec<_>>()
                 == vec![Some("x"), Some("y")]
     ));
@@ -1915,9 +1839,9 @@ fn parses_labeled_construction_member_access_and_assignment() {
 }
 
 #[test]
-fn parses_postfix_match_patterns_and_guards() {
+fn parses_match_partial_closure_patterns_and_guards() {
     let program = parse(
-        "let classify(shape: shape): i32 = { shape match {\n\
+        "let classify(shape: shape): i32 = { match(shape) {\n\
                shape.circle(radius: value) if value > 0 => value,\n\
                shape.unit => 0,\n\
                _ => -1,\n\
@@ -1931,79 +1855,32 @@ fn parses_postfix_match_patterns_and_guards() {
     let (input, cases) = match_call_parts(function_tail(function));
     assert_eq!(input, &Expr::Name("shape".into()));
     assert_eq!(cases.len(), 3);
-    let Expr::PatternClosure { pattern, guard, .. } = cases[0] else {
-        panic!("expected pattern closure");
-    };
-    assert!(guard.is_some());
+    assert!(cases[0].guard.is_some());
     assert!(matches!(
-        pattern,
+        &cases[0].pattern,
         Pattern::Constructor { path, fields: PatternFields::Named(fields) }
             if path == &vec!["shape".to_owned(), "circle".to_owned()]
                 && fields[0].name == "radius"
     ));
-    assert!(matches!(
-        cases[2],
-        Expr::PatternClosure {
-            pattern: Pattern::Wildcard,
-            ..
-        }
-    ));
+    assert_eq!(cases[2].pattern, Pattern::Wildcard);
 }
 
 #[test]
-fn parses_prefix_match_as_trailing_pattern_cases() {
-    let program = parse(
-        "let classify(shape: shape): i32 = {\n\
-               match shape\n\
-                 { shape.circle(radius: value) if value > 0 ->\n\
-                   let adjusted = value + 1\n\
-                   adjusted\n\
-                 }\n\
-                 { shape.unit -> 0 }\n\
-                 { _ -> -1 }\n\
-             }\n",
-    )
-    .unwrap();
-
-    let Item::Function(function) = &program.items[0] else {
-        panic!("expected function");
-    };
-    let (input, cases) = match_call_parts(function_tail(function));
-    assert_eq!(input, &Expr::Name("shape".into()));
-    assert_eq!(cases.len(), 3);
-    let Expr::PatternClosure {
-        pattern,
-        guard,
-        body,
-    } = cases[0]
-    else {
-        panic!("expected pattern closure");
-    };
-    assert!(guard.is_some());
-    assert!(matches!(
-        body.as_ref(),
-        Expr::Block(statements, Some(_)) if statements.len() == 1
-    ));
-    assert!(matches!(
-        pattern,
-        Pattern::Constructor { path, fields: PatternFields::Named(fields) }
-            if path == &vec!["shape".to_owned(), "circle".to_owned()]
-                && fields[0].name == "radius"
-    ));
-    assert!(matches!(
-        cases[2],
-        Expr::PatternClosure {
-            pattern: Pattern::Wildcard,
-            ..
-        }
-    ));
+fn rejects_legacy_prefix_and_postfix_match_forms() {
+    for source in [
+        "let value = input match { _ => 0 }\n",
+        "let value = match input { _ => 0 }\n",
+        "let value = match input { _ -> 0 }\n",
+    ] {
+        assert!(parse(source).is_err(), "legacy match parsed: {source}");
+    }
 }
 
 #[test]
 fn parses_coalesce_right_associatively_between_match_and_logical_or() {
     let program = parse(
         "let chain = a || b ??\n  c || d ?? e\n\
-             let matched = a ?? b match { _ => c }\n\
+             let matched = match(a ?? b) { _ => c }\n\
              let assigned = target = a ?? b\n",
     )
     .unwrap();
@@ -2540,7 +2417,7 @@ fn parses_compiler_provided_sort_and_control_contract_declarations() {
              pub let type: sort<2>\n\
              pub let effect: sort<2>\n\
              pub let effects: sort<2>\n\
-             pub let empty = sort<1> {}\n\
+             pub let empty = sort<1>{}\n\
              pub let access = sort<1> {\n\
                /// shared read-only access.\n\
                shared\n\
@@ -2845,19 +2722,20 @@ fn parses_function_shaped_handlers_with_contextual_clause_parameters() {
     let program = parse(
         "let state<s: type> = effect { let get(): s }\n\
              let main(): i32 = {\n\
-               state<i32>.handle get { (resume) -> resume(42) } action {\n\
+               state<i32>.handle{get: { (resume) -> resume(42) }, action: {\n\
                  state<i32>.get()\n\
-               }\n\
+               }}\n\
              }\n",
     )
     .unwrap();
     let Item::Function(main) = &program.items[1] else {
         panic!("expected main function");
     };
-    let Expr::Call(_, trailing) = function_tail(main) else {
-        panic!("expected trailing handler call group");
+    let Expr::DelimitedCall { delimiter, arguments, .. } = function_tail(main) else {
+        panic!("expected brace-delimited handler call");
     };
-    assert_eq!(trailing.len(), 1);
+    assert_eq!(*delimiter, GroupDelimiter::Brace);
+    assert_eq!(arguments.len(), 2);
 }
 
 #[test]
@@ -3100,7 +2978,7 @@ fn parses_extend_methods_associated_functions_constants_and_trait_refs() {
              extend(a, foo) {\n\
                let reset(self: Borrow<mut><self>)(): () = {}\n\
                let answer: i32 = 42\n\
-               let make(value: i32): a = { a { value: value } }\n\
+               let make(value: i32): a = { a{ value: value } }\n\
              }\n",
     )
     .unwrap();
@@ -3381,7 +3259,7 @@ fn parses_borrow_and_move_receivers_with_explicit_following_groups() {
     let program = parse(
         "extend(a) {\n\
                let inspect(self: Borrow<self>)(): i32 = { self.value }\n\
-               let replace(move self)(value: i32)(other: i32): a = { a { value: value + other } }\n\
+               let replace(move self)(value: i32)(other: i32): a = { a{ value: value + other } }\n\
              }\n",
     )
     .unwrap();
@@ -3735,6 +3613,6 @@ fn async_and_await_remain_contextual_identifiers() {
     )
     .expect("contextual async spellings must remain ordinary identifiers");
 
-    parse("let main(): i32 = { async { { await value } } }\n")
-        .expect("await accepts a parenthesis-free operand");
+    parse("let main(): i32 = { async { { await(value) } } }\n")
+        .expect("await accepts a delimited operand");
 }

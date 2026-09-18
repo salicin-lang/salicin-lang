@@ -31,12 +31,15 @@ let update: with<step, throwing<bool>>(state: Borrow<mut><state>, fail: bool): i
 
 let run(drops: Ptr<mut><i32>, fail: bool, abandon: bool): i32 = {
   let mut state = state{ value: 20, drops: drops }
-  step.handle delta { (resume) ->
+  step.handle{
+    delta: { (resume) ->
       if abandon { 40 } else { resume(1) }
-    } action {
+    },
+    action: {
       let result: Result<bool><i32> = try { update(state, fail) }
       result ?? 5
-    }
+    },
+  }
 }
 
 let main(): i32 = {

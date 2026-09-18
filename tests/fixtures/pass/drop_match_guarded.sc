@@ -10,42 +10,47 @@ extend(resource, Droppable) {
 
 let consume(move value: resource): () = { () }
 
-let guard_false(move choice: choice): i32 = { match choice
-    { pair(left, _) if left.value == 0 -> do {
+let guard_false(move choice: choice): i32 = {
+  match(choice) {
+    pair(left, _) if left.value == 0 => do {
+      do {
         consume(left)
         0
       }
-    }
-    { pair(left, _) -> do {
+    }, pair(left, _) => do {
+      do {
         consume(left)
         21
       }
-    }
-    { None -> 0 }
+    }, None => 0,
+  }
 }
 
-let guard_true(move choice: choice): i32 = { match choice
-    { pair(left, _) if left.value == 1 -> do {
+let guard_true(move choice: choice): i32 = {
+  match(choice) {
+    pair(left, _) if left.value == 1 => do {
+      do {
         consume(left)
         21
       }
-    }
-    { pair(left, _) -> do {
+    }, pair(left, _) => do {
+      do {
         consume(left)
         0
       }
-    }
-    { None -> 0 }
+    }, None => 0,
+  }
 }
 
-let guard_return(move choice: choice): i32 = { match choice
-    { pair(left, _) if return(42) -> 0 }
-    { pair(left, _) -> do {
+let guard_return(move choice: choice): i32 = {
+  match(choice) {
+    pair(left, _) if return(42) => 0, pair(left, _) => do {
+      do {
         consume(left)
         0
       }
-    }
-    { None -> 0 }
+    }, None => 0,
+  }
 }
 
 let main(): i32 = {

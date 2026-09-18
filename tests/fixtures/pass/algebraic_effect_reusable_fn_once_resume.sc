@@ -15,9 +15,12 @@ extend(resource, Droppable) {
 let consume(move resource: resource): i32 = { 0 }
 
 let run(move action: with<ask>((): i32)): i32 = {
-  ask.handle value { (resume) -> resume(41) } action {
+  ask.handle{
+    value: { (resume) -> resume(41) },
+    action: {
       action()
-    }
+    },
+  }
 }
 
 let execute(counter: Ptr<mut><i32>): i32 = {

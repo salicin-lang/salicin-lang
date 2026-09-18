@@ -21,11 +21,12 @@ extend(step, Future<()>) {
 }
 
 let main(): i32 = {
-  suspension.handle
-    suspend { (resume) -> resume(()) }
-    action {
+  suspension.handle{
+    suspend: { (resume) -> resume(()) },
+    action: {
       await_source(step{ ready: false })
-    }
+    },
+  }
 }
 
 test("source_await_handler.sc") {

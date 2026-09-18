@@ -28,35 +28,50 @@ let apply_input: with<ask>(seed: i32, move action: with<ask>((i32): i32)): i32 =
 }
 
 let run(move action: with<ask>((): i32)): i32 = {
-  ask.handle value { (resume) -> resume(10) } action {
+  ask.handle{
+    value: { (resume) -> resume(10) },
+    action: {
       apply(action)
-    }
+    },
+  }
 }
 
 let outer(move action: with<ask>((): i32), abandon: bool): i32 = {
-  ask.handle value { (resume) ->
+  ask.handle{
+    value: { (resume) ->
       if abandon { 40 } else { resume(20) }
-    } action {
+    },
+    action: {
       run(action)
-    }
+    },
+  }
 }
 
 let discard(move action: with<ask>((): i32)): i32 = {
-  ask.handle value { (resume) -> resume(0) } action {
+  ask.handle{
+    value: { (resume) -> resume(0) },
+    action: {
       42
-    }
+    },
+  }
 }
 
 let run_input(move action: with<ask>((i32): i32)): i32 = {
-  ask.handle value { (resume) -> resume(10) } action {
+  ask.handle{
+    value: { (resume) -> resume(10) },
+    action: {
       apply_input(11, action)
-    }
+    },
+  }
 }
 
 let outer_input(move action: with<ask>((i32): i32)): i32 = {
-  ask.handle value { (resume) -> resume(20) } action {
+  ask.handle{
+    value: { (resume) -> resume(20) },
+    action: {
       run_input(action)
-    }
+    },
+  }
 }
 
 let execute(drops: Ptr<mut><i32>, abandon: bool): i32 = {

@@ -3,11 +3,15 @@ let probe = effect {
 }
 
 let main(): i32 = {
-  probe.handle read { (resume) -> resume(true) } done {
+  probe.handle{
+    read: { (resume) -> resume(true) },
+    done: {
       (value) -> if value { 42 } else { 0 }
-    } action {
+    },
+    action: {
       probe.read()
-    }
+    },
+  }
 }
 
 test("algebraic_effect_done.sc") {

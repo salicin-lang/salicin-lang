@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use crate::ast::{BinaryOp, CallArg, Expr, Pattern, Stmt, Type, UnaryOp, VariantFields};
 
-use super::calls;
 use super::flow::{LocalInfo, LowerCtx};
 use super::hir::{FunctionTy, LocalCapability, Ty};
 use super::lower::{
@@ -298,6 +297,21 @@ impl Analyzer {
             Expr::ChainMember(base, member) => {
                 self.probe_chain_ty(base, member, None, hint, context)
             }
+            Expr::DelimitedCall {
+                callee,
+                delimiter: crate::ast::GroupDelimiter::Brace,
+                arguments,
+            } if arguments.iter().all(|argument| argument.label.is_some())
+                && {
+                    let mut groups = Vec::new();
+                    matches!(super::lower::flatten_call(callee, &mut groups), Expr::Name(name)
+                        if !context.shadows_top_level_name(name)
+                            && (self.collection.struct_layouts.contains_key(name)
+                                || self.collection.struct_templates.contains_key(name)))
+                } =>
+            {
+                self.probe_struct_literal_ty(callee, arguments, hint, context)
+            }
             Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
                 self.probe_call_ty(expression, hint, context)
             }
@@ -383,6 +397,7 @@ impl Analyzer {
             | Expr::Await(_)
             | Expr::Closure(_, _)
             | Expr::PatternClosure { .. }
+            | Expr::PartialClosure(_)
             | Expr::If { .. }
             | Expr::Return(_)
             | Expr::While { .. }
@@ -845,11 +860,6 @@ impl Analyzer {
                 custom_effects: function.custom_effects.clone(),
                 result: function.result.clone(),
             }));
-        }
-        if self.empty_struct_candidate(name, &groups, context) {
-            let constructor = calls::empty_trailing_closure_constructor(expression)
-                .expect("empty struct candidate has an empty trailing closure");
-            return self.probe_struct_literal_ty(constructor, &[], expected, context);
         }
         if let Some(candidates) = self.collection.function_overloads.get(name) {
             if !groups

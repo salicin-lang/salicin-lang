@@ -40,7 +40,7 @@ let make_step: with<throwing<bool>>(
 ): step = {
   let call = increment(calls)
   if call == fail_at {
-    throw true
+    throw(true)
   } else {
     step{ drops: drops, done: call == 3 }
   }
@@ -65,18 +65,21 @@ let run(
     let first = future.poll()
     if fail_at == 0 {
       let second = future.poll()
-      match first
-        { Pending -> match second
-          { Ready(value) -> value }
-          { Pending -> 0 } }
-        { Ready(_) -> 0 }
+      match(first) {
+        Pending => do {
+          match(second) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
     } else {
       0
     }
   }
-  match result
-    { Ok(value) -> value }
-    { Err(error) -> if error { 42 } else { 0 } }
+  match(result) {
+    Ok(value) => value, Err(error) => do {
+      if error { 42 } else { 0 }
+    },
+  }
 }
 
 let main(): i32 = {

@@ -6,12 +6,10 @@ let maybe<t: type> = enum {
 let main(): i32 = {
   let some = maybe.Some(42)
   let none: maybe<i32> = maybe.None
-  let from_some = match some
-    { Some(value) -> value }
-    { None -> 0 }
-  let from_none = match none
-    { Some(value) -> value }
-    { None -> 0 }
+  let from_some = match(some) { Some(value) => value, None => 0,
+  }
+  let from_none = match(none) { Some(value) => value, None => 0,
+  }
   from_some + from_none
 }
 

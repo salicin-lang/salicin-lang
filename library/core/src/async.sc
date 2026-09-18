@@ -29,8 +29,7 @@ pub let async<e: effects, F: type, T: type>(move action: with<core.async.suspens
 pub let await<e: effects, F: type, T: type>: with<core.async.suspension, e>(move future: F): T = requires(F is Future<e> && F.Output == T) {
   let mut current = future
   loop {
-    match current.poll()
-      { Pending -> suspension.suspend() }
-      { Ready(value) -> break(value) }
+    match(current.poll()) { Pending => suspension.suspend(), Ready(value) => break(value),
+    }
   }
 }

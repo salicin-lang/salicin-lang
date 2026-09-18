@@ -43,7 +43,7 @@ let make_second: with<throwing<bool>>(
     *calls = *calls + 1
   }
   if fail {
-    throw true
+    throw(true)
   } else {
     step{ drops: drops, polls: 0, value: first + 40, drop_amount: 1 }
   }
@@ -66,18 +66,23 @@ let run(
       0
     } else {
       let third = future.poll()
-      match first
-        { Pending -> match second
-          { Pending -> match third
-            { Ready(value) -> value }
-            { Pending -> 0 } }
-          { Ready(_) -> 0 } }
-        { Ready(_) -> 0 }
+      match(first) {
+        Pending => do {
+          match(second) {
+            Pending => do {
+              match(third) { Ready(value) => value, Pending => 0,
+              }
+            }, Ready(_) => 0,
+          }
+        }, Ready(_) => 0,
+      }
     }
   }
-  match result
-    { Ok(value) -> value }
-    { Err(error) -> if error { 42 } else { 0 } }
+  match(result) {
+    Ok(value) => value, Err(error) => do {
+      if error { 42 } else { 0 }
+    },
+  }
 }
 
 let main(): i32 = {

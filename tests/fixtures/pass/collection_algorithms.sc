@@ -18,9 +18,8 @@ let main(): i32 = {
   let values: Array<i32><4> = [3, 9, 12, 18]
   let view: Borrow<Slice<i32>> = borrow(values)
 
-  let found_value = match view.find(greater_than_ten)
-    { Option.Some(value) -> read(value) }
-    { Option.None -> 0 }
+  let found_value = match(view.find(greater_than_ten)) { Option.Some(value) => read(value), Option.None => 0,
+  }
   let position = view.position(greater_than_ten)
   let position_value = position ?? 99
   if found_value != 12 || position_value != 2 {

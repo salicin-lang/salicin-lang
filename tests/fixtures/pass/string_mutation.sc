@@ -1,11 +1,11 @@
 let scalar(value: u32): core.string.UnicodeScalar = {
-  match core.string.UnicodeScalar.from_u32(value)
-    { Some(value) -> value }
-    { None ->
+  match(core.string.UnicodeScalar.from_u32(value)) {
+    Some(value) => value, None => do {
       unsafe {
         raw_trap()
       }
-    }
+    },
+  }
 }
 
 let construction_checks(): bool = {

@@ -3805,6 +3805,11 @@ impl Resolver {
                 }
                 self.rewrite_expr(body, context, type_scope, &closure_scope);
             }
+            Expr::PartialClosure(arms) => {
+                for arm in arms {
+                    self.rewrite_match_arm(arm, context, type_scope, value_scope);
+                }
+            }
             Expr::If {
                 condition,
                 then_branch,

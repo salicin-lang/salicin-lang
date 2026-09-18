@@ -8,7 +8,7 @@ let ask = effect {
 let resource = struct {
   value: i32,
   drops: Ptr<mut><i32>
-}
+  }
 
 extend(resource, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = {
@@ -41,12 +41,14 @@ let main(): i32 = {
   let mut future = async {
     consume(resource) + request()
   }
-  let result: i32 = ask.handle ask { (resume) -> resume(40) } action {
+  let result: i32 = ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let polled: Poll<i32> = poll_once(future)
-      match polled
-        { Ready(value) -> value }
-        { Pending -> 0 }
-    }
+      match(polled) { Ready(value) => value, Pending => 0,
+      }
+    },
+  }
   let drop_count = unsafe {
     *drops
   }

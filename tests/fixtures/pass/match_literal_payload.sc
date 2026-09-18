@@ -7,16 +7,9 @@ let input = enum {
   Empty,
 }
 
-let classify(value: input): i32 = { match value
-    { number( value: 40 ) -> 1 }
-    { number( value: 42 ) if true -> 20 }
-    { number( value: _ ) -> 0 }
-    { flag( value: true ) -> 10 }
-    { flag( value: false ) -> 0 }
-    { flag( value: _ ) -> 0 }
-    { pair(pair(left: 10, flag: true)) -> 11 }
-    { pair(_) -> 0 }
-    { Empty -> 0 }
+let classify(value: input): i32 = {
+  match(value) { number( value: 40 ) => 1, number( value: 42 ) if true => 20, number( value: _ ) => 0, flag( value: true ) => 10, flag( value: false ) => 0, flag( value: _ ) => 0, pair(pair(left: 10, flag: true)) => 11, pair(_) => 0, Empty => 0,
+  }
 }
 
 let main(): i32 = {

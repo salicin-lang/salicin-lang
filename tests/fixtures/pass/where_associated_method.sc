@@ -11,10 +11,10 @@ extend(value, produce) {
 }
 
 let produce<t: type>(value: Borrow<t>): i32
-= requires(t is produce && t.Item == i32) { value.produce() }
+  = requires(t is produce && t.Item == i32) { value.produce() }
 
 let forward<t: type>(value: Borrow<t>): i32
-= requires(t is produce && t.Item == i32) { produce(value) }
+  = requires(t is produce && t.Item == i32) { produce(value) }
 
 let main(): i32 = {
   let value = value{ value: 42 }

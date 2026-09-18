@@ -3,9 +3,9 @@ let answer = enum {
   Empty,
 }
 
-let read(value: answer): i32 = { match value
-    { answer.value( value: number ) -> number }
-    { answer.Empty -> 0 }
+let read(value: answer): i32 = {
+  match(value) { answer.value( value: number ) => number, answer.Empty => 0,
+  }
 }
 
 let main(): i32 = { read(answer.value( value: 42 )) }

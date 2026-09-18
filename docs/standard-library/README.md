@@ -116,7 +116,7 @@ contextual names such as `pure`, `shared`, `mut`, `copy`, and `move` in paramete
 `Semigroup` and `Monoid` require aliases from `std.algebra` when named.
 `Functor`, `Applicative`, and `Monad` require aliases from `std.functional` when named.
 `Iterator` and `IntoIterator` require ordinary aliases from `core.iter` when named in an implementation
-or bound. Writing `for value { pattern -> ... }` binds to their validated lang-item identities
+or bound. Writing `for pattern in value { ... }` binds to their validated lang-item identities
 without aliasing them and cannot be redirected by same-named inherent methods or traits.
 
 The compiler, library sources, and edition form one toolchain unit. Compiler-matched language items

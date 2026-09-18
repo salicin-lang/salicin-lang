@@ -425,11 +425,12 @@ impl Analyzer {
                 ),
             },
         ];
-        let action = vec![CallArg {
-            label: None,
+        let mut arguments = clauses;
+        arguments.push(CallArg {
+            label: Some("action".to_owned()),
             value: Expr::Closure(Vec::new(), Box::new(body.clone())),
-        }];
-        let groups = vec![clauses.as_slice(), action.as_slice()];
+        });
+        let groups = vec![arguments.as_slice()];
         self.lower_effect_handler(&definition, &instance, &groups, Some(&expected), context)
     }
 
@@ -460,7 +461,10 @@ impl Analyzer {
                 self.expression_uses_standard_failure_identity(value, identity, context)
             }
             Expr::Throw(_) => true,
-            Expr::Try(_) | Expr::Closure(_, _) | Expr::PatternClosure { .. } => false,
+            Expr::Try(_)
+            | Expr::Closure(_, _)
+            | Expr::PatternClosure { .. }
+            | Expr::PartialClosure(_) => false,
             Expr::Async { body } => {
                 self.expression_uses_standard_failure_identity(body, identity, context)
             }
@@ -609,24 +613,28 @@ impl Analyzer {
         identity: &str,
         context: &LowerCtx,
     ) -> bool {
-        let Expr::Call(inner_callee, action_arguments) = expression else {
-            return false;
-        };
-        let [CallArg {
-            label: None,
-            value: Expr::Closure(action_parameters, action_body),
-        }] = action_arguments.as_slice()
+        let Expr::DelimitedCall {
+            callee,
+            delimiter: crate::ast::GroupDelimiter::Brace,
+            arguments,
+        } = expression
         else {
             return false;
         };
-        if !action_parameters.is_empty() {
-            return false;
-        }
-        let mut groups = Vec::new();
-        let Expr::Member(effect, member) = flatten_call(inner_callee, &mut groups) else {
+        let Some((CallArg {
+            label: Some(action_label),
+            value: Expr::Closure(action_parameters, action_body),
+        }, clause_arguments)) = arguments.split_last()
+        else {
             return false;
         };
-        if member != "handle" || groups.len() != 1 {
+        if action_label != "action" || !action_parameters.is_empty() {
+            return false;
+        }
+        let Expr::Member(effect, member) = callee.unlocated() else {
+            return false;
+        };
+        if member != "handle" {
             return false;
         }
         let Some(effect_name) = source_type_expression_name(effect) else {
@@ -636,7 +644,7 @@ impl Analyzer {
         if !self.collection.effect_defs.contains_key(root_name) {
             return false;
         }
-        groups[0].iter().any(|argument| {
+        clause_arguments.iter().any(|argument| {
             matches!(
                 &argument.value,
                 Expr::Closure(_, body)
@@ -653,6 +661,7 @@ impl Analyzer {
             Expr::Try(_)
             | Expr::Closure(_, _)
             | Expr::PatternClosure { .. }
+            | Expr::PartialClosure(_)
             | Expr::Async { .. } => false,
             Expr::Call(callee, arguments)
             | Expr::DelimitedCall {
@@ -1268,6 +1277,7 @@ impl Analyzer {
             | Expr::Name(_)
             | Expr::Closure(_, _)
             | Expr::PatternClosure { .. }
+            | Expr::PartialClosure(_)
             | Expr::Async { .. } => {}
             Expr::Try(_) => {}
             Expr::Throw(value) => {
@@ -1453,24 +1463,28 @@ impl Analyzer {
         context: &LowerCtx,
         errors: &mut HashSet<Ty>,
     ) {
-        let Expr::Call(inner_callee, action_arguments) = expression else {
-            return;
-        };
-        let [CallArg {
-            label: None,
-            value: Expr::Closure(action_parameters, action_body),
-        }] = action_arguments.as_slice()
+        let Expr::DelimitedCall {
+            callee,
+            delimiter: crate::ast::GroupDelimiter::Brace,
+            arguments,
+        } = expression
         else {
             return;
         };
-        if !action_parameters.is_empty() {
-            return;
-        }
-        let mut groups = Vec::new();
-        let Expr::Member(effect, member) = flatten_call(inner_callee, &mut groups) else {
+        let Some((CallArg {
+            label: Some(action_label),
+            value: Expr::Closure(action_parameters, action_body),
+        }, clause_arguments)) = arguments.split_last()
+        else {
             return;
         };
-        if member != "handle" || groups.len() != 1 {
+        if action_label != "action" || !action_parameters.is_empty() {
+            return;
+        }
+        let Expr::Member(effect, member) = callee.unlocated() else {
+            return;
+        };
+        if member != "handle" {
             return;
         }
         let Some(effect_name) = source_type_expression_name(effect) else {
@@ -1480,7 +1494,7 @@ impl Analyzer {
         if !self.collection.effect_defs.contains_key(root_name) {
             return;
         }
-        for argument in groups[0] {
+        for argument in clause_arguments {
             if let Expr::Closure(_, body) = &argument.value {
                 self.collect_escaping_throwing(body, context, errors);
             }

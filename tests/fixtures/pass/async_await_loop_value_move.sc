@@ -3,7 +3,7 @@ let Future = core.async.Future
 
 let marker = struct {
   drops: Ptr<mut><i32>
-}
+  }
 
 extend(marker, Droppable) {
   let drop(self: Borrow<mut><self>)(): () = {
@@ -15,7 +15,7 @@ extend(marker, Droppable) {
 
 let step = struct {
   drops: Ptr<mut><i32>
-}
+  }
 
 extend(step, Future<()>) {
   let Output = marker;
@@ -50,9 +50,8 @@ let main(): i32 = {
     }
   }
 
-  match future.poll()
-    { Pending -> () }
-    { Ready(marker) -> () }
+  match(future.poll()) { Pending => (), Ready(marker) => (),
+  }
   40 + unsafe { *drops_ptr }
 }
 

@@ -126,9 +126,8 @@ let count_result(
   if count < 0 {
     core.Result.Err(host_error(failure, raw_code))
   } else {
-    match count.checked_into<Output: u64>()
-      { Some(value) -> core.Result.Ok(value) }
-      { None -> core.Result.Err(generated_error(InvalidData)) }
+    match(count.checked_into<Output: u64>()) { Some(value) => core.Result.Ok(value), None => core.Result.Err(generated_error(InvalidData)),
+    }
   }
 }
 
@@ -205,14 +204,12 @@ let write_all_stream: with<io>
   let length = bytes.len()
   let mut written: u64 = 0
   while { written < length } {
-    match write_stream_at(descriptor)(bytes)(written)
-      { Ok(0) -> return(core.Result.Err(generated_error(WriteZero))) }
-      { Ok(count) -> written = written + count }
-      { Err(error) ->
-        match error.kind()
-          { Interrupted -> () }
-          { _ -> return(core.Result.Err(error)) }
-      }
+    match(write_stream_at(descriptor)(bytes)(written)) {
+      Ok(0) => return(core.Result.Err(generated_error(WriteZero))), Ok(count) => written = written + count, Err(error) => do {
+        match(error.kind()) { Interrupted => (), _ => return(core.Result.Err(error)),
+        }
+      },
+    }
   }
   core.Result.Ok(())
 }
@@ -244,13 +241,13 @@ pub let print: with<io>
 /// Writes validated UTF-8 text followed by one LF byte.
 pub let println: with<io>
   (value: Borrow<core.string.str>): core.Result<IoError><()> = {
-  match print(value)
-    { Err(error) -> core.Result.Err(error) }
-    { Ok(_) ->
+  match(print(value)) {
+    Err(error) => core.Result.Err(error), Ok(_) => do {
       let newline: Array<u8><1> = [10]
       let bytes = newline.as_slice()
       write_stdout_all(bytes)
-    }
+    },
+  }
 }
 
 /// Writes validated UTF-8 text to standard error.
@@ -263,13 +260,13 @@ pub let eprint: with<io>
 /// Writes validated UTF-8 text followed by one LF byte to standard error.
 pub let eprintln: with<io>
   (value: Borrow<core.string.str>): core.Result<IoError><()> = {
-  match eprint(value)
-    { Err(error) -> core.Result.Err(error) }
-    { Ok(_) ->
+  match(eprint(value)) {
+    Err(error) => core.Result.Err(error), Ok(_) => do {
       let newline: Array<u8><1> = [10]
       let bytes = newline.as_slice()
       write_stderr_all(bytes)
-    }
+    },
+  }
 }
 
 /// Reads exactly `buffer.len()` bytes or reports `UnexpectedEof`.
@@ -278,14 +275,12 @@ pub let read_stdin_exact: with<io>
   let length = buffer.len<mut>()
   let mut read: u64 = 0
   while { read < length } {
-    match read_stream_at(0)(buffer)(read)
-      { Ok(0) -> return(core.Result.Err(generated_error(UnexpectedEof))) }
-      { Ok(count) -> read = read + count }
-      { Err(error) ->
-        match error.kind()
-          { Interrupted -> () }
-          { _ -> return(core.Result.Err(error)) }
-      }
+    match(read_stream_at(0)(buffer)(read)) {
+      Ok(0) => return(core.Result.Err(generated_error(UnexpectedEof))), Ok(count) => read = read + count, Err(error) => do {
+        match(error.kind()) { Interrupted => (), _ => return(core.Result.Err(error)),
+        }
+      },
+    }
   }
   core.Result.Ok(())
 }
@@ -301,25 +296,22 @@ pub let read_line: with<io>(): core.Result<IoError><core.Option<String>> = {
       let buffer = byte.as_slice<mut>()
       read_stdin(buffer)
     }
-    match outcome
-      { Ok(0) -> done = true }
-      { Ok(_) ->
+    match(outcome) {
+      Ok(0) => done = true, Ok(_) => do {
         let value = byte[0]
         bytes.push(value)
         if value == 10 { done = true }
-      }
-      { Err(error) ->
-        match error.kind()
-          { Interrupted -> () }
-          { _ -> return(core.Result.Err(error)) }
-      }
+      }, Err(error) => do {
+        match(error.kind()) { Interrupted => (), _ => return(core.Result.Err(error)),
+        }
+      },
+    }
   }
   if bytes.is_empty() {
     core.Result.Ok(core.Option.None)
   } else {
-    match alloc.string.string_from_utf8(bytes)
-      { Ok(text) -> core.Result.Ok(core.Option.Some(text)) }
-      { Err(_) -> core.Result.Err(generated_error(InvalidData)) }
+    match(alloc.string.string_from_utf8(bytes)) { Ok(text) => core.Result.Ok(core.Option.Some(text)), Err(_) => core.Result.Err(generated_error(InvalidData)),
+    }
   }
 }
 
@@ -352,9 +344,9 @@ pub let arguments_bytes: with<io>(): alloc.vec.Vec<ProcessArgument> = {
   let mut arguments = alloc.vec.Vec<ProcessArgument>.with_capacity(count)
   let mut index: u64 = 0
   while { index < count } {
-    match argument_bytes(index)
-      { Some(argument) -> arguments.push(ProcessArgument{ bytes: argument }) }
-      { None -> () }
+    match(argument_bytes(index)) {
+      Some(argument) => do { arguments.push(ProcessArgument{ bytes: argument }) }, None => (),
+    }
     index = index + 1
   }
   arguments
@@ -371,9 +363,8 @@ pub let arguments: with<io>(): core.Result<IoError><alloc.vec.Vec<String>> = {
   let mut index: u64 = 0
   while { index < count } {
     let argument = bytes.remove(0).into_bytes()
-    match alloc.string.string_from_utf8(argument)
-      { Ok(value) -> text.push(value) }
-      { Err(_) -> return(core.Result.Err(generated_error(InvalidData))) }
+    match(alloc.string.string_from_utf8(argument)) { Ok(value) => text.push(value), Err(_) => return(core.Result.Err(generated_error(InvalidData))),
+    }
     index = index + 1
   }
   core.Result.Ok(text)
@@ -486,9 +477,8 @@ let close_descriptor: with<io>
 pub let open: with<io>
   (path: Borrow<core.string.str>)
   (options: OpenOptions): core.Result<IoError><File> = {
-  let flags = match option_flags(options)
-    { Ok(value) -> value }
-    { Err(error) -> return(core.Result.Err(error)) }
+  let flags = match(option_flags(options)) { Ok(value) => value, Err(error) => return(core.Result.Err(error)),
+  }
   let source = path.as_bytes()
   let length = source.len()
   let mut bytes = alloc.vec.Vec<u8>.with_capacity(length + 1)
@@ -532,14 +522,12 @@ extend(File) {
     let length = buffer.len<mut>()
     let mut read: u64 = 0
     while { read < length } {
-      match read_stream_at(descriptor(self))(buffer)(read)
-        { Ok(0) -> return(core.Result.Err(generated_error(UnexpectedEof))) }
-        { Ok(count) -> read = read + count }
-        { Err(error) ->
-          match error.kind()
-            { Interrupted -> () }
-            { _ -> return(core.Result.Err(error)) }
-        }
+      match(read_stream_at(descriptor(self))(buffer)(read)) {
+        Ok(0) => return(core.Result.Err(generated_error(UnexpectedEof))), Ok(count) => read = read + count, Err(error) => do {
+          match(error.kind()) { Interrupted => (), _ => return(core.Result.Err(error)),
+          }
+        },
+      }
     }
     core.Result.Ok(())
   }
@@ -577,10 +565,8 @@ extend(File) {
   let seek: with<io>
     (self: Borrow<self>)
     (offset: i64, origin: SeekFrom): core.Result<IoError><u64> = {
-    let native_origin = match origin
-      { Start -> 0 }
-      { Current -> 1 }
-      { End -> 2 }
+    let native_origin = match(origin) { Start => 0, Current => 1, End => 2,
+    }
     let mut failure: i32 = 12
     let mut raw_code: i32 = 0
     let position = unsafe {
@@ -595,9 +581,8 @@ extend(File) {
     if position < 0 {
       core.Result.Err(host_error(failure, raw_code))
     } else {
-      match position.checked_into<Output: u64>()
-        { Some(value) -> core.Result.Ok(value) }
-        { None -> core.Result.Err(generated_error(InvalidData)) }
+      match(position.checked_into<Output: u64>()) { Some(value) => core.Result.Ok(value), None => core.Result.Err(generated_error(InvalidData)),
+      }
     }
   }
 
@@ -631,9 +616,8 @@ extend(File, core.marker.Droppable) {
 pub let read_file: with<io>
   (path: Borrow<core.string.str>)
   (limit: u64): core.Result<IoError><alloc.vec.Vec<u8>> = {
-  let mut input = match open(path)(OpenOptions.read_only())
-    { Ok(value) -> value }
-    { Err(error) -> return(core.Result.Err(error)) }
+  let mut input = match(open(path)(OpenOptions.read_only())) { Ok(value) => value, Err(error) => return(core.Result.Err(error)),
+  }
   let mut output = alloc.vec.Vec<u8>.new()
   let mut done = false
   while { !done } {
@@ -647,9 +631,8 @@ pub let read_file: with<io>
       let buffer = chunk.as_slice<mut>()
       input.read(buffer)
     }
-    match outcome
-      { Ok(0) -> done = true }
-      { Ok(count) ->
+    match(outcome) {
+      Ok(0) => done = true, Ok(count) => do {
         if output.len() > limit || count > limit - output.len() {
           return(core.Result.Err(generated_error(InvalidData)))
         }
@@ -658,12 +641,11 @@ pub let read_file: with<io>
           output.push(chunk[index])
           index = index + 1
         }
-      }
-      { Err(error) ->
-        match error.kind()
-          { Interrupted -> () }
-          { _ -> return(core.Result.Err(error)) }
-      }
+      }, Err(error) => do {
+        match(error.kind()) { Interrupted => (), _ => return(core.Result.Err(error)),
+        }
+      },
+    }
   }
   core.Result.Ok(output)
 }
@@ -672,10 +654,8 @@ pub let read_file: with<io>
 pub let write_file: with<io>
   (path: Borrow<core.string.str>)
   (bytes: Borrow<core.memory.Slice<u8>>): core.Result<IoError><()> = {
-  let output = match open(path)(OpenOptions.write_truncate())
-    { Ok(value) -> value }
-    { Err(error) -> return(core.Result.Err(error)) }
-  match output.write_all(bytes)
-    { Err(error) -> core.Result.Err(error) }
-    { Ok(_) -> output.close() }
+  let output = match(open(path)(OpenOptions.write_truncate())) { Ok(value) => value, Err(error) => return(core.Result.Err(error)),
+  }
+  match(output.write_all(bytes)) { Err(error) => core.Result.Err(error), Ok(_) => output.close(),
+  }
 }

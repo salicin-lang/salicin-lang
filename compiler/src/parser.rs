@@ -61,7 +61,6 @@ pub(crate) struct SourceLayout {
     pub parameter_groups: Vec<usize>,
     pub repeated_parameter_groups: Vec<usize>,
     pub where_predicates: Vec<usize>,
-    pub match_arms: Vec<SourceBracedRegion>,
     pub blocks: Vec<SourceBracedRegion>,
     pub closures: Vec<SourceBracedRegion>,
     pub trailing_closures: Vec<SourceTrailingClosure>,
@@ -3690,119 +3689,7 @@ impl Parser {
     }
 
     fn match_expression(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let scrutinee = self.coalesce(allow_trailing_closure)?;
-        if !self.take(&TokenKind::Match) {
-            return Ok(scrutinee);
-        }
-
-        self.expect(&TokenKind::LBrace, "`{` after `match`")?;
-        self.skip_separators();
-        let mut cases = Vec::new();
-        while !self.at(&TokenKind::RBrace) {
-            if self.at(&TokenKind::Eof) {
-                return Err(self.error_here("expected `}` before end of match expression"));
-            }
-
-            let pattern = self.pattern()?;
-            let guard = if self.take(&TokenKind::If) {
-                Some(self.expression(true)?)
-            } else {
-                None
-            };
-            self.expect(&TokenKind::FatArrow, "`=>` after match pattern")?;
-            let body = self.expression(true)?;
-            cases.push(Expr::PatternClosure {
-                pattern,
-                guard: guard.map(Box::new),
-                body: Box::new(body),
-            });
-
-            if self.take(&TokenKind::Comma) {
-                self.skip_separators();
-                continue;
-            }
-
-            self.skip_separators();
-            if !self.at(&TokenKind::RBrace) {
-                return Err(self.error_here("expected `,` between match arms"));
-            }
-        }
-        self.expect(&TokenKind::RBrace, "`}` after match arms")?;
-
-        let mut call = Expr::Call(
-            Box::new(Self::core_match_function()),
-            vec![CallArg {
-                label: None,
-                value: scrutinee,
-            }],
-        );
-        for case in cases {
-            call = Expr::Call(
-                Box::new(call),
-                vec![CallArg {
-                    label: None,
-                    value: case,
-                }],
-            );
-        }
-        Ok(call)
-    }
-
-    fn prefix_match_expression(&mut self) -> Result<Expr, ParseError> {
-        self.expect(&TokenKind::Match, "`match`")?;
-        let scrutinee = self.expression(false)?;
-        self.take_newlines_if_followed_by(&[TokenKind::LBrace]);
-        if !self.at(&TokenKind::LBrace) {
-            return Err(self.error_here("`match` requires at least one trailing pattern case"));
-        }
-
-        let mut cases = Vec::new();
-        while self.at(&TokenKind::LBrace) {
-            let open = self.current().clone();
-            self.expect(&TokenKind::LBrace, "`{` before a match case")?;
-            self.skip_separators();
-            let pattern = self.pattern()?;
-            let guard = if self.take(&TokenKind::If) {
-                Some(self.expression(false)?)
-            } else {
-                None
-            };
-            self.expect(&TokenKind::Arrow, "`->` after match case pattern")?;
-            let body_start_byte = self.current().start_byte;
-            let body = self.block_contents()?;
-            let close = self.previous().clone();
-            self.layout.match_arms.push(SourceBracedRegion {
-                open_byte: open.start_byte,
-                close_byte: close.start_byte,
-                body_start_byte,
-                open_line: open.line,
-                close_line: close.line,
-            });
-            cases.push(Expr::PatternClosure {
-                pattern,
-                guard: guard.map(Box::new),
-                body: Box::new(body),
-            });
-            self.take_newlines_if_followed_by(&[TokenKind::LBrace]);
-        }
-
-        let mut call = Expr::Call(
-            Box::new(Self::core_match_function()),
-            vec![CallArg {
-                label: None,
-                value: scrutinee,
-            }],
-        );
-        for case in cases {
-            call = Expr::Call(
-                Box::new(call),
-                vec![CallArg {
-                    label: None,
-                    value: case,
-                }],
-            );
-        }
-        Ok(call)
+        self.coalesce(allow_trailing_closure)
     }
 
     fn coalesce(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
@@ -4214,20 +4101,10 @@ impl Parser {
     fn postfix(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
         let mut expression = self.primary(allow_trailing_closure)?;
         let mut can_take_trailing_closure = false;
+        let mut has_pattern_trailing_closure = false;
 
         loop {
-            if self.struct_literal_follows(&expression) {
-                let fields = self.struct_literal_fields()?;
-                expression = Expr::StructLiteral {
-                    constructor: Box::new(expression),
-                    fields,
-                };
-            } else if self.explicit_call_delimiter_follows() == Some(GroupDelimiter::Parenthesis)
-                && Self::starts_implicit_handler_groups(&expression) {
-                return Err(self.error_here(
-                    "`handle` clauses use named trailing groups; omit the parenthesized argument group",
-                ));
-            } else if let Some(delimiter) = self.explicit_call_delimiter_follows() {
+            if let Some(delimiter) = self.explicit_call_delimiter_follows() {
                 let arguments = self.call_argument_group(delimiter)?;
                 expression = match (delimiter, arguments.as_slice()) {
                     (GroupDelimiter::Parenthesis, _) => {
@@ -4279,13 +4156,18 @@ impl Parser {
                     Vec::new(),
                 );
             } else if allow_trailing_closure && self.at(&TokenKind::LBrace) {
-                if Self::starts_implicit_handler_groups(&expression) {
+                if has_pattern_trailing_closure {
                     return Err(self.error_here(
-                        "a handler action must use the named trailing group `action { ... }`",
+                        "a trailing pattern closure must be the final trailing closure group",
                     ));
                 }
                 let start_byte = self.current().start_byte;
-                let closure = self.trailing_closure(start_byte)?;
+                let closure = if Self::is_match_input_call(&expression) {
+                    self.partial_closure()?
+                } else {
+                    self.trailing_closure(start_byte)?
+                };
+                let is_pattern_closure = matches!(&closure, Expr::PatternClosure { .. });
                 expression = Expr::Call(
                     Box::new(expression),
                     vec![CallArg {
@@ -4293,17 +4175,22 @@ impl Parser {
                         value: closure,
                     }],
                 );
+                has_pattern_trailing_closure = is_pattern_closure;
                 can_take_trailing_closure = true;
             } else if allow_trailing_closure
-                && (can_take_trailing_closure || Self::starts_implicit_handler_groups(&expression))
+                && can_take_trailing_closure
                 && self.named_trailing_closure_follows()
             {
+                if has_pattern_trailing_closure {
+                    return Err(self.error_here(
+                        "a trailing pattern closure must be the final trailing closure group",
+                    ));
+                }
                 let start_byte = self.current().start_byte;
                 let label = self.expect_ident("a trailing closure label")?;
                 self.expect(&TokenKind::Colon, "`:` after trailing closure label")?;
                 let closure = self.trailing_closure(start_byte)?;
-                let completes_handler =
-                    label == "action" && Self::starts_implicit_handler_groups(&expression);
+                let is_pattern_closure = matches!(&closure, Expr::PatternClosure { .. });
                 expression = Expr::Call(
                     Box::new(expression),
                     vec![CallArg {
@@ -4311,62 +4198,13 @@ impl Parser {
                         value: closure,
                     }],
                 );
-                if completes_handler {
-                    break;
-                }
-                can_take_trailing_closure = true;
-            } else if allow_trailing_closure
-                && (can_take_trailing_closure || Self::starts_implicit_handler_groups(&expression))
-                && self.colonless_named_trailing_closure_follows()
-            {
-                let start_byte = self.current().start_byte;
-                let label = self.take_trailing_label()?;
-                let closure = self.trailing_closure(start_byte)?;
-                let completes_handler =
-                    label == "action" && Self::starts_implicit_handler_groups(&expression);
-                expression = Expr::Call(
-                    Box::new(expression),
-                    vec![CallArg {
-                        label: Some(label),
-                        value: closure,
-                    }],
-                );
-                if completes_handler {
-                    break;
-                }
-                can_take_trailing_closure = true;
-            } else if allow_trailing_closure
-                && (can_take_trailing_closure || Self::starts_implicit_handler_groups(&expression))
-                && self.named_nested_trailing_call_follows()
-            {
-                let label = self.take_trailing_label()?;
-                let nested = self.expression(true)?;
-                expression = Expr::Call(
-                    Box::new(expression),
-                    vec![CallArg {
-                        label: Some(label),
-                        value: Expr::Closure(Vec::new(), Box::new(nested)),
-                    }],
-                );
-                can_take_trailing_closure = true;
-            } else if allow_trailing_closure && self.bare_call_argument_can_start() {
-                let argument = self.unary(false)?;
-                expression = Expr::Call(
-                    Box::new(expression),
-                    vec![CallArg {
-                        label: None,
-                        value: argument,
-                    }],
-                );
+                has_pattern_trailing_closure = is_pattern_closure;
                 can_take_trailing_closure = true;
             } else if allow_trailing_closure && self.at(&TokenKind::Newline) {
                 let before_newlines = self.index;
                 while self.take(&TokenKind::Newline) {}
-                if (can_take_trailing_closure
-                    && (self.at(&TokenKind::LBrace) || self.named_trailing_closure_follows()))
-                    || (Self::starts_implicit_handler_groups(&expression)
-                        && (self.colonless_named_trailing_closure_follows()
-                            || self.named_nested_trailing_call_follows()))
+                if can_take_trailing_closure
+                    && (self.at(&TokenKind::LBrace) || self.named_trailing_closure_follows())
                 {
                     continue;
                 }
@@ -4395,6 +4233,7 @@ impl Parser {
         self.advance();
         let mut arguments = Vec::new();
         let mut labeled = None;
+        while self.take(&TokenKind::Newline) {}
         if self.take(&close) {
             return Ok(arguments);
         }
@@ -4420,6 +4259,7 @@ impl Parser {
             self.expression_group_closers.pop();
             arguments.push(CallArg { label, value });
             if self.take(&TokenKind::Comma) {
+                while self.take(&TokenKind::Newline) {}
                 if self.take(&close) {
                     break;
                 }
@@ -4431,13 +4271,12 @@ impl Parser {
         Ok(arguments)
     }
 
-    fn starts_implicit_handler_groups(expression: &Expr) -> bool {
-        match expression {
-            Expr::Member(_, member) => member == "handle",
-            Expr::Call(callee, _)
-            | Expr::DelimitedCall { callee, .. } => Self::starts_implicit_handler_groups(callee),
-            _ => false,
-        }
+    fn is_match_input_call(expression: &Expr) -> bool {
+        let Expr::Call(callee, arguments) = expression.unlocated() else {
+            return false;
+        };
+        matches!(callee.unlocated(), Expr::Name(name) if name == "$lang$match")
+            && matches!(arguments.as_slice(), [CallArg { label: None, .. }])
     }
 
     fn trailing_closure(&mut self, start_byte: usize) -> Result<Expr, ParseError> {
@@ -4449,24 +4288,69 @@ impl Parser {
         Ok(closure)
     }
 
-    fn token_can_start_bare_call_argument(kind: &TokenKind) -> bool {
-        match kind {
-            TokenKind::Ident(name) => name != "match",
-            TokenKind::Integer(_)
-            | TokenKind::True
-            | TokenKind::False
-            | TokenKind::Copy
-            | TokenKind::Move
-            | TokenKind::Root
-            | TokenKind::Super
-            | TokenKind::LParen
-            | TokenKind::LBracket => true,
-            _ => false,
-        }
+    fn partial_closure(&mut self) -> Result<Expr, ParseError> {
+        let open = self.current().clone();
+        let body_start_byte = self.body_start_byte(self.index + 1);
+        self.expect(&TokenKind::LBrace, "`{` before match arms")?;
+        self.skip_separators();
+        let arms = if self.take(&TokenKind::RBrace) {
+            Vec::new()
+        } else {
+            self.partial_closure_arms(None)?
+        };
+        let close = self.previous().clone();
+        self.layout.closures.push(SourceBracedRegion {
+            open_byte: open.start_byte,
+            close_byte: close.start_byte,
+            body_start_byte,
+            open_line: open.line,
+            close_line: close.line,
+        });
+        Ok(Expr::PartialClosure(arms))
     }
 
-    fn bare_call_argument_can_start(&self) -> bool {
-        Self::token_can_start_bare_call_argument(&self.current().kind)
+    fn partial_closure_arms(
+        &mut self,
+        first: Option<(Pattern, Option<Box<Expr>>)>,
+    ) -> Result<Vec<MatchArm>, ParseError> {
+        let mut arms = Vec::new();
+        let mut first = first;
+        loop {
+            let (pattern, guard) = if let Some(first) = first.take() {
+                first
+            } else {
+                let pattern = self.pattern()?;
+                let guard = if self.take(&TokenKind::If) {
+                    Some(Box::new(self.expression(false)?))
+                } else {
+                    None
+                };
+                self.expect(&TokenKind::FatArrow, "`=>` after partial-closure pattern")?;
+                (pattern, guard)
+            };
+            let body = if self.at(&TokenKind::Do) && self.at_offset(1, &TokenKind::LBrace) {
+                self.advance();
+                self.block()?
+            } else {
+                self.expression(true)?
+            };
+            arms.push(MatchArm {
+                pattern,
+                guard: guard.map(|guard| *guard),
+                body,
+            });
+            self.skip_newlines();
+            if self.take(&TokenKind::Comma) {
+                self.skip_separators();
+                if self.take(&TokenKind::RBrace) {
+                    break;
+                }
+                continue;
+            }
+            self.expect(&TokenKind::RBrace, "`}` after partial-closure arms")?;
+            break;
+        }
+        Ok(arms)
     }
 
     fn named_trailing_closure_follows(&self) -> bool {
@@ -4483,15 +4367,6 @@ impl Parser {
                 .tokens
                 .get(self.index + 1)
                 .is_some_and(|token| token.kind == TokenKind::LBrace)
-    }
-
-    fn named_nested_trailing_call_follows(&self) -> bool {
-        self.trailing_label_at(self.index)
-            .is_some_and(|label| label != "match")
-            && self
-                .tokens
-                .get(self.index + 1)
-                .is_some_and(|token| Self::token_can_start_expression(&token.kind))
     }
 
     fn trailing_label_at(&self, index: usize) -> Option<String> {
@@ -4532,58 +4407,6 @@ impl Parser {
                 | TokenKind::While
                 | TokenKind::For
         )
-    }
-
-    fn struct_literal_follows(&self, expression: &Expr) -> bool {
-        self.at(&TokenKind::LBrace)
-            && Self::expression_can_head_struct_literal(expression)
-            && matches!(
-                (
-                    self.tokens.get(self.index + 1).map(|token| &token.kind),
-                    self.tokens.get(self.index + 2).map(|token| &token.kind),
-                ),
-                (Some(TokenKind::Ident(_)), Some(TokenKind::Colon))
-                    | (Some(TokenKind::RBrace), _)
-            )
-    }
-
-    fn expression_can_head_struct_literal(expression: &Expr) -> bool {
-        !Self::struct_literal_root(expression).is_empty()
-    }
-
-    fn struct_literal_root(expression: &Expr) -> &str {
-        match expression {
-            Expr::Name(name) => name,
-            Expr::Call(callee, _)
-            | Expr::DelimitedCall { callee, .. } => Self::struct_literal_root(callee),
-            Expr::Member(_, member) => member,
-            _ => "",
-        }
-    }
-
-    fn struct_literal_fields(&mut self) -> Result<Vec<CallArg>, ParseError> {
-        self.expect(&TokenKind::LBrace, "`{` before struct fields")?;
-        let mut fields = Vec::new();
-        if self.take(&TokenKind::RBrace) {
-            return Ok(fields);
-        }
-        loop {
-            let label = self.expect_ident("a struct literal field name")?;
-            self.expect(&TokenKind::Colon, "`:` after struct literal field name")?;
-            fields.push(CallArg {
-                label: Some(label),
-                value: self.expression(true)?,
-            });
-            if self.take(&TokenKind::Comma) {
-                if self.take(&TokenKind::RBrace) {
-                    break;
-                }
-            } else {
-                self.expect(&TokenKind::RBrace, "`}` after struct literal fields")?;
-                break;
-            }
-        }
-        Ok(fields)
     }
 
     fn primary(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
@@ -4652,10 +4475,7 @@ impl Parser {
             }
             TokenKind::Ident(ref name)
                 if name == "throw"
-                    && (self.at_offset(1, &TokenKind::LParen)
-                        || Self::token_can_start_bare_call_argument(
-                            &self.tokens[self.index + 1].kind,
-                        )) =>
+                    && self.at_offset(1, &TokenKind::LParen) =>
             {
                 self.advance();
                 Ok(Self::core_control_function("throw"))
@@ -4672,7 +4492,16 @@ impl Parser {
             }
             TokenKind::Ident(ref name) if name == "while" => self.while_expression(),
             TokenKind::Ident(ref name) if name == "for" => self.for_expression(),
-            TokenKind::Ident(ref name) if name == "match" => self.prefix_match_expression(),
+            TokenKind::Ident(ref name) if name == "match" => {
+                self.advance();
+                if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
+                    return Err(self.error_at(
+                        &token,
+                        "`match` requires an adjacent input group; write `match(value) { ... }`",
+                    ));
+                }
+                Ok(Self::core_match_function())
+            }
             TokenKind::Ident(ref name)
                 if name == "loop" && self.at_offset(1, &TokenKind::LBrace) =>
             {
@@ -4747,7 +4576,16 @@ impl Parser {
                 })))
             }
             TokenKind::If => self.if_expression(),
-            TokenKind::Match => self.prefix_match_expression(),
+            TokenKind::Match => {
+                self.advance();
+                if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
+                    return Err(self.error_at(
+                        &token,
+                        "`match` requires an adjacent input group; write `match(value) { ... }`",
+                    ));
+                }
+                Ok(Self::core_match_function())
+            }
             TokenKind::Return => self.return_expression(allow_trailing_closure),
             TokenKind::Throw => {
                 self.advance();
@@ -5227,6 +5065,11 @@ impl Parser {
                 } else {
                     None
                 };
+                if self.take(&TokenKind::FatArrow) {
+                    return Ok(Expr::PartialClosure(
+                        self.partial_closure_arms(Some((pattern, guard)))?,
+                    ));
+                }
                 if self.take(&TokenKind::Arrow) {
                     return Ok(Expr::PatternClosure {
                         pattern,

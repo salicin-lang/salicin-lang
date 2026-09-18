@@ -983,7 +983,7 @@ fn structured_test_abort_runs_owned_cleanup_once() {
          }\n\
          let abort(counter: Ptr<mut><i32>): core.testing.Outcome = {\n\
            core.testing.run {\n\
-             let owned = resource { counter: counter }\n\
+             let owned = resource{ counter: counter }\n\
              core.error.throw(\"cleanup probe\")\n\
            }\n\
          }\n\
@@ -993,9 +993,7 @@ fn structured_test_abort_runs_owned_cleanup_once() {
            let result = abort(counter)\n\
            let drops = unsafe { *counter }\n\
            unsafe { raw_dealloc(counter, size_of<i32>, align_of<i32>) }\n\
-           match result\n\
-             { Passed -> 1 }\n\
-             { Failed(_) -> if drops == 1 { 42 } else { 2 } }\n\
+           match(result) { Passed => 1, Failed(_) => if drops == 1 { 42 } else { 2 } }\n\
          }\n",
     );
     let output = salic()
@@ -1123,7 +1121,7 @@ fn unicode_identifiers_and_logical_newlines_run_natively() {
 }
 
 #[test]
-fn parenthesis_free_unary_calls_preserve_groups_and_precedence() {
+fn explicit_calls_preserve_groups_and_precedence() {
     for (name, output) in batched_native_fixture_outputs(&["parenthesis_free_unary_calls.sc"]) {
         assert_eq!(
             output.status.code(),
@@ -1133,18 +1131,24 @@ fn parenthesis_free_unary_calls_preserve_groups_and_precedence() {
         );
     }
 
-    let output = salic()
-        .arg("check")
-        .arg(fixture("fail", "parenthesis_free_multi_parameter_group.sc"))
-        .output()
-        .expect("reject a bare call split across a multi-parameter group");
-    assert!(!output.status.success(), "{}", output_text(&output));
-    assert!(
-        String::from_utf8_lossy(&output.stderr)
-            .contains("too many parameter groups in call to `add`"),
-        "{}",
-        output_text(&output)
-    );
+}
+
+#[test]
+fn removed_implicit_syntax_is_rejected() {
+    for name in [
+        "removed_bare_call.sc",
+        "colonless_named_group.sc",
+        "spaced_struct_construction.sc",
+        "legacy_prefix_match.sc",
+        "legacy_postfix_match.sc",
+    ] {
+        let output = salic()
+            .arg("check")
+            .arg(fixture("fail", name))
+            .output()
+            .unwrap_or_else(|error| panic!("check {name}: {error}"));
+        assert!(!output.status.success(), "{name} unexpectedly passed");
+    }
 }
 
 #[test]

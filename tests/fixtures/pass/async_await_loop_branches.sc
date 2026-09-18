@@ -4,12 +4,12 @@ let Future = core.async.Future
 let left_step = struct {
   polled: bool,
   remaining: Ptr<mut><i32>
-}
+  }
 
 let right_step = struct {
   polled: bool,
   remaining: Ptr<mut><i32>
-}
+  }
 
 extend(left_step, Future<()>) {
   let Output = bool;
@@ -80,18 +80,14 @@ let main(): i32 = {
     }
   }
 
-  let first = match future.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let second = match future.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let third = match future.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let fourth = match future.poll()
-    { Pending -> 0 }
-    { Ready(_) -> 18 }
+  let first = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let second = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let third = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let fourth = match(future.poll()) { Pending => 0, Ready(_) => 18,
+  }
   let conditional = first + second + third + fourth
 
   let mut matched_remaining = 2
@@ -99,9 +95,8 @@ let main(): i32 = {
   let mut matched = async {
     loop {
       let choice = if unsafe { *matched_ptr == 2 } { choice.left } else { choice.right }
-      let done = match choice
-        { choice.left -> await left(matched_ptr) }
-        { choice.right -> await right(matched_ptr) }
+      let done = match(choice) { choice.left => await left(matched_ptr), choice.right => await right(matched_ptr),
+      }
       if done {
         break()
       } else {
@@ -109,15 +104,12 @@ let main(): i32 = {
       }
     }
   }
-  let matched_first = match matched.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let matched_second = match matched.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let matched_third = match matched.poll()
-    { Pending -> 0 }
-    { Ready(_) -> 19 }
+  let matched_first = match(matched.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let matched_second = match(matched.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let matched_third = match(matched.poll()) { Pending => 0, Ready(_) => 19,
+  }
 
   conditional + matched_first + matched_second + matched_third
 }

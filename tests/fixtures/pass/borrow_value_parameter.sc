@@ -5,7 +5,7 @@ let forward<r: region>(value: Borrow<r><i32>): Borrow<r><i32> = { value }
 let inferred_forward(value: Borrow<i32>): Borrow<i32> = { value }
 
 let generic_read<t: type>(value: Borrow<t>): t
-= requires(t is Copyable) { value }
+  = requires(t is Copyable) { value }
 
 let forward_mut(value: Borrow<mut><i32>): Borrow<mut><i32> = { value }
 

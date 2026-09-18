@@ -1,7 +1,6 @@
 let option_is(value: core.Option<u64>, expected: u64): bool = {
-  match value
-    { Some(value) -> value == expected }
-    { None -> false }
+  match(value) { Some(value) => value == expected, None => false,
+  }
 }
 
 let borrowed_checks(): bool = {
@@ -33,15 +32,14 @@ let owning_checks(): bool = {
   let prefix_view = prefix.as_str()
   let suffix_view = suffix.as_str()
   let needle_view = needle.as_str()
-  let selected = match text.substring(1, 4)
-    { Some(value) ->
+  let selected = match(text.substring(1, 4)) {
+    Some(value) => do {
       let expected: String = "柳"
       value == expected && value.capacity() == 3
-    }
-    { None -> false }
-  let invalid = match text.substring(2, 4)
-    { Some(_) -> false }
-    { None -> true }
+    }, None => false,
+  }
+  let invalid = match(text.substring(2, 4)) { Some(_) => false, None => true,
+  }
   selected &&
     invalid &&
     text.starts_with(prefix_view) &&

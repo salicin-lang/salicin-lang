@@ -10,22 +10,26 @@ extend(resource, Droppable) {
 
 let consume(move value: resource): () = { () }
 
-let inspect(move choice: choice): i32 = { match choice
-    { pair(left, _) -> do {
+let inspect(move choice: choice): i32 = {
+  match(choice) {
+    pair(left, _) => do {
+      do {
         consume(left)
         42
       }
-    }
-    { None -> 0 }
+    }, None => 0,
+  }
 }
 
-let escape(move choice: choice): i32 = { match choice
-    { pair(left, _) -> do {
+let escape(move choice: choice): i32 = {
+  match(choice) {
+    pair(left, _) => do {
+      do {
         consume(left)
         return(42)
       }
-    }
-    { None -> 0 }
+    }, None => 0,
+  }
 }
 
 let main(): i32 = {

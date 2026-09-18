@@ -8,9 +8,12 @@ let program: with<stop>(): i32 = {
 }
 
 let main(): i32 = {
-  let result = stop.handle stop { (resume) -> 40 } action {
+  let result = stop.handle{
+    stop: { (resume) -> 40 },
+    action: {
       program() + 1
-    }
+    },
+  }
   result + 2
 }
 

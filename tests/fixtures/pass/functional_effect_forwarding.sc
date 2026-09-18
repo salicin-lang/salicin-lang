@@ -13,9 +13,8 @@ let unsafe_next: with<unsafety>(value: i32): Option<i32> = {
 }
 
 let read_option(value: Option<i32>): i32 = {
-  match value
-    { Some(number) -> number }
-    { None -> 0 }
+  match(value) { Some(number) => number, None => 0,
+  }
 }
 
 let main(): i32 = {

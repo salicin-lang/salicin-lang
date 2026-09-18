@@ -4,7 +4,7 @@ let keep = trait {
   let Output<l: usize>: type
 
   let keep<l: usize>(move value: Output<l>): Output<l>
-}
+  }
 
 let marker = struct {}
 

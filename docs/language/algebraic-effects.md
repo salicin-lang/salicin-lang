@@ -67,13 +67,19 @@ accepts:
 Conceptually:
 
 ```sc fragment
-let answer = state<i32>.handle
-  get { resume -> resume(41) }
-  put { (value, resume) -> resume(()) }
-  action {
+let answer = state<i32>.handle{
+  get: { resume -> resume(41) },
+  put: { (value, resume) -> resume(()) },
+  action: {
     increment() + 1
-  }
+  },
+}
 ```
+
+This is an ordinary tight Brace `DelimitedCall`, not parser-special handler
+syntax or a sequence of named trailing groups. The compiler semantically
+interprets its arguments as handler clauses after resolving `handle`. Every
+argument is labeled and comma-separated, and `action` is the final argument.
 
 Clause parameter and result types come from the effect declaration. Overloaded operations retain
 their declared labels so each clause remains unambiguous.

@@ -59,11 +59,11 @@ item = [ visibility ], ( let_decl | extend_decl )
 visibility = "pub", [ "(", "package", ")" ] ;
 
 test_registration =
-    contextual("test"), "(", STRING, ")", block ;
+    contextual("test"), "(", STRING, ")", closure_body ;
 ```
 
 A test registration cannot have an attribute or visibility. Its string must be
-non-empty, and the trailing block is the test body. `test` remains an ordinary
+non-empty, and the trailing closure is the test body. `test` remains an ordinary
 identifier outside this top-level form. The edition-owned
 `pub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()`
 declaration validates the static name and body contract.
@@ -503,7 +503,6 @@ prefix_op = "-" | "!" | contextual("move") | contextual("borrow") ;
 ```ebnf
 postfix_suffix =
     argument_group
-  | bare_argument
   | ".", IDENT
   | "?.", IDENT
   | trailing_closure ;
@@ -513,29 +512,23 @@ argument_group =
 
 argument = [ IDENT, ":" ], expression ;
 
-bare_argument = primary, { argument_group | ".", IDENT | "?.", IDENT } ;
-
 trailing_closure =
-    [ IDENT ], block ;
+    [ IDENT, ":" ], closure_expression ;
 ```
 
-`f value` supplies one positional argument as the next call group. The next
-runtime group must therefore contain exactly one parameter. Repeated bare
-arguments preserve currying: `f left right` is `f(left)(right)`, not
-`f(left, right)`. Bare application binds more tightly than infix operators, so
-`f x + y` is `(f x) + y`; use `f (x + y)` to pass the complete infix
-expression. A logical newline does not begin a bare argument.
-
-Every explicit call opener must be byte-adjacent to its callee. Its delimiter
+Every postfix argument-group opener must be byte-adjacent to its callee. Its delimiter
 must match the corresponding declaration or function-type group. `<>`
 exclusively supplies a compile-time group; `()`, `[]`, and `{}` supply runtime
 groups. Thus `a < b` is a
 comparison (comparison operators require surrounding whitespace), while
 `a<b>` is an angle call. A postfix square group is the uniform surface form
 for calls and retains bounds-checked indexing/place behavior when its callee
-is indexable. A tight brace group is a brace call and retains struct
-construction when its callee is a struct type. A whitespace-separated block
-remains the existing parenthesis-group trailing-closure sugar.
+is indexable. A tight brace group is always a Brace `DelimitedCall`; after resolution,
+that call becomes struct construction when its callee is a struct type. A
+whitespace-separated brace closure is always a trailing closure. Named trailing
+closures require a colon, as in `dispatch fallback: { value -> value }`.
+Effect handler calls do not use this production: `effect.handle{...}` is an
+adjacent Brace `DelimitedCall` containing labeled, comma-separated arguments.
 
 ```ebnf
 delimited_group(item) =
@@ -560,8 +553,6 @@ primary =
   | path
   | tuple_expression
   | array_expression
-  | struct_expression
-  | block
   | closure_expression
   | match_expression ;
 
@@ -576,15 +567,8 @@ tuple_expression =
 array_expression =
     "[", [ expression, { ",", expression }, [ "," ] ], "]" ;
 
-struct_expression =
-    type_expr, "{",
-    [ field_initializer, { ",", field_initializer }, [ "," ] ],
-    "}" ;
-
-field_initializer = IDENT, ":", expression ;
-
 closure_expression =
-    [ closure_parameters, "->" ], block ;
+    [ closure_parameters, "->" ], closure_body ;
 
 closure_parameters =
     IDENT
@@ -595,10 +579,10 @@ Control operations such as `if`, `while`, `for`, `loop`, `return`, `break`, `con
 `try`, `throw`, and `unsafe` begin as contextual identifiers and are recognized by their validated
 call or trailing-closure shape.
 
-## 5. Blocks and Matches
+## 5. Closures and Matches
 
 ```ebnf
-block =
+closure_body =
     "{", block_contents, "}" ;
 
 block_contents =
@@ -611,17 +595,32 @@ block_item =
   | expression ;
 
 match_expression =
-    contextual("match"), expression,
-    match_case, { match_case } ;
+    contextual("match"), "(", expression, ")", match_closure ;
 
-match_case =
+match_closure =
     "{", separators,
+    match_arm,
+    { ",", separators, match_arm },
+    [ "," ], separators,
+    "}" ;
+
+match_arm =
     pattern,
     [ contextual("if"), expression ],
-    "->",
-    block_contents,
-    "}" ;
+    "=>",
+    expression ;
 ```
+
+An ordinary brace expression is a closure, not a generic eagerly evaluated
+block. Function declarations and dedicated control forms consume such closures
+and invoke them at the point required by their contracts. The brace following
+`match(value)` is one multi-partial closure whose comma-separated arms are
+partial functions; it is not a tight Brace `DelimitedCall`.
+
+A single pattern partial remains a closure expression with the surface form
+`{ pattern [if expression] -> expression }`. The former consecutive form
+`callee { P -> ... } { Q -> ... }` is not grammar; multiple cases use the one
+match closure `match(value) { P => ..., Q => ... }`.
 
 `c` selects the C data representation and may appear at most once. It is
 orthogonal to named options such as `derive: Copyable`; for example,
@@ -655,8 +654,10 @@ variant_pattern =
     | "{", [ field_pattern, { ",", field_pattern }, [ "," ] ], "}" ] ;
 ```
 
-Whether `{ ... }` is a block, struct literal, pattern payload, trait body, or extension body is
-determined by the construct that introduces it.
+Declaration bodies and pattern payloads use braces in their dedicated
+productions. In expression position, an uncalled brace is a closure; a tight
+postfix brace is a Brace `DelimitedCall`, with struct construction determined only
+after its callee resolves.
 
 ## 6. Paths
 
@@ -685,15 +686,14 @@ let curried = make(T)(value)
 let field = value.member
 let chained = value?.member
 
-if condition then { left() } else { right() }
+if condition { left() } else { right() }
 
-match value {
-  Some(item) -> item
-} {
-  None -> fallback
+match(value) {
+  Some(item) => item,
+  None => fallback,
 }
 ```
 
 These examples distinguish unit from tuples, grouping from tuple syntax, a new statement from a
 continued call, compile-time from runtime application, member access from conditional chaining,
-and blocks from payload braces.
+and closures from payload braces.

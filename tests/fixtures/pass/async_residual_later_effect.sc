@@ -60,32 +60,40 @@ let run_success(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
     let value = await step{ drops: drops, polls: 0, value: 40 }
     value + retained.value + ask.ask()
   }
-  ask.handle ask { (resume) -> resume(record(calls, 1)) } action {
+  ask.handle{
+    ask: { (resume) -> resume(record(calls, 1)) },
+    action: {
       let pending = future.poll()
       let ready = future.poll()
-      match pending
-        { Pending -> match ready
-          { Ready(value) -> value }
-          { Pending -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(pending) {
+        Pending => do {
+          match(ready) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
-  ask.handle ask { (resume) -> resume(record(calls, 1)) } action {
+  ask.handle{
+    ask: { (resume) -> resume(record(calls, 1)) },
+    action: {
       let mut future = async {
         let retained = resource{ drops: drops, value: 1 }
         let value = await step{ drops: drops, polls: 0, value: 40 }
         value + retained.value + ask.ask()
       }
-      match future.poll()
-        { Pending -> 42 }
-        { Ready(_) -> 0 }
-    }
+      match(future.poll()) { Pending => 42, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
-  ask.handle ask { (_) -> record(calls, 42) } action {
+  ask.handle{
+    ask: { (_) -> record(calls, 42) },
+    action: {
       let mut future = async {
         let retained = resource{ drops: drops, value: 1 }
         let value = await step{ drops: drops, polls: 0, value: 40 }
@@ -93,12 +101,14 @@ let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
       }
       let pending = future.poll()
       let ready = future.poll()
-      match pending
-        { Pending -> match ready
-          { Ready(value) -> value }
-          { Pending -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(pending) {
+        Pending => do {
+          match(ready) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let main(): i32 = {

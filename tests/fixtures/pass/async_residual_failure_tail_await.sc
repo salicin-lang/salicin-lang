@@ -38,7 +38,7 @@ extend(step, Future<()>) {
 
 let choose: with<throwing<bool>>(fail: bool): i32 = {
   if fail {
-    throw true
+    throw(true)
   } else {
     40
   }
@@ -56,16 +56,19 @@ let run_success(drops: Ptr<mut><i32>): i32 = {
     }
     let first = future.poll()
     let second = future.poll()
-    match first
-      { Pending -> match second
-        { Ready(value) -> value }
-        { Pending -> 0 } }
-      { Ready(_) -> 0 }
+    match(first) {
+      Pending => do {
+        match(second) { Ready(value) => value, Pending => 0,
+        }
+      }, Ready(_) => 0,
+    }
   }
 
-  match result
-    { Ok(value) -> if value == 40 { 42 } else { 0 } }
-    { Err(_) -> 0 }
+  match(result) {
+    Ok(value) => do {
+      if value == 40 { 42 } else { 0 }
+    }, Err(_) => 0,
+  }
 }
 
 let run_throwing(drops: Ptr<mut><i32>): i32 = {
@@ -76,16 +79,19 @@ let run_throwing(drops: Ptr<mut><i32>): i32 = {
     }
     let first = future.poll()
     let second = future.poll()
-    match first
-      { Pending -> match second
-        { Ready(value) -> value }
-        { Pending -> 0 } }
-      { Ready(_) -> 0 }
+    match(first) {
+      Pending => do {
+        match(second) { Ready(value) => value, Pending => 0,
+        }
+      }, Ready(_) => 0,
+    }
   }
 
-  match result
-    { Ok(_) -> 0 }
-    { Err(error) -> if error { 42 } else { 0 } }
+  match(result) {
+    Ok(_) => 0, Err(error) => do {
+      if error { 42 } else { 0 }
+    },
+  }
 }
 
 let main(): i32 = {

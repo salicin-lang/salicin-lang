@@ -59,22 +59,30 @@ let run_success(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
     let second = await make_second(drops, calls, first)
     second
   }
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let first = future.poll()
       let second = future.poll()
       let third = future.poll()
-      match first
-        { Pending -> match second
-          { Pending -> match third
-            { Ready(value) -> value }
-            { Pending -> 0 } }
-          { Ready(_) -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(first) {
+        Pending => do {
+          match(second) {
+            Pending => do {
+              match(third) { Ready(value) => value, Pending => 0,
+              }
+            }, Ready(_) => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let mut future = async {
         let first = await step{ drops: drops, polls: 0, value: 2, drop_amount: 10 }
         let second = await make_second(drops, calls, first)
@@ -82,16 +90,20 @@ let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
       }
       let first = future.poll()
       let second = future.poll()
-      match first
-        { Pending -> match second
-          { Pending -> 42 }
-          { Ready(_) -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(first) {
+        Pending => do {
+          match(second) { Pending => 42, Ready(_) => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
-  ask.handle ask { (_) -> abandon(calls) } action {
+  ask.handle{
+    ask: { (_) -> abandon(calls) },
+    action: {
       let mut future = async {
         let first = await step{ drops: drops, polls: 0, value: 2, drop_amount: 10 }
         let second = await make_second(drops, calls, first)
@@ -99,12 +111,14 @@ let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
       }
       let first = future.poll()
       let second = future.poll()
-      match first
-        { Pending -> match second
-          { Pending -> 0 }
-          { Ready(_) -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(first) {
+        Pending => do {
+          match(second) { Pending => 0, Ready(_) => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let main(): i32 = {

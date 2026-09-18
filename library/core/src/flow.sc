@@ -7,7 +7,7 @@ pub let Chain = trait {
 
   /// Applies `transform` to the successful payload or propagates the residual case.
   let chain<e: effects, U: type>: with<e>(self)(transform: with<e>((Item): U)): Rebind<U>
-}
+  }
 
 /// Trait used by `??` to extract a Value or evaluate a fallback.
 pub let Coalesce = trait {

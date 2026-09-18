@@ -40,11 +40,12 @@ let main(): i32 = {
   let success_result: Result<bool><Poll<i32>> = try {
     success.poll()
   }
-  let success_value = match success_result
-    { Ok(polled) -> match polled
-      { Ready(value) -> value }
-      { Pending -> 0 } }
-    { Err(_) -> 0 }
+  let success_value = match(success_result) {
+    Ok(polled) => do {
+      match(polled) { Ready(value) => value, Pending => 0,
+      }
+    }, Err(_) => 0,
+  }
 
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
@@ -59,9 +60,8 @@ let main(): i32 = {
   let failure_result: Result<bool><Poll<i32>> = try {
     failure.poll()
   }
-  let failed = match failure_result
-    { Ok(_) -> false }
-    { Err(error) -> error }
+  let failed = match(failure_result) { Ok(_) => false, Err(error) => error,
+  }
   let drop_count = unsafe {
     *drops
   }

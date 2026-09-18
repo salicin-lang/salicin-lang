@@ -4,9 +4,8 @@ let pair = struct {
 }
 
 let select(value: pair): i32 = {
-  match value
-    { pair(right: right, left: 40) -> right }
-    { _ -> 0 }
+  match(value) { pair(right: right, left: 40) => right, _ => 0,
+  }
 }
 
 let main(): i32 = {

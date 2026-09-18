@@ -29,18 +29,14 @@ let main(): i32 = {
     first + second + third
   }
 
-  let first_poll = match future.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let second_poll = match future.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let third_poll = match future.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let fourth_poll = match future.poll()
-    { Pending -> 0 }
-    { Ready(value) -> value }
+  let first_poll = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let second_poll = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let third_poll = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let fourth_poll = match(future.poll()) { Pending => 0, Ready(value) => value,
+  }
   first_poll + second_poll + third_poll + fourth_poll - 3
 }
 

@@ -242,6 +242,7 @@ pub(super) fn rewrite_handler_loop_control(
         | Expr::Loop { .. }
         | Expr::Closure(_, _)
         | Expr::PatternClosure { .. }
+        | Expr::PartialClosure(_)
         | Expr::Async { .. } => {}
         Expr::Unary(_, value)
         | Expr::Try(value)
@@ -488,6 +489,14 @@ pub(super) fn collect_internal_recursion_tokens(expression: &Expr, tokens: &mut 
                 collect_internal_recursion_tokens(guard, tokens);
             }
             collect_internal_recursion_tokens(body, tokens);
+        }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                if let Some(guard) = &arm.guard {
+                    collect_internal_recursion_tokens(guard, tokens);
+                }
+                collect_internal_recursion_tokens(&arm.body, tokens);
+            }
         }
         Expr::If {
             condition,
@@ -817,24 +826,25 @@ pub(super) fn handler_expression_children(expression: &Expr) -> Vec<&Expr> {
         | Expr::Name(_)
         | Expr::Closure(_, _)
         | Expr::PatternClosure { .. }
+        | Expr::PartialClosure(_)
         | Expr::Continue => Vec::new(),
     }
 }
 
 pub(super) fn expression_handles_effect(expression: &Expr, identity: &str) -> bool {
     let expression = expression.unlocated();
-    if let Expr::Call(inner, action) = expression {
-        if matches!(action.as_slice(), [CallArg { label, value: Expr::Closure(parameters, _) }]
-            if matches!(label.as_deref(), None | Some("action")) && parameters.is_empty())
-        {
-            let mut groups = Vec::new();
-            if let Expr::Member(effect, member) = flatten_call(inner, &mut groups) {
+    if let Expr::DelimitedCall {
+        callee,
+        delimiter: GroupDelimiter::Brace,
+        arguments,
+    } = expression {
+        if matches!(arguments.last(), Some(CallArg { label: Some(label), value: Expr::Closure(parameters, _) })
+                if label == "action" && parameters.is_empty())
+            && matches!(callee.unlocated(), Expr::Member(effect, member)
                 if member == "handle"
-                    && source_type_expression_name(effect).is_some_and(|effect| effect == identity)
-                {
-                    return true;
-                }
-            }
+                    && source_type_expression_name(effect).is_some_and(|effect| effect == identity))
+        {
+            return true;
         }
     }
     handler_expression_children(expression)
@@ -847,23 +857,26 @@ pub(super) fn inject_handler_action_binding(
     identity: &str,
     action_binding: Binding,
 ) -> bool {
-    if let Expr::Call(inner, action) = expression {
-        if let [CallArg {
-            label,
-            value: Expr::Closure(parameters, action_body),
-        }] = action.as_mut_slice()
-        {
-            let mut groups = Vec::new();
-            if matches!(label.as_deref(), None | Some("action"))
-                && parameters.is_empty()
-                && matches!(flatten_call(inner, &mut groups), Expr::Member(effect, member)
-                    if member == "handle"
-                        && source_type_expression_name(effect).is_some_and(|effect| effect == identity))
+    if let Expr::DelimitedCall {
+        callee,
+        delimiter: GroupDelimiter::Brace,
+        arguments,
+    } = expression {
+        let is_handler = matches!(callee.unlocated(), Expr::Member(effect, member)
+            if member == "handle"
+                && source_type_expression_name(effect).is_some_and(|effect| effect == identity));
+        if is_handler {
+            if let Some(CallArg {
+                label: Some(label),
+                value: Expr::Closure(parameters, action_body),
+            }) = arguments.last_mut()
             {
-                let old_body = (**action_body).clone();
-                **action_body =
-                    Expr::Block(vec![Stmt::Let(action_binding)], Some(Box::new(old_body)));
-                return true;
+                if label == "action" && parameters.is_empty() {
+                    let old_body = (**action_body).clone();
+                    **action_body =
+                        Expr::Block(vec![Stmt::Let(action_binding)], Some(Box::new(old_body)));
+                    return true;
+                }
             }
         }
     }
@@ -1050,6 +1063,24 @@ pub(super) fn rewrite_handler_chain_wrappers(
                 rewrite_handler_chain_wrappers(guard, canonical, success_variant, residual_variant);
             }
             rewrite_handler_chain_wrappers(body, canonical, success_variant, residual_variant);
+        }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                if let Some(guard) = &mut arm.guard {
+                    rewrite_handler_chain_wrappers(
+                        guard,
+                        canonical,
+                        success_variant,
+                        residual_variant,
+                    );
+                }
+                rewrite_handler_chain_wrappers(
+                    &mut arm.body,
+                    canonical,
+                    success_variant,
+                    residual_variant,
+                );
+            }
         }
         Expr::If {
             condition,
@@ -3230,26 +3261,28 @@ impl Analyzer {
         resume: Option<SourceResume>,
         continuation: SourceContinuation,
     ) -> Option<Result<Expr, ()>> {
-        let Expr::Call(inner_callee, action_arguments) = expression else {
-            return None;
-        };
-        let [CallArg {
-            label: action_label,
-            value: Expr::Closure(action_parameters, action_body),
-        }] = action_arguments.as_slice()
+        let Expr::DelimitedCall {
+            callee,
+            delimiter: GroupDelimiter::Brace,
+            arguments,
+        } = expression
         else {
             return None;
         };
-        if !matches!(action_label.as_deref(), None | Some("action"))
-            || !action_parameters.is_empty()
-        {
-            return None;
-        }
-        let mut groups = Vec::new();
-        let Expr::Member(effect, member) = flatten_call(inner_callee, &mut groups) else {
+        let Some((CallArg {
+            label: Some(action_label),
+            value: Expr::Closure(action_parameters, action_body),
+        }, clause_arguments)) = arguments.split_last()
+        else {
             return None;
         };
-        if member != "handle" || groups.is_empty() {
+        if action_label != "action" || !action_parameters.is_empty() {
+            return None;
+        }
+        let Expr::Member(effect, member) = callee.unlocated() else {
+            return None;
+        };
+        if member != "handle" {
             return None;
         }
         let effect_name = source_type_expression_name(effect)?;
@@ -3258,38 +3291,28 @@ impl Analyzer {
             return None;
         }
 
-        let mut transformed_inner_callee = (**effect).clone();
-        transformed_inner_callee = Expr::Member(Box::new(transformed_inner_callee), member.clone());
-        let mut transformed_clauses = Vec::new();
-        for clause_arguments in groups {
-            transformed_clauses.reserve(clause_arguments.len());
-            for argument in clause_arguments {
-                let value = if let Expr::Closure(parameters, body) = &argument.value {
-                    let identity: SourceContinuation = Rc::new(|_, value| Ok(value));
-                    let transformed = match self.transform_handler_expr(
-                        (**body).clone(),
-                        handler.clone(),
-                        None,
-                        identity,
-                    ) {
-                        Ok(transformed) => transformed,
-                        Err(()) => return Some(Err(())),
-                    };
-                    Expr::Closure(parameters.clone(), Box::new(transformed))
-                } else {
-                    argument.value.clone()
+        let mut transformed_arguments = Vec::with_capacity(arguments.len());
+        for argument in clause_arguments {
+            let value = if let Expr::Closure(parameters, body) = &argument.value {
+                let identity: SourceContinuation = Rc::new(|_, value| Ok(value));
+                let transformed = match self.transform_handler_expr(
+                    (**body).clone(),
+                    handler.clone(),
+                    None,
+                    identity,
+                ) {
+                    Ok(transformed) => transformed,
+                    Err(()) => return Some(Err(())),
                 };
-                transformed_clauses.push(CallArg {
-                    label: argument.label.clone(),
-                    value,
-                });
-            }
+                Expr::Closure(parameters.clone(), Box::new(transformed))
+            } else {
+                argument.value.clone()
+            };
+            transformed_arguments.push(CallArg {
+                label: argument.label.clone(),
+                value,
+            });
         }
-        // Handler transformation uses one internal clause group so the
-        // existing CPS frame machinery sees the same normalized shape
-        // regardless of how many source groups `...Clauses` expanded into.
-        transformed_inner_callee =
-            Expr::Call(Box::new(transformed_inner_callee), transformed_clauses);
 
         let wrap_in_unsafe = handler.lexical_unsafe_depth.get() > 0;
         let transformed_action = match self.transform_handler_expr(
@@ -3301,13 +3324,15 @@ impl Analyzer {
             Ok(transformed) => transformed,
             Err(()) => return Some(Err(())),
         };
-        let call = Expr::Call(
-            Box::new(transformed_inner_callee),
-            vec![CallArg {
-                label: None,
-                value: Expr::Closure(Vec::new(), Box::new(transformed_action)),
-            }],
-        );
+        transformed_arguments.push(CallArg {
+            label: Some("action".to_owned()),
+            value: Expr::Closure(Vec::new(), Box::new(transformed_action)),
+        });
+        let call = Expr::DelimitedCall {
+            callee: Box::new(Expr::Member(effect.clone(), member.clone())),
+            delimiter: GroupDelimiter::Brace,
+            arguments: transformed_arguments,
+        };
         Some(Ok(if wrap_in_unsafe {
             Expr::Unsafe(Box::new(call))
         } else {

@@ -922,7 +922,7 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `unsafe`")));
 
     let bodyless = EDITION_2026_UNSAFE.replace(
-        " = {\n  core.unsafe.unsafety.handle\n    action {\n      action()\n    }\n}",
+        " = {\n  core.unsafe.unsafety.handle{\n    action: {\n      action()\n    },\n  }\n}",
         "",
     );
     let modules = edition_2026_test_modules(&[("unsafe", &bodyless)]);

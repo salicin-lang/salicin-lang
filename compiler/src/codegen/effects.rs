@@ -408,37 +408,41 @@ impl Analyzer {
             );
             return error_expr();
         }
-        let Some((action_group, clause_groups)) = groups.split_last() else {
+        let [arguments] = groups else {
             self.error(format!(
-                "`{}.handle` expects labeled clause groups followed by an `action` closure",
+                "`{}.handle` expects one brace-delimited group of labeled clause closures ending with `action`",
                 source_effect_identity(instance)
             ));
             return error_expr();
         };
-        if action_group.len() != 1
-            || !matches!(action_group[0].label.as_deref(), None | Some("action"))
-            || (clause_groups.len() != 1 && clause_groups.iter().any(|group| group.len() != 1))
-        {
-            let shape = groups
-                .iter()
-                .map(|group| {
-                    group
-                        .iter()
-                        .map(|argument| argument.label.as_deref().unwrap_or("_"))
-                        .collect::<Vec<_>>()
-                        .join(",")
-                })
-                .collect::<Vec<_>>()
-                .join(")(");
+        let Some((action, clause_arguments)) = arguments.split_last() else {
             self.error(format!(
-                "`{}.handle` expects labeled clause groups followed by an `action` closure; found ({shape})",
+                "`{}.handle` expects labeled clause closures ending with `action`",
                 source_effect_identity(instance),
             ));
             return error_expr();
-        }
-        let Expr::Closure(action_parameters, action_body) = &action_group[0].value else {
-            self.error("an effect handler requires a trailing closure");
+        };
+        if arguments.iter().any(|argument| argument.label.is_none()) {
+            self.error("effect handler arguments must all be labeled closures");
             return error_expr();
+        }
+        let action_count = arguments
+            .iter()
+            .filter(|argument| argument.label.as_deref() == Some("action"))
+            .count();
+        if action_count != 1 || action.label.as_deref() != Some("action") {
+            self.error("an effect handler requires exactly one `action` argument, in final position");
+            return error_expr();
+        }
+        if arguments
+            .iter()
+            .any(|argument| !matches!(argument.value, Expr::Closure(_, _)))
+        {
+            self.error("effect handler arguments must all be labeled closures");
+            return error_expr();
+        }
+        let Expr::Closure(action_parameters, action_body) = &action.value else {
+            unreachable!("handler argument closure shape was validated")
         };
         if !action_parameters.is_empty() {
             self.error("an effect handler action closure cannot take parameters");
@@ -478,7 +482,7 @@ impl Analyzer {
                 });
         }
         let mut done = None;
-        for argument in clause_groups.iter().flat_map(|group| group.iter()) {
+        for argument in clause_arguments {
             let Some(label) = &argument.label else {
                 self.error("effect handler clauses must use operation names as argument labels");
                 continue;
@@ -902,6 +906,7 @@ pub(super) fn do_block_requires_function_boundary(expression: &Expr) -> bool {
         Expr::Return(_) | Expr::Try(_) | Expr::Throw(_) => true,
         Expr::Closure(_, _)
         | Expr::PatternClosure { .. }
+        | Expr::PartialClosure(_)
         | Expr::DoBlock { .. }
         | Expr::Async { .. } => false,
         Expr::Unary(_, value)

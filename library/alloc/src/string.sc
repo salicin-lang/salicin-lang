@@ -24,11 +24,10 @@ let first_invalid_owned_utf8(bytes: Borrow<Vec<u8>>): core.Option<u64> = {
 pub let string_from_utf8(
   move bytes: Vec<u8>,
 ): core.Result<FromUtf8Error><core.string.String> = {
-  match first_invalid_owned_utf8(bytes)
-    { Some(valid_up_to) ->
+  match(first_invalid_owned_utf8(bytes)) {
+    Some(valid_up_to) => do {
       core.Result.Err(FromUtf8Error{ bytes: bytes, valid_prefix: valid_up_to })
-    }
-    { None ->
+    }, None => do {
       if bytes.is_empty() {
         core.Result.Ok("")
       } else {
@@ -38,7 +37,8 @@ pub let string_from_utf8(
         }
         core.Result.Ok(text)
       }
-    }
+    },
+  }
 }
 
 /// Consumes a String and returns owned bytes. Heap storage transfers without
@@ -111,8 +111,10 @@ extend(StringWriter, core.fmt.TextWriter<pure>) {
       source = source - 1
       code = code + 1
     }
-    match core.string.UnicodeScalar.from_u32(code)
-      { Some(scalar) -> self.value.push(scalar) }
-      { None -> unsafe { raw_trap() } }
+    match(core.string.UnicodeScalar.from_u32(code)) {
+      Some(scalar) => self.value.push(scalar), None => do {
+        unsafe { raw_trap() }
+      },
+    }
   }
 }

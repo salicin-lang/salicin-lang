@@ -54,11 +54,12 @@ pub let defer<e: effects>: with<e>(move action: with<e>((): ())): () = builtin()
 /// Runs `action` once, then repeats it while the lazy condition remains true.
 pub let do<e: effects>: with<e>(move action: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): ()))(move while: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)): () = {
   loop {
-    core.control.iteration_skip.handle
-      next { () }
-      action {
+    core.control.iteration_skip.handle{
+      next: { () },
+      action: {
         action()
-      }
+      },
+    }
     if while() {
       continue()
     } else {
@@ -83,9 +84,8 @@ pub let while<e: effects>: with<e>(move condition: with<e>((): bool))(move do: w
 
 /// Selects one of two lazy branches from an eager boolean condition.
 pub let if<e: effects, T: type>: with<e>(condition: bool)(move then: with<e>((): T))(move else: with<e>((): T)): T = {
-  match condition
-    { true -> then() }
-    { false -> else() }
+  match(condition) { true => then(), false => else(),
+  }
 }
 
 /// Selects the first matching case parameter group.
@@ -107,8 +107,7 @@ pub let for<e: effects, Iterable: type, Iter: type, Item: type>: with<e>(move it
 ) {
   let mut iterator = iterable.into_iter()
   loop {
-    match iterator.next()
-      { Some(item) -> body(item) }
-      { None -> break() }
+    match(iterator.next()) { Some(item) => body(item), None => break(),
+    }
   }
 }

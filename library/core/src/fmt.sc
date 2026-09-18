@@ -95,9 +95,8 @@ let parse_magnitude(
   let mut output: u64 = 0
   let mut index = start
   while { index < value.len() } {
-    let digit = match digit_value(byte_at(value, index))
-      { Some(digit) -> digit }
-      { None -> return(parse_failure(InvalidDigit, index)) }
+    let digit = match(digit_value(byte_at(value, index))) { Some(digit) => digit, None => return(parse_failure(InvalidDigit, index)),
+    }
     if digit >= radix {
       return(parse_failure(InvalidDigit, index))
     }
@@ -129,9 +128,8 @@ pub let parse_u64_radix(
       byte_offset: 0,
     }))
   }
-  match parse_magnitude(value, 0, radix, 18446744073709551615)
-    { Ok(magnitude) -> core.Result.Ok(magnitude) }
-    { Err(error) -> core.Result.Err(error) }
+  match(parse_magnitude(value, 0, radix, 18446744073709551615)) { Ok(magnitude) => core.Result.Ok(magnitude), Err(error) => core.Result.Err(error),
+  }
 }
 
 /// Parses a signed integer in radix 2 through 36.
@@ -169,12 +167,12 @@ pub let parse_i64_radix(
   let mut output: i64 = 0
   let mut index = start
   while { index < value.len() } {
-    let digit = match digit_value(byte_at(value, index))
-      { Some(digit) -> digit }
-      { None -> return(core.Result.Err(ParseIntError{
+    let digit = match(digit_value(byte_at(value, index))) {
+      Some(digit) => digit, None => do { return(core.Result.Err(ParseIntError{
           failure: InvalidDigit,
           byte_offset: index,
-        })) }
+        })) },
+    }
     if digit >= radix {
       return(core.Result.Err(ParseIntError{
         failure: InvalidDigit,
@@ -325,12 +323,12 @@ extend(core.string.str, Display) {
   let display<e: effects, W: type>: with<e>(self: Borrow<self>)(writer: Borrow<mut><W>): () = requires(W is TextWriter<e>) {
     let mut scalars = self.scalars()
     while {
-      match scalars.next()
-        { Some(scalar) ->
+      match(scalars.next()) {
+        Some(scalar) => do {
           writer.write_scalar(scalar)
           true
-        }
-        { None -> false }
+        }, None => false,
+      }
     } {}
   }
 }
@@ -340,12 +338,12 @@ extend(core.string.String, Display) {
     let view = self.as_str()
     let mut scalars = view.scalars()
     while {
-      match scalars.next()
-        { Some(scalar) ->
+      match(scalars.next()) {
+        Some(scalar) => do {
           writer.write_scalar(scalar)
           true
-        }
-        { None -> false }
+        }, None => false,
+      }
     } {}
   }
 }
@@ -396,12 +394,12 @@ extend(core.string.str, Debug) {
   let debug<e: effects, W: type>: with<e>(self: Borrow<self>)(writer: Borrow<mut><W>): () = requires(W is TextWriter<e>) {
     let mut scalars = self.scalars()
     while {
-      match scalars.next()
-        { Some(scalar) ->
+      match(scalars.next()) {
+        Some(scalar) => do {
           writer.write_scalar(scalar)
           true
-        }
-        { None -> false }
+        }, None => false,
+      }
     } {}
   }
 }
@@ -411,12 +409,12 @@ extend(core.string.String, Debug) {
     let view = self.as_str()
     let mut scalars = view.scalars()
     while {
-      match scalars.next()
-        { Some(scalar) ->
+      match(scalars.next()) {
+        Some(scalar) => do {
           writer.write_scalar(scalar)
           true
-        }
-        { None -> false }
+        }, None => false,
+      }
     } {}
   }
 }

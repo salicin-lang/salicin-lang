@@ -681,8 +681,9 @@ impl Analyzer {
                 let mut groups = Vec::new();
                 let root = flatten_call(callee, &mut groups);
                 if matches!(root, Expr::Name(name)
-                    if self.collection.struct_layouts.contains_key(name)
-                        || self.collection.struct_templates.contains_key(name))
+                    if !context.shadows_top_level_name(name)
+                        && (self.collection.struct_layouts.contains_key(name)
+                            || self.collection.struct_templates.contains_key(name)))
                     && arguments.iter().all(|argument| argument.label.is_some())
                 {
                     self.lower_struct_literal(callee, arguments, expected, context)
@@ -1094,6 +1095,10 @@ impl Analyzer {
             }
             Expr::PatternClosure { .. } => {
                 self.error("pattern closure requires a contextual partial-function type");
+                error_expr()
+            }
+            Expr::PartialClosure(_) => {
+                self.error("multi-arm partial closure is only valid as the case argument to `match`");
                 error_expr()
             }
             Expr::If {
@@ -2462,6 +2467,24 @@ impl Analyzer {
                 });
                 valid &= self.scan_simple_closure_captures(body, bound, outer, captures);
                 *bound = saved;
+                valid
+            }
+            Expr::PartialClosure(arms) => {
+                let mut valid = true;
+                for arm in arms {
+                    let saved = bound.clone();
+                    collect_pattern_binding_names(&arm.pattern, bound);
+                    if let Some(guard) = &arm.guard {
+                        valid &= self.scan_simple_closure_captures(guard, bound, outer, captures);
+                    }
+                    valid &= self.scan_simple_closure_captures(
+                        &arm.body,
+                        bound,
+                        outer,
+                        captures,
+                    );
+                    *bound = saved;
+                }
                 valid
             }
             Expr::Continue => true,

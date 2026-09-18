@@ -8,9 +8,8 @@ extend(boxed) {
 
 let main(): i32 = {
   let nested = Option<boxed>.Some(boxed{ value: 42 })?.optional()
-  match nested
-    { Some(inner) -> inner ?? 0 }
-    { None -> 0 }
+  match(nested) { Some(inner) => inner ?? 0, None => 0,
+  }
 }
 
 test("chain_method_result_is_nested.sc") {

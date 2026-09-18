@@ -89,19 +89,25 @@ let run(drops: Ptr<mut><i32>, first: bool): i32 = {
       await second{ drops: drops, polls: 0, value: ask.ask() }
     }
   }
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let pending = future.poll()
       let ready = future.poll()
-      match pending
-        { Pending -> match ready
-          { Ready(value) -> value }
-          { Pending -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(pending) {
+        Pending => do {
+          match(ready) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let cancel(drops: Ptr<mut><i32>): i32 = {
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let mut future = async {
         if false {
           await first{ drops: drops, polls: 0, value: ask.ask() }
@@ -109,54 +115,64 @@ let cancel(drops: Ptr<mut><i32>): i32 = {
           await second{ drops: drops, polls: 0, value: ask.ask() }
         }
       }
-      match future.poll()
-        { Pending -> 42 }
-        { Ready(_) -> 0 }
-    }
+      match(future.poll()) { Pending => 42, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let run_match(drops: Ptr<mut><i32>, move choice: choice): i32 = {
   let mut future = async {
-    match choice
-      { use_first(offset) ->
-        await first{ drops: drops, polls: 0, value: ask.ask() + offset } }
-      { use_second(offset) ->
-        await second{ drops: drops, polls: 0, value: ask.ask() + offset } }
+    match(choice) {
+      use_first(offset) => do {
+        await first{ drops: drops, polls: 0, value: ask.ask() + offset } }, use_second(offset) => do {
+        await second{ drops: drops, polls: 0, value: ask.ask() + offset } },
+    }
   }
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let pending = future.poll()
       let ready = future.poll()
-      match pending
-        { Pending -> match ready
-          { Ready(value) -> value }
-          { Pending -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(pending) {
+        Pending => do {
+          match(ready) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let run_wrapped(drops: Ptr<mut><i32>, move choice: choice): i32 = {
   let mut future = async {
     let retained = retained{ drops: drops, offset: 2 }
-    let value = await match choice
-      { use_first(_) ->
-        first{ drops: drops, polls: 0, value: ask.ask() } }
-      { use_second(_) ->
-        second{ drops: drops, polls: 0, value: ask.ask() } }
+    let value = await match(choice) {
+      use_first(_) => do {
+        first{ drops: drops, polls: 0, value: ask.ask() } }, use_second(_) => do {
+        second{ drops: drops, polls: 0, value: ask.ask() } },
+    }
     value + retained.offset
   }
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let pending = future.poll()
       let ready = future.poll()
-      match pending
-        { Pending -> match ready
-          { Ready(value) -> value }
-          { Pending -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(pending) {
+        Pending => do {
+          match(ready) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let cancel_wrapped(drops: Ptr<mut><i32>): i32 = {
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let mut future = async {
         let retained = retained{ drops: drops, offset: 2 }
         let value = await if false {
@@ -166,10 +182,10 @@ let cancel_wrapped(drops: Ptr<mut><i32>): i32 = {
         }
         value + retained.offset
       }
-      match future.poll()
-        { Pending -> 42 }
-        { Ready(_) -> 0 }
-    }
+      match(future.poll()) { Pending => 42, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let main(): i32 = {

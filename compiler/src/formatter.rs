@@ -4,8 +4,8 @@ use crate::lexer::{lex, TokenKind};
 use crate::parser::{parse, parse_with_source_layout, SourceLayout};
 
 /// Format one complete Salicin source while preserving its logical token
-/// stream. Existing physical line breaks are retained because they participate
-/// in parenthesis-free application; nested block boundaries may add lines.
+/// stream. Existing physical line breaks are retained because they delimit
+/// expressions and trailing groups; nested block boundaries may add lines.
 pub fn format_source(source: &str) -> Result<String, String> {
     let normalized = source.replace("\r\n", "\n").replace('\r', "\n");
     if normalized.is_empty() {
@@ -132,7 +132,6 @@ struct LineSyntax {
     is_parameter_group: bool,
     is_repeated_parameter_group: bool,
     is_where_predicate: bool,
-    match_arm_depth: usize,
     trailing_closure_depth: usize,
     last: Option<TokenKind>,
     delimiter_indent: usize,
@@ -234,24 +233,6 @@ fn analyze_layout(source: &str, source_layout: &SourceLayout) -> Result<Vec<Line
         }
     }
 
-    for arm in &source_layout.match_arms {
-        let Some(start) = tokens
-            .iter()
-            .find(|token| token.start_byte == arm.open_byte)
-        else {
-            continue;
-        };
-        for line in &mut lines[start.line - 1..] {
-            let Some(first_byte) = line.first_byte else {
-                continue;
-            };
-            if first_byte > arm.close_byte {
-                break;
-            }
-            line.match_arm_depth = 1;
-        }
-    }
-
     let mut declaration_continuation = false;
     let mut previous_last = None;
     for (index, line) in lines.iter_mut().enumerate() {
@@ -268,7 +249,6 @@ fn analyze_layout(source: &str, source_layout: &SourceLayout) -> Result<Vec<Line
             && previous_last.as_ref().is_some_and(is_continuation_operator)
             && line.delimiter_indent == 0;
         line.continuation = usize::from(continues_declaration)
-            + line.match_arm_depth
             + line.trailing_closure_depth
             + usize::from(operator_continuation);
         if line.is_where_predicate && index != 0 {
@@ -454,9 +434,9 @@ mod tests {
     }
 
     #[test]
-    fn indents_parameter_groups_and_match_arms_as_continuations() {
-        let source = "let apply<e: effects>: with<e>\n(action: with<e>((i32): i32))\n(value: i32): i32 = { action(value) }\n\nlet main: (): i32 = {\nmatch true\n{ true -> match false\n{ false -> apply()(42) }\n{ true -> 0 } }\n{ false -> 0 }\n}\n";
-        let expected = "let apply<e: effects>: with<e>\n  (action: with<e>((i32): i32))\n  (value: i32): i32 = { action(value) }\n\nlet main: (): i32 = {\n  match true\n    { true -> match false\n      { false -> apply()(42) }\n      { true -> 0 } }\n    { false -> 0 }\n}\n";
+    fn indents_parameter_groups_and_match_arms() {
+        let source = "let apply<e: effects>: with<e>\n(action: with<e>((i32): i32))\n(value: i32): i32 = { action(value) }\n\nlet main: (): i32 = {\nmatch(true) {\ntrue => match(false) {\nfalse => apply()(42),\ntrue => 0,\n},\nfalse => 0,\n}\n}\n";
+        let expected = "let apply<e: effects>: with<e>\n  (action: with<e>((i32): i32))\n  (value: i32): i32 = { action(value) }\n\nlet main: (): i32 = {\n  match(true) {\n    true => match(false) {\n      false => apply()(42),\n      true => 0,\n    },\n    false => 0,\n  }\n}\n";
         let formatted = format_source(source).expect("format continuations");
         assert_eq!(formatted, expected);
         assert_eq!(

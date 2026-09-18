@@ -3,7 +3,9 @@ let ask = effect {
 }
 
 let main(): i32 = {
-  ask.handle value { (resume) -> resume(10) } action {
+  ask.handle{
+    value: { (resume) -> resume(10) },
+    action: {
       let mut left_total = 0
       let mut right_total = 20
       let mut left: with<ask>((i32): i32)  = { (value: i32) ->
@@ -18,7 +20,8 @@ let main(): i32 = {
       let first = action(1)
       let second = action(2)
       first + second + 18
-    }
+    },
+  }
 }
 
 test("algebraic_effect_dynamic_fn_mut_closure.sc") {

@@ -4,7 +4,10 @@ let ask = effect {
 }
 
 let main(): i32 = {
-  ask.handle value { (input, resume) -> resume(input) } action {
+  ask.handle{
+    value: { (input, resume) -> resume(input) },
+    action: {
       ask.value(left: 42)
-    }
+    },
+  }
 }

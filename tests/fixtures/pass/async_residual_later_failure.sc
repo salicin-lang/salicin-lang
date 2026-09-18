@@ -54,7 +54,7 @@ let finish: with<throwing<bool>>(
     *calls = *calls + 1
   }
   if fail {
-    throw true
+    throw(true)
   } else {
     value + 1
   }
@@ -74,15 +74,18 @@ let run(
     }
     let pending = future.poll()
     let ready = future.poll()
-    match pending
-      { Pending -> match ready
-        { Ready(value) -> value }
-        { Pending -> 0 } }
-      { Ready(_) -> 0 }
+    match(pending) {
+      Pending => do {
+        match(ready) { Ready(value) => value, Pending => 0,
+        }
+      }, Ready(_) => 0,
+    }
   }
-  match result
-    { Ok(value) -> value }
-    { Err(error) -> if error { 42 } else { 0 } }
+  match(result) {
+    Ok(value) => value, Err(error) => do {
+      if error { 42 } else { 0 }
+    },
+  }
 }
 
 let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
@@ -93,13 +96,11 @@ let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
       let completed = value + retained.value
       finish(calls, false, completed)
     }
-    match future.poll()
-      { Pending -> 42 }
-      { Ready(_) -> 0 }
+    match(future.poll()) { Pending => 42, Ready(_) => 0,
+    }
   }
-  match result
-    { Ok(value) -> value }
-    { Err(_) -> 0 }
+  match(result) { Ok(value) => value, Err(_) => 0,
+  }
 }
 
 let main(): i32 = {

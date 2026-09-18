@@ -6,8 +6,8 @@ let valid_conversion(): bool = {
   bytes.push(230)
   bytes.push(159)
   bytes.push(179)
-  match alloc.string.string_from_utf8(bytes)
-    { Ok(text) ->
+  match(alloc.string.string_from_utf8(bytes)) {
+    Ok(text) => do {
       let expected: String = "A柳"
       let equal = text == expected
       let recovered = alloc.string.string_into_bytes(text)
@@ -18,8 +18,8 @@ let valid_conversion(): bool = {
         recovered.read(1) == 230 &&
         recovered.read(2) == 159 &&
         recovered.read(3) == 179
-    }
-    { Err(_) -> false }
+    }, Err(_) => false,
+  }
 }
 
 let invalid_conversion(): bool = {
@@ -28,9 +28,8 @@ let invalid_conversion(): bool = {
   bytes.push(226)
   bytes.push(40)
   bytes.push(161)
-  match alloc.string.string_from_utf8(bytes)
-    { Ok(_) -> false }
-    { Err(error) ->
+  match(alloc.string.string_from_utf8(bytes)) {
+    Ok(_) => false, Err(error) => do {
       let valid_up_to = error.valid_up_to()
       let recovered = error.into_bytes()
       valid_up_to == 1 &&
@@ -40,7 +39,8 @@ let invalid_conversion(): bool = {
         recovered.read(1) == 226 &&
         recovered.read(2) == 40 &&
         recovered.read(3) == 161
-    }
+    },
+  }
 }
 
 let truncated_conversion(): bool = {
@@ -48,18 +48,17 @@ let truncated_conversion(): bool = {
   bytes.push(65)
   bytes.push(226)
   bytes.push(130)
-  match alloc.string.string_from_utf8(bytes)
-    { Ok(_) -> false }
-    { Err(error) ->
+  match(alloc.string.string_from_utf8(bytes)) {
+    Ok(_) => false, Err(error) => do {
       error.valid_up_to() == 1 && error.into_bytes().len() == 3
-    }
+    },
+  }
 }
 
 let edge_conversion(): bool = {
   let empty = Vec<u8>.new()
-  let empty_ok = match alloc.string.string_from_utf8(empty)
-    { Ok(text) -> text.is_empty() }
-    { Err(_) -> false }
+  let empty_ok = match(alloc.string.string_from_utf8(empty)) { Ok(text) => text.is_empty(), Err(_) => false,
+  }
   let literal: String = "柳"
   let literal_bytes = alloc.string.string_into_bytes(literal)
   empty_ok &&

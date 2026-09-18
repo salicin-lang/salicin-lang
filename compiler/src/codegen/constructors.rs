@@ -52,7 +52,7 @@ impl Analyzer {
             || self.collection.enum_templates.contains_key(name)
         {
             self.error(format!(
-                "struct literal `{name} {{ ... }}` requires a struct type, found enum `{name}`"
+                "struct literal `{name}{{ ... }}` requires a struct type, found enum `{name}`"
             ));
             return error_expr();
         }

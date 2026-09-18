@@ -36,9 +36,8 @@ let main(): i32 = {
       consume(resource)
     }
     let result = future.poll()
-    let ready = match result
-      { Ready(_) -> 1 }
-      { Pending -> 0 }
+    let ready = match(result) { Ready(_) => 1, Pending => 0,
+    }
 
     let drops = *counter
     release(counter)

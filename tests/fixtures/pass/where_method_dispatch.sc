@@ -9,10 +9,10 @@ extend(value, measure) {
 }
 
 let read<t: type>(value: Borrow<t>): i32
-= requires(t is measure) { value.measure() }
+  = requires(t is measure) { value.measure() }
 
 let forward<t: type>(value: Borrow<t>): i32
-= requires(t is measure) { read(value) }
+  = requires(t is measure) { read(value) }
 
 let main(): i32 = {
   let value = value{ value: 42 }

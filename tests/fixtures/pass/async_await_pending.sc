@@ -24,12 +24,10 @@ let main(): i32 = {
     let value = await step{ polls: 0 }
     value + offset
   }
-  let first = match future.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let second = match future.poll()
-    { Pending -> 0 }
-    { Ready(value) -> value }
+  let first = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let second = match(future.poll()) { Pending => 0, Ready(value) => value,
+  }
   first + second - 1
 }
 

@@ -42,9 +42,8 @@ let report_with_message(
 // Called only by the compiler-generated runner after one registration has
 // returned through its source-backed failure handler and cleanup path.
 let report(index: u64, move value: core.testing.Outcome): bool = {
-  match value
-    { Passed -> report_pass(index) }
-    { Failed(message) -> report_with_message(index, message) }
+  match(value) { Passed => report_pass(index), Failed(message) => report_with_message(index, message),
+  }
 }
 
 // Emits the terminal frame and returns the native process summary status.
@@ -93,12 +92,12 @@ extend(core.string.str, AssertionDebug) {
     let mut writer = alloc.string.StringWriter.new()
     let mut scalars = self.scalars()
     while {
-      match scalars.next()
-        { Some(scalar) ->
+      match(scalars.next()) {
+        Some(scalar) => do {
           writer.write_scalar(scalar)
           true
-        }
-        { None -> false }
+        }, None => false,
+      }
     } {}
     writer.finish()
   }
@@ -202,24 +201,23 @@ pub let assert_ne<T: type>: with<core.error.throwing<core.string.String>>
 /// Extracts `Some`, failing when the Option is empty.
 pub let expect_some<T: type>: with<core.error.throwing<core.string.String>>
   (move value: core.Option<T>): T = {
-  match value
-    { Some(value) -> value }
-    { None -> fail("expect_some failed: found none") }
+  match(value) { Some(value) => value, None => fail("expect_some failed: found none"),
+  }
 }
 
 /// Requires `None`, formatting an unexpected payload exactly once.
 pub let expect_none<T: type>: with<core.error.throwing<core.string.String>>
   (move value: core.Option<T>): () =
   requires(T is AssertionDebug) {
-  match value
-    { None -> () }
-    { Some(value) ->
+  match(value) {
+    None => (), Some(value) => do {
       let value_text = value.assertion_debug()
       let message = unexpected_value_message(
         "expect_none failed: found some(",
       )(value_text)
       fail(message)
-    }
+    },
+  }
 }
 
 /// Extracts `Ok`, formatting an unexpected error exactly once.
@@ -227,15 +225,15 @@ pub let expect_ok<Error: type, T: type>:
 with<core.error.throwing<core.string.String>>
   (move value: core.Result<Error><T>): T =
   requires(Error is AssertionDebug) {
-  match value
-    { Ok(value) -> value }
-    { Err(error) ->
+  match(value) {
+    Ok(value) => value, Err(error) => do {
       let error_text = error.assertion_debug()
       let message = unexpected_value_message(
         "expect_ok failed: found err(",
       )(error_text)
       fail(message)
-    }
+    },
+  }
 }
 
 /// Extracts `Err`, formatting an unexpected success value exactly once.
@@ -243,13 +241,13 @@ pub let expect_err<Error: type, T: type>:
 with<core.error.throwing<core.string.String>>
   (move value: core.Result<Error><T>): Error =
   requires(T is AssertionDebug) {
-  match value
-    { Err(error) -> error }
-    { Ok(value) ->
+  match(value) {
+    Err(error) => error, Ok(value) => do {
       let value_text = value.assertion_debug()
       let message = unexpected_value_message(
         "expect_err failed: found ok(",
       )(value_text)
       fail(message)
-    }
+    },
+  }
 }

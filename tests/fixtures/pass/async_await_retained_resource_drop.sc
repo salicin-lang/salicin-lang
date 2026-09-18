@@ -64,12 +64,10 @@ let main(): i32 = {
       let awaited = await step{ counter: counter, polled: false }
       resource.value + awaited
     }
-    let pending = match future.poll()
-      { Pending -> 0 }
-      { Ready(_) -> 100 }
-    let result = match future.poll()
-      { Ready(value) -> value }
-      { Pending -> 100 }
+    let pending = match(future.poll()) { Pending => 0, Ready(_) => 100,
+    }
+    let result = match(future.poll()) { Ready(value) => value, Pending => 100,
+    }
 
     do {
       let mut cancelled = async {
@@ -77,9 +75,8 @@ let main(): i32 = {
         let awaited = await step{ counter: counter, polled: false }
         resource.value + awaited
       }
-      match cancelled.poll()
-        { Pending -> () }
-        { Ready(_) -> () }
+      match(cancelled.poll()) { Pending => (), Ready(_) => (),
+      }
     }
 
     let drops = *counter

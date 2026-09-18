@@ -21,12 +21,15 @@ let run(
   right: Borrow<mut><i32>,
   abandon: bool,
 )(move action: with<ask>((): i32)): i32 = {
-  ask.handle value { (resume) ->
+  ask.handle{
+    value: { (resume) ->
       if abandon { 40 } else { resume(2) }
-    } action {
+    },
+    action: {
       right = right + action()
       left + right
-    }
+    },
+  }
 }
 
 let execute(drops: Ptr<mut><i32>, abandon: bool): i32 = {

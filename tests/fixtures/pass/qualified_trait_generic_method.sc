@@ -13,7 +13,7 @@ extend(cell<t>) {
 }
 
 let main(): i32 = {
-  let cell_value = cell<i32> { value: 42 }
+  let cell_value = cell<i32>{ value: 42 }
   let read = cell.read(cell_value)()
   let taken = cell<i32>.take(cell_value)()
   read + taken - 42

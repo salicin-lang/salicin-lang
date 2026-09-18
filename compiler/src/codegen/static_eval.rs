@@ -505,7 +505,19 @@ impl Analyzer {
             Expr::StructLiteral {
                 constructor,
                 fields,
-            } => {
+            }
+            | Expr::DelimitedCall {
+                callee: constructor,
+                delimiter: crate::ast::GroupDelimiter::Brace,
+                arguments: fields,
+            } if fields.iter().all(|field| field.label.is_some())
+                && {
+                    let mut groups = Vec::new();
+                    matches!(flatten_call(constructor, &mut groups), Expr::Name(name)
+                        if !locals.contains_key(name)
+                            && (self.collection.struct_layouts.contains_key(name)
+                                || self.collection.struct_templates.contains_key(name)))
+                } => {
                 let name = self.static_struct_constructor_name(constructor, expected)?;
                 let ty = Ty::Struct(name.clone());
                 self.validate_static_value_type(&ty)?;
@@ -1932,6 +1944,21 @@ impl Analyzer {
                     .static_expression_type_hint(left, locals)
                     .or_else(|| self.static_expression_type_hint(right, locals)),
             },
+            Expr::DelimitedCall {
+                callee,
+                delimiter: crate::ast::GroupDelimiter::Brace,
+                arguments,
+            } if arguments.iter().all(|argument| argument.label.is_some())
+                && {
+                    let mut groups = Vec::new();
+                    matches!(flatten_call(callee, &mut groups), Expr::Name(name)
+                        if !locals.contains_key(name)
+                            && (self.collection.struct_layouts.contains_key(name)
+                                || self.collection.struct_templates.contains_key(name)))
+                } => self
+                    .static_struct_constructor_name(callee, None)
+                    .ok()
+                    .map(Ty::Struct),
             Expr::Call(callee, _) | Expr::DelimitedCall { callee, .. } => {
                 if let Ok(Some((name, _))) = self.static_enum_variant(callee, None, locals) {
                     return Some(Ty::Enum(name));

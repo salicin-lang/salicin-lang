@@ -4,7 +4,10 @@ let state<s: type> = effect {
 }
 
 let main(): i32 = {
-  state<i32>.handle get { (resume) -> resume(42) } action {
+  state<i32>.handle{
+    get: { (resume) -> resume(42) },
+    action: {
       state<i32>.get()
-    }
+    },
+  }
 }

@@ -4,7 +4,7 @@ let read<r: region>(value: Borrow<r><i32>): i32 = {
 }
 
 let generic_read<r: region, t: type>(cell: Borrow<r><cell<t>>): t
-= requires(t is Copyable) {
+  = requires(t is Copyable) {
   let alias: Borrow<r><cell<t>> = borrow(cell)
   alias.value
 }

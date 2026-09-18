@@ -3,7 +3,7 @@ let Future = core.async.Future
 
 let step = struct {
   remaining: Ptr<mut><i32>
-}
+  }
 
 extend(step, Future<()>) {
   let Output = i32;
@@ -37,9 +37,8 @@ let main(): i32 = {
     }
   }
 
-  match future.poll()
-    { Pending -> 0 }
-    { Ready(value) -> value }
+  match(future.poll()) { Pending => 0, Ready(value) => value,
+  }
 }
 
 test("async_await_loop_value.sc") {

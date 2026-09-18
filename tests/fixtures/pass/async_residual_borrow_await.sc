@@ -38,15 +38,19 @@ let shared(offset: Borrow<i32>): i32 = {
     let value = await make_step_with(offset)
     value
   }
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let first = future.poll()
       let second = future.poll()
-      match first
-        { Pending -> match second
-          { Ready(value) -> value }
-          { Pending -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(first) {
+        Pending => do {
+          match(second) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let mutable(value: Borrow<mut><i32>): i32 = {
@@ -55,15 +59,19 @@ let mutable(value: Borrow<mut><i32>): i32 = {
     value = value + amount
     value
   }
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let first = future.poll()
       let second = future.poll()
-      match first
-        { Pending -> match second
-          { Ready(result) -> result }
-          { Pending -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(first) {
+        Pending => do {
+          match(second) { Ready(result) => result, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let cancelled(value: Borrow<mut><i32>): i32 = {
@@ -73,11 +81,13 @@ let cancelled(value: Borrow<mut><i32>): i32 = {
       value = value + amount
       value
     }
-    let handled: () = ask.handle ask { (resume) -> resume(40) } action {
-        match future.poll()
-          { Pending -> () }
-          { Ready(_) -> () }
-      }
+    let handled: () = ask.handle{
+      ask: { (resume) -> resume(40) },
+      action: {
+        match(future.poll()) { Pending => (), Ready(_) => (),
+        }
+      },
+    }
     handled
   }
   value = 42

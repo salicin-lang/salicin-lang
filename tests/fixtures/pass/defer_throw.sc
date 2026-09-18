@@ -14,9 +14,11 @@ let main(): i32 = {
   let result: Result<bool><i32> = try {
     fail(counter)
   }
-  match result
-    { Ok(_) -> 0 }
-    { Err(error) -> if error && counter == 1 { 42 } else { 0 } }
+  match(result) {
+    Ok(_) => 0, Err(error) => do {
+      if error && counter == 1 { 42 } else { 0 }
+    },
+  }
 }
 
 test("defer_throw.sc") {

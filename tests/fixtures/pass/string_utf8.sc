@@ -5,25 +5,24 @@ let runtime_text(): String = {
 }
 
 let is_scalar(expected_value: u32, expected_length: u64): bool = {
-  match core.string.UnicodeScalar.from_u32(expected_value)
-    { Some(scalar) ->
+  match(core.string.UnicodeScalar.from_u32(expected_value)) {
+    Some(scalar) => do {
       scalar.to_u32() == expected_value && scalar.len_utf8() == expected_length
-    }
-    { None -> false }
+    }, None => false,
+  }
 }
 
 let scalar_checks(): bool = {
-  let equality = match core.string.UnicodeScalar.from_u32(65)
-    { Some(a) ->
-      match core.string.UnicodeScalar.from_u32(65)
-      { Some(another_a) ->
-        match core.string.UnicodeScalar.from_u32(66)
-        { Some(b) -> a == another_a && a != b }
-        { None -> false }
+  let equality = match(core.string.UnicodeScalar.from_u32(65)) {
+    Some(a) => do {
+      match(core.string.UnicodeScalar.from_u32(65)) {
+        Some(another_a) => do {
+          match(core.string.UnicodeScalar.from_u32(66)) { Some(b) => a == another_a && a != b, None => false,
+          }
+        }, None => false,
       }
-      { None -> false }
-    }
-    { None -> false }
+    }, None => false,
+  }
   equality &&
     is_scalar(0, 1) &&
     is_scalar(127, 1) &&
@@ -41,14 +40,14 @@ let scalar_checks(): bool = {
 }
 
 let accepts_utf8(bytes: Borrow<core.memory.Slice<u8>>, expected_length: u64): bool = {
-  match core.string.str.from_utf8(bytes)
-    { Some(text) ->
+  match(core.string.str.from_utf8(bytes)) {
+    Some(text) => do {
       let encoded = text.as_bytes()
       text.len() == expected_length &&
         text.is_empty() == (expected_length == 0) &&
         encoded.len() == expected_length
-    }
-    { None -> false }
+    }, None => false,
+  }
 }
 
 let rejects_utf8(bytes: Borrow<core.memory.Slice<u8>>): bool = {
@@ -138,40 +137,39 @@ let subview_checks(): bool = {
     !view.is_char_boundary(7) &&
     view.is_char_boundary(8) &&
     !view.is_char_boundary(9)
-  let valid = match view.get(0, 8)
-    { Some(whole) ->
-      match view.get(0, 1)
-      { Some(ascii) ->
-        match view.get(1, 4)
-        { Some(three_byte) ->
-          match view.get(4, 8)
-          { Some(four_byte) ->
-            match view.get(8, 8)
-            { Some(empty) ->
-              whole == view &&
-                ascii == ascii_expected_view &&
-                three_byte == three_byte_expected_view &&
-                four_byte == four_byte_expected_view &&
-                empty.is_empty()
-            }
-            { None -> false }
+  let valid = match(view.get(0, 8)) {
+    Some(whole) => do {
+      match(view.get(0, 1)) {
+        Some(ascii) => do {
+          match(view.get(1, 4)) {
+            Some(three_byte) => do {
+              match(view.get(4, 8)) {
+                Some(four_byte) => do {
+                  match(view.get(8, 8)) {
+                    Some(empty) => do {
+                      whole == view &&
+                        ascii == ascii_expected_view &&
+                        three_byte == three_byte_expected_view &&
+                        four_byte == four_byte_expected_view &&
+                        empty.is_empty()
+                    }, None => false,
+                  }
+                }, None => false,
+              }
+            }, None => false,
           }
-          { None -> false }
-        }
-        { None -> false }
+        }, None => false,
       }
-      { None -> false }
-    }
-    { None -> false }
+    }, None => false,
+  }
   boundaries &&
     valid &&
     view.get(2, 4).is_none() &&
     view.get(1, 5).is_none() &&
     view.get(9, 9).is_none() &&
     view.get(4, 1).is_none() &&
-    match empty_view.get(0, 0)
-    { Some(empty) -> empty.is_empty() }
-    { None -> false }
+    match(empty_view.get(0, 0)) { Some(empty) => empty.is_empty(), None => false,
+  }
 }
 
 let text_equality_checks(): bool = {
@@ -183,7 +181,7 @@ let text_equality_checks(): bool = {
   let view = composed.as_str()
   let same_view = same.as_str()
   let decomposed_view = decomposed.as_str()
-    composed == same &&
+  composed == same &&
     composed != decomposed &&
     composed != longer &&
     composed != same_length_different &&

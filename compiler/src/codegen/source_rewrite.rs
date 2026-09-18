@@ -550,6 +550,22 @@ fn normalize_expr_labeled_type_arguments(
             }
             normalize_expr_labeled_type_arguments(body, constructor_parameters, diagnostics);
         }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                if let Some(guard) = &mut arm.guard {
+                    normalize_expr_labeled_type_arguments(
+                        guard,
+                        constructor_parameters,
+                        diagnostics,
+                    );
+                }
+                normalize_expr_labeled_type_arguments(
+                    &mut arm.body,
+                    constructor_parameters,
+                    diagnostics,
+                );
+            }
+        }
         Expr::If {
             condition,
             then_branch,
@@ -1162,6 +1178,14 @@ fn expand_expr_aliases(
                 expand_alias_type(&mut parameter.ty, aliases, &mut Vec::new(), diagnostics);
             }
             expand_expr_aliases(body, aliases, diagnostics);
+        }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                if let Some(guard) = &mut arm.guard {
+                    expand_expr_aliases(guard, aliases, diagnostics);
+                }
+                expand_expr_aliases(&mut arm.body, aliases, diagnostics);
+            }
         }
         Expr::PatternClosure { guard, body, .. } => {
             if let Some(guard) = guard {
@@ -1832,6 +1856,15 @@ pub(super) fn substitute_self_expression_target(expression: &mut Expr, target: &
             }
             substitute_self_expression_target(body, target);
         }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                substitute_self_pattern_target(&mut arm.pattern, target);
+                if let Some(guard) = &mut arm.guard {
+                    substitute_self_expression_target(guard, target);
+                }
+                substitute_self_expression_target(&mut arm.body, target);
+            }
+        }
         Expr::If {
             condition,
             then_branch,
@@ -1997,6 +2030,14 @@ pub(super) fn rewrite_abstract_self_qualified_methods(expression: &mut Expr) {
             }
             rewrite_abstract_self_qualified_methods(body);
         }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                if let Some(guard) = &mut arm.guard {
+                    rewrite_abstract_self_qualified_methods(guard);
+                }
+                rewrite_abstract_self_qualified_methods(&mut arm.body);
+            }
+        }
         Expr::If {
             condition,
             then_branch,
@@ -2111,6 +2152,16 @@ pub(super) fn substitute_expr_types(expression: &mut Expr, substitutions: &HashM
             substitute_expr_types(&mut chain.success, substitutions);
             substitute_expr_types(&mut chain.residual, substitutions);
         }
+        Expr::DelimitedCall {
+            callee,
+            delimiter: crate::ast::GroupDelimiter::Brace,
+            arguments,
+        } => {
+            substitute_type_expression_parameters(callee, substitutions);
+            for argument in arguments {
+                substitute_expr_types(&mut argument.value, substitutions);
+            }
+        }
         Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
             substitute_expr_types(callee, substitutions);
             for argument in arguments {
@@ -2173,6 +2224,14 @@ pub(super) fn substitute_expr_types(expression: &mut Expr, substitutions: &HashM
                 substitute_expr_types(guard, substitutions);
             }
             substitute_expr_types(body, substitutions);
+        }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                if let Some(guard) = &mut arm.guard {
+                    substitute_expr_types(guard, substitutions);
+                }
+                substitute_expr_types(&mut arm.body, substitutions);
+            }
         }
         Expr::If {
             condition,
@@ -2619,7 +2678,7 @@ pub(super) fn rewrite_handler_returns(expression: &mut Expr, return_name: &str) 
                 vec![CallArg { label: None, value }],
             );
         }
-        Expr::Closure(_, _) | Expr::PatternClosure { .. } => {}
+        Expr::Closure(_, _) | Expr::PatternClosure { .. } | Expr::PartialClosure(_) => {}
         Expr::Unary(_, value)
         | Expr::Try(value)
         | Expr::DoBlock { body: value }
@@ -2834,6 +2893,20 @@ pub(super) fn rewrite_static_function_values(
             }
             rewrite_static_function_values(body, &visible);
         }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                let mut visible = replacements.clone();
+                let mut bindings = HashSet::new();
+                collect_pattern_binding_names(&arm.pattern, &mut bindings);
+                for binding in bindings {
+                    visible.remove(&binding);
+                }
+                if let Some(guard) = &mut arm.guard {
+                    rewrite_static_function_values(guard, &visible);
+                }
+                rewrite_static_function_values(&mut arm.body, &visible);
+            }
+        }
         Expr::If {
             condition,
             then_branch,
@@ -2962,6 +3035,14 @@ pub(super) fn erase_expr_locations(expression: &mut Expr) {
                 erase_expr_locations(guard);
             }
             erase_expr_locations(body);
+        }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                if let Some(guard) = &mut arm.guard {
+                    erase_expr_locations(guard);
+                }
+                erase_expr_locations(&mut arm.body);
+            }
         }
         Expr::If {
             condition,
@@ -3100,6 +3181,14 @@ fn visit_expr_mut_ordered(
             }
             visit_expr_mut_ordered(body, visitor, preorder);
         }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                if let Some(guard) = &mut arm.guard {
+                    visit_expr_mut_ordered(guard, visitor, preorder);
+                }
+                visit_expr_mut_ordered(&mut arm.body, visitor, preorder);
+            }
+        }
         Expr::If {
             condition,
             then_branch,
@@ -3190,7 +3279,9 @@ pub(super) fn normalize_source_call_groups(program: &mut Program) {
         if name != "$lang$match" {
             return None;
         }
-        let (input_group, case_groups) = groups.split_first()?;
+        let [input_group, case_group] = groups.as_slice() else {
+            return None;
+        };
         let [CallArg {
             label: None,
             value: input,
@@ -3198,31 +3289,16 @@ pub(super) fn normalize_source_call_groups(program: &mut Program) {
         else {
             return None;
         };
-        let arms = case_groups
-            .iter()
-            .map(|group| {
-                let [CallArg {
-                    label: None,
-                    value:
-                        Expr::PatternClosure {
-                            pattern,
-                            guard,
-                            body,
-                        },
-                }] = *group
-                else {
-                    return None;
-                };
-                Some(MatchArm {
-                    pattern: pattern.clone(),
-                    guard: guard.as_deref().cloned(),
-                    body: (**body).clone(),
-                })
-            })
-            .collect::<Option<Vec<_>>>()?;
+        let [CallArg {
+            label: None,
+            value: Expr::PartialClosure(arms),
+        }] = *case_group
+        else {
+            return None;
+        };
         Some(Expr::Match {
             scrutinee: Box::new(input.clone()),
-            arms,
+            arms: arms.clone(),
         })
     }
 
@@ -3234,33 +3310,6 @@ pub(super) fn normalize_source_call_groups(program: &mut Program) {
                     *expression = expanded;
                     return;
                 }
-                let Expr::Call(inner, action) = expression else {
-                    return;
-                };
-                if !matches!(
-                    action.as_slice(),
-                    [CallArg {
-                        label: Some(label),
-                        value: Expr::Closure(parameters, _),
-                    }] if label == "action" && parameters.is_empty()
-                ) {
-                    return;
-                }
-                let mut groups = Vec::new();
-                let root = super::lower::flatten_call(inner, &mut groups);
-                if !matches!(root, Expr::Member(_, member) if member == "handle")
-                    || groups.iter().any(|group| group.len() != 1)
-                {
-                    return;
-                }
-                let clauses = groups
-                    .iter()
-                    .flat_map(|group| group.iter().cloned())
-                    .collect::<Vec<_>>();
-                let normalized_inner = Expr::Call(Box::new(root.clone()), clauses);
-                let mut normalized_action = action.clone();
-                normalized_action[0].label = None;
-                *expression = Expr::Call(Box::new(normalized_inner), normalized_action);
             },
             true,
         );
@@ -3485,6 +3534,17 @@ fn hygienic_rename_expr(
             }
             hygienic_rename_expr(body, prefix, next, scopes);
             scopes.pop();
+        }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                scopes.push(HashMap::new());
+                hygienic_rename_pattern(&mut arm.pattern, prefix, next, scopes);
+                if let Some(guard) = &mut arm.guard {
+                    hygienic_rename_expr(guard, prefix, next, scopes);
+                }
+                hygienic_rename_expr(&mut arm.body, prefix, next, scopes);
+                scopes.pop();
+            }
         }
         Expr::If {
             condition,
@@ -3746,6 +3806,12 @@ fn expression_mentions_any_name(expression: &Expr, names: &HashSet<String>) -> b
                 .is_some_and(|guard| expression_mentions_any_name(guard, names))
                 || expression_mentions_any_name(body, names)
         }
+        Expr::PartialClosure(arms) => arms.iter().any(|arm| {
+            arm.guard
+                .as_ref()
+                .is_some_and(|guard| expression_mentions_any_name(guard, names))
+                || expression_mentions_any_name(&arm.body, names)
+        }),
         Expr::If {
             condition,
             then_branch,

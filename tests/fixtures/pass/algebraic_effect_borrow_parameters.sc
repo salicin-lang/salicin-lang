@@ -12,11 +12,14 @@ let update: with<read>(base: Borrow<mut><i32>): () = {
 
 let main(): i32 = {
   let mut base = 1
-  read.handle read { (resume) -> resume(20) } action {
+  read.handle{
+    read: { (resume) -> resume(20) },
+    action: {
       let first = add_read(base)
       update(base)
       first + base
-    }
+    },
+  }
 }
 
 test("algebraic_effect_borrow_parameters.sc") {

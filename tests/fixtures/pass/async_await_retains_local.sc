@@ -12,9 +12,8 @@ let main(): i32 = {
     let second = await child()
     copy + second
   }
-  match future.poll()
-    { Ready(value) -> value }
-    { Pending -> 0 }
+  match(future.poll()) { Ready(value) => value, Pending => 0,
+  }
 }
 
 test("async_await_retains_local.sc") {

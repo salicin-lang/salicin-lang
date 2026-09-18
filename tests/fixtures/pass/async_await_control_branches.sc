@@ -65,25 +65,20 @@ let main(): i32 = {
     }
     value
   }
-  match conditional.poll()
-    { Pending -> () }
-    { Ready(_) -> () }
-  let first = match conditional.poll()
-    { Ready(value) -> value }
-    { Pending -> 0 }
+  match(conditional.poll()) { Pending => (), Ready(_) => (),
+  }
+  let first = match(conditional.poll()) { Ready(value) => value, Pending => 0,
+  }
 
   let mut matched = async {
-    let value = match choice.left
-      { choice.left -> await step(22) }
-      { choice.right -> await other_step(0) }
+    let value = match(choice.left) { choice.left => await step(22), choice.right => await other_step(0),
+    }
     value
   }
-  match matched.poll()
-    { Pending -> () }
-    { Ready(_) -> () }
-  let second = match matched.poll()
-    { Ready(value) -> value }
-    { Pending -> 0 }
+  match(matched.poll()) { Pending => (), Ready(_) => (),
+  }
+  let second = match(matched.poll()) { Ready(value) => value, Pending => 0,
+  }
 
   first + second
 }

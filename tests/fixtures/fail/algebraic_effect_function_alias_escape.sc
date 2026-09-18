@@ -7,10 +7,13 @@ let ask: with<ask>(): i32 = {
 }
 
 let leak: with<ask>(): (): i32 = {
-  ask.handle value { (resume) -> resume(42) } action {
+  ask.handle{
+    value: { (resume) -> resume(42) },
+    action: {
       let action = ask
       action
-    }
+    },
+  }
 }
 
 let main(): i32 = { 0 }

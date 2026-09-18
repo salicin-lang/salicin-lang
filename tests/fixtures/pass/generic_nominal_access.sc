@@ -6,7 +6,7 @@ let read(value: Borrow<i32>): i32 = { value }
 
 let with_access<a: access, t: type>
   (value: Borrow<a><t>): access_box<a><t> = {
-  access_box<a><t> { value: value }
+  access_box<a><t>{ value: value }
 }
 
 let main(): i32 = {

@@ -11,9 +11,9 @@ extend(point) {
 let choice = enum { Some(i32), None }
 
 extend(choice) {
-  let unwrap(move self)(): i32 = { match self
-      { self.Some(value) -> value }
-      { self.None -> 0 }
+  let unwrap(move self)(): i32 = {
+    match(self) { self.Some(value) => value, self.None => 0,
+    }
   }
 }
 

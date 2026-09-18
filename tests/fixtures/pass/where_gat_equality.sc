@@ -4,7 +4,7 @@ let factory = trait {
   let Item<t: type>: type
 
   let make(self: Borrow<self>)(value: i32): Item<i32>
-}
+  }
 
 let cell = struct {}
 
@@ -15,7 +15,7 @@ extend(cell, factory) {
 }
 
 let make_i32<t: type>(value: Borrow<t>): i32
-= requires(t is factory && t.Item<u: type> == u) {
+  = requires(t is factory && t.Item<u: type> == u) {
   value.make(42)
 }
 

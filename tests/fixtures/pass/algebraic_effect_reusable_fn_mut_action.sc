@@ -3,9 +3,12 @@ let ask = effect {
 }
 
 let run(move action: with<ask>((i32): i32))(input: i32): i32 = {
-  ask.handle value { (resume) -> resume(10) } action {
+  ask.handle{
+    value: { (resume) -> resume(10) },
+    action: {
       action(input)
-    }
+    },
+  }
 }
 
 let main(): i32 = {

@@ -12,9 +12,8 @@ let main(): i32 = {
     let awaited = await child()
     reference + awaited
   }
-  match future.poll()
-    { Ready(result) -> result }
-    { Pending -> 0 }
+  match(future.poll()) { Ready(result) => result, Pending => 0,
+  }
 }
 
 test("async_await_external_borrow.sc") {

@@ -4,11 +4,11 @@ let unsafety = core.unsafe.unsafety
 
 let first = struct {
   counter: Ptr<mut><i32>
-}
+  }
 
 let second = struct {
   counter: Ptr<mut><i32>
-}
+  }
 
 let marker = struct {
   counter: Ptr<mut><i32>,
@@ -85,9 +85,8 @@ let main(): i32 = {
           await second{ counter: counter }
         }
       }
-      match future.poll()
-        { Pending -> () }
-        { Ready(_) -> () }
+      match(future.poll()) { Pending => (), Ready(_) => (),
+      }
     }
     let drops = *counter
     release(counter)

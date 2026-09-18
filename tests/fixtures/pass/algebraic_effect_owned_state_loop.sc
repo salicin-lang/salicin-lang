@@ -18,11 +18,14 @@ let program: with<step>(): i32 = {
 }
 
 let main(): i32 = {
-  step.handle delta { (resume) ->
+  step.handle{
+    delta: { (resume) ->
       resume(1)
-    } action {
+    },
+    action: {
       program()
-    }
+    },
+  }
 }
 
 test("algebraic_effect_owned_state_loop.sc") {

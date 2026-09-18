@@ -18,7 +18,7 @@ extend(cell<t>) {
 }
 
 let main(): i32 = {
-  choose(left: 10) + cell.choose(right: 10) + cell<i32> { value: 0 }.add(left: 22)
+  choose(left: 10) + cell.choose(right: 10) + cell<i32>{ value: 0 }.add(left: 22)
 }
 
 test("generic_overload_named.sc") {

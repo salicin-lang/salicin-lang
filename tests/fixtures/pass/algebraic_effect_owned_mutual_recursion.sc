@@ -37,11 +37,14 @@ let odd: with<step>(state: Borrow<mut><state>, count: i32): i32 = {
 
 let run(drops: Ptr<mut><i32>, abandon: bool): i32 = {
   let mut state = state{ value: 10, drops: drops }
-  let result = step.handle delta { (resume) ->
+  let result = step.handle{
+    delta: { (resume) ->
       if abandon { 40 } else { resume(1) }
-    } action {
+    },
+    action: {
       even(state, 2)
-    }
+    },
+  }
   result + state.value
 }
 

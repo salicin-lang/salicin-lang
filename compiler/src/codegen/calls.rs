@@ -55,24 +55,6 @@ pub(super) fn rewrite_callable_bridge_groups(
     rewritten
 }
 
-pub(super) fn empty_trailing_closure_constructor(expression: &Expr) -> Option<&Expr> {
-    let Expr::Call(constructor, arguments) = expression.unlocated() else {
-        return None;
-    };
-    let [CallArg { label: None, value }] = arguments.as_slice() else {
-        return None;
-    };
-    let Expr::Closure(parameters, body) = value.unlocated() else {
-        return None;
-    };
-    if !parameters.is_empty()
-        || !matches!(body.unlocated(), Expr::Block(statements, None) if statements.is_empty())
-    {
-        return None;
-    }
-    Some(constructor.unlocated())
-}
-
 impl Analyzer {
     pub(super) fn lower_call(
         &mut self,
@@ -133,7 +115,14 @@ impl Analyzer {
                     })
             });
             if let Some(expected) = expected {
-                if !self.call_delimiters_match(name, &actual_delimiters, &expected) {
+                let actual_delimiters = if self.is_lang_item_name(name, LangItemKind::Match)
+                    && matches!(groups.last(), Some([CallArg { label: None, value: Expr::PartialClosure(_) }]))
+                {
+                    &actual_delimiters[..actual_delimiters.len().saturating_sub(1)]
+                } else {
+                    actual_delimiters.as_slice()
+                };
+                if !self.call_delimiters_match(name, actual_delimiters, &expected) {
                     return error_expr();
                 }
             }
@@ -516,11 +505,6 @@ impl Analyzer {
                 self.error("expression `self` is only available inside an extend member");
                 return error_expr();
             }
-            if self.empty_struct_candidate(name, &groups, context) {
-                let constructor = empty_trailing_closure_constructor(expression)
-                    .expect("empty struct candidate has an empty trailing closure");
-                return self.lower_struct_literal(constructor, &[], expected, context);
-            }
             if self.collection.function_overloads.contains_key(name) {
                 let Some(selected) = self.resolve_function_overload(name, &groups) else {
                     return error_expr();
@@ -538,13 +522,13 @@ impl Analyzer {
             }
             if self.collection.struct_layouts.contains_key(name) {
                 self.error(format!(
-                    "struct `{name}` is not callable; construct it with `{name} {{ ... }}`"
+                    "struct `{name}` is not callable; construct it with `{name}{{ ... }}`"
                 ));
                 return error_expr();
             }
             if self.collection.struct_templates.contains_key(name) {
                 self.error(format!(
-                    "generic struct `{name}` is not callable; construct it with `{name}(...) {{ ... }}` or `{name} {{ ... }}`"
+                    "generic struct `{name}` is not callable; construct it with `{name}<...>{{ ... }}` or `{name}{{ ... }}`"
                 ));
                 return error_expr();
             }
@@ -566,6 +550,13 @@ impl Analyzer {
             match self.resolve_effect_application(base, context) {
                 Ok(Some((definition, instance))) => {
                     if variant_name == "handle" {
+                        if actual_delimiters.as_slice() != [GroupDelimiter::Brace] {
+                            self.error(format!(
+                                "`{}.handle` expects one brace-delimited argument group",
+                                super::compile_time::source_effect_identity(&instance)
+                            ));
+                            return error_expr();
+                        }
                         return self.lower_effect_handler(
                             &definition,
                             &instance,
@@ -1092,41 +1083,6 @@ impl Analyzer {
             return false;
         }
         true
-    }
-
-    pub(super) fn empty_struct_candidate(
-        &self,
-        name: &str,
-        groups: &[&[CallArg]],
-        context: &LowerCtx,
-    ) -> bool {
-        if context.shadows_top_level_name(name)
-            || groups.last().is_none_or(|group| {
-                group.len() != 1
-                    || !matches!(
-                        group[0].value.unlocated(),
-                        Expr::Closure(parameters, body)
-                            if parameters.is_empty()
-                                && matches!(
-                                    body.unlocated(),
-                                    Expr::Block(statements, None) if statements.is_empty()
-                                )
-                    )
-            })
-        {
-            return false;
-        }
-        self.collection
-            .struct_layouts
-            .get(name)
-            .is_some_and(|layout| layout.fields.is_empty() && groups.len() == 1)
-            || self
-                .collection
-                .struct_templates
-                .get(name)
-                .is_some_and(|template| {
-                    template.fields.is_empty() && groups.len() == template.compile_groups.len() + 1
-                })
     }
 
     fn lower_recursive_frame_call(

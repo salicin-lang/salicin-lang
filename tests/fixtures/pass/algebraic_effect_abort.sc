@@ -4,11 +4,14 @@ let abort = effect {
 
 let main(): i32 = {
   let mut reached = 0
-  let result = abort.handle stop { (resume) -> 42 } action {
+  let result = abort.handle{
+    stop: { (resume) -> 42 },
+    action: {
       let value = abort.stop()
       reached = 1;
       value
-    }
+    },
+  }
   result + reached
 }
 

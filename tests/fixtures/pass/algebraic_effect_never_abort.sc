@@ -7,9 +7,12 @@ let fail: with<abort>(): never = {
 }
 
 let main(): i32 = {
-  abort.handle stop { (value) -> value } action {
+  abort.handle{
+    stop: { (value) -> value },
+    action: {
       fail()
-    }
+    },
+  }
 }
 
 test("algebraic_effect_never_abort.sc") {

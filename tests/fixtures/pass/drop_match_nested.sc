@@ -11,13 +11,15 @@ extend(resource, Droppable) {
 
 let consume(move value: resource): () = { () }
 
-let inspect(move choice: choice): i32 = { match choice
-    { Some(bundle(left: left, right: _), _) -> do {
+let inspect(move choice: choice): i32 = {
+  match(choice) {
+    Some(bundle(left: left, right: _), _) => do {
+      do {
         consume(left)
         return(42)
       }
-    }
-    { None -> 0 }
+    }, None => 0,
+  }
 }
 
 let main(): i32 = { inspect(

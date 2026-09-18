@@ -45,21 +45,20 @@ extend(Inventory, Summarize) {
 test("inventory combines arrays slices vectors and Unicode") {
   let expected_name_bytes: Array<u64><2> = [1, 3]
   let byte_view = expected_name_bytes.as_slice()
-  let first_bytes: u64 = match byte_view.first()
-    { Some(value) -> value }
-    { None -> std.test.fail("expected first byte count") }
-  let last_bytes: u64 = match byte_view.last()
-    { Some(value) -> value }
-    { None -> std.test.fail("expected last byte count") }
+  let first_bytes: u64 = match(byte_view.first()) { Some(value) => value, None => std.test.fail("expected first byte count"),
+  }
+  let last_bytes: u64 = match(byte_view.last()) { Some(value) => value, None => std.test.fail("expected last byte count"),
+  }
   std.test.assert_eq<u64>(first_bytes + last_bytes)(4)
 
   let mut value = Inventory.new()
   value.push(model.Product.new("A", 2, 10))
   value.push(model.Product.new("柳", 3, 7))
-  match value.summarize()
-    { Summary(count: count, total: total, name_bytes: name_bytes) ->
+  match(value.summarize()) {
+    Summary(count: count, total: total, name_bytes: name_bytes) => do {
       std.test.assert(count == 2)
       std.test.assert(total == 41)
       std.test.assert(name_bytes == 4)
-    }
+    },
+  }
 }

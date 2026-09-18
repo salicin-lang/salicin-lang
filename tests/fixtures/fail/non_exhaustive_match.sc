@@ -3,8 +3,8 @@ let choice = enum {
   no,
 }
 
-let choose(value: choice): i32 = { match value
-    { choice.yes -> 42 }
+let choose(value: choice): i32 = { match(value) { choice.yes => 42,
+}
 }
 
 let main(): i32 = { choose(choice.yes) }

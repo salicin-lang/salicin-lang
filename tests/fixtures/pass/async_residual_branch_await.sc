@@ -43,19 +43,25 @@ let run(drops: Ptr<mut><i32>, first: bool): i32 = {
       await step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 1 }
     }
   }
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let pending = future.poll()
       let ready = future.poll()
-      match pending
-        { Pending -> match ready
-          { Ready(value) -> value }
-          { Pending -> 0 } }
-        { Ready(_) -> 0 }
-    }
+      match(pending) {
+        Pending => do {
+          match(ready) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let cancel_second(drops: Ptr<mut><i32>): i32 = {
-  ask.handle ask { (resume) -> resume(40) } action {
+  ask.handle{
+    ask: { (resume) -> resume(40) },
+    action: {
       let mut future = async {
         if false {
           await step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 10 }
@@ -63,10 +69,10 @@ let cancel_second(drops: Ptr<mut><i32>): i32 = {
           await step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 1 }
         }
       }
-      match future.poll()
-        { Pending -> 42 }
-        { Ready(_) -> 0 }
-    }
+      match(future.poll()) { Pending => 42, Ready(_) => 0,
+      }
+    },
+  }
 }
 
 let main(): i32 = {

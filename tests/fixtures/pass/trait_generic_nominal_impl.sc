@@ -9,7 +9,7 @@ extend(cell<i32>, read) {
 }
 
 let main(): i32 = {
-  let cell = cell<i32> { value: 42 }
+  let cell = cell<i32>{ value: 42 }
   cell.read()
 }
 

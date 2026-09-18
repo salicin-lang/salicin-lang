@@ -60,21 +60,16 @@ let main(): i32 = {
     }
   }
 
-  let first = match future.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let second = match future.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let third = match future.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let fourth = match future.poll()
-    { Pending -> 1 }
-    { Ready(_) -> 0 }
-  let fifth = match future.poll()
-    { Pending -> 0 }
-    { Ready(value) -> value }
+  let first = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let second = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let third = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let fourth = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  }
+  let fifth = match(future.poll()) { Pending => 0, Ready(value) => value,
+  }
 
   let mut cancel_remaining = 2
   let mut cancel_drops = 0
@@ -92,12 +87,10 @@ let main(): i32 = {
         }
       }
     }
-    match cancelled.poll()
-      { Pending -> () }
-      { Ready(_) -> () }
-    match cancelled.poll()
-      { Pending -> () }
-      { Ready(_) -> () }
+    match(cancelled.poll()) { Pending => (), Ready(_) => (),
+    }
+    match(cancelled.poll()) { Pending => (), Ready(_) => (),
+    }
   }
 
   first + second + third + fourth + fifth + unsafe { *drops_ptr } +

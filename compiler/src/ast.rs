@@ -716,6 +716,9 @@ pub enum Expr {
         guard: Option<Box<Expr>>,
         body: Box<Expr>,
     },
+    /// A source partial closure with ordered pattern arms. This is currently
+    /// consumed by the validated core `match` function.
+    PartialClosure(Vec<MatchArm>),
     If {
         condition: Box<Expr>,
         then_branch: Box<Expr>,

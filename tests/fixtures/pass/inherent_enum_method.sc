@@ -4,9 +4,9 @@ let choice = enum {
 }
 
 extend(choice) {
-  let unwrap(move self)(): i32 = { match self
-      { choice.answer( answer: value ) -> value }
-      { choice.Empty -> 0 }
+  let unwrap(move self)(): i32 = {
+    match(self) { choice.answer( answer: value ) => value, choice.Empty => 0,
+    }
   }
 }
 

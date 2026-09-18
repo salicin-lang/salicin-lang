@@ -25,7 +25,7 @@ extend(step, Future<()>) {
 
 let make_step: with<throwing<bool>>(fail: bool): step = {
   if fail {
-    throw true
+    throw(true)
   } else {
     step{ polls: 0, value: 40 }
   }
@@ -39,16 +39,19 @@ let run(fail: bool): i32 = {
     }
     let first = future.poll()
     let second = future.poll()
-    match first
-      { Pending -> match second
-        { Ready(value) -> value }
-        { Pending -> 0 } }
-      { Ready(_) -> 0 }
+    match(first) {
+      Pending => do {
+        match(second) { Ready(value) => value, Pending => 0,
+        }
+      }, Ready(_) => 0,
+    }
   }
 
-  match result
-    { Ok(value) -> value }
-    { Err(error) -> if error { 42 } else { 0 } }
+  match(result) {
+    Ok(value) => value, Err(error) => do {
+      if error { 42 } else { 0 }
+    },
+  }
 }
 
 let main(): i32 = {

@@ -14,11 +14,14 @@ let program: with<step>(index: usize): i32 = {
 }
 
 let main(): i32 = {
-  step.handle delta { (resume) ->
+  step.handle{
+    delta: { (resume) ->
       resume(2)
-    } action {
+    },
+    action: {
       program(1)
-    }
+    },
+  }
 }
 
 test("algebraic_effect_owned_index_oob.sc") {

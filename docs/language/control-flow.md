@@ -10,14 +10,16 @@ Standard control operations are declared in `core.control`. The compiler recogni
 only after validating its canonical lang-item identity and exact signature. A user function named
 `if`, `match`, or `loop` remains an ordinary function and gains no control-flow authority.
 
-The parser may use contextual productions to disambiguate braces, patterns, and trailing closures.
+The parser uses contextual productions to distinguish dedicated control syntax and pattern payloads
+from ordinary brace closures and trailing closures.
 Name resolution and type checking still bind the canonical source declaration before privileged
 lowering occurs.
 
 ## Lazy Calls
 
-Branch and loop bodies are lazy callable arguments. Conditions are eager where their source order
-requires it.
+Ordinary braces create closures rather than generic eager blocks. Branch and loop bodies are
+callable arguments that their dedicated control forms immediately use, invoking them lazily where
+the contract requires it. Conditions are eager where their source order requires it.
 
 Conceptually, `if` has this shape:
 
@@ -62,14 +64,14 @@ left, without dropping transferred values or running cleanup twice.
 
 ## Deferred Actions
 
-`defer { action }` registers `action` in the current lexical block. The trailing closure is captured at the
-registration point and invoked only when that block exits. Multiple actions run last-in,
+`defer { action }` registers `action` in the current lexical scope. The trailing closure is captured at the
+registration point and invoked only when that scope exits. Multiple actions run last-in,
 first-out.
 
-The block result, return value, break value, or thrown error is evaluated before deferred actions
+The enclosing closure-body result, return value, break value, or thrown error is evaluated before deferred actions
 begin. Deferred actions therefore cannot change the selected exit value. A `continue` runs actions
 registered in the iteration body before starting the next iteration; a break or continue belonging
-to a nested loop does not exit an enclosing block outside that loop.
+to a nested loop does not exit an enclosing lexical scope outside that loop.
 
 `defer` is valid only as a standalone statement. Its action has type `with<e>((): ())`, so ordinary
 effect checking and handler selection apply to the invocation. Lowering must preserve the action's
@@ -83,6 +85,11 @@ A case is a partial function from a scrutinee type to an arm result. It consists
 - an optional guard;
 - a body.
 
+A single pattern partial may still be written as
+`{ pattern [if guard] -> expression }` and passed as one closure argument. Its
+call returns `core.control.Attempt<Input><Output>`, preserving the input in
+`Miss` when the pattern or guard fails.
+
 Failure to match is not an error result and does not consume the scrutinee. The next case receives
 the same logical input state. A successful pattern establishes its bindings before the guard. A
 false guard rolls back those bindings and proceeds to the next case.
@@ -95,14 +102,21 @@ optimization must preserve ordinary ownership, borrowing, effect, and cleanup se
 `match` evaluates its scrutinee once and tests cases in source order:
 
 ```sc fragment
-match option {
-  Some(value) if value > 0 -> value
-} {
-  Some(_) -> 0
-} {
-  None -> -1
+match(option) {
+  Some(value) if value > 0 => value,
+  Some(_) => 0,
+  None => -1,
 }
 ```
+
+The brace is one multi-partial closure containing comma-separated partial
+functions. It is not a tight brace call and does not represent a sequence of
+postfix match cases.
+
+The old consecutive pattern-partial form
+`callee { P -> ... } { Q -> ... }` has been removed. The replacement for
+ordered alternatives is one multi-arm
+`match(value) { P => ..., Q => ... }` expression.
 
 Lowering must preserve:
 

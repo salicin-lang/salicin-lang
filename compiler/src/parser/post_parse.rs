@@ -816,6 +816,15 @@ fn normalize_expr_region_qualifiers(
             }
             normalize_expr_region_qualifiers(body, regions, accesses)
         }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                if let Some(guard) = &mut arm.guard {
+                    normalize_expr_region_qualifiers(guard, regions, accesses)?;
+                }
+                normalize_expr_region_qualifiers(&mut arm.body, regions, accesses)?;
+            }
+            Ok(())
+        }
         Expr::If {
             condition,
             then_branch,
@@ -1197,6 +1206,15 @@ fn validate_expr_accesses(expression: &Expr, accesses: &HashSet<String>) -> Resu
             }
             validate_expr_accesses(body, accesses)
         }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                if let Some(guard) = &arm.guard {
+                    validate_expr_accesses(guard, accesses)?;
+                }
+                validate_expr_accesses(&arm.body, accesses)?;
+            }
+            Ok(())
+        }
         Expr::If {
             condition,
             then_branch,
@@ -1443,6 +1461,15 @@ fn validate_expr_regions(expression: &Expr, regions: &HashSet<String>) -> Result
                 validate_expr_regions(guard, regions)?;
             }
             validate_expr_regions(body, regions)
+        }
+        Expr::PartialClosure(arms) => {
+            for arm in arms {
+                if let Some(guard) = &arm.guard {
+                    validate_expr_regions(guard, regions)?;
+                }
+                validate_expr_regions(&arm.body, regions)?;
+            }
+            Ok(())
         }
         Expr::If {
             condition,

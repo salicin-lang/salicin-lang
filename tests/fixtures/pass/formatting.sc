@@ -12,29 +12,26 @@ let text_equal(left: Borrow<String>, right: Borrow<String>): bool = {
 let parse_hex(): bool = {
   let source: String = "ff"
   let view = source.as_str()
-  match parse_u64_radix(view, 16)
-    { Ok(value) -> value == 255 }
-    { Err(_) -> false }
+  match(parse_u64_radix(view, 16)) { Ok(value) => value == 255, Err(_) => false,
+  }
 }
 
 let parse_minimum(): bool = {
   let source: String = "-9223372036854775808"
   let view = source.as_str()
-  match parse_i64_radix(view, 10)
-    { Ok(value) -> value == -9223372036854775808 }
-    { Err(_) -> false }
+  match(parse_i64_radix(view, 10)) { Ok(value) => value == -9223372036854775808, Err(_) => false,
+  }
 }
 
 let rejects_overflow(): bool = {
   let source: String = "18446744073709551616"
   let view = source.as_str()
-  match parse_u64_radix(view, 10)
-    { Ok(_) -> false }
-    { Err(error) ->
-      match error.kind()
-      { Overflow -> error.offset() == 19 }
-      { _ -> false }
-    }
+  match(parse_u64_radix(view, 10)) {
+    Ok(_) => false, Err(error) => do {
+      match(error.kind()) { Overflow => error.offset() == 19, _ => false,
+      }
+    },
+  }
 }
 
 let format_u64(value: u64): String = {
@@ -71,9 +68,8 @@ let main(): i32 = {
   let expected_signed: String = "-9223372036854775808"
   let boolean = format_bool(truth)
   let expected_boolean: String = "true"
-  let scalar = match core.string.UnicodeScalar.from_u32(128578)
-    { Some(value) -> format_scalar(value) }
-    { None -> "" }
+  let scalar = match(core.string.UnicodeScalar.from_u32(128578)) { Some(value) => format_scalar(value), None => "",
+  }
   let expected_scalar: String = "🙂"
   if parse_hex() &&
     parse_minimum() &&

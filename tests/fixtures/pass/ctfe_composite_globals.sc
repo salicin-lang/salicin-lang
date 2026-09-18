@@ -15,9 +15,8 @@ let make_pair(left: i32, right: i32): pair = {
 let choose(value: pair): choice = { choice.pair(value) }
 
 let sum(value: choice): i32 = {
-  match value
-    { choice.pair(pair(left: left, right: right)) -> left + right }
-    { choice.Empty -> 0 }
+  match(value) { choice.pair(pair(left: left, right: right)) => left + right, choice.Empty => 0,
+  }
 }
 
 let tuple_global: (i32, bool) = (40, true)

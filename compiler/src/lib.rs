@@ -596,7 +596,7 @@ mod tests {
                 "let resource = struct { value: i32 }\n\
                  let consume(move value: resource): () = { () }\n\
                  let main(): i32 = {\n\
-                   let value = resource { value: 42 }\n\
+                   let value = resource{ value: 42 }\n\
                    consume(value)\n\
                    value.value\n\
                 }\n",
@@ -619,7 +619,7 @@ mod tests {
             (
                 "trait",
                 "let missing = struct { value: i32 }\n\
-                let main(): i32 = { missing { value: 42 } + missing { value: 0 } }\n",
+                let main(): i32 = { missing{ value: 42 } + missing{ value: 0 } }\n",
                 2,
                 21,
                 "no matching `Add` implementation",
@@ -757,7 +757,7 @@ mod tests {
     fn local_names_may_shadow_unimported_alloc_items() {
         let source = "let box = struct { value: i32 }\n\
                       let vec = struct { value: i32 }\n\
-                      let main(): i32 = { box { value: 20 }.value + vec { value: 22 }.value }\n";
+                      let main(): i32 = { box{ value: 20 }.value + vec{ value: 22 }.value }\n";
         compile_source(source).expect("alloc names should not be reserved without an import");
     }
 
@@ -766,7 +766,7 @@ mod tests {
         let missing = "let number = struct { value: i32 }\n\
                        extend(number, Add<number>) {\n\
                          let Output = number\n\
-                         let add(self)(rhs: number): number = { number { value: self.value + rhs.value } }\n\
+                         let add(self)(rhs: number): number = { number{ value: self.value + rhs.value } }\n\
                        }\n\
                        let main(): i32 = { 0 }\n";
         let errors = compile_source(missing).unwrap_err();
@@ -777,7 +777,7 @@ mod tests {
 
         let imported = format!("use core.ops.Add\n{missing}").replace(
             "let main(): i32 = { 0 }",
-            "let main(): i32 = { (number { value: 20 } + number { value: 22 }).value }",
+            "let main(): i32 = { (number{ value: 20 } + number{ value: 22 }).value }",
         );
         compile_source(&imported).expect("imported operator trait should define `+`");
 
@@ -803,7 +803,7 @@ mod tests {
         .replace("core.ops.PartialOrdering", "PartialOrdering")
         .replace(
             "let main(): i32 = { 0 }",
-            "let main(): i32 = { if number { value: 1 } <= number { value: 2 } { 42 } else { 0 } }",
+            "let main(): i32 = { if number{ value: 1 } <= number{ value: 2 } { 42 } else { 0 } }",
         );
         compile_source(&imported_order)
             .expect("imported partial_ord should define ordering operators");
@@ -821,14 +821,14 @@ mod tests {
 
         let imported_unary = format!("use core.ops.Neg\n{missing_unary}").replace(
             "let main(): i32 = { 0 }",
-            "let main(): i32 = { (-number { value: 42 }).value }",
+            "let main(): i32 = { (-number{ value: 42 }).value }",
         );
         compile_source(&imported_unary).expect("imported neg should define unary `-`");
 
         let missing_bitwise = "let bits = struct { value: i32 }\n\
                                extend(bits, BitAnd<bits>) {\n\
                                  let Output = bits\n\
-                                 let bit_and(self)(rhs: bits): bits = { bits { value: self.value & rhs.value } }\n\
+                                 let bit_and(self)(rhs: bits): bits = { bits{ value: self.value & rhs.value } }\n\
                                }\n\
                                let main(): i32 = { 0 }\n";
         let errors = compile_source(missing_bitwise).unwrap_err();
@@ -839,14 +839,14 @@ mod tests {
 
         let imported_bitwise = format!("use core.ops.BitAnd\n{missing_bitwise}").replace(
             "let main(): i32 = { 0 }",
-            "let main(): i32 = { (bits { value: 6 } & bits { value: 3 }).value }",
+            "let main(): i32 = { (bits{ value: 6 } & bits{ value: 3 }).value }",
         );
         compile_source(&imported_bitwise).expect("imported bit_and should define binary `&`");
         compile_source("let main(): i32 = { 6 & 3 }\n")
             .expect("built-in bitwise syntax should not require importing its protocol");
 
         let local = "let add = struct { value: i32 }\n\
-                     let main(): i32 = { add { value: 42 }.value }\n";
+                     let main(): i32 = { add{ value: 42 }.value }\n";
         compile_source(local).expect("unimported operator names should remain available to users");
     }
 
@@ -855,7 +855,7 @@ mod tests {
         let source = "let cell<t: type> = struct { value: t }\n\
                       extend(cell<t>) {\n\
                         let make<u: type>(move value: t)(marker: u): cell<t> = {\n\
-                          cell<t> { value: value }\n\
+                          cell<t>{ value: value }\n\
                         }\n\
                         let view<a: access>(self: Borrow<a><self>)(): Borrow<a><t> = {\n\
                           borrow<a>(self.value)\n\
@@ -976,7 +976,7 @@ mod tests {
                }\n\
              }\n\
              let main(): i32 = {\n\
-               let bag = bag { value: 42 }\n\
+               let bag = bag{ value: 42 }\n\
                bag[0]\n\
              }\n",
         )
@@ -999,7 +999,7 @@ mod tests {
                }\n\
              }\n\
              let main(): i32 = {\n\
-               let mut bag = bag { value: 1 }\n\
+               let mut bag = bag{ value: 1 }\n\
                bag[0] = 42\n\
                bag[0]\n\
              }\n",
@@ -1023,7 +1023,7 @@ mod tests {
              }\n\
              let read(value: Borrow<i32>): i32 = { value }\n\
              let main(): i32 = {\n\
-               let mut bag = bag { value: 42 }\n\
+               let mut bag = bag{ value: 42 }\n\
                let shared = borrow(bag[0])\n\
                read(shared)\n\
              }\n",
