@@ -44,9 +44,9 @@ let layouts(): bool = {
   }
 
 let main(): i32 = {
-  if signed_narrow() && signed_wide() && unsigned_narrow() && unsigned_wide() && layouts() {
+  if(signed_narrow() && signed_wide() && unsigned_narrow() && unsigned_wide() && layouts()) {
     42
-  } else {
+  } else: {
     0
   }
 }

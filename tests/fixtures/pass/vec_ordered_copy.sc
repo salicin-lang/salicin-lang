@@ -17,9 +17,9 @@ let main(): i32 = {
   values.append(other)
   values.shrink_to_fit()
 
-  if first == 5 && middle == 20 && values.len() == 5 && values.capacity() == 5 && other.is_empty() && values.read(0) == 10 && values.read(1) == 30 && values.read(2) == 40 && values.read(3) == 1 && values.read(4) == 2 {
+  if(first == 5 && middle == 20 && values.len() == 5 && values.capacity() == 5 && other.is_empty() && values.read(0) == 10 && values.read(1) == 30 && values.read(2) == 40 && values.read(3) == 1 && values.read(4) == 2) {
     42
-  } else {
+  } else: {
     0
   }
 }

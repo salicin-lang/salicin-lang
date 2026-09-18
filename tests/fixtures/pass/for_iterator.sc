@@ -10,11 +10,11 @@ extend(counter, Iterator) {
   let Item = OwnedItem<i32>;
 
   let next<r: region>(self: Borrow<mut><r><self>)(): Option<i32> = {
-    if self.current < self.end {
+    if(self.current < self.end) {
       let value = self.current
       self.current = self.current + 1
       Some(value)
-    } else {
+    } else: {
       None
     }
   }

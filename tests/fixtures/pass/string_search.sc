@@ -65,11 +65,11 @@ let ordering_checks(): bool = {
 }
 
 let main(): i32 = {
-  if borrowed_checks() &&
+  if(borrowed_checks() &&
     owning_checks() &&
-    ordering_checks() {
+    ordering_checks() ) {
     42
-  } else {
+  } else: {
     0
   }
 }

@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::ast::{
-    BinaryOp, CallArg, Expr, Function, PassMode, Pattern, PatternFields, StaticExpr, Stmt, Type,
-    UnaryOp,
+    BinaryOp, CallArg, Expr, Function, GroupDelimiter, PassMode, Pattern, PatternFields, StaticExpr,
+    Stmt, Type, UnaryOp,
 };
 use crate::core::LangItemKind;
 
@@ -502,18 +502,13 @@ impl Analyzer {
                     kind: CtfeValueKind::Array(values),
                 }
             }
-            Expr::StructLiteral {
-                constructor,
-                fields,
-            }
-            | Expr::DelimitedCall {
+            Expr::DelimitedCall {
                 callee: constructor,
                 delimiter: crate::ast::GroupDelimiter::Brace,
                 arguments: fields,
             } if fields.iter().all(|field| field.label.is_some())
                 && {
-                    let mut groups = Vec::new();
-                    matches!(flatten_call(constructor, &mut groups), Expr::Name(name)
+                    matches!(flatten_call(constructor).root_ignoring_groups(), Expr::Name(name)
                         if !locals.contains_key(name)
                             && (self.collection.struct_layouts.contains_key(name)
                                 || self.collection.struct_templates.contains_key(name)))
@@ -1059,8 +1054,18 @@ impl Analyzer {
         fuel: &mut usize,
         active_calls: &mut Vec<(String, Vec<CtfeValue>)>,
     ) -> Result<CtfeValue, String> {
-        let mut groups = Vec::new();
-        let root = flatten_call(expression, &mut groups);
+        let flattened = flatten_call(expression);
+        let root = flattened.root;
+        let groups = flattened.argument_groups();
+        let delimiters = flattened
+            .groups
+            .iter()
+            .map(|group| group.delimiter)
+            .collect::<Vec<_>>();
+        let explicit_compile_groups = delimiters
+            .iter()
+            .take_while(|delimiter| **delimiter == GroupDelimiter::Angle)
+            .count();
         if let Expr::Name(name) = root.unlocated() {
             let kind = if self.is_lang_item_name(name, LangItemKind::SizeOf) {
                 Some(LayoutQueryKind::Size)
@@ -1070,6 +1075,11 @@ impl Analyzer {
                 None
             };
             if let Some(kind) = kind {
+                if delimiters.as_slice() != [GroupDelimiter::Angle] {
+                    return Err(format!(
+                        "ctfe layout query `{name}` requires one `<...>` compile-time argument group"
+                    ));
+                }
                 let [group] = groups.as_slice() else {
                     return Err(format!(
                         "ctfe layout query `{name}` requires one compile-time argument group"
@@ -1110,7 +1120,8 @@ impl Analyzer {
             }
         }
         if let Expr::Name(name) = root.unlocated() {
-            if self.collection.function_templates.contains_key(name)
+            if explicit_compile_groups == 0
+                && self.collection.function_templates.contains_key(name)
                 && self
                     .collection
                     .functions
@@ -1122,6 +1133,15 @@ impl Analyzer {
                     .get(name)
                     .is_some_and(|function| groups.len() == function.groups.len())
             {
+                let runtime_delimiters = self.collection.function_templates[name]
+                    .effects
+                    .group_delimiters
+                    .clone();
+                self.validate_static_runtime_delimiters(
+                    name,
+                    &delimiters,
+                    &runtime_delimiters,
+                )?;
                 return self.evaluate_inferred_static_function_call(
                     name,
                     &groups,
@@ -1135,7 +1155,12 @@ impl Analyzer {
         let (function_name, runtime_start, receiver) = match root.unlocated() {
             Expr::Name(name) => {
                 let (function, runtime_start) =
-                    self.resolve_static_named_function(name, &groups, 0)?;
+                    self.resolve_static_named_function(
+                        name,
+                        &groups,
+                        explicit_compile_groups,
+                        0,
+                    )?;
                 (function, runtime_start, None)
             }
             Expr::Member(base, member) => {
@@ -1210,7 +1235,12 @@ impl Analyzer {
                         }
                     };
                     let (function, runtime_start) =
-                        self.resolve_static_named_function(&function, &groups, 0)?;
+                        self.resolve_static_named_function(
+                            &function,
+                            &groups,
+                            explicit_compile_groups,
+                            0,
+                        )?;
                     (function, runtime_start, None)
                 } else {
                     let receiver =
@@ -1294,7 +1324,12 @@ impl Analyzer {
                         }
                     };
                     let (function, runtime_start) =
-                        self.resolve_static_named_function(&function, &groups, 1)?;
+                        self.resolve_static_named_function(
+                            &function,
+                            &groups,
+                            explicit_compile_groups,
+                            1,
+                        )?;
                     (function, runtime_start, Some(receiver))
                 }
             }
@@ -1381,6 +1416,18 @@ impl Analyzer {
             .get(&function_name)
             .cloned()
             .ok_or_else(|| format!("unknown function `{display_name}` in static expression"))?;
+        let expected_runtime_delimiters = function
+            .effects
+            .group_delimiters
+            .iter()
+            .copied()
+            .skip(usize::from(receiver.is_some()))
+            .collect::<Vec<_>>();
+        self.validate_static_runtime_delimiters(
+            &display_name,
+            &delimiters[runtime_start..],
+            &expected_runtime_delimiters,
+        )?;
         let arguments = self.evaluate_static_call_arguments(
             &function_name,
             &function,
@@ -1620,8 +1667,9 @@ impl Analyzer {
     }
 
     fn static_nominal_type_head(&mut self, expression: &Expr) -> Result<Option<String>, String> {
-        let mut groups = Vec::new();
-        let root = flatten_call(expression, &mut groups);
+        let flattened = flatten_call(expression);
+        let root = flattened.root;
+        let groups = flattened.argument_groups();
         let Expr::Name(name) = root.unlocated() else {
             return Ok(None);
         };
@@ -1645,6 +1693,15 @@ impl Analyzer {
         let Some(compile_groups) = compile_groups else {
             return Ok(None);
         };
+        if flattened
+            .groups
+            .iter()
+            .any(|group| group.delimiter != GroupDelimiter::Angle)
+        {
+            return Err(format!(
+                "ctfe nominal type `{name}` requires `<...>` compile-time argument groups"
+            ));
+        }
         if groups.len() != compile_groups.len() {
             return Ok(None);
         }
@@ -1669,6 +1726,7 @@ impl Analyzer {
         &mut self,
         name: &str,
         groups: &[&[CallArg]],
+        explicit_compile_groups: usize,
         parameter_offset: usize,
     ) -> Result<(String, usize), String> {
         let name = if let Some(candidates) = self.collection.function_overloads.get(name).cloned() {
@@ -1685,9 +1743,16 @@ impl Analyzer {
         } else {
             name.to_owned()
         };
-        if let Some(function) = self.collection.functions.get(&name) {
-            if groups.len() + parameter_offset == function.groups.len() {
-                return Ok((name, 0));
+        let compile_capacity = self
+            .collection
+            .function_templates
+            .get(&name)
+            .map_or(0, |function| function.compile_groups.len());
+        if explicit_compile_groups == 0 || compile_capacity == 0 {
+            if let Some(function) = self.collection.functions.get(&name) {
+                if groups.len() + parameter_offset == function.groups.len() {
+                    return Ok((name, 0));
+                }
             }
         }
         let template = self
@@ -1697,6 +1762,11 @@ impl Analyzer {
             .cloned()
             .ok_or_else(|| format!("unknown function `{name}` in static expression"))?;
         let compile_count = template.compile_groups.len();
+        if explicit_compile_groups != compile_count {
+            return Err(format!(
+                "generic ctfe function `{name}` requires either inferred compile-time arguments or {compile_count} leading `<...>` group(s), found {explicit_compile_groups}"
+            ));
+        }
         if groups.len() + parameter_offset != compile_count + template.groups.len() {
             return Err(format!(
                 "generic ctfe function `{name}` must have all compile-time and runtime parameter groups explicitly applied"
@@ -1734,6 +1804,32 @@ impl Analyzer {
             .filter(|_| self.diagnostics.len() == diagnostics)
             .ok_or_else(|| format!("could not instantiate generic ctfe function `{name}`"))?;
         Ok((canonical, compile_count))
+    }
+
+    fn validate_static_runtime_delimiters(
+        &self,
+        name: &str,
+        actual: &[GroupDelimiter],
+        expected: &[GroupDelimiter],
+    ) -> Result<(), String> {
+        if actual.len() != expected.len() {
+            return Err(format!(
+                "ctfe call `{name}` expects {} runtime argument group(s), found {}",
+                expected.len(),
+                actual.len()
+            ));
+        }
+        for (index, (actual, expected)) in actual.iter().zip(expected).enumerate() {
+            if actual != expected {
+                return Err(format!(
+                    "ctfe call `{name}` runtime group {} uses `{}` but the parameter group uses `{}`",
+                    index + 1,
+                    actual.opening(),
+                    expected.opening()
+                ));
+            }
+        }
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1950,8 +2046,7 @@ impl Analyzer {
                 arguments,
             } if arguments.iter().all(|argument| argument.label.is_some())
                 && {
-                    let mut groups = Vec::new();
-                    matches!(flatten_call(callee, &mut groups), Expr::Name(name)
+                    matches!(flatten_call(callee).root_ignoring_groups(), Expr::Name(name)
                         if !locals.contains_key(name)
                             && (self.collection.struct_layouts.contains_key(name)
                                 || self.collection.struct_templates.contains_key(name)))
@@ -1974,10 +2069,6 @@ impl Analyzer {
                 let source = function.return_type.clone()?;
                 self.static_value_type(&source)
             }
-            Expr::StructLiteral { constructor, .. } => self
-                .static_struct_constructor_name(constructor, None)
-                .ok()
-                .map(Ty::Struct),
             Expr::Block(_, Some(tail)) => self.static_expression_type_hint(tail, locals),
             Expr::If {
                 then_branch,
@@ -2461,8 +2552,16 @@ impl Analyzer {
         let Expr::Member(type_head, variant_name) = expression.unlocated() else {
             return Ok(None);
         };
-        let mut groups = Vec::new();
-        let root = flatten_call(type_head, &mut groups);
+        let flattened = flatten_call(type_head);
+        let root = flattened.root;
+        if flattened
+            .groups
+            .iter()
+            .any(|group| group.delimiter != crate::ast::GroupDelimiter::Angle)
+        {
+            return Err("ctfe enum type applications use `<...>`".to_owned());
+        }
+        let groups = flattened.argument_groups();
         let Expr::Name(source_name) = root.unlocated() else {
             return Ok(None);
         };
@@ -2657,10 +2756,18 @@ impl Analyzer {
         constructor: &Expr,
         expected: Option<&Ty>,
     ) -> Result<String, String> {
-        let mut groups = Vec::new();
-        let root = flatten_call(constructor, &mut groups);
+        let flattened = flatten_call(constructor);
+        let root = flattened.root;
+        if flattened
+            .groups
+            .iter()
+            .any(|group| group.delimiter != crate::ast::GroupDelimiter::Angle)
+        {
+            return Err("ctfe struct type applications use `<...>`".to_owned());
+        }
+        let groups = flattened.argument_groups();
         let Expr::Name(source_name) = root.unlocated() else {
-            return Err("ctfe struct literal requires a named constructor".to_owned());
+            return Err("ctfe struct construction requires a named constructor".to_owned());
         };
         if let Some(Ty::Struct(expected_name)) = expected {
             let layout = self
@@ -2687,7 +2794,7 @@ impl Analyzer {
         }
         if let Some(expected) = expected {
             return Err(format!(
-                "ctfe struct literal cannot be used where `{}` is expected",
+                "ctfe struct construction cannot be used where `{}` is expected",
                 expected
             ));
         }

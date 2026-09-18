@@ -69,16 +69,16 @@ let main(): i32 = {
   let value: i32 = 7
   let minimum: i32 = -3
   let maximum: i32 = 5
-  if value.min(maximum) == 5 &&
+  if(value.min(maximum) == 5 &&
     value.max(maximum) == 7 &&
     value.clamp(minimum, maximum) == 5 &&
     ctfe_magnitude == 128 &&
     is_some_u8(ctfe_conversion, 255) &&
     sign_checks() &&
     conversion_checks() &&
-    wide_checks() {
+    wide_checks() ) {
     42
-  } else {
+  } else: {
     0
   }
 }

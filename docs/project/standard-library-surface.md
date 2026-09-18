@@ -11,10 +11,13 @@ already exists. The [TODO](todo.md) owns the remaining implementation order.
 
 The surface follows six rules.
 
-1. Types and type parameters, type forms, traits, enum variants, and associated types use
-   `PascalCase`; functions, methods, values, fields, modules, effects, and
-   sorts use `snake_case`. The primitive types `bool`, integers, `str`, and
-   `never`, and the primitive values `true` and `false`, remain lowercase.
+1. Public embedded-library types and type parameters, type forms, traits, enum
+   variants, and associated types use ASCII `PascalCase`; functions, methods,
+   values, fields, modules, effects, and sorts use ASCII `snake_case`. This is
+   an official standard-library public API style and validation rule, not a
+   language-wide casing restriction. The primitive types `bool`, integers,
+   `str`, and `never`, and the primitive values `true` and `false`, remain
+   lowercase.
 2. The prelude contains only names needed pervasively by ordinary syntax.
    Allocation, failure, formatting, collections, and host access stay
    qualified or use explicit local aliases.

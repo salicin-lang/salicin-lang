@@ -21,10 +21,10 @@ extend(step, Future<()>) {
     (self: Borrow<mut><r><self>)
     (): Poll<bool> = {
     unsafe {
-      if *self.polls == 0 {
+      if(*self.polls == 0) {
         *self.polls = 1
         Poll<bool>.Ready(false)
-      } else {
+      } else: {
         Poll<bool>.Pending
       }
     }
@@ -44,10 +44,10 @@ let main(): i32 = {
   let pending = do {
     let mut future = async {
       loop {
-        let done = await step(polls_ptr, drops_ptr)
-        if done {
+        let done = await(step(polls_ptr, drops_ptr))
+        if(done) {
           break()
-        } else {
+        } else: {
           continue()
         }
       }

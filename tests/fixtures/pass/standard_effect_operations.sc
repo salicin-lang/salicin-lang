@@ -12,7 +12,7 @@ let fail_with_throw_sugar: with<throwing<i32>>(): never = {
 }
 
 let choose_with_throw_sugar: with<throwing<i32>>(fail: bool): i32 = {
-  if fail { throw(42) } else { 1 }
+  if(fail) { throw(42) } else: { 1 }
 }
 
 let handled_throw(): i32 = {

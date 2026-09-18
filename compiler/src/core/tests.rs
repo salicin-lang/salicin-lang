@@ -872,7 +872,7 @@ fn rejects_malformed_control_contracts() {
             (
                 "do",
                 EDITION_2026_CONTROL.replace(
-                    "(move while: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)): ()",
+                    "(move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)): ()",
                     "(move until: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)): ()",
                 ),
             ),
@@ -1015,8 +1015,8 @@ fn rejects_malformed_async_contracts() {
         (
             "Future",
             EDITION_2026_ASYNC.replace(
-                "trait(requires: self is Movable)",
-                "trait(requires: self is Copyable)",
+                "trait<requires: self is Movable>",
+                "trait<requires: self is Copyable>",
             ),
         ),
         (
@@ -1153,7 +1153,7 @@ pub let Rem<Rhs: type> = trait {
   let rem(self)(rhs: Rhs): Output
 }
 pub let Movable = trait {}
-pub let Copyable = trait(requires: self is Movable) {}
+pub let Copyable = trait<requires: self is Movable> {}
 pub let Droppable = trait {
   let drop(self: Borrow<mut><self>)(): ()
 }
@@ -1328,14 +1328,14 @@ pub let str: type = builtin()
                 "unexpected declaration `Extra` at item 7",
                 "lang item `Result` must be enum, found struct",
                 "lang item `never` must have shape `pub let never = enum {}`",
-                "lang item `Copyable` must have shape `pub let Copyable = trait(requires: self is Movable) {}`",
+                "lang item `Copyable` must have shape `pub let Copyable = trait<requires: self is Movable> {}`",
                 "lang item `Add` must have shape `pub let Add<Rhs: type> = trait { let Output: type; let add(self)(rhs: Rhs): Output }`",
                 "missing lang item `Index`",
             ]
         );
     assert_eq!(
             error.to_string(),
-            "invalid embedded core bundle for edition 2026\n- lang item `Option` must be `pub`, found private visibility\n- unexpected declaration `Extra` at item 7\n- lang item `Result` must be enum, found struct\n- lang item `never` must have shape `pub let never = enum {}`\n- lang item `Copyable` must have shape `pub let Copyable = trait(requires: self is Movable) {}`\n- lang item `Add` must have shape `pub let Add<Rhs: type> = trait { let Output: type; let add(self)(rhs: Rhs): Output }`\n- missing lang item `Index`"
+            "invalid embedded core bundle for edition 2026\n- lang item `Option` must be `pub`, found private visibility\n- unexpected declaration `Extra` at item 7\n- lang item `Result` must be enum, found struct\n- lang item `never` must have shape `pub let never = enum {}`\n- lang item `Copyable` must have shape `pub let Copyable = trait<requires: self is Movable> {}`\n- lang item `Add` must have shape `pub let Add<Rhs: type> = trait { let Output: type; let add(self)(rhs: Rhs): Output }`\n- missing lang item `Index`"
         );
 }
 
@@ -1431,7 +1431,7 @@ fn rejects_copy_compile_parameters_associated_types_and_methods() {
 
         assert_eq!(
                 error.diagnostics(),
-                ["lang item `Copyable` must have shape `pub let Copyable = trait(requires: self is Movable) {}`"],
+                ["lang item `Copyable` must have shape `pub let Copyable = trait<requires: self is Movable> {}`"],
                 "unexpected diagnostic for `{declaration}`"
             );
     }
@@ -1442,10 +1442,10 @@ fn rejects_malformed_move_traits_and_copy_without_move_supertrait() {
     for malformed in [
         "pub let Movable<T: type> = trait {}",
         "pub let Movable = trait { let Item: type }",
-        "pub let Movable = trait(requires: self is Copyable) {}",
+        "pub let Movable = trait<requires: self is Copyable> {}",
     ] {
         let source =
-            core_source_with_copy("pub let Copyable = trait(requires: self is Movable) {}")
+            core_source_with_copy("pub let Copyable = trait<requires: self is Movable> {}")
                 .replacen("pub let Movable = trait {}", malformed, 1);
         let error = CoreBundle::from_source(Edition::Edition2026, &source).unwrap_err();
         assert_eq!(
@@ -1459,7 +1459,7 @@ fn rejects_malformed_move_traits_and_copy_without_move_supertrait() {
     let error = CoreBundle::from_source(Edition::Edition2026, &source).unwrap_err();
     assert_eq!(
         error.diagnostics(),
-        ["lang item `Copyable` must have shape `pub let Copyable = trait(requires: self is Movable) {}`"]
+        ["lang item `Copyable` must have shape `pub let Copyable = trait<requires: self is Movable> {}`"]
     );
 }
 
@@ -1474,7 +1474,7 @@ fn rejects_malformed_drop_traits() {
 
     for declaration in malformed_declarations {
         let source =
-            core_source_with_copy("pub let Copyable = trait(requires: self is Movable) {}")
+            core_source_with_copy("pub let Copyable = trait<requires: self is Movable> {}")
                 .replacen(
                     "pub let Droppable = trait {\n  let drop(self: Borrow<mut><self>)(): ()\n}",
                     declaration,
@@ -1496,7 +1496,7 @@ pub let Option<T: type> = enum { Some(T), None }
 pub let Result<Error: type><T: type> = enum { Ok(T), Err(Error) }
 pub let never = enum {}
 pub let Movable = trait {}
-pub let Copyable = trait(requires: self is Movable) {}
+pub let Copyable = trait<requires: self is Movable> {}
 pub let Droppable = trait {
   let drop(self: Borrow<mut><self>)(): ()
 }
@@ -1584,7 +1584,7 @@ fn rejects_malformed_partial_ordering() {
         "pub let PartialOrdering = enum { Less, Equal, Greater, Unknown }",
     ] {
         let source =
-            core_source_with_copy("pub let Copyable = trait(requires: self is Movable) {}")
+            core_source_with_copy("pub let Copyable = trait<requires: self is Movable> {}")
                 .replacen(
                     "pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }",
                     declaration,
@@ -1614,7 +1614,7 @@ fn rejects_malformed_unary_operator_traits() {
             ),
         ] {
             let source =
-                core_source_with_copy("pub let Copyable = trait(requires: self is Movable) {}").replacen(
+                core_source_with_copy("pub let Copyable = trait<requires: self is Movable> {}").replacen(
                 original,
                 malformed,
                 1,
@@ -1639,7 +1639,7 @@ fn rejects_malformed_bitwise_operator_traits() {
             ),
         ] {
             let source =
-                core_source_with_copy("pub let Copyable = trait(requires: self is Movable) {}").replacen(
+                core_source_with_copy("pub let Copyable = trait<requires: self is Movable> {}").replacen(
                 original,
                 malformed,
                 1,

@@ -38,13 +38,13 @@ let main(): i32 = {
   let drops_ptr = ptr<mut>(borrow<mut>(drops))
   let mut future = async {
     loop {
-      let marker = await step(drops_ptr)
-      if unsafe {
+      let marker = await(step(drops_ptr))
+      if(unsafe {
         *remaining_ptr = *remaining_ptr - 1
         *remaining_ptr == 0
-      } {
+      } ) {
         break(marker)
-      } else {
+      } else: {
         continue()
       }
     }

@@ -29,17 +29,17 @@ let main(): i32 = {
     action: {
       let mut future = async {
         loop {
-          let first = await make_step()
-          let second = await make_step()
-          if second {
-            break 42
-          } else {
+          let first = await(make_step())
+          let second = await(make_step())
+          if(second) {
+            break(42)
+          } else: {
             continue()
           }
         }
       }
       match(future.poll()) { Ready(value) => value, Pending => 0,
-}
+      }
     },
   }
 }

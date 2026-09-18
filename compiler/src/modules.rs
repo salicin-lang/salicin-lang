@@ -3742,15 +3742,6 @@ impl Resolver {
                     self.rewrite_expr(&mut argument.value, context, type_scope, value_scope);
                 }
             }
-            Expr::StructLiteral {
-                constructor,
-                fields,
-            } => {
-                self.rewrite_compile_argument_expr(constructor, context, type_scope);
-                for field in fields {
-                    self.rewrite_expr(&mut field.value, context, type_scope, value_scope);
-                }
-            }
             Expr::Member(_, _) => {
                 self.rewrite_member_chain(expression, context, type_scope, value_scope);
             }
@@ -3805,11 +3796,6 @@ impl Resolver {
                 }
                 self.rewrite_expr(body, context, type_scope, &closure_scope);
             }
-            Expr::PartialClosure(arms) => {
-                for arm in arms {
-                    self.rewrite_match_arm(arm, context, type_scope, value_scope);
-                }
-            }
             Expr::If {
                 condition,
                 then_branch,
@@ -3847,69 +3833,6 @@ impl Resolver {
             | Expr::Bool(_)
             | Expr::String(_)
             | Expr::Continue => {}
-        }
-    }
-
-    fn rewrite_compile_argument_expr(
-        &mut self,
-        expression: &mut Expr,
-        context: ResolveContext<'_>,
-        type_scope: &HashSet<String>,
-    ) {
-        match expression {
-            Expr::Name(name) => {
-                if type_scope.contains(name) || compile_argument_name_is_builtin(name) {
-                    return;
-                }
-                let logical = vec![name.clone()];
-                if let Some(canonical) = self.resolve_logical_path(&logical, context) {
-                    *name = canonical;
-                } else if !self.reject_unimported_standard(&logical, context) {
-                    self.reject_bare_module(&logical, context, "a type or compile-time argument");
-                }
-            }
-            Expr::Call(callee, arguments) => {
-                self.rewrite_compile_argument_expr(callee, context, type_scope);
-                for argument in arguments {
-                    self.rewrite_compile_argument_expr(&mut argument.value, context, type_scope);
-                }
-            }
-            Expr::Member(_, _) => {
-                self.rewrite_compile_argument_member_chain(expression, context, type_scope);
-            }
-            Expr::Unit | Expr::Integer(_) | Expr::Bool(_) | Expr::String(_) => {}
-            other => self.rewrite_expr(other, context, type_scope, &HashSet::new()),
-        }
-    }
-
-    fn rewrite_compile_argument_member_chain(
-        &mut self,
-        expression: &mut Expr,
-        context: ResolveContext<'_>,
-        type_scope: &HashSet<String>,
-    ) {
-        let mut segments = Vec::new();
-        if collect_member_segments(expression, &mut segments)
-            && !segments
-                .first()
-                .is_some_and(|first| type_scope.contains(first))
-        {
-            if let Some((canonical, consumed)) = self.resolve_longest_prefix(&segments, context) {
-                let mut resolved = Expr::Name(canonical);
-                for member in &segments[consumed..] {
-                    resolved = Expr::Member(Box::new(resolved), member.clone());
-                }
-                *expression = resolved;
-                return;
-            }
-            if self.reject_unimported_standard(&segments, context) {
-                return;
-            }
-            self.reject_bare_module(&segments, context, "a type or compile-time argument");
-            return;
-        }
-        if let Expr::Member(base, _) = expression {
-            self.rewrite_compile_argument_expr(base, context, type_scope);
         }
     }
 
@@ -4238,30 +4161,6 @@ fn compile_parameter_names(
             .map(|parameter| parameter.name.clone()),
     );
     names
-}
-
-fn compile_argument_name_is_builtin(name: &str) -> bool {
-    matches!(
-        name,
-        "i8" | "i16"
-            | "i32"
-            | "i64"
-            | "i128"
-            | "isize"
-            | "u8"
-            | "u16"
-            | "u32"
-            | "u64"
-            | "u128"
-            | "usize"
-            | "bool"
-            | "shared"
-            | "mut"
-            | "copy"
-            | "move"
-            | "pure"
-            | "self"
-    )
 }
 
 fn collect_member_segments(expression: &Expr, segments: &mut Vec<String>) -> bool {

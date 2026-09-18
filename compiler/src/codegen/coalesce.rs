@@ -108,6 +108,7 @@ impl Analyzer {
                     inferred.variant,
                     &inferred.value_groups,
                     None,
+                    None,
                     context,
                 )
             }

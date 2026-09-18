@@ -28,8 +28,8 @@ let main(): i32 = {
   let implicit_ptr = ptr<mut>(borrow<mut>(implicit_remaining))
   let mut implicit = async {
     loop {
-      let done = await step(implicit_ptr)
-      if done {
+      let done = await(step(implicit_ptr))
+      if(done) {
         break(21)
       }
     }
@@ -43,10 +43,10 @@ let main(): i32 = {
   let fallthroughs_ptr = ptr<mut>(borrow<mut>(fallthroughs))
   let mut explicit = async {
     loop {
-      let done = await step(explicit_ptr)
-      if done {
+      let done = await(step(explicit_ptr))
+      if(done) {
         break(21)
-      } else {
+      } else: {
         unsafe {
           *fallthroughs_ptr = *fallthroughs_ptr + 1
         }

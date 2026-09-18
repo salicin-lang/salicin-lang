@@ -89,13 +89,15 @@ shadow an outer binding.
 Top-level `let` declarations introduce values, functions, types, type aliases, sorts, effects,
 traits, or modules according to their annotation and initializer.
 
-Names follow their semantic category. Types and type parameters, type forms,
-traits, enum variants, and associated types use `PascalCase`. Functions, methods, values, fields,
-modules, effects, and sorts use `snake_case`. The primitive types `bool`, the
-integer families, `str`, and `never`, and the primitive values `true` and
-`false`, remain lowercase. Runtime `String` values are also accepted in the
-supported compile-time subset and carry syntax metadata such as test names and
-foreign symbols.
+Ordinary user declarations may use any casing permitted by the identifier
+grammar. Public declarations in the embedded standard library follow the
+official API style and validation rule: types and type parameters, type forms,
+traits, enum variants, and associated types use ASCII `PascalCase`; functions,
+methods, values, fields, modules, effects, and sorts use ASCII `snake_case`.
+The primitive types `bool`, the integer families, `str`, and `never`, and the
+primitive values `true` and `false`, remain lowercase. Runtime `String` values
+are also accepted in the supported compile-time subset and carry syntax
+metadata such as test names and foreign symbols.
 
 ```sc fragment
 let Scalar = i32
@@ -257,8 +259,8 @@ metadata payload is a runtime value.
 
 The function-definition form `= requires(condition) { body }` supplies a
 compile-time `bool` and a delayed parameterless closure to `core.requires`.
-Trait and extension requirements instead occupy their declaration header as
-the labeled compile-time boolean parameter `(requires: condition)`. `extend`
+Trait and extension requirements instead use an ordinary adjacent angle
+compile-time group in their declaration header, `<requires: condition>`. `extend`
 itself is parser-owned syntax: there is no decorative `extend` callable or
 language item. META-1 now defines the registry contract for phase, scope,
 equality, normalization, producers, and resource bounds, but additional
@@ -429,9 +431,11 @@ literal length as a compile-time argument.
 ## 5. Functions and Application
 
 A function declaration may contain multiple compile-time and runtime parameter
-groups. Angle brackets exclusively declare and supply compile-time groups.
-Parentheses, square brackets, and braces declare and supply runtime groups,
-and application must preserve the runtime delimiter at that group position:
+groups. One delimiter-aware application model serves functions, methods,
+constructors, effects, and other callable or compile-time entities. Angle
+brackets exclusively declare and supply compile-time groups. Parentheses,
+square brackets, and braces declare and supply runtime groups, and application
+must preserve the runtime delimiter identity at that group position:
 
 ```sc fragment
 let map<T: type, U: type>(value: T)(transform: (T): U): U = {
@@ -456,9 +460,11 @@ Supplying a group creates or invokes the next function layer. Arguments for a su
 evaluated left to right. A partial application performs the passing actions for supplied arguments
 but does not execute the final body until all runtime groups are supplied.
 
-The delimiter is part of a function's type and calling convention. It is checked for direct calls,
-function-valued calls, and every remaining layer of a partial application. No
-group mixes compile-time and runtime parameters.
+Each runtime delimiter is part of a function's type and calling convention. It
+is checked for direct calls, function-valued calls, and every remaining layer
+of a partial application. Compile-time application is angle-only, including
+generic struct constructors and parameterized effect identities. No group
+mixes compile-time and runtime parameters.
 
 An explicit opener is a postfix call only when it is byte-adjacent to the callee token. Comparison
 operators require whitespace on both sides, so `a < b` compares and `a<b>` calls an angle group.
@@ -480,17 +486,16 @@ let clamp(value: i32, min lower: i32, max upper: i32): i32 = { ... }
 let bounded = clamp(42, min: 0, max: 100)
 ```
 
-A call supplies every ordinary argument group with its declared explicit
-delimiter; parenthesis-free ordinary calls do not exist. A trailing closure
+A call supplies every ordinary argument group with its declared delimiter. A trailing closure
 uses its braces as the explicit delimiter for the next unapplied closure group,
 including a first group as in `run { action() }`. Multiple trailing closures
 supply successive groups. A named trailing closure requires `label: { ... }`;
 an identifier without the colon is not a label.
 
 ```sc fragment
-if condition {
+if(condition) {
   on_true()
-} else {
+} else: {
   on_false()
 }
 ```
@@ -512,7 +517,7 @@ an explicit parameter list when needed:
 let increment: (i32): i32 = { value -> value + 1 }
 ```
 
-A single refutable-pattern partial closure remains available as
+A single refutable-pattern closure remains available as
 `{ Pattern [if guard] -> expression }`. Calling it produces
 `core.control.Attempt<Input><Output>`: a successful pattern produces `Hit`,
 while a failed pattern or guard produces `Miss` with the input. Consecutive
@@ -588,8 +593,9 @@ let origin = Point{x: 0, y: 0}
 Fields are initialized left to right. Every required field must appear exactly once. Field access
 preserves the ownership and borrow state of the base.
 
-`struct(c)` selects the target C aggregate representation as part of the type
-constructor:
+`struct(c)` selects the target C aggregate representation as a declaration
+option; it is not compile-time application. Struct constructor parameters and
+arguments use angle groups. The C representation form is:
 
 ```sc fragment
 let Timespec = struct(c) {
@@ -630,10 +636,10 @@ match(value) {
 }
 ```
 
-The brace after `match(value)` is a multi-partial closure, not a Brace
-`DelimitedCall`. Each comma-separated arm is a partial function consisting of
-a pattern, optional `if` guard, and expression body. It replaces the removed
-consecutive pattern-partial spelling:
+`match(value) { ... }` maps directly to match semantics. Its brace contains
+comma-separated arms, each with a pattern, optional `if` guard, and expression
+body; it is neither a call argument group nor a closure-valued intermediate.
+It replaces the removed consecutive pattern-closure spelling:
 
 ```sc fragment
 match(value) {
@@ -704,7 +710,7 @@ compile-time parameters:
 
 ```sc fragment
 extend(Cell<T>, Copyable)
-(requires: T is Copyable) {}
+<requires: T is Copyable> {}
 ```
 
 A function applies the compiler-owned `requires` guard to its body:
@@ -727,9 +733,9 @@ requires(T is Produce && T.Item == i32) {
 }
 ```
 
-Trait and extension prerequisites use a labeled compile-time parameter group,
-for example `let Copyable = trait(requires: self is Movable) {}` and
-`extend(Cell<T>, Copyable)(requires: T is Copyable) {}`.
+Trait and extension prerequisites use an ordinary labeled angle compile-time
+group, for example `let Copyable = trait<requires: self is Movable> {}` and
+`extend(Cell<T>, Copyable)<requires: T is Copyable> {}`.
 
 Generic associated constructors retain their parameter groups and sorts. Their receiver region can
 determine a yielded type, as in `Iterator.Item<r>`.
@@ -765,9 +771,9 @@ explicit semicolon turns the preceding expression into `()`.
 Conditions have type `bool`.
 
 ```sc fragment
-let absolute = if value < 0 {
+let absolute = if(value < 0) {
   -value
-} else {
+} else: {
   value
 }
 ```
@@ -794,12 +800,16 @@ handles it. A same-named user declaration cannot redirect any of these forms. Th
 contracts and their lowering obligations are specified in [Control-flow contracts](control-flow.md).
 
 `loop { ... }` repeats until `break(value)`. All reachable breaks from one loop agree on the result
-type. `while`, `do ... while`, and `for` have unit result. `for` obtains an iterator through
+type. The only conditional and conditional-loop spellings are
+`if(condition) { ... } else: { ... }`, `while(condition) { ... }`, and
+`do { ... } while: { ... }`; there are no unlabeled or closure-group aliases.
+`while`, post-test `do`, and `for` have unit result. `for` obtains an iterator through
 the validated source traits `core.iter.IntoIterator` and `core.iter.Iterator`, then repeatedly calls
 `Iterator.next`.
 
-`return(value)` exits the nearest named function or closure. `break(value)` exits the nearest
-loop. `continue()` starts its next iteration. These exits have type `never`.
+`return()` and `return(value)` exit the nearest named function or closure.
+`break()` and `break(value)` exit the nearest loop. The empty forms carry `()`.
+`continue()` starts its next iteration. These exits have type `never`.
 
 `defer { action }` registers a zero-argument trailing closure for the current lexical scope. Registration
 evaluates and captures the action immediately. Registered actions run in reverse registration
@@ -924,7 +934,7 @@ next continuation exactly once, destroys the completed child, and either
 completes or stores and polls the next child. Completion, error, and
 cancellation drop every initialized state field exactly once. Other suspended
 residual shapes remain unsupported. Outside residual
-specialization, one linear non-tail form, `let value = await child`, may
+specialization, one linear non-tail form, `let value = await(child)`, may
 execute ordinary continuation code after `Ready`; the continuation's captures
 remain owned by the parent while suspended. Multiple sequential bindings compose recursively and preserve earlier `Ready` values
 across later `Pending` states. Ordinary preceding locals used by the continuation are retained in

@@ -28,18 +28,18 @@ let main(): i32 = {
   let remaining_ptr = ptr<mut>(borrow<mut>(remaining))
   let mut future = async {
     loop {
-      if unsafe { *remaining_ptr % 2 == 0 } {
-        let done = await step(remaining_ptr)
-        if done {
+      if(unsafe { *remaining_ptr % 2 == 0 }) {
+        let done = await(step(remaining_ptr))
+        if(done) {
           break()
-        } else {
+        } else: {
           continue()
         }
-      } else {
-        let done = await step(remaining_ptr)
-        if done {
+      } else: {
+        let done = await(step(remaining_ptr))
+        if(done) {
           break()
-        } else {
+        } else: {
           ()
         }
       }

@@ -252,6 +252,7 @@ impl Parser {
                     "core.error.throwing".to_owned(),
                     vec![Type::Named("core.string.String".to_owned(), Vec::new())],
                 )],
+                group_delimiters: vec![GroupDelimiter::Parenthesis],
                 ..FunctionEffects::default()
             },
             where_predicates: Vec::new(),
@@ -1212,12 +1213,16 @@ impl Parser {
             None
         };
         self.expect(&TokenKind::RParen, "`)` after extend arguments")?;
-        self.take_newlines_if_followed_by(&[TokenKind::LParen, TokenKind::LBrace]);
-        let where_predicates = if self.at(&TokenKind::LParen) {
-            self.requires_parameter_group()?
+        self.take_newlines_if_followed_by(&[TokenKind::LBrace]);
+        let where_predicates = if self.requires_compile_group_follows() {
+            self.requires_compile_argument_group()?
+        } else if self.at(&TokenKind::Less) {
+            return Err(self.error_here(
+                "extension requirements must be adjacent: `extend(Type)<requires: predicate>`",
+            ));
         } else if self.at(&TokenKind::Where) {
             return Err(self.error_here(
-                "`where` extension predicates were removed; write `(requires: t is trait)`",
+                "`where` extension predicates were removed; write `<requires: T is Trait>`",
             ));
         } else {
             Vec::new()
@@ -1395,8 +1400,8 @@ impl Parser {
         self.constraint_expressions_until_rparen()
     }
 
-    fn requires_parameter_group(&mut self) -> Result<Vec<WherePredicate>, ParseError> {
-        self.expect(&TokenKind::LParen, "`(` before `requires:`")?;
+    fn requires_compile_argument_group(&mut self) -> Result<Vec<WherePredicate>, ParseError> {
+        self.expect(&TokenKind::Less, "`<` before `requires:`")?;
         let label = self.expect_ident("`requires` boolean requirement header label")?;
         if label != "requires" {
             return Err(self.error_here(format!(
@@ -1404,22 +1409,29 @@ impl Parser {
             )));
         }
         self.expect(&TokenKind::Colon, "`:` after `requires`")?;
-        self.constraint_expressions_until_rparen()
+        self.constraint_expressions_until(TokenKind::Greater)
     }
 
     fn constraint_expressions_until_rparen(&mut self) -> Result<Vec<WherePredicate>, ParseError> {
+        self.constraint_expressions_until(TokenKind::RParen)
+    }
+
+    fn constraint_expressions_until(
+        &mut self,
+        close: TokenKind,
+    ) -> Result<Vec<WherePredicate>, ParseError> {
         let mut predicates = Vec::new();
         loop {
             self.constraint_expression(&mut predicates)?;
             if self.take(&TokenKind::AndAnd) || self.take(&TokenKind::Comma) {
-                if self.at(&TokenKind::RParen) {
+                if self.at(&close) {
                     break;
                 }
                 continue;
             }
             break;
         }
-        self.expect(&TokenKind::RParen, "`)` after compile-time constraints")?;
+        self.expect_group_close(&close, "after compile-time constraints")?;
         Ok(predicates)
     }
 
@@ -1804,6 +1816,16 @@ impl Parser {
 
     fn group_starts_with_compile_parameter(&self) -> bool {
         self.at(&TokenKind::Less)
+    }
+
+    fn requires_compile_group_follows(&self) -> bool {
+        self.at(&TokenKind::Less)
+            && self.previous().end_byte == self.current().start_byte
+            && matches!(
+                self.tokens.get(self.index + 1).map(|token| &token.kind),
+                Some(TokenKind::Ident(name)) if name == "requires"
+            )
+            && self.at_offset(2, &TokenKind::Colon)
     }
 
     fn current_group_delimiter(&self) -> Option<GroupDelimiter> {
@@ -2705,7 +2727,7 @@ impl Parser {
     ) -> Result<TraitDef, ParseError> {
         self.expect(&TokenKind::Trait, "`trait`")?;
         let self_parameter =
-            if self.group_starts_with_compile_parameter() {
+            if self.group_starts_with_compile_parameter() && !self.requires_compile_group_follows() {
                 let group = self.compile_parameter_group()?;
                 let [parameter] = group.as_slice() else {
                     return Err(self
@@ -2718,9 +2740,18 @@ impl Parser {
             } else {
                 default_trait_self_parameter()
             };
-        let where_predicates = if self.at(&TokenKind::LParen) {
-            self.requires_parameter_group()?
+        let where_predicates = if self.requires_compile_group_follows() {
+            self.requires_compile_argument_group()?
+        } else if self.at(&TokenKind::LParen) {
+            return Err(self.error_here(
+                "declaration requirements use `<requires: predicate>`",
+            ));
         } else {
+            if self.at(&TokenKind::Less) {
+                return Err(self.error_here(
+                    "trait requirements must be adjacent: `trait<requires: predicate>`",
+                ));
+            }
             Vec::new()
         };
         self.take_newlines_if_followed_by(&[TokenKind::LBrace]);
@@ -3643,7 +3674,7 @@ impl Parser {
     }
 
     fn assignment(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let left = self.match_expression(allow_trailing_closure)?;
+        let left = self.coalesce_expression(allow_trailing_closure)?;
         let compound = if self.take(&TokenKind::PlusEqual) {
             Some(BinaryOp::Add)
         } else if self.take(&TokenKind::MinusEqual) {
@@ -3688,7 +3719,7 @@ impl Parser {
         }
     }
 
-    fn match_expression(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
+    fn coalesce_expression(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
         self.coalesce(allow_trailing_closure)
     }
 
@@ -4034,9 +4065,16 @@ impl Parser {
 
     fn unary(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
         if self.async_depth > 0 && self.at_context_ident("await") {
+            let await_token = self.current().clone();
             self.advance();
-            let operand = self.unary(allow_trailing_closure)?;
-            Ok(Expr::Await(Box::new(operand)))
+            if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
+                return Err(self.error_at(&await_token, "`await` requires `await(value)`"));
+            }
+            let arguments = self.call_argument_group(GroupDelimiter::Parenthesis)?;
+            let [CallArg { label: None, value }] = arguments.as_slice() else {
+                return Err(self.error_at(&await_token, "`await` requires exactly one unlabeled operand"));
+            };
+            Ok(Expr::Await(Box::new(value.clone())))
         } else if self.take(&TokenKind::Minus) {
             let operand = self.unary(allow_trailing_closure)?;
             Ok(Expr::Unary(UnaryOp::Neg, Box::new(operand)))
@@ -4162,11 +4200,7 @@ impl Parser {
                     ));
                 }
                 let start_byte = self.current().start_byte;
-                let closure = if Self::is_match_input_call(&expression) {
-                    self.partial_closure()?
-                } else {
-                    self.trailing_closure(start_byte)?
-                };
+                let closure = self.trailing_closure(start_byte)?;
                 let is_pattern_closure = matches!(&closure, Expr::PatternClosure { .. });
                 expression = Expr::Call(
                     Box::new(expression),
@@ -4271,14 +4305,6 @@ impl Parser {
         Ok(arguments)
     }
 
-    fn is_match_input_call(expression: &Expr) -> bool {
-        let Expr::Call(callee, arguments) = expression.unlocated() else {
-            return false;
-        };
-        matches!(callee.unlocated(), Expr::Name(name) if name == "$lang$match")
-            && matches!(arguments.as_slice(), [CallArg { label: None, .. }])
-    }
-
     fn trailing_closure(&mut self, start_byte: usize) -> Result<Expr, ParseError> {
         let closure = self.closure()?;
         self.layout.trailing_closures.push(SourceTrailingClosure {
@@ -4288,28 +4314,7 @@ impl Parser {
         Ok(closure)
     }
 
-    fn partial_closure(&mut self) -> Result<Expr, ParseError> {
-        let open = self.current().clone();
-        let body_start_byte = self.body_start_byte(self.index + 1);
-        self.expect(&TokenKind::LBrace, "`{` before match arms")?;
-        self.skip_separators();
-        let arms = if self.take(&TokenKind::RBrace) {
-            Vec::new()
-        } else {
-            self.partial_closure_arms(None)?
-        };
-        let close = self.previous().clone();
-        self.layout.closures.push(SourceBracedRegion {
-            open_byte: open.start_byte,
-            close_byte: close.start_byte,
-            body_start_byte,
-            open_line: open.line,
-            close_line: close.line,
-        });
-        Ok(Expr::PartialClosure(arms))
-    }
-
-    fn partial_closure_arms(
+    fn match_arms(
         &mut self,
         first: Option<(Pattern, Option<Box<Expr>>)>,
     ) -> Result<Vec<MatchArm>, ParseError> {
@@ -4325,7 +4330,7 @@ impl Parser {
                 } else {
                     None
                 };
-                self.expect(&TokenKind::FatArrow, "`=>` after partial-closure pattern")?;
+                self.expect(&TokenKind::FatArrow, "`=>` after match pattern")?;
                 (pattern, guard)
             };
             let body = if self.at(&TokenKind::Do) && self.at_offset(1, &TokenKind::LBrace) {
@@ -4347,7 +4352,7 @@ impl Parser {
                 }
                 continue;
             }
-            self.expect(&TokenKind::RBrace, "`}` after partial-closure arms")?;
+            self.expect(&TokenKind::RBrace, "`}` after match arms")?;
             break;
         }
         Ok(arms)
@@ -4360,15 +4365,6 @@ impl Parser {
             && self.at_offset(2, &TokenKind::LBrace)
     }
 
-    fn colonless_named_trailing_closure_follows(&self) -> bool {
-        self.trailing_label_at(self.index)
-            .is_some_and(|label| label != "match")
-            && self
-                .tokens
-                .get(self.index + 1)
-                .is_some_and(|token| token.kind == TokenKind::LBrace)
-    }
-
     fn trailing_label_at(&self, index: usize) -> Option<String> {
         match self.tokens.get(index).map(|token| &token.kind) {
             Some(TokenKind::Ident(label)) => Some(label.clone()),
@@ -4377,36 +4373,6 @@ impl Parser {
             Some(TokenKind::While) => Some("while".to_owned()),
             _ => None,
         }
-    }
-
-    fn take_trailing_label(&mut self) -> Result<String, ParseError> {
-        let Some(label) = self.trailing_label_at(self.index) else {
-            return Err(self.error_here("expected a trailing argument label"));
-        };
-        self.advance();
-        Ok(label)
-    }
-
-    fn token_can_start_expression(token: &TokenKind) -> bool {
-        matches!(
-            token,
-            TokenKind::Integer(_)
-                | TokenKind::True
-                | TokenKind::False
-                | TokenKind::Ident(_)
-                | TokenKind::Root
-                | TokenKind::Super
-                | TokenKind::LParen
-                | TokenKind::LBracket
-                | TokenKind::LBrace
-                | TokenKind::Minus
-                | TokenKind::Bang
-                | TokenKind::Borrow
-                | TokenKind::If
-                | TokenKind::Loop
-                | TokenKind::While
-                | TokenKind::For
-        )
     }
 
     fn primary(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
@@ -4484,24 +4450,9 @@ impl Parser {
                 self.return_expression(allow_trailing_closure)
             }
             TokenKind::Ident(ref name) if name == "if" => self.if_expression(),
-            TokenKind::Ident(ref name)
-                if name == "while" && self.at_offset(1, &TokenKind::LParen) =>
-            {
-                self.advance();
-                Ok(Expr::Name("while".to_owned()))
-            }
             TokenKind::Ident(ref name) if name == "while" => self.while_expression(),
             TokenKind::Ident(ref name) if name == "for" => self.for_expression(),
-            TokenKind::Ident(ref name) if name == "match" => {
-                self.advance();
-                if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
-                    return Err(self.error_at(
-                        &token,
-                        "`match` requires an adjacent input group; write `match(value) { ... }`",
-                    ));
-                }
-                Ok(Self::core_match_function())
-            }
+            TokenKind::Ident(ref name) if name == "match" => self.match_expression(),
             TokenKind::Ident(ref name)
                 if name == "loop" && self.at_offset(1, &TokenKind::LBrace) =>
             {
@@ -4576,16 +4527,7 @@ impl Parser {
                 })))
             }
             TokenKind::If => self.if_expression(),
-            TokenKind::Match => {
-                self.advance();
-                if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
-                    return Err(self.error_at(
-                        &token,
-                        "`match` requires an adjacent input group; write `match(value) { ... }`",
-                    ));
-                }
-                Ok(Self::core_match_function())
-            }
+            TokenKind::Match => self.match_expression(),
             TokenKind::Return => self.return_expression(allow_trailing_closure),
             TokenKind::Throw => {
                 self.advance();
@@ -4596,10 +4538,6 @@ impl Parser {
                     ));
                 }
                 Ok(Self::core_control_function("throw"))
-            }
-            TokenKind::While if self.at_offset(1, &TokenKind::LParen) => {
-                self.advance();
-                Ok(Expr::Name("while".to_owned()))
             }
             TokenKind::While => self.while_expression(),
             TokenKind::For => self.for_expression(),
@@ -4637,19 +4575,59 @@ impl Parser {
         Ok(Expr::Array(elements))
     }
 
+    fn match_expression(&mut self) -> Result<Expr, ParseError> {
+        let start = self.current().clone();
+        self.advance();
+        if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
+            return Err(self.error_at(
+                &start,
+                "`match` requires `match(value) { Pattern => expression, ... }`",
+            ));
+        }
+        let arguments = self.call_argument_group(GroupDelimiter::Parenthesis)?;
+        let [CallArg { label: None, value }] = arguments.as_slice() else {
+            return Err(self.error_at(&start, "`match` requires exactly one unlabeled input"));
+        };
+        if self.previous().end_byte == self.current().start_byte {
+            return Err(self.error_here("match arms are a spaced trailing group: `match(value) { ... }`"));
+        }
+        let open = self.current().clone();
+        let body_start_byte = self.body_start_byte(self.index + 1);
+        self.expect(&TokenKind::LBrace, "`{` before match arms")?;
+        self.skip_separators();
+        let arms = if self.take(&TokenKind::RBrace) {
+            Vec::new()
+        } else {
+            self.match_arms(None)?
+        };
+        let close = self.previous().clone();
+        self.layout.closures.push(SourceBracedRegion {
+            open_byte: open.start_byte,
+            close_byte: close.start_byte,
+            body_start_byte,
+            open_line: open.line,
+            close_line: close.line,
+        });
+        Ok(Expr::Match {
+            scrutinee: Box::new(value.clone()),
+            arms,
+        })
+    }
+
     fn if_expression(&mut self) -> Result<Expr, ParseError> {
         self.expect(&TokenKind::If, "`if`")?;
-        let condition = self.expression(false)?;
-        if self.named_trailing_closure_follows() || self.colonless_named_trailing_closure_follows()
-        {
-            let label = self.take_trailing_label()?;
-            if label != "then" {
-                return Err(self.error_here("the first named `if` trailing closure must be `then`"));
-            }
-            self.take(&TokenKind::Colon);
+        if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
+            return Err(self.error_here("`if` requires `if(condition) { ... }`"));
         }
+        let arguments = self.call_argument_group(GroupDelimiter::Parenthesis)?;
+        let [CallArg { label: None, value: condition }] = arguments.as_slice() else {
+            return Err(self.error_here("`if` condition group requires exactly one unlabeled value"));
+        };
         if !self.at(&TokenKind::LBrace) {
-            return Err(self.error_here("expected `{` after `if` condition"));
+            return Err(self.error_here("`if(condition)` requires one unlabeled `{ ... }` branch"));
+        }
+        if self.previous().end_byte == self.current().start_byte {
+            return Err(self.error_here("the `if` branch is spaced: `if(condition) { ... }`"));
         }
         let then_branch = self.block()?;
         let else_branch = self
@@ -4662,7 +4640,7 @@ impl Parser {
                     Box::new(Self::core_if_function()),
                     vec![CallArg {
                         label: None,
-                        value: condition,
+                        value: condition.clone(),
                     }],
                 )),
                 vec![CallArg {
@@ -4684,18 +4662,17 @@ impl Parser {
         let before_newlines = self.index;
         while self.take(&TokenKind::Newline) {}
         if self.at(&TokenKind::LBrace) {
-            return Ok(Some(Box::new(self.block()?)));
+            return Err(self.error_here(
+                "the second `if` branch is labeled `else: { ... }`",
+            ));
         }
         if self.trailing_label_at(self.index).as_deref() == Some("else") {
             self.advance();
-            self.take(&TokenKind::Colon);
+            self.expect(&TokenKind::Colon, "`:` after `else`")?;
             if self.at(&TokenKind::LBrace) {
                 return Ok(Some(Box::new(self.block()?)));
             }
-            if Self::token_can_start_expression(&self.current().kind) {
-                return Ok(Some(Box::new(self.expression(true)?)));
-            }
-            return Err(self.error_here("expected a closure or nested trailing call after `else`"));
+            return Err(self.error_here("`else:` requires a `{ ... }` branch"));
         }
         self.index = before_newlines;
         Ok(None)
@@ -4703,16 +4680,10 @@ impl Parser {
 
     fn return_expression(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
         self.expect(&TokenKind::Return, "`return`")?;
-        if !self.take(&TokenKind::LParen) {
-            if self.at_control_expression_boundary() {
-                return Err(self.error_here(
-                    "`return` requires one value or an explicit empty group `return()`",
-                ));
-            }
-            return Ok(Expr::Return(Some(Box::new(
-                self.expression(allow_trailing_closure)?,
-            ))));
+        if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
+            return Err(self.error_here("use `return()` or `return(value)`"));
         }
+        self.expect(&TokenKind::LParen, "`(` after `return`")?;
         if self.take(&TokenKind::RParen) {
             return Ok(Expr::Return(None));
         }
@@ -4723,61 +4694,42 @@ impl Parser {
 
     fn while_expression(&mut self) -> Result<Expr, ParseError> {
         self.expect(&TokenKind::While, "`while`")?;
-        while self.take(&TokenKind::Newline) {}
-        if self.at(&TokenKind::LBrace)
-            || matches!(&self.current().kind, TokenKind::Ident(name) if name == "condition")
-                && (self.named_trailing_closure_follows()
-                    || self.colonless_named_trailing_closure_follows())
-        {
-            if self.named_trailing_closure_follows()
-                || self.colonless_named_trailing_closure_follows()
-            {
-                let label = self.take_trailing_label()?;
-                if label != "condition" {
-                    return Err(self.error_here(
-                        "the first named `while` trailing closure must be `condition`",
-                    ));
-                }
-                self.take(&TokenKind::Colon);
-            }
-            let condition = self.zero_parameter_trailing_closure("while condition")?;
-            while self.take(&TokenKind::Newline) {}
-            if self.named_trailing_closure_follows()
-                || self.colonless_named_trailing_closure_follows()
-            {
-                let label = self.take_trailing_label()?;
-                if label != "do" {
-                    return Err(
-                        self.error_here("the second named `while` trailing closure must be `do`")
-                    );
-                }
-                self.take(&TokenKind::Colon);
-            }
-            if !self.at(&TokenKind::LBrace) {
-                return Err(self.error_here("expected a second trailing closure for `while`"));
-            }
-            let body = self.zero_parameter_trailing_closure("while body")?;
-            return Ok(Expr::While {
-                condition: Box::new(condition),
-                body: Box::new(body),
-                post_test: false,
-            });
+        if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
+            return Err(self.error_here("`while` requires `while(condition) { ... }`"));
         }
-        Err(self.error_here(
-            "`while` requires condition and `do` closures; write `while { condition } do { body }`",
-        ))
+        let arguments = self.call_argument_group(GroupDelimiter::Parenthesis)?;
+        let [CallArg { label: None, value: condition }] = arguments.as_slice() else {
+            return Err(self.error_here("`while` condition group requires exactly one unlabeled value"));
+        };
+        if !self.at(&TokenKind::LBrace) {
+            return Err(self.error_here("`while(condition)` requires a `{ ... }` body"));
+        }
+        if self.previous().end_byte == self.current().start_byte {
+            return Err(self.error_here("the `while` body is spaced: `while(condition) { ... }`"));
+        }
+        let body = self.block()?;
+        Ok(Expr::While {
+            condition: Box::new(condition.clone()),
+            body: Box::new(body),
+            post_test: false,
+        })
     }
 
     fn do_expression(&mut self) -> Result<Expr, ParseError> {
+        if !self.at(&TokenKind::LBrace) || self.previous().end_byte == self.current().start_byte {
+            return Err(self.error_here("write a do block as `do { ... }`"));
+        }
         let body = self.block()?;
         let before_newlines = self.index;
         while self.take(&TokenKind::Newline) {}
-        if self.trailing_label_at(self.index).as_deref() == Some("while")
-            && (self.named_trailing_closure_follows()
-                || self.colonless_named_trailing_closure_follows())
-        {
+        if self.trailing_label_at(self.index).as_deref() == Some("while") {
+            if !self.named_trailing_closure_follows() {
+                return Err(self.error_here(
+                    "a post-test loop uses `do { ... } while: { condition }`",
+                ));
+            }
             self.advance();
-            self.take(&TokenKind::Colon);
+            self.expect(&TokenKind::Colon, "`:` after `while`")?;
             let condition = self.zero_parameter_trailing_closure("do-while condition")?;
             return Ok(Expr::While {
                 condition: Box::new(condition),
@@ -4895,16 +4847,10 @@ impl Parser {
 
     fn break_expression(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
         self.expect(&TokenKind::Break, "`break`")?;
-        if !self.take(&TokenKind::LParen) {
-            if self.at_control_expression_boundary() {
-                return Err(self.error_here(
-                    "`break` requires one value or an explicit empty group `break()`",
-                ));
-            }
-            return Ok(Expr::Break(Some(Box::new(
-                self.expression(allow_trailing_closure)?,
-            ))));
+        if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
+            return Err(self.error_here("use `break()` or `break(value)`"));
         }
+        self.expect(&TokenKind::LParen, "`(` after `break`")?;
         if self.take(&TokenKind::RParen) {
             return Ok(Expr::Break(None));
         }
@@ -4945,10 +4891,6 @@ impl Parser {
             )),
             name.to_owned(),
         )
-    }
-
-    fn core_match_function() -> Expr {
-        Expr::Name("$lang$match".to_owned())
     }
 
     fn core_if_function() -> Expr {
@@ -5066,8 +5008,8 @@ impl Parser {
                     None
                 };
                 if self.take(&TokenKind::FatArrow) {
-                    return Ok(Expr::PartialClosure(
-                        self.partial_closure_arms(Some((pattern, guard)))?,
+                    return Err(self.error_here(
+                        "multi-arm closures are only valid in `match(value) { ... }`",
                     ));
                 }
                 if self.take(&TokenKind::Arrow) {

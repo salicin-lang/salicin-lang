@@ -359,9 +359,10 @@ their container.
 
 Implemented data and control features include:
 
-- explicit-delimiter application for runtime groups, including curried groups
-  and methods, plus spaced brace trailing closures and colon-labeled named
-  trailing closures;
+- one delimiter-aware application model, with angle-only compile-time
+  application and preserved delimiter identity for runtime groups, including
+  curried groups and methods, plus spaced brace trailing closures and
+  colon-labeled named trailing closures;
 - nominal structs and closed enums;
 - target-layout `struct(c)` data with recursive field validation for integers,
   raw pointers, non-zero fixed arrays, nested C structs, and concrete generic
@@ -370,9 +371,11 @@ Implemented data and control features include:
   default linker names, bounded scalar/raw-pointer C signatures, and implicit
   `unsafety` call requirements;
 - tuple, struct, enum, literal, binding, and wildcard patterns;
-- exhaustive `match` with guards;
-- `if`, `loop`, `while`, post-test loops, and `for`;
-- `break`, `continue`, and `return`;
+- exhaustive direct `match(value) { ... }` expressions with guards;
+- `if(condition) { ... } else: { ... }`, `loop`, `while(condition) { ... }`,
+  `do { ... } while: { ... }`, and `for`, without control-form aliases;
+- `break()`/`break(value)`, `continue()`, and
+  `return()`/`return(value)`;
 - lexical `defer` with LIFO execution on normal, loop, return, and error exits;
 - cold compiler-generated futures with a typed pure `Future` implementation, one-shot
   `Poll.Ready` transition, inferred residual `unsafety`, state-aware capture transfer, cancellation
@@ -706,7 +709,7 @@ The conservative [source formatter](formatter.md) provides `salic fmt` and
 `salic fmt --check` for individual files and root packages. It preserves the
 existing physical line boundaries, expands directly nested block boundaries,
 and uses parser-provided source roles for two-space brace, delimiter,
-declaration, `where`, trailing-closure, and match indentation. Comments and
+declaration, `where`, and trailing-closure indentation. Comments and
 dependencies remain source-owned; the passing fixture corpus is idempotent
 under repeated formatting.
 

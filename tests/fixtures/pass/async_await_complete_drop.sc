@@ -53,7 +53,7 @@ let main(): i32 = {
     let value = do {
       let resource = resource{ counter: counter }
       let mut future = async {
-        let value = await step{ counter: counter }
+        let value = await(step{ counter: counter })
         consume(resource)
         value
       }

@@ -1614,7 +1614,7 @@ pub let read(copy token: Token): i32 = { token.value }
         r#"let main(): i32 = {
   let token = dep.make(42)
   let first = dep.read(token)
-  if first == dep.read(token) { first } else { 0 }
+  if(first == dep.read(token)) { first } else: { 0 }
 }
 "#,
     );
@@ -1868,7 +1868,7 @@ let throw_never: with<throwing<()>>(): i32 = { raise_unit() }
 let empty = enum {}
 let holder = struct { value: empty }
 let project(move holder: holder): i32 = { holder.value }
-let choose(flag: bool): i32 = { if flag { 42 } else { stop() } }
+let choose(flag: bool): i32 = { if(flag) { 42 } else: { stop() } }
 let main(): i32 = { choose(true) }
 "#,
     );

@@ -71,15 +71,15 @@ let main(): i32 = {
   let scalar = match(core.string.UnicodeScalar.from_u32(128578)) { Some(value) => format_scalar(value), None => "",
   }
   let expected_scalar: String = "🙂"
-  if parse_hex() &&
+  if(parse_hex() &&
     parse_minimum() &&
     rejects_overflow() &&
     text_equal(decimal, expected_decimal) &&
     text_equal(signed, expected_signed) &&
     text_equal(boolean, expected_boolean) &&
-    text_equal(scalar, expected_scalar) {
+    text_equal(scalar, expected_scalar) ) {
     42
-  } else {
+  } else: {
     0
   }
 }

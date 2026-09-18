@@ -1,7 +1,6 @@
 let cell<t: type> = struct { value: t }
 
-extend(cell<t>)
-(requires: t is Copyable) {
+extend(cell<t>)<requires: t is Copyable> {
   let new(copy value: t): cell<t> = { cell{ value: value } }
   let duplicate(self: Borrow<self>)(): t = {
     let first = self.value

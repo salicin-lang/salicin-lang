@@ -33,9 +33,9 @@ let if<e: effects, T: type>: with<e>
 The ordinary surface form:
 
 ```sc fragment
-if condition {
+if(condition) {
   left()
-} else {
+} else: {
   right()
 }
 ```
@@ -48,16 +48,21 @@ must therefore preserve these properties:
 - clean captures of the unselected branch exactly once;
 - produce one common result type, allowing `never` coercion.
 
-`while` evaluates its condition before each iteration. `do ... while` evaluates its condition after
-each iteration. `loop` has the type selected by its reachable `break` values.
+`while(condition) { ... }` evaluates its condition before each iteration.
+`do { ... } while: { condition }` evaluates its condition after each iteration.
+These and `if(condition) { ... } else: { ... }` are the sole spellings; the
+language has no unlabeled-condition or named-closure aliases. `loop` has the
+type selected by its reachable `break` values.
 
 ## Exits
 
 `return`, `break`, and `continue` are contextual control operations with lexical targets.
 
-- `return(value)` exits the nearest named function or closure.
-- `break(value)` exits the nearest loop.
+- `return()` or `return(value)` exits the nearest named function or closure.
+- `break()` or `break(value)` exits the nearest loop.
 - `continue()` starts the next iteration of the nearest loop.
+
+The empty forms carry `()`. No bare-operand spelling is valid for either exit.
 
 Each exit has type `never`. Lowering must run cleanup for every initialized value whose scope is
 left, without dropping transferred values or running cleanup twice.
@@ -77,15 +82,15 @@ to a nested loop does not exit an enclosing lexical scope outside that loop.
 effect checking and handler selection apply to the invocation. Lowering must preserve the action's
 capture ownership and must not expose compiler-generated binding names in diagnostics.
 
-## Partial Functions and Cases
+## Pattern Closures and Cases
 
-A case is a partial function from a scrutinee type to an arm result. It consists of:
+A match case maps a successful pattern and guard to an arm result. It consists of:
 
 - a pattern;
 - an optional guard;
 - a body.
 
-A single pattern partial may still be written as
+A single pattern closure may still be written as
 `{ pattern [if guard] -> expression }` and passed as one closure argument. Its
 call returns `core.control.Attempt<Input><Output>`, preserving the input in
 `Miss` when the pattern or guard fails.
@@ -109,11 +114,11 @@ match(option) {
 }
 ```
 
-The brace is one multi-partial closure containing comma-separated partial
-functions. It is not a tight brace call and does not represent a sequence of
-postfix match cases.
+This syntax maps directly to match semantics. The brace contains
+comma-separated match arms; it is not a tight brace call, a closure-valued
+intermediate, or a sequence of postfix match cases.
 
-The old consecutive pattern-partial form
+The old consecutive pattern-closure form
 `callee { P -> ... } { Q -> ... }` has been removed. The replacement for
 ordered alternatives is one multi-arm
 `match(value) { P => ..., Q => ... }` expression.

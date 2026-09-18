@@ -126,6 +126,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, LexError> {
         line: 1,
         column: 1,
         delimiter_depth: 0,
+        brace_delimiter_baselines: Vec::new(),
     };
     lexer.run()
 }
@@ -161,6 +162,7 @@ struct Lexer {
     line: usize,
     column: usize,
     delimiter_depth: usize,
+    brace_delimiter_baselines: Vec<usize>,
 }
 
 impl Lexer {
@@ -216,8 +218,14 @@ impl Lexer {
                         self.delimiter_depth = self.delimiter_depth.saturating_sub(1);
                         TokenKind::RBracket
                     }
-                    '{' => TokenKind::LBrace,
-                    '}' => TokenKind::RBrace,
+                    '{' => {
+                        self.brace_delimiter_baselines.push(self.delimiter_depth);
+                        TokenKind::LBrace
+                    }
+                    '}' => {
+                        self.brace_delimiter_baselines.pop();
+                        TokenKind::RBrace
+                    }
                     ':' => TokenKind::Colon,
                     '.' if self.take('.') => {
                         if self.take('.') {
@@ -383,7 +391,12 @@ impl Lexer {
             )
         });
 
-        if self.delimiter_depth == 0 && !continued {
+        let delimiter_baseline = self
+            .brace_delimiter_baselines
+            .last()
+            .copied()
+            .unwrap_or(0);
+        if self.delimiter_depth == delimiter_baseline && !continued {
             tokens.push(Token {
                 kind: TokenKind::Newline,
                 start_byte,
@@ -616,6 +629,23 @@ mod tests {
         assert!(tokens
             .iter()
             .any(|token| token.kind == TokenKind::QuestionDot));
+    }
+
+    #[test]
+    fn emits_statement_newlines_in_braces_nested_inside_parentheses() {
+        let tokens = lex("if(true && unsafe {\n  value = 1\n  *pointer == 0\n})\n").unwrap();
+        let kinds = tokens
+            .iter()
+            .map(|token| token.kind.clone())
+            .collect::<Vec<_>>();
+        assert!(kinds.windows(3).any(|window| {
+            window
+                == [
+                    TokenKind::Integer(1),
+                    TokenKind::Newline,
+                    TokenKind::Star,
+                ]
+        }));
     }
 
     #[test]

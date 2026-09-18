@@ -1,7 +1,7 @@
 let factorial(value: usize): usize = {
-  if value == 0 {
+  if(value == 0) {
     1
-  } else {
+  } else: {
     value * factorial(value - 1)
   }
 }

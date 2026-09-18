@@ -303,22 +303,17 @@ impl Analyzer {
                 arguments,
             } if arguments.iter().all(|argument| argument.label.is_some())
                 && {
-                    let mut groups = Vec::new();
-                    matches!(super::lower::flatten_call(callee, &mut groups), Expr::Name(name)
+                    matches!(super::lower::flatten_call(callee).root_ignoring_groups(), Expr::Name(name)
                         if !context.shadows_top_level_name(name)
                             && (self.collection.struct_layouts.contains_key(name)
                                 || self.collection.struct_templates.contains_key(name)))
                 } =>
             {
-                self.probe_struct_literal_ty(callee, arguments, hint, context)
+                self.probe_struct_construction_ty(callee, arguments, hint, context)
             }
             Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
                 self.probe_call_ty(expression, hint, context)
             }
-            Expr::StructLiteral {
-                constructor,
-                fields,
-            } => self.probe_struct_literal_ty(constructor, fields, hint, context),
             Expr::Block(statements, tail) => {
                 let mut block_context = context.clone();
                 block_context.push_scope();
@@ -397,7 +392,6 @@ impl Analyzer {
             | Expr::Await(_)
             | Expr::Closure(_, _)
             | Expr::PatternClosure { .. }
-            | Expr::PartialClosure(_)
             | Expr::If { .. }
             | Expr::Return(_)
             | Expr::While { .. }
@@ -521,7 +515,7 @@ impl Analyzer {
             .unwrap_or(TypeProbe::Unsupported)
     }
 
-    pub(super) fn probe_struct_literal_ty(
+    pub(super) fn probe_struct_construction_ty(
         &self,
         constructor: &Expr,
         fields: &[CallArg],
@@ -531,8 +525,16 @@ impl Analyzer {
         if fields.iter().any(|field| field.label.is_none()) {
             return TypeProbe::Unsupported;
         }
-        let mut groups = Vec::new();
-        let root = flatten_call(constructor, &mut groups);
+        let flattened = flatten_call(constructor);
+        let root = flattened.root;
+        if flattened
+            .groups
+            .iter()
+            .any(|group| group.delimiter != crate::ast::GroupDelimiter::Angle)
+        {
+            return TypeProbe::Unsupported;
+        }
+        let groups = flattened.argument_groups();
         let Expr::Name(name) = root else {
             return TypeProbe::Unsupported;
         };
@@ -748,8 +750,11 @@ impl Analyzer {
         expected: Option<&Ty>,
         context: &LowerCtx,
     ) -> TypeProbe {
-        let mut groups = Vec::new();
-        let root = flatten_call(expression, &mut groups);
+        let flattened = flatten_call(expression);
+        let root = flattened.root;
+        // Type probing is non-authoritative and does not consume the call;
+        // lower_call performs delimiter validation before producing HIR.
+        let groups = flattened.argument_groups();
         if let Expr::ChainMember(base, member) = root {
             return self.probe_chain_ty(base, member, Some(&groups), expected, context);
         }

@@ -1,7 +1,7 @@
 let increment(value: i32): i32 = { value + 1 }
 
 let choose(left: i32)(right: i32): i32 = {
-  if left == 40 { right } else { 0 }
+  if(left == 40) { right } else: { 0 }
 }
 
 let apply(value: i32)(move action: (i32): i32): i32 = {
@@ -24,9 +24,9 @@ let main(): i32 = {
   let second = choose(first)(41)
   let third = apply(second) { (value: i32) -> value }
   let counter = counter{ value: third }
-  if precedence == 40 { counter.plus(1) } else { 0 }
+  if(precedence == 40) { counter.plus(1) } else: { 0 }
 }
 
-test("parenthesis_free_unary_calls.sc") {
+test("explicit_call_groups.sc") {
   std.test.assert(main() == 42)
 }

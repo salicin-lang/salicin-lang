@@ -3,7 +3,7 @@ test("arithmetic") {
 }
 
 test("control flow") {
-  let value = if true { 40 } else { 0 }
+  let value = if(true) { 40 } else: { 0 }
   std.test.assert(value + 2 == 42)
 }
 

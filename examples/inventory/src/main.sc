@@ -16,7 +16,7 @@ let take_number(
 let main: with<std.io.io>(): i32 = {
   let mut arguments = match(std.io.arguments()) { Ok(value) => value, Err(_) => return(fail("arguments are not valid UTF-8")(2)),
   }
-  if arguments.len() != 8 {
+  if(arguments.len() != 8) {
     return(fail("usage: inventory OUTPUT NAME UNITS PRICE NAME UNITS PRICE")(2))
   }
 

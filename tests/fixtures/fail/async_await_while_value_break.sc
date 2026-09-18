@@ -1,10 +1,10 @@
 let main(): i32 = {
   let future = async {
-    while { true } {
-      let value = await child()
-      if value == 0 {
+    while(true) {
+      let value = await(child())
+      if(value == 0) {
         break(1)
-      } else {
+      } else: {
         continue()
       }
     }

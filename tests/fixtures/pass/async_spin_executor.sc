@@ -13,9 +13,9 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polled {
+    if(self.polled) {
       Poll<i32>.Ready(41)
-    } else {
+    } else: {
       self.polled = true
       Poll<i32>.Pending
     }

@@ -14,9 +14,9 @@ let main(): i32 = {
   let slice = values.as_slice()
   let first = slice.at(0)
   let second = slice.at(1)
-  if slice.len() == 2 {
+  if(slice.len() == 2) {
     read(first) + read(second)
-  } else {
+  } else: {
     0
   }
 }

@@ -4,9 +4,9 @@ let consume(move boxed: boxed): () = {}
 
 let use_value(take_first: bool): i32 = {
   let boxed = boxed{ value: 42 }
-  if take_first {
+  if(take_first) {
     consume(boxed)
-  } else {
+  } else: {
     consume(boxed)
   }
   boxed.value

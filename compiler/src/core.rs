@@ -2306,8 +2306,8 @@ fn item_has_expected_kind(kind: LangItemKind, item: &Item) -> bool {
             LangItemKind::DoWhile => {
                 matches!(
                     function.groups.as_slice(),
-                    [_, while_group]
-                        if matches!(while_group.as_slice(), [parameter] if parameter.name == "while")
+                    [_, condition_group]
+                        if matches!(condition_group.as_slice(), [parameter] if parameter.name == "condition")
                 )
             }
             _ => unreachable!(),
@@ -3455,13 +3455,13 @@ fn valid_do(function: &Function) -> bool {
 }
 
 fn valid_do_while(function: &Function) -> bool {
-    let [action_group, while_group] = function.groups.as_slice() else {
+    let [action_group, condition_group] = function.groups.as_slice() else {
         return false;
     };
     let [action] = action_group.as_slice() else {
         return false;
     };
-    let [condition] = while_group.as_slice() else {
+    let [condition] = condition_group.as_slice() else {
         return false;
     };
     function.compile_groups
@@ -3478,7 +3478,7 @@ fn valid_do_while(function: &Function) -> bool {
         )
         && moved_callable_parameter(
             condition,
-            "while",
+            "condition",
             Type::Bool,
             loop_body_effects(Type::Unit, "e"),
         )
@@ -4092,7 +4092,7 @@ pub(crate) fn move_trait_has_required_shape(definition: &TraitDef) -> bool {
 fn validate_copy(definition: &TraitDef, diagnostics: &mut Vec<String>) {
     if !copy_trait_has_required_shape(definition) {
         diagnostics.push(
-            "lang item `Copyable` must have shape `pub let Copyable = trait(requires: self is Movable) {}`"
+            "lang item `Copyable` must have shape `pub let Copyable = trait<requires: self is Movable> {}`"
                 .to_owned(),
         );
     }

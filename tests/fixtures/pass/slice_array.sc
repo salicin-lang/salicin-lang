@@ -7,9 +7,9 @@ let main(): i32 = {
   let slice: Borrow<Slice<i32>> = borrow(values)
   let first = slice.at(0)
   let second = slice.at(1)
-  if slice.len() == 3 {
+  if(slice.len() == 3) {
     read(first) + read(second)
-  } else {
+  } else: {
     0
   }
 }

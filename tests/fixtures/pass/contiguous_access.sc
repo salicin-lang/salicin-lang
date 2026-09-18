@@ -60,22 +60,34 @@ let main(): i32 = {
   let dynamic_shape: bool = empty_before_push && missing_before_push == 10 && dynamic.len() == 2
   let dynamic_access: bool = dynamic_middle == 22 && dynamic_missing == 10 && dynamic_at == 10
 
-  if !fixed_shape {
+  if(!fixed_shape) {
     1
-  } else if fixed_middle != 20 {
-    21
-  } else if fixed_missing != 10 {
-    22
-  } else if fixed_at != 10 {
-    fixed_at
-  } else if !slice_access {
-    3
-  } else if !dynamic_shape {
-    4
-  } else if !dynamic_access {
-    5
-  } else {
-    42
+  } else: {
+    if(fixed_middle != 20) {
+      21
+    } else: {
+      if(fixed_missing != 10) {
+        22
+      } else: {
+        if(fixed_at != 10) {
+          fixed_at
+        } else: {
+          if(!slice_access) {
+            3
+          } else: {
+            if(!dynamic_shape) {
+              4
+            } else: {
+              if(!dynamic_access) {
+                5
+              } else: {
+                42
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 

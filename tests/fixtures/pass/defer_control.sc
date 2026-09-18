@@ -15,9 +15,9 @@ let release: with<unsafety>(counter: Ptr<mut><i32>): () = {
 
 let set: with<unsafety>(counter: Ptr<mut><i32>)(expected: i32, next: i32): () = {
   unsafe {
-    if *counter == expected {
+    if(*counter == expected) {
       *counter = next
-    } else {
+    } else: {
       *counter = 100
     }
   }
@@ -68,7 +68,7 @@ let main(): i32 = {
             increment(counter)
           }
         }
-      if iteration < 2 {
+      if(iteration < 2) {
         continue()
       }
       break()
@@ -77,9 +77,9 @@ let main(): i32 = {
     let value = return_with_defer(counter)
     let final = *counter
     release(counter)
-    if final == 43 {
+    if(final == 43) {
       value
-    } else {
+    } else: {
       0
     }
   }

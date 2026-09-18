@@ -2,9 +2,9 @@ let number = struct { value: i32 }
 
 extend(number) {
   let descend(self: Borrow<self>)(remaining: i32): i32 = {
-    if remaining == 0 {
+    if(remaining == 0) {
       self.value
-    } else {
+    } else: {
       self.descend(remaining - 1)
     }
   }

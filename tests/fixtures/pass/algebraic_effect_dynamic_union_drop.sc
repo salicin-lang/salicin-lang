@@ -30,9 +30,9 @@ let main(): i32 = {
       let left: with<abort>((): i32)  = { () -> abort.stop() + consume(left_resource) }
       let middle: with<abort>((): i32)  = { () -> abort.stop() + consume(middle_resource) }
       let right: with<abort>((): i32)  = { () -> abort.stop() + consume(right_resource) }
-      let first: with<abort>((): i32)  = if true { left } else { middle }
-      let second: with<abort>((): i32)  = if false { middle } else { right }
-      let combined: with<abort>((): i32)  = if abort.choose() { first } else { second }
+      let first: with<abort>((): i32)  = if(true) { left } else: { middle }
+      let second: with<abort>((): i32)  = if(false) { middle } else: { right }
+      let combined: with<abort>((): i32)  = if(abort.choose()) { first } else: { second }
       combined()
     },
   }

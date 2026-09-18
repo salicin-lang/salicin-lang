@@ -11,7 +11,7 @@ extend(cell, lend) {
 }
 
 let require_i64<t: type>(move value: t): ()
-= requires(t is lend && t.Item<r: region> == Borrow<r><i64>) {}
+  = requires(t is lend && t.Item<r: region> == Borrow<r><i64>) {}
 
 let main(): () = {
   require_i64(cell{ value: 42 })

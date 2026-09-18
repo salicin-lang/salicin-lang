@@ -23,7 +23,9 @@ let finish: with<ask>(value: i32): i32 = {
 }
 
 let select: with<ask>(mode: i32): i32 = {
-  let action: with<ask>((): i32)  = if mode == 0 { left } else if mode == 1 { right } else { fallback }
+  let action: with<ask>((): i32)  = if(mode == 0) { left } else: {
+    if(mode == 1) { right } else: { fallback }
+  }
   let direct = finish(action())
   let higher = invoke(action)
   direct + higher + 1

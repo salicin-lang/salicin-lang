@@ -3,7 +3,7 @@ let Future = core.async.Future
 
 let main(): i32 = {
   let mut future = async {
-    await async { 42 }
+    await(async { 42 })
   }
   match(future.poll()) { Ready(value) => value, Pending => 0,
   }

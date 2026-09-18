@@ -8,7 +8,7 @@ let tick(count: Borrow<mut><i32>): i32 = {
 let main(): i32 = {
   let mut count = 0
   let value = identity(tick(count))
-  if count == 1 { value } else { 0 }
+  if(count == 1) { value } else: { 0 }
 }
 
 test("infer_argument_once.sc") {

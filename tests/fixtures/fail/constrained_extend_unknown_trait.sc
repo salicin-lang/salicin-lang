@@ -1,7 +1,6 @@
 let cell<t: type> = struct { value: t }
 
-extend(cell<t>)
-(requires: t is missing) {
+extend(cell<t>)<requires: t is missing> {
   let take(move self)(): t = { self.value }
 }
 

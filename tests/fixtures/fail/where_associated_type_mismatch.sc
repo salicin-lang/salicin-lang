@@ -11,9 +11,9 @@ extend(value, produce) {
 }
 
 let require_bool<t: type>(value: Borrow<t>): bool
-= requires(t is produce && t.Item == bool) { value.produce() }
+  = requires(t is produce && t.Item == bool) { value.produce() }
 
 let main(): i32 = {
   let value = value{ value: 42 }
-  if require_bool(value) { 42 } else { 0 }
+  if(require_bool(value)) { 42 } else: { 0 }
 }

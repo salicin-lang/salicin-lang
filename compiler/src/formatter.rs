@@ -403,8 +403,8 @@ mod tests {
 
     #[test]
     fn formats_indentation_comments_and_trailing_space_idempotently() {
-        let source = "let main(): i32 = {   \n// { stays a comment\nif true {\n/* nested {\n   /* } */\n*/\n42\n} else {\n0\n}\n}\n";
-        let expected = "let main(): i32 = {\n  // { stays a comment\n  if true {\n    /* nested {\n    /* } */\n    */\n    42\n  } else {\n    0\n  }\n}\n";
+        let source = "let main(): i32 = {   \n// { stays a comment\nif(true) {\n/* nested {\n   /* } */\n*/\n42\n} else: {\n0\n}\n}\n";
+        let expected = "let main(): i32 = {\n  // { stays a comment\n  if(true) {\n    /* nested {\n    /* } */\n    */\n    42\n  } else: {\n    0\n  }\n}\n";
         let formatted = format_source(source).expect("format valid source");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -414,7 +414,7 @@ mod tests {
     }
 
     #[test]
-    fn preserves_expression_newlines_and_parenthesis_free_calls() {
+    fn preserves_expression_newlines_without_creating_calls() {
         let source = "let apply(value: i32): i32 = { value }\nlet main(): i32 = {\napply\n42\n}\n";
         let expected =
             "let apply(value: i32): i32 = { value }\nlet main(): i32 = {\n  apply\n  42\n}\n";
@@ -465,8 +465,8 @@ mod tests {
 
     #[test]
     fn preserves_minimal_syntax_contract_tokens_idempotently() {
-        let source = "let marker = trait {}\nlet bounded = trait(requires: self is marker) {\n}\nlet cell<t: type> = struct { value: t }\nextend(cell<t>)\n(requires: t is marker) {\n}\nlet guarded<t: type>(value: t): t = requires(t is marker) {\nvalue\n}\ntest(\"minimal contracts\") {\nlet value = 1\n}\n";
-        let expected = "let marker = trait {}\nlet bounded = trait(requires: self is marker) {\n}\nlet cell<t: type> = struct { value: t }\nextend(cell<t>)\n(requires: t is marker) {\n}\nlet guarded<t: type>(value: t): t = requires(t is marker) {\n  value\n}\ntest(\"minimal contracts\") {\n  let value = 1\n}\n";
+        let source = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell<t: type> = struct { value: t }\nextend(cell<t>)<requires: t is marker> {\n}\nlet guarded<t: type>(value: t): t = requires(t is marker) {\nvalue\n}\ntest(\"minimal contracts\") {\nlet value = 1\n}\n";
+        let expected = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell<t: type> = struct { value: t }\nextend(cell<t>)<requires: t is marker> {\n}\nlet guarded<t: type>(value: t): t = requires(t is marker) {\n  value\n}\ntest(\"minimal contracts\") {\n  let value = 1\n}\n";
         let formatted = format_source(source).expect("format minimal syntax contracts");
         assert_eq!(formatted, expected);
         assert_eq!(

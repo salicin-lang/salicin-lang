@@ -1,5 +1,5 @@
 use super::*;
-use crate::ast::{CallArg, GroupDelimiter};
+use crate::ast::GroupDelimiter;
 
 fn unit(path: &str, module_path: &[&str], source: &str, is_root: bool) -> SourceUnit {
     SourceUnit {
@@ -85,31 +85,8 @@ fn function_tail(function: &Function) -> &Expr {
 }
 
 fn match_cases(expression: &Expr) -> &[MatchArm] {
-    fn flatten<'a>(expression: &'a Expr, groups: &mut Vec<&'a [CallArg]>) -> &'a Expr {
-        let expression = expression.unlocated();
-        if let Expr::Call(callee, arguments) = expression {
-            let root = flatten(callee, groups);
-            groups.push(arguments);
-            root
-        } else {
-            expression
-        }
-    }
-
-    let mut groups = Vec::new();
-    assert_eq!(
-        flatten(expression, &mut groups),
-        &Expr::Name("$lang$match".into())
-    );
-    let [_, cases] = groups.as_slice() else {
-        panic!("expected match input and partial closure");
-    };
-    let [CallArg {
-        label: None,
-        value: Expr::PartialClosure(arms),
-    }] = *cases
-    else {
-        panic!("expected one unlabeled partial closure");
+    let Expr::Match { arms, .. } = expression.unlocated() else {
+        panic!("expected match expression");
     };
     arms
 }
@@ -1331,7 +1308,7 @@ fn rejects_traits_that_are_narrower_than_constrained_extension_members() {
         &[],
         "let hidden = trait {}\n\
              pub let cell<t: type> = struct { pub value: t }\n\
-             extend(cell<t>)(requires: t is hidden) {\n\
+             extend(cell<t>)<requires: t is hidden> {\n\
                let take(move self)(): t = { self.value }\n\
              }\n",
         true,
@@ -1872,15 +1849,6 @@ fn expression_names(expression: Option<&Expr>) -> HashSet<String> {
                     visit(&argument.value, names);
                 }
             }
-            Expr::StructLiteral {
-                constructor,
-                fields,
-            } => {
-                visit(constructor, names);
-                for field in fields {
-                    visit(&field.value, names);
-                }
-            }
             Expr::Member(base, _) => visit(base, names),
             Expr::Array(elements) | Expr::Tuple(elements) => {
                 for element in elements {
@@ -1908,14 +1876,6 @@ fn expression_names(expression: Option<&Expr>) -> HashSet<String> {
                     visit(guard, names);
                 }
                 visit(body, names);
-            }
-            Expr::PartialClosure(arms) => {
-                for arm in arms {
-                    if let Some(guard) = &arm.guard {
-                        visit(guard, names);
-                    }
-                    visit(&arm.body, names);
-                }
             }
             Expr::If {
                 condition,

@@ -35,7 +35,7 @@ pub let Poll<T: type> = enum {
   Ready(T)
 }
 
-pub let Future<e: effects> = trait(requires: self is Movable) {
+pub let Future<e: effects> = trait<requires: self is Movable> {
   let Output: type
   let poll<r: region>: with<e>
     (self: Borrow<mut><r><self>)(): Poll<Output>
@@ -65,7 +65,7 @@ is discharged by the generated state machine and is not part of `e`.
 ```sc future
 let future = async {
   let first = compute()
-  let second = await next(first)
+  let second = await(next(first))
   first + second
 }
 ```
@@ -76,11 +76,11 @@ Evaluating `async { body }`:
 2. creates a cold anonymous value implementing `Future<e>`;
 3. does not execute `body`.
 
-The body starts on the first `poll`. Each `await operand` evaluates `operand` once, stores the
+The body starts on the first `poll`. Each `await(operand)` evaluates `operand` once, stores the
 resulting future, and polls it. `Ready(value)` resumes the body with `value`; `Pending` stores the
 current state and returns `Pending` from the outer future.
 
-`await` is contextual and valid only within an async body. It cannot cross a named function,
+`await(value)` is contextual and valid only within an async body. It cannot cross a named function,
 closure, handler clause, or nested async boundary.
 
 The type and residual effects of the body determine `Future<e>.Output` and `e`. Handling an effect

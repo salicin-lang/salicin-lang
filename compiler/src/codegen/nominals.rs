@@ -20,10 +20,11 @@ impl Analyzer {
     pub(super) fn resolve_inferred_generic_struct_instance(
         &mut self,
         name: &str,
-        groups: &[&[CallArg]],
+        type_groups: &[&[CallArg]],
+        fields: &[CallArg],
         expected: Option<&Ty>,
         context: &LowerCtx,
-    ) -> Option<(String, usize)> {
+    ) -> Option<String> {
         let template = self.collection.struct_templates[name].clone();
         if !self.require_source_fields_access(name, &template.fields, &context.origin) {
             return None;
@@ -31,15 +32,13 @@ impl Analyzer {
         let (compile_parameters, mut inferred, runtime_start) = self.seed_type_argument_inference(
             name,
             &template.compile_groups,
-            groups,
+            type_groups,
+            Some(type_groups.len()),
             context,
             true,
         )?;
-        let value_groups = &groups[runtime_start..];
-        if value_groups.len() != 1 {
-            self.error(format!(
-                "struct constructor `{name}` expects exactly one argument group"
-            ));
+        if runtime_start != type_groups.len() {
+            self.error(format!("invalid type argument group in `{name}`"));
             return None;
         }
 
@@ -66,7 +65,7 @@ impl Analyzer {
             }
         }
 
-        let arguments = value_groups[0];
+        let arguments = fields;
         let labeled = arguments
             .iter()
             .filter(|argument| argument.label.is_some())
@@ -148,7 +147,7 @@ impl Analyzer {
             self.finish_type_argument_inference(name, &ordered_parameters, &inferred, unsupported)?;
         let canonical =
             self.ensure_nominal_instance(NominalKind::Struct, name, source_arguments, arguments)?;
-        Some((canonical, runtime_start))
+        Some(canonical)
     }
 
     pub(super) fn inferred_generic_enum_type_head<'a>(
@@ -156,8 +155,16 @@ impl Analyzer {
         expression: &'a Expr,
         context: &LowerCtx,
     ) -> Option<(String, Vec<&'a [CallArg]>)> {
-        let mut groups = Vec::new();
-        let root = flatten_call(expression, &mut groups);
+        let flattened = flatten_call(expression);
+        let root = flattened.root;
+        if flattened
+            .groups
+            .iter()
+            .any(|group| group.delimiter != crate::ast::GroupDelimiter::Angle)
+        {
+            return None;
+        }
+        let groups = flattened.argument_groups();
         let Expr::Name(name) = root else {
             return None;
         };
@@ -188,6 +195,7 @@ impl Analyzer {
                 name,
                 &template.compile_groups,
                 type_groups,
+                Some(type_groups.len()),
                 context,
                 true,
             )?;
@@ -411,7 +419,14 @@ impl Analyzer {
                 return None;
             };
         let (compile_parameters, inferred, consumed_groups) =
-            self.seed_type_argument_inference(name, &compile_groups, groups, context, true)?;
+            self.seed_type_argument_inference(
+                name,
+                &compile_groups,
+                groups,
+                Some(groups.len()),
+                context,
+                true,
+            )?;
         if consumed_groups != groups.len() {
             self.error(format!("invalid type argument group in `{name}`"));
             return None;
@@ -456,11 +471,19 @@ impl Analyzer {
                 }
             }
             Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
-                let mut groups = Vec::new();
-                let root = flatten_call(expression, &mut groups);
+                let flattened = flatten_call(expression);
+                let root = flattened.root;
                 let Expr::Name(name) = root else {
                     return Ok(None);
                 };
+                if context.shadows_top_level_name(name)
+                    || flattened
+                        .groups
+                        .last()
+                        .is_some_and(|group| group.delimiter == crate::ast::GroupDelimiter::Brace)
+                {
+                    return Ok(None);
+                }
                 if context.has_type_parameter(name) {
                     self.error(format!(
                         "type parameter `{name}` cannot be used as a generic type constructor"
@@ -472,6 +495,15 @@ impl Analyzer {
                 {
                     return Ok(None);
                 }
+                if flattened
+                    .groups
+                    .iter()
+                    .any(|group| group.delimiter != crate::ast::GroupDelimiter::Angle)
+                {
+                    self.error("generic type applications use `<...>`");
+                    return Err(());
+                }
+                let groups = flattened.argument_groups();
                 let expected_groups =
                     if let Some(template) = self.collection.struct_templates.get(name) {
                         template.compile_groups.clone()

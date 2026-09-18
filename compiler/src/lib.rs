@@ -803,7 +803,7 @@ mod tests {
         .replace("core.ops.PartialOrdering", "PartialOrdering")
         .replace(
             "let main(): i32 = { 0 }",
-            "let main(): i32 = { if number{ value: 1 } <= number{ value: 2 } { 42 } else { 0 } }",
+            "let main(): i32 = { if(number{ value: 1 } <= number{ value: 2 }) { 42 } else: { 0 } }",
         );
         compile_source(&imported_order)
             .expect("imported partial_ord should define ordering operators");
@@ -928,7 +928,7 @@ mod tests {
              let inspect<r: region>\n\
                (values: Borrow<r><Slice<i32>>): i32 = {\n\
                let item = values.at(1)\n\
-               if values.len() == 3 { item } else { 0 }\n\
+               if(values.len() == 3) { item } else: { 0 }\n\
              }\n\
              let main(): i32 = {\n\
                let values = [1, 42, 3]\n\

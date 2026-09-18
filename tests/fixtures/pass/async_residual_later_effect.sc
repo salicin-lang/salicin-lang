@@ -38,10 +38,10 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polls == 0 {
+    if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
-    } else {
+    } else: {
       Poll<i32>.Ready(self.value)
     }
   }
@@ -57,7 +57,7 @@ let record(calls: Ptr<mut><i32>, value: i32): i32 = {
 let run_success(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   let mut future = async {
     let retained = resource{ drops: drops, value: 1 }
-    let value = await step{ drops: drops, polls: 0, value: 40 }
+    let value = await(step{ drops: drops, polls: 0, value: 40 })
     value + retained.value + ask.ask()
   }
   ask.handle{
@@ -81,7 +81,7 @@ let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
     action: {
       let mut future = async {
         let retained = resource{ drops: drops, value: 1 }
-        let value = await step{ drops: drops, polls: 0, value: 40 }
+        let value = await(step{ drops: drops, polls: 0, value: 40 })
         value + retained.value + ask.ask()
       }
       match(future.poll()) { Pending => 42, Ready(_) => 0,
@@ -96,7 +96,7 @@ let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
     action: {
       let mut future = async {
         let retained = resource{ drops: drops, value: 1 }
-        let value = await step{ drops: drops, polls: 0, value: 40 }
+        let value = await(step{ drops: drops, polls: 0, value: 40 })
         value + retained.value + ask.ask()
       }
       let pending = future.poll()
@@ -137,10 +137,10 @@ let main(): i32 = {
     raw_dealloc(calls, size_of<i32>, align_of<i32>)
   }
 
-  if success == 42 && cancelled == 42 && abandoned == 42 &&
-    drop_count == 330 && call_count == 2 {
+  if(success == 42 && cancelled == 42 && abandoned == 42 &&
+    drop_count == 330 && call_count == 2 ) {
     42
-  } else {
+  } else: {
     0
   }
 }

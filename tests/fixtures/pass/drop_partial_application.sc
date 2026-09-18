@@ -36,7 +36,7 @@ let abandon(): () = {
 
 let conditional(flag: bool): () = {
   let pending = finish(resource{ value: 1 })
-  if flag { pending(0); }
+  if(flag) { pending(0); }
 }
 
 let early(): i32 = {

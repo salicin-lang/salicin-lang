@@ -11,9 +11,9 @@ let main(): i32 = {
   value <<= 1
   value >>= 1
 
-  if !false && true == true && false != true && -value == -9 {
+  if(!false && true == true && false != true && -value == -9) {
     42
-  } else {
+  } else: {
     0
   }
 }

@@ -1105,7 +1105,7 @@ let exercise: with<core.error.throwing<core.string.String>>(fail: bool): () = {
   let mut values = alloc.Vec<core.string.String>.new()
   values.push(text)
   values.push("done")
-  if fail {
+  if(fail) {
     core.error.throw("stop")
   }
 }
@@ -1113,12 +1113,12 @@ let exercise: with<core.error.throwing<core.string.String>>(fail: bool): () = {
 let main(): i32 = {
   let success: core.Result<core.string.String><()> = try { exercise(false) }
   match(success) { Err(_) => return(1), Ok(_) => (), }
-  if unsafe { live_allocations() } != 0 { return(2) }
+  if(unsafe { live_allocations() } != 0) { return(2) }
 
   let failure: core.Result<core.string.String><()> = try { exercise(true) }
   match(failure) { Ok(_) => return(3), Err(message) => do { let expected: String = "stop"
-      if message != expected { return(4) } }, }
-  if unsafe { live_allocations() } == 0 { 42 } else { 5 }
+      if(message != expected) { return(4) } }, }
+  if(unsafe { live_allocations() } == 0) { 42 } else: { 5 }
 }"#,
     );
     let ir = directory.join("main.ll");

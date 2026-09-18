@@ -37,11 +37,11 @@ let main(): i32 = {
   let future = async {
     let value = 1
     let reference: Borrow<i32> = borrow(value)
-    let awaited = await if true {
+    let awaited = await(if(true) {
       first{ value: ask.ask() }
-    } else {
+    } else: {
       second{ value: ask.ask() }
-    }
+    })
     reference + awaited
   }
   0

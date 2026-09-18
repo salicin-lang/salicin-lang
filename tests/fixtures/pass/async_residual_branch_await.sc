@@ -26,10 +26,10 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polls == 0 {
+    if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
-    } else {
+    } else: {
       Poll<i32>.Ready(self.value)
     }
   }
@@ -37,10 +37,10 @@ extend(step, Future<()>) {
 
 let run(drops: Ptr<mut><i32>, first: bool): i32 = {
   let mut future = async {
-    if first {
-      await step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 10 }
-    } else {
-      await step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 1 }
+    if(first) {
+      await(step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 10 })
+    } else: {
+      await(step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 1 })
     }
   }
   ask.handle{
@@ -63,10 +63,10 @@ let cancel_second(drops: Ptr<mut><i32>): i32 = {
     ask: { (resume) -> resume(40) },
     action: {
       let mut future = async {
-        if false {
-          await step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 10 }
-        } else {
-          await step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 1 }
+        if(false) {
+          await(step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 10 })
+        } else: {
+          await(step{ drops: drops, polls: 0, value: ask.ask(), drop_amount: 1 })
         }
       }
       match(future.poll()) { Pending => 42, Ready(_) => 0,
@@ -93,9 +93,9 @@ let main(): i32 = {
     raw_dealloc(drops, size_of<i32>, align_of<i32>)
   }
 
-  if first == 40 && second == 40 && cancelled == 42 && drop_count == 12 {
+  if(first == 40 && second == 40 && cancelled == 42 && drop_count == 12) {
     42
-  } else {
+  } else: {
     0
   }
 }

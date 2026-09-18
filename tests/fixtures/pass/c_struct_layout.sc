@@ -15,13 +15,13 @@ let pair<t: type> = struct(c) {
 }
 
 let main(): i32 = {
-  if size_of<timespec> == 16 &&
+  if(size_of<timespec> == 16 &&
     align_of<timespec> == 8 &&
     size_of<header> == 32 &&
     align_of<header> == 8 &&
-    size_of<pair<i32>> == 8 {
+    size_of<pair<i32>> == 8 ) {
     42
-  } else {
+  } else: {
     0
   }
 }

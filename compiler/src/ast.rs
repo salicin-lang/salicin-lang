@@ -596,12 +596,36 @@ pub struct MatchArm {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct CallGroup {
+    pub delimiter: GroupDelimiter,
+    pub arguments: Vec<CallArg>,
+}
+
+impl<'a> IntoIterator for &'a CallGroup {
+    type Item = &'a CallArg;
+    type IntoIter = std::slice::Iter<'a, CallArg>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.arguments.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut CallGroup {
+    type Item = &'a mut CallArg;
+    type IntoIter = std::slice::IterMut<'a, CallArg>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.arguments.iter_mut()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct HandlerChainCall {
     pub scrutinee: Box<Expr>,
     pub payload: String,
     pub error: String,
     pub member: String,
-    pub groups: Vec<Vec<CallArg>>,
+    pub groups: Vec<CallGroup>,
     pub success: Box<Expr>,
     pub residual: Box<Expr>,
 }
@@ -697,10 +721,6 @@ pub enum Expr {
         delimiter: GroupDelimiter,
         arguments: Vec<CallArg>,
     },
-    StructLiteral {
-        constructor: Box<Expr>,
-        fields: Vec<CallArg>,
-    },
     Member(Box<Expr>, String),
     ChainMember(Box<Expr>, String),
     Array(Vec<Expr>),
@@ -716,9 +736,6 @@ pub enum Expr {
         guard: Option<Box<Expr>>,
         body: Box<Expr>,
     },
-    /// A source partial closure with ordered pattern arms. This is currently
-    /// consumed by the validated core `match` function.
-    PartialClosure(Vec<MatchArm>),
     If {
         condition: Box<Expr>,
         then_branch: Box<Expr>,

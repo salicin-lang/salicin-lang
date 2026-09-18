@@ -11,7 +11,7 @@ pub let Poll<T: type> = enum {
 }
 
 /// A cold asynchronous computation with residual effect row `E`.
-pub let Future<e: effects> = trait(requires: self is Movable) {
+pub let Future<e: effects> = trait<requires: self is Movable> {
   let Output: type
 
   let poll<r: region>: with<e>(self: Borrow<mut><r><self>)(): Poll<Output>

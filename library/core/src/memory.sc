@@ -110,8 +110,7 @@ extend(Array<T><l>) {
 }
 
 /// Provides equality-based membership for fixed-size arrays.
-extend(Array<T><l>)
-(requires: T is core.marker.Copyable && T is core.cmp.Eq<T>) {
+extend(Array<T><l>)<requires: T is core.marker.Copyable && T is core.cmp.Eq<T>> {
   /// Returns whether this Array contains an element equal to `needle`.
   let contains(self: Borrow<self>)(copy needle: T): bool = {
     let values = self.as_slice()
@@ -120,8 +119,7 @@ extend(Array<T><l>)
 }
 
 /// Provides copy-based mutation for fixed-size arrays.
-extend(Array<T><l>)
-(requires: T is core.marker.Copyable) {
+extend(Array<T><l>)<requires: T is core.marker.Copyable> {
   /// Replaces every element with a copy of `value`.
   let fill(self: Borrow<mut><self>)(copy value: T): () = {
     let values = self.as_slice<mut>()
@@ -160,9 +158,9 @@ extend(Slice<T>) {
   let get<a: access = shared>
     (self: Borrow<a><self>)
     (index: u64): core.Option<Borrow<a><T>> = {
-    if index >= self.len<a>() {
+    if(index >= self.len<a>()) {
       core.Option.None
-    } else {
+    } else: {
       core.Option.Some(unsafe {
         raw_slice_at<a>(self, index)
       })
@@ -188,9 +186,9 @@ extend(Slice<T>) {
   let last<a: access = shared>
     (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> = {
     let length = self.len<a>()
-    if length == 0 {
+    if(length == 0) {
       core.Option.None
-    } else {
+    } else: {
       self.get<a>(length - 1)
     }
   }
@@ -199,9 +197,9 @@ extend(Slice<T>) {
   let find<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): core.Option<Borrow<T>> = {
     let length = self.len()
     let mut index: u64 = 0
-    while { index < length } {
+    while(index < length) {
       let item = self.at(index)
-      if predicate(item) {
+      if(predicate(item)) {
         return(self.get(index))
       }
       index = index + 1
@@ -213,9 +211,9 @@ extend(Slice<T>) {
   let position<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): core.Option<u64> = {
     let length = self.len()
     let mut index: u64 = 0
-    while { index < length } {
+    while(index < length) {
       let item = self.at(index)
-      if predicate(item) {
+      if(predicate(item)) {
         return(core.Option.Some(index))
       }
       index = index + 1
@@ -227,9 +225,9 @@ extend(Slice<T>) {
   let any<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): bool = {
     let length = self.len()
     let mut index: u64 = 0
-    while { index < length } {
+    while(index < length) {
       let item = self.at(index)
-      if predicate(item) {
+      if(predicate(item)) {
         return(true)
       }
       index = index + 1
@@ -241,9 +239,9 @@ extend(Slice<T>) {
   let all<e: effects>: with<e>(self: Borrow<self>)(move predicate: with<e>((Borrow<T>): bool)): bool = {
     let length = self.len()
     let mut index: u64 = 0
-    while { index < length } {
+    while(index < length) {
       let item = self.at(index)
-      if !predicate(item) {
+      if(!predicate(item)) {
         return(false)
       }
       index = index + 1
@@ -256,7 +254,7 @@ extend(Slice<T>) {
     let length = self.len()
     let mut value = initial
     let mut index: u64 = 0
-    while { index < length } {
+    while(index < length) {
       let item = self.at(index)
       value = combine(value, item)
       index = index + 1
@@ -267,15 +265,15 @@ extend(Slice<T>) {
   /// Swaps two elements, trapping before mutation when either index is invalid.
   let swap(self: Borrow<mut><self>)(left: u64, right: u64): () = {
     let length = self.len<mut>()
-    if left >= length || right >= length {
+    if(left >= length || right >= length) {
       unsafe {
         raw_trap()
       }
     }
-    if left != right {
+    if(left != right) {
       let values = unsafe {
-        raw_slice_ptr<mut><self>
-        }
+        raw_slice_ptr<mut>(self)
+      }
       let left_pointer = unsafe {
         raw_offset(values, left)
       }
@@ -299,7 +297,7 @@ extend(Slice<T>) {
   let reverse(self: Borrow<mut><self>)(): () = {
     let length = self.len<mut>()
     let mut left: u64 = 0
-    while { left < length / 2 } {
+    while(left < length / 2) {
       self.swap(left, length - 1 - left)
       left = left + 1
     }
@@ -307,21 +305,20 @@ extend(Slice<T>) {
 }
 
 /// Provides equality-based membership for borrowed slices.
-extend(Slice<T>)
-(requires: T is core.marker.Copyable && T is core.cmp.Eq<T>) {
+extend(Slice<T>)<requires: T is core.marker.Copyable && T is core.cmp.Eq<T>> {
   /// Returns whether this Slice contains an element equal to `needle`.
   let contains(self: Borrow<self>)(copy needle: T): bool = {
     let length = self.len()
-    if length > 0 {
+    if(length > 0) {
       let values = unsafe {
         raw_slice_ptr(self)
       }
       let mut index: u64 = 0
-      while { index < length } {
+      while(index < length) {
         let item = unsafe {
           *raw_offset(values, index)
         }
-        if item == needle {
+        if(item == needle) {
           return(true)
         }
         index = index + 1
@@ -332,17 +329,16 @@ extend(Slice<T>)
 }
 
 /// Provides copy-based mutation for borrowed contiguous sequences.
-extend(Slice<T>)
-(requires: T is core.marker.Copyable) {
+extend(Slice<T>)<requires: T is core.marker.Copyable> {
   /// Replaces every element with a copy of `value`.
   let fill(self: Borrow<mut><self>)(copy value: T): () = {
     let length = self.len<mut>()
-    if length > 0 {
+    if(length > 0) {
       let values = unsafe {
-        raw_slice_ptr<mut><self>
-        }
+        raw_slice_ptr<mut>(self)
+      }
       let mut index: u64 = 0
-      while { index < length } {
+      while(index < length) {
         unsafe {
           *raw_offset(values, index) = value
         }
@@ -354,20 +350,20 @@ extend(Slice<T>)
   /// Copies `source` into this Slice, trapping before mutation on a length mismatch.
   let copy_from(self: Borrow<mut><self>)(source: Borrow<Slice<T>>): () = {
     let length = self.len<mut>()
-    if source.len() != length {
+    if(source.len() != length) {
       unsafe {
         raw_trap()
       }
     }
-    if length > 0 {
+    if(length > 0) {
       let source_values = unsafe {
         raw_slice_ptr(source)
       }
       let destination_values = unsafe {
-        raw_slice_ptr<mut><self>
-        }
+        raw_slice_ptr<mut>(self)
+      }
       let mut index: u64 = 0
-      while { index < length } {
+      while(index < length) {
         unsafe {
           *raw_offset(destination_values, index) = *raw_offset(source_values, index)
         }
@@ -382,33 +378,33 @@ extend(Slice<T>)
   let copy_within(self: Borrow<mut><self>)
     (source_start: u64, source_end: u64, destination_start: u64): () = {
     let length = self.len<mut>()
-    if source_start > source_end || source_end > length {
+    if(source_start > source_end || source_end > length) {
       unsafe {
         raw_trap()
       }
     }
     let count = source_end - source_start
-    if destination_start > length || count > length - destination_start {
+    if(destination_start > length || count > length - destination_start) {
       unsafe {
         raw_trap()
       }
     }
-    if count > 0 {
+    if(count > 0) {
       let values = unsafe {
-        raw_slice_ptr<mut><self>
-        }
-      if destination_start > source_start {
+        raw_slice_ptr<mut>(self)
+      }
+      if(destination_start > source_start) {
         let mut remaining = count
-        while { remaining > 0 } {
+        while(remaining > 0) {
           remaining = remaining - 1
           unsafe {
             *raw_offset(values, destination_start + remaining) =
               *raw_offset(values, source_start + remaining)
           }
         }
-      } else {
+      } else: {
         let mut offset: u64 = 0
-        while { offset < count } {
+        while(offset < count) {
           unsafe {
             *raw_offset(values, destination_start + offset) =
               *raw_offset(values, source_start + offset)

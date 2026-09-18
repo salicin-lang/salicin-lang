@@ -16,10 +16,10 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polls == 0 {
+    if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
-    } else {
+    } else: {
       Poll<i32>.Ready(self.value)
     }
   }
@@ -35,7 +35,7 @@ let make_step_with: with<ask>(offset: Borrow<i32>): step = {
 
 let shared(offset: Borrow<i32>): i32 = {
   let mut future = async {
-    let value = await make_step_with(offset)
+    let value = await(make_step_with(offset))
     value
   }
   ask.handle{
@@ -55,7 +55,7 @@ let shared(offset: Borrow<i32>): i32 = {
 
 let mutable(value: Borrow<mut><i32>): i32 = {
   let mut future = async {
-    let amount = await make_step()
+    let amount = await(make_step())
     value = value + amount
     value
   }
@@ -77,7 +77,7 @@ let mutable(value: Borrow<mut><i32>): i32 = {
 let cancelled(value: Borrow<mut><i32>): i32 = {
   do {
     let mut future = async {
-      let amount = await make_step()
+      let amount = await(make_step())
       value = value + amount
       value
     }
@@ -101,9 +101,9 @@ let main(): i32 = {
   let shared_result = shared(offset)
   let mutable_result = mutable(first)
   let cancelled_result = cancelled(second)
-  if shared_result == 42 && mutable_result == 42 && cancelled_result == 42 {
+  if(shared_result == 42 && mutable_result == 42 && cancelled_result == 42) {
     42
-  } else {
+  } else: {
     0
   }
 }

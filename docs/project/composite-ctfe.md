@@ -59,7 +59,7 @@ but composite values must never be encoded as invented source `Type` names.
 
 Evaluation is strict and left to right. The admitted initial surface is:
 
-- scalar, tuple, array, struct, and enum literals or constructors;
+- scalar, tuple, and array literals plus struct and enum construction;
 - immutable local `let` bindings and expression blocks;
 - tuple and nominal field projection;
 - bounds-checked fixed-array indexing;

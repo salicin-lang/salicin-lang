@@ -4,14 +4,14 @@ pub let Functor = trait<self: <Value: type>: type> {
 }
 
 /// Functors that can inject values and apply wrapped functions.
-pub let Applicative = trait<self: <Value: type>: type>(requires: self is Functor) {
+pub let Applicative = trait<self: <Value: type>: type><requires: self is Functor> {
   let pure<A: type>(value: A): self<A>;
 
   let apply<e: effects, A: type, B: type>: with<e>(self: self<with<e>((A): B)>)(value: self<A>): self<B>;
 }
 
 /// Applicatives that can sequence dependent computations.
-pub let Monad = trait<self: <Value: type>: type>(requires: self is Applicative) {
+pub let Monad = trait<self: <Value: type>: type><requires: self is Applicative> {
   let flat_map<e: effects, A: type, B: type>: with<e>(self: self<A>)(next: with<e>((A): self<B>)): self<B>;
 }
 

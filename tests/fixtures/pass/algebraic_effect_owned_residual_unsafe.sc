@@ -36,7 +36,7 @@ let unsafe_outside(
     let mut state = state{ value: 20, drops: drops }
     step.handle{
       delta: { (resume) ->
-        if abandon { 40 } else { resume(1) }
+        if(abandon) { 40 } else: { resume(1) }
       },
       action: {
         let value = update(state, calls)
@@ -54,7 +54,7 @@ let unsafe_inside(
   let mut state = state{ value: 20, drops: drops }
   step.handle{
     delta: { (resume) ->
-      if abandon { 40 } else { resume(1) }
+      if(abandon) { 40 } else: { resume(1) }
     },
     action: {
       unsafe {

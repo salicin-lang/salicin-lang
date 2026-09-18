@@ -27,19 +27,19 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polls == 0 {
+    if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
-    } else {
+    } else: {
       Poll<i32>.Ready(self.value)
     }
   }
 }
 
 let choose: with<throwing<bool>>(fail: bool): i32 = {
-  if fail {
+  if(fail) {
     throw(true)
-  } else {
+  } else: {
     40
   }
 }
@@ -52,7 +52,7 @@ let run_success(drops: Ptr<mut><i32>): i32 = {
   let result: Result<bool><i32> = try {
     let resource = resource{ drops: drops }
     let mut future = async {
-      await make_step(resource, false)
+      await(make_step(resource, false))
     }
     let first = future.poll()
     let second = future.poll()
@@ -66,7 +66,7 @@ let run_success(drops: Ptr<mut><i32>): i32 = {
 
   match(result) {
     Ok(value) => do {
-      if value == 40 { 42 } else { 0 }
+      if(value == 40) { 42 } else: { 0 }
     }, Err(_) => 0,
   }
 }
@@ -75,7 +75,7 @@ let run_throwing(drops: Ptr<mut><i32>): i32 = {
   let result: Result<bool><i32> = try {
     let resource = resource{ drops: drops }
     let mut future = async {
-      await make_step(resource, true)
+      await(make_step(resource, true))
     }
     let first = future.poll()
     let second = future.poll()
@@ -89,7 +89,7 @@ let run_throwing(drops: Ptr<mut><i32>): i32 = {
 
   match(result) {
     Ok(_) => 0, Err(error) => do {
-      if error { 42 } else { 0 }
+      if(error) { 42 } else: { 0 }
     },
   }
 }
@@ -111,7 +111,7 @@ let main(): i32 = {
     raw_dealloc(drops, size_of<i32>, align_of<i32>)
   }
 
-  if success == 42 && failure == 42 && drop_count == 2 { 42 } else { 0 }
+  if(success == 42 && failure == 42 && drop_count == 2) { 42 } else: { 0 }
 }
 
 test("async_residual_failure_tail_await.sc") {

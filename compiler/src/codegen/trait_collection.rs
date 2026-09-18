@@ -1051,7 +1051,7 @@ impl Analyzer {
             && !copy_trait_has_required_shape(&definition)
         {
             self.error(
-                "`Copyable` language trait must have shape `let Copyable = trait(requires: self is Movable) {}`",
+                "`Copyable` language trait must have shape `let Copyable = trait<requires: self is Movable> {}`",
             );
             valid = false;
         }

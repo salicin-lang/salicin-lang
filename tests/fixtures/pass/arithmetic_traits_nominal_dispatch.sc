@@ -30,9 +30,9 @@ let main(): i32 = {
   let multiplication = number{ value: 6 } * number{ value: 7 }
   let division = number{ value: 84 } / number{ value: 2 }
   let remainder = number{ value: 86 } % number{ value: 44 }
-  if subtraction.value == 42 && multiplication.value == 42 && division.value == 42 && remainder.value == 42 {
+  if(subtraction.value == 42 && multiplication.value == 42 && division.value == 42 && remainder.value == 42) {
     42
-  } else {
+  } else: {
     0
   }
 }

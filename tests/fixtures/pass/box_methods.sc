@@ -7,7 +7,7 @@ let main(): i32 = {
   let observed = unsafe {
     *pointer
   }
-  if observed != 41 {
+  if(observed != 41) {
     return(0)
   }
   let rebuilt = unsafe {

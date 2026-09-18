@@ -3,11 +3,11 @@ let main(): i32 = {
   let mut total = 41
   do {
     value = value + 1
-    if value < 3 {
+    if(value < 3) {
       continue()
     }
     total = total + 1
-  } while {
+  } while: {
     value < 3
   }
   total

@@ -556,7 +556,7 @@ impl Analyzer {
                             .collect(),
                         parameters: Vec::new(),
                         compile_group_delimiters: Vec::new(),
-                        group_delimiters: Vec::new(),
+                        group_delimiters: vec![GroupDelimiter::Parenthesis],
                     },
                 });
             }
@@ -1670,7 +1670,13 @@ impl Analyzer {
                     self.lang_item_name(LangItemKind::Poll).to_owned(),
                     vec![output_source],
                 )),
-                effects,
+                effects: FunctionEffects {
+                    group_delimiters: vec![
+                        GroupDelimiter::Parenthesis,
+                        GroupDelimiter::Parenthesis,
+                    ],
+                    ..effects
+                },
                 where_predicates: Vec::new(),
                 body: Some(body),
             },
@@ -2049,7 +2055,7 @@ impl Analyzer {
             custom: Vec::new(),
             parameters: Vec::new(),
             compile_group_delimiters: Vec::new(),
-            group_delimiters: Vec::new(),
+            group_delimiters: vec![GroupDelimiter::Parenthesis],
         };
         if let Some(factory_output_source) = factory_output_source {
             self.collection.functions.insert(
@@ -3696,7 +3702,13 @@ impl Analyzer {
                     self.lang_item_name(LangItemKind::Poll).to_owned(),
                     vec![output_source],
                 )),
-                effects,
+                effects: FunctionEffects {
+                    group_delimiters: vec![
+                        GroupDelimiter::Parenthesis,
+                        GroupDelimiter::Parenthesis,
+                    ],
+                    ..effects
+                },
                 where_predicates: Vec::new(),
                 body: Some(body),
             },
@@ -3730,7 +3742,7 @@ impl Analyzer {
                 .collect(),
             parameters: Vec::new(),
             compile_group_delimiters: Vec::new(),
-            group_delimiters: Vec::new(),
+            group_delimiters: vec![GroupDelimiter::Parenthesis],
         }
     }
 }

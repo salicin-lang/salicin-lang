@@ -1,7 +1,7 @@
 let bounce<t: type>(move value: t)(again: bool): t = {
-  if again {
+  if(again) {
     bounce<t>(value)(false)
-  } else {
+  } else: {
     value
   }
 }

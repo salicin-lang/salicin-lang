@@ -5,7 +5,7 @@ let reject: with<throwing<bool>>(): i32 = { throw(true) }
 
 let choose: with<throwing<bool>>(flag: bool): i32 = {
   do {
-    if flag { return(reject()) }
+    if(flag) { return(reject()) }
     42
   }
 }

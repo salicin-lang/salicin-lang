@@ -25,6 +25,7 @@ impl Analyzer {
         &mut self,
         name: &str,
         groups: &[&[CallArg]],
+        explicit_compile_group_count: Option<usize>,
         expected: Option<&Ty>,
         context: &LowerCtx,
     ) -> Option<(String, usize)> {
@@ -38,6 +39,7 @@ impl Analyzer {
             name,
             &template.compile_groups,
             groups,
+            explicit_compile_group_count,
             context,
             false,
         )?;
@@ -1169,6 +1171,7 @@ impl Analyzer {
         owner: &str,
         compile_groups: &[Vec<CompileParam>],
         groups: &[&[CallArg]],
+        explicit_group_count: Option<usize>,
         context: &LowerCtx,
         unit_is_type: bool,
     ) -> Option<(
@@ -1205,13 +1208,18 @@ impl Analyzer {
                         })
                     })
                 })
-            } else if !arguments.is_empty()
-                && self.group_is_explicit_compile_application(
-                    &compile_groups[compile_index],
-                    arguments,
-                    context,
-                    unit_is_type,
-                )
+            } else if explicit_group_count.map_or_else(
+                || {
+                    !arguments.is_empty()
+                        && self.group_is_explicit_compile_application(
+                            &compile_groups[compile_index],
+                            arguments,
+                            context,
+                            unit_is_type,
+                        )
+                },
+                |count| source_index < count,
+            )
             {
                 Some(compile_index)
             } else {

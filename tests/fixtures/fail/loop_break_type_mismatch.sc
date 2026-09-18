@@ -1,8 +1,8 @@
 let main(): i32 = {
   loop {
-    if true {
+    if(true) {
       break(42)
-    } else {
+    } else: {
       break(false)
     }
   }

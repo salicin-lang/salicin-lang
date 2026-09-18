@@ -30,7 +30,7 @@ let main(): i32 = {
     let reference = values.at(1)
     reference.read()
   }
-  if second == 21 { first + third } else { 0 }
+  if(second == 21) { first + third } else: { 0 }
 }
 
 test("vec_borrow.sc") {

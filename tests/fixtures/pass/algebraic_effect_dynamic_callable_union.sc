@@ -12,9 +12,9 @@ let main(): i32 = {
     choose: { (resume) -> resume(false) },
     value: { (resume) -> resume(39) },
     action: {
-      let first: with<ask>((): i32)  = if true { left } else { middle }
-      let second: with<ask>((): i32)  = if false { middle } else { right }
-      let combined: with<ask>((): i32)  = if ask.choose() { first } else { second }
+      let first: with<ask>((): i32)  = if(true) { left } else: { middle }
+      let second: with<ask>((): i32)  = if(false) { middle } else: { right }
+      let combined: with<ask>((): i32)  = if(ask.choose()) { first } else: { second }
       combined()
     },
   }

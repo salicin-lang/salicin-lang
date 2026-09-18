@@ -941,6 +941,7 @@ pub(super) struct ClosureInfo {
 
 #[derive(Clone, Default)]
 pub(super) struct ClosureEffectContext {
+    pub(super) group_delimiters: Vec<GroupDelimiter>,
     pub(super) unsafe_depth: usize,
     pub(super) failure_error: Option<Ty>,
     pub(super) custom_effects: HashSet<String>,

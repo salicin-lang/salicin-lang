@@ -15,7 +15,7 @@ let combine(move left: number, right: Borrow<number>): i32 = { left.value + righ
 let main(): i32 = {
   let mut order = 0
   let result = combine(first(order), second(order))
-  if order == 12 { result } else { 0 }
+  if(order == 12) { result } else: { 0 }
 }
 
 test("temporary_borrow_argument_order.sc") {

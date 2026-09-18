@@ -4,9 +4,9 @@ let consume(move boxed: boxed): () = {}
 
 let main(): i32 = {
   let boxed = boxed{ value: 42 }
-  if true {
+  if(true) {
     consume(boxed)
-  } else {
+  } else: {
     let snapshot = boxed.value
   }
   42

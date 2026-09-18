@@ -22,38 +22,38 @@ let main(): i32 = {
   }
   let position = view.position(greater_than_ten)
   let position_value = position ?? 99
-  if found_value != 12 || position_value != 2 {
-    return 1
+  if(found_value != 12 || position_value != 2) {
+    return(1)
   }
-  if !view.contains(9) || view.contains(7) {
-    return 2
+  if(!view.contains(9) || view.contains(7)) {
+    return(2)
   }
-  if !view.any(greater_than_seventeen) || view.any(greater_than_twenty) {
-    return 3
+  if(!view.any(greater_than_seventeen) || view.any(greater_than_twenty)) {
+    return(3)
   }
-  if !view.all(greater_than_two) || view.all(less_than_eighteen) {
-    return 4
+  if(!view.all(greater_than_two) || view.all(less_than_eighteen)) {
+    return(4)
   }
-  if view.fold(0)(add) != 42 {
-    return 5
+  if(view.fold(0)(add) != 42) {
+    return(5)
   }
 
   let empty_values: Array<i32><0> = []
   let empty: Borrow<Slice<i32>> = borrow(empty_values)
-  if empty.find(greater_than_zero).is_some() ||
+  if(empty.find(greater_than_zero).is_some() ||
     empty.position(greater_than_zero).is_some() ||
     empty.any(greater_than_zero) ||
     !empty.all(greater_than_zero) ||
     empty.contains(0) ||
-    empty.fold(42)(add) != 42 {
-    return 6
+    empty.fold(42)(add) != 42 ) {
+    return(6)
   }
 
-  if values.position(greater_than_ten)!! != 2 ||
+  if(values.position(greater_than_ten)!! != 2 ||
     values.find(greater_than_ten).is_none() ||
     !values.contains(12) ||
-    values.fold(0)(add) != 42 {
-    return 7
+    values.fold(0)(add) != 42 ) {
+    return(7)
   }
 
   let mut dynamic: Vec<i32> = Vec<i32>.new()
@@ -61,13 +61,13 @@ let main(): i32 = {
   dynamic.push(9)
   dynamic.push(12)
   dynamic.push(18)
-  if dynamic.position(greater_than_ten)!! != 2 ||
+  if(dynamic.position(greater_than_ten)!! != 2 ||
     dynamic.find(greater_than_ten).is_none() ||
     !dynamic.any(greater_than_seventeen) ||
     !dynamic.all(greater_than_two) ||
     !dynamic.contains(18) ||
-    dynamic.fold(0)(add) != 42 {
-    return 8
+    dynamic.fold(0)(add) != 42 ) {
+    return(8)
   }
 
   42

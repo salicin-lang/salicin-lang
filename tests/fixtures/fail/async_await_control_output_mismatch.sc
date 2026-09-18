@@ -26,10 +26,10 @@ extend(flag, Future<()>) {
 
 let main(): i32 = {
   let future = async {
-    if true {
-      await number{}
-    } else {
-      await flag{}
+    if(true) {
+      await(number{})
+    } else: {
+      await(flag{})
     }
   }
   0

@@ -2,7 +2,9 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::ast::{Binding, CallArg, EffectDef, Expr, Function, FunctionEffects, Sort, Stmt, Type};
+use crate::ast::{
+    Binding, CallArg, EffectDef, Expr, Function, FunctionEffects, GroupDelimiter, Sort, Stmt, Type,
+};
 use crate::core::LangItemKind;
 
 use super::compile_time::{
@@ -250,6 +252,8 @@ impl Analyzer {
             body,
             declared_result,
             ClosureEffectContext {
+                // Immediate effect bodies use one synthetic Parenthesis group.
+                group_delimiters: vec![GroupDelimiter::Parenthesis],
                 unsafe_depth: context.unsafe_depth,
                 failure_error: active_failure_error.clone(),
                 custom_effects: context.active_custom_effects.clone(),
@@ -323,7 +327,11 @@ impl Analyzer {
             {
                 (name.clone(), Vec::new())
             }
-            Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+            Expr::DelimitedCall {
+                callee,
+                delimiter: GroupDelimiter::Angle,
+                arguments,
+            } => {
                 let Expr::Name(name) = callee.as_ref() else {
                     return Ok(None);
                 };
@@ -346,6 +354,15 @@ impl Analyzer {
                     sources.push(source);
                 }
                 (name.clone(), sources)
+            }
+            Expr::Call(callee, _) | Expr::DelimitedCall { callee, .. }
+                if matches!(callee.unlocated(), Expr::Name(name) if self.collection.effect_defs.contains_key(name)) =>
+            {
+                let Expr::Name(name) = callee.unlocated() else {
+                    unreachable!()
+                };
+                self.error(format!("effect application `{name}` uses `<...>`"));
+                return Err(());
             }
             _ => return Ok(None),
         };
@@ -478,6 +495,13 @@ impl Analyzer {
                 .push(AlgebraicHandlerOperation {
                     key: effect_operation_key(operation),
                     labels: effect_operation_labels(operation),
+                    group_delimiters: operation
+                        .effects
+                        .compile_group_delimiters
+                        .iter()
+                        .chain(&operation.effects.group_delimiters)
+                        .copied()
+                        .collect(),
                     residual_effects,
                 });
         }
@@ -778,6 +802,7 @@ impl Analyzer {
         instance: &Type,
         operation: &str,
         groups: &[&[CallArg]],
+        actual_delimiters: Option<&[GroupDelimiter]>,
         expected: Option<&Ty>,
         context: &mut LowerCtx,
     ) -> HirExpr {
@@ -825,6 +850,26 @@ impl Analyzer {
             ));
             return error_expr();
         };
+        if let Some(actual) = actual_delimiters {
+            let expected_delimiters = selected
+                .effects
+                .compile_group_delimiters
+                .iter()
+                .chain(&selected.effects.group_delimiters)
+                .copied()
+                .collect::<Vec<_>>();
+            if actual != expected_delimiters {
+                self.error(format!(
+                    "effect operation `{operation}` argument groups must use {}",
+                    expected_delimiters
+                        .iter()
+                        .map(|delimiter| delimiter.opening().to_string())
+                        .collect::<Vec<_>>()
+                        .join(" then ")
+                ));
+                return error_expr();
+            }
+        }
         let mut function = selected.clone();
         let Type::Named(_, arguments) = instance else {
             unreachable!("resolved effect instances are nominal applications")
@@ -906,7 +951,6 @@ pub(super) fn do_block_requires_function_boundary(expression: &Expr) -> bool {
         Expr::Return(_) | Expr::Try(_) | Expr::Throw(_) => true,
         Expr::Closure(_, _)
         | Expr::PatternClosure { .. }
-        | Expr::PartialClosure(_)
         | Expr::DoBlock { .. }
         | Expr::Async { .. } => false,
         Expr::Unary(_, value)
@@ -951,9 +995,6 @@ pub(super) fn do_block_requires_function_boundary(expression: &Expr) -> bool {
                     .iter()
                     .any(|argument| do_block_requires_function_boundary(&argument.value))
         }
-        Expr::StructLiteral { fields, .. } => fields
-            .iter()
-            .any(|field| do_block_requires_function_boundary(&field.value)),
         Expr::Array(elements) | Expr::Tuple(elements) => {
             elements.iter().any(do_block_requires_function_boundary)
         }
@@ -1007,9 +1048,12 @@ pub(super) fn do_block_requires_function_boundary(expression: &Expr) -> bool {
 pub(super) fn handled_operation_call(
     expression: &Expr,
     identity: &str,
-) -> Option<(String, Vec<CallArg>)> {
-    let mut groups = Vec::new();
-    let root = flatten_call(expression, &mut groups);
+) -> Option<(String, Vec<CallArg>, Vec<GroupDelimiter>)> {
+    let flattened = flatten_call(expression);
+    let root = flattened.root;
+    // Operation recognition returns the delimiter vector to its caller, which
+    // validates it against the selected operation before transformation.
+    let groups = flattened.argument_groups();
     let Expr::Member(effect, operation) = root else {
         return None;
     };
@@ -1019,8 +1063,13 @@ pub(super) fn handled_operation_call(
     Some((
         operation.clone(),
         groups
-            .into_iter()
+            .iter()
             .flat_map(|group| group.iter().cloned())
+            .collect(),
+        flattened
+            .groups
+            .iter()
+            .map(|group| group.delimiter)
             .collect(),
     ))
 }
@@ -1094,7 +1143,7 @@ pub(super) fn handled_action_result_source(
     identity: &str,
     operations: &[Function],
 ) -> Option<Type> {
-    if let Some((operation, arguments)) = handled_operation_call(expression, identity) {
+    if let Some((operation, arguments, _)) = handled_operation_call(expression, identity) {
         let candidates = operations
             .iter()
             .filter(|candidate| candidate.name == operation)

@@ -27,19 +27,19 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polls == 0 {
+    if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
-    } else {
+    } else: {
       Poll<i32>.Ready(self.value)
     }
   }
 }
 
 let make_step: with<throwing<bool>>(fail: bool): step = {
-  if fail {
+  if(fail) {
     throw(true)
-  } else {
+  } else: {
     step{ polls: 0, value: 2 }
   }
 }
@@ -49,7 +49,7 @@ let run_success(drops: Ptr<mut><i32>): i32 = {
     let outer = resource{ drops: drops, value: 1 }
     let mut future = async {
       let inner = resource{ drops: drops, value: 39 }
-      let value = await make_step(false)
+      let value = await(make_step(false))
       outer.value + inner.value + value
     }
     let first = future.poll()
@@ -70,7 +70,7 @@ let run_throwing(drops: Ptr<mut><i32>): i32 = {
     let outer = resource{ drops: drops, value: 1 }
     let mut future = async {
       let inner = resource{ drops: drops, value: 39 }
-      let value = await make_step(true)
+      let value = await(make_step(true))
       outer.value + inner.value + value
     }
     match(future.poll()) { Pending => 0, Ready(value) => value,
@@ -78,7 +78,7 @@ let run_throwing(drops: Ptr<mut><i32>): i32 = {
   }
   match(result) {
     Ok(_) => 0, Err(error) => do {
-      if error { 42 } else { 0 }
+      if(error) { 42 } else: { 0 }
     },
   }
 }
@@ -88,7 +88,7 @@ let run_cancelled(drops: Ptr<mut><i32>): i32 = {
     let outer = resource{ drops: drops, value: 1 }
     let mut future = async {
       let inner = resource{ drops: drops, value: 39 }
-      let value = await make_step(false)
+      let value = await(make_step(false))
       outer.value + inner.value + value
     }
     match(future.poll()) { Pending => 42, Ready(_) => 0,
@@ -116,9 +116,9 @@ let main(): i32 = {
     raw_dealloc(drops, size_of<i32>, align_of<i32>)
   }
 
-  if success == 42 && failure == 42 && cancelled == 42 && drop_count == 6 {
+  if(success == 42 && failure == 42 && cancelled == 42 && drop_count == 6) {
     42
-  } else {
+  } else: {
     0
   }
 }

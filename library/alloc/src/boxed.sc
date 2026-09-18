@@ -92,8 +92,7 @@ extend(Box<T>) {
 }
 
 /// Provides copy-only value accessors for `Box`.
-extend(Box<T>)
-(requires: T is Copyable) {
+extend(Box<T>)<requires: T is Copyable> {
   /// Copies the boxed value out of this Box.
   let read(self: Borrow<self>)(): T = { box_read(self) }
   /// Copies `value` over the current boxed value.

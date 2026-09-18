@@ -14,19 +14,19 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polls == 0 {
+    if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
-    } else {
+    } else: {
       Poll<i32>.Ready(self.value)
     }
   }
 }
 
 let make_step: with<throwing<bool>>(fail: bool): step = {
-  if fail {
+  if(fail) {
     throw(true)
-  } else {
+  } else: {
     step{ polls: 0, value: 40 }
   }
 }
@@ -34,7 +34,7 @@ let make_step: with<throwing<bool>>(fail: bool): step = {
 let run(fail: bool): i32 = {
   let result: Result<bool><i32> = try {
     let mut future = async {
-      let value = await make_step(fail)
+      let value = await(make_step(fail))
       value + 2
     }
     let first = future.poll()
@@ -49,7 +49,7 @@ let run(fail: bool): i32 = {
 
   match(result) {
     Ok(value) => value, Err(error) => do {
-      if error { 42 } else { 0 }
+      if(error) { 42 } else: { 0 }
     },
   }
 }
@@ -57,9 +57,9 @@ let run(fail: bool): i32 = {
 let main(): i32 = {
   let success = run(false)
   let failure = run(true)
-  if success == 42 && failure == 42 {
+  if(success == 42 && failure == 42) {
     42
-  } else {
+  } else: {
     0
   }
 }

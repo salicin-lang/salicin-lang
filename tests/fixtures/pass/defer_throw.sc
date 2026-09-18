@@ -16,7 +16,7 @@ let main(): i32 = {
   }
   match(result) {
     Ok(_) => 0, Err(error) => do {
-      if error && counter == 1 { 42 } else { 0 }
+      if(error && counter == 1) { 42 } else: { 0 }
     },
   }
 }

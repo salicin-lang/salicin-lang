@@ -13,7 +13,7 @@ let consume(move value: resource): () = { () }
 
 let conditional(flag: bool): () = {
   let pair = pair{ left: resource{ value: 1 }, right: resource{ value: 1 } }
-  if flag { consume(pair.left) }
+  if(flag) { consume(pair.left) }
 }
 
 let rebuild(): () = {
@@ -24,7 +24,7 @@ let rebuild(): () = {
 
 let conditional_rebuild(flag: bool): () = {
   let mut pair = pair{ left: resource{ value: 1 }, right: resource{ value: 1 } }
-  if flag { consume(pair.left) }
+  if(flag) { consume(pair.left) }
   pair.left = resource{ value: 1 }
 }
 

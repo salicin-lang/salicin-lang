@@ -50,7 +50,7 @@ let main(): i32 = {
     }
     let ended_empty = values.is_empty()
     values.push(resource{ counter: counter, value: 5 })
-    if started_empty && ended_empty && before_remove == 0 && removed_value == 2 && after_truncate == 2 && after_clear == 4 {
+    if(started_empty && ended_empty && before_remove == 0 && removed_value == 2 && after_truncate == 2 && after_clear == 4) {
       score = 37
     }
   }
@@ -60,9 +60,9 @@ let main(): i32 = {
   unsafe {
     raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
-  if drops == 5 {
+  if(drops == 5) {
     score + drops
-  } else {
+  } else: {
     0
   }
 }

@@ -3,7 +3,7 @@ let read = effect {
 }
 
 let sum_reads: with<read>(count: i32): i32 = {
-  if count == 0 {
+  if(count == 0) {
     return(0)
   }
   read.read() + sum_reads(count - 1)

@@ -742,8 +742,17 @@ impl Analyzer {
                 })
             }
             Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
-                let mut groups = Vec::new();
-                let root = flatten_call(expression, &mut groups);
+                let flattened = flatten_call(expression);
+                let root = flattened.root;
+                if flattened
+                    .groups
+                    .iter()
+                    .any(|group| group.delimiter != crate::ast::GroupDelimiter::Angle)
+                {
+                    self.error("compile-time type applications use `<...>`");
+                    return None;
+                }
+                let groups = flattened.argument_groups();
                 let Expr::Name(name) = root else {
                     self.error("generic type arguments require a named type constructor");
                     return None;
@@ -921,8 +930,16 @@ impl Analyzer {
                 })
             }),
             Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
-                let mut groups = Vec::new();
-                let root = flatten_call(expression, &mut groups);
+                let flattened = flatten_call(expression);
+                let root = flattened.root;
+                if flattened
+                    .groups
+                    .iter()
+                    .any(|group| group.delimiter != crate::ast::GroupDelimiter::Angle)
+                {
+                    return None;
+                }
+                let groups = flattened.argument_groups();
                 let Expr::Name(name) = root else {
                     return None;
                 };
@@ -1562,14 +1579,18 @@ impl Analyzer {
 
     fn expression_is_explicit_type_argument(&self, expression: &Expr, context: &LowerCtx) -> bool {
         match expression {
+            Expr::Type(_) => true,
             Expr::Name(name) => {
+                if context.type_substitutions.contains_key(name)
+                    || context.has_type_parameter(name)
+                    || self.collection.abstract_type_parameters.contains_key(name)
+                {
+                    return true;
+                }
                 if context.lookup(name).is_some() {
                     return false;
                 }
-                context.type_substitutions.contains_key(name)
-                    || context.has_type_parameter(name)
-                    || self.collection.abstract_type_parameters.contains_key(name)
-                    || matches!(
+                matches!(
                         name.as_str(),
                         "i8" | "i16"
                             | "i32"
@@ -1591,8 +1612,16 @@ impl Analyzer {
                     || self.collection.enum_templates.contains_key(name)
             }
             Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
-                let mut groups = Vec::new();
-                let root = flatten_call(expression, &mut groups);
+                let flattened = flatten_call(expression);
+                let root = flattened.root;
+                if flattened
+                    .groups
+                    .iter()
+                    .any(|group| group.delimiter != crate::ast::GroupDelimiter::Angle)
+                {
+                    return false;
+                }
+                let groups = flattened.argument_groups();
                 let Expr::Name(name) = root else {
                     return false;
                 };
@@ -1851,8 +1880,16 @@ impl Analyzer {
         expression: &Expr,
         context: &LowerCtx,
     ) -> Option<(NominalKind, Ty, Type)> {
-        let mut groups = Vec::new();
-        let root = flatten_call(expression, &mut groups);
+        let flattened = flatten_call(expression);
+        let root = flattened.root;
+        if flattened
+            .groups
+            .iter()
+            .any(|group| group.delimiter != crate::ast::GroupDelimiter::Angle)
+        {
+            return None;
+        }
+        let groups = flattened.argument_groups();
         let Expr::Name(name) = root else {
             return None;
         };

@@ -11,7 +11,7 @@ let main(): i32 = {
   }
   let second = match(option_flag) {
     Some(value) => do {
-      if value { 10 } else { 0 }
+      if(value) { 10 } else: { 0 }
     }, None => 0,
   }
   let third = match(result_ok) { Ok(value) => value, Err(_) => 0,

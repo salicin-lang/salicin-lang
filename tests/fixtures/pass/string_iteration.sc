@@ -40,9 +40,9 @@ let scalar_checks(): bool = {
 }
 
 let main(): i32 = {
-  if byte_checks() && scalar_checks() {
+  if(byte_checks() && scalar_checks()) {
     42
-  } else {
+  } else: {
     0
   }
 }

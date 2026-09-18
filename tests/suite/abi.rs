@@ -172,16 +172,16 @@ let main(): i32 = {
       c_fill_record(ptr<mut>(borrow<mut>(record)))
     }
   }
-  if verified &&
+  if(verified &&
     record.tag == 9 &&
     record.inner.small == -5 &&
     record.inner.wide == 2000 &&
     record.huge == -8000 &&
     record.values[0] == 19 &&
     record.values[1] == 23 &&
-    record.values[2] == 29 {
+    record.values[2] == 29) {
     42
-  } else {
+  } else: {
     0
   }
 }
@@ -288,7 +288,7 @@ let c_accept(
 
 let main(): i32 = {
   unsafe {
-    if c_i8() == -8 &&
+    if(c_i8() == -8 &&
       c_i16() == -16 &&
       c_i32() == -32 &&
       c_i64() == -64 &&
@@ -300,9 +300,9 @@ let main(): i32 = {
       c_u64() == 64 &&
       c_u128() == 128 &&
       c_usize() == 42 &&
-      c_accept(-8, -16, -32, -64, -128, -42, 8, 16, 32, 64, 128, 42) == 42 {
+      c_accept(-8, -16, -32, -64, -128, -42, 8, 16, 32, 64, 128, 42) == 42) {
       42
-    } else {
+    } else: {
       0
     }
   }

@@ -6,7 +6,7 @@ let main(): i32 = {
   probe.handle{
     read: { (resume) -> resume(true) },
     done: {
-      (value) -> if value { 42 } else { 0 }
+      (value) -> if(value) { 42 } else: { 0 }
     },
     action: {
       probe.read()

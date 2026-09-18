@@ -17,9 +17,9 @@ extend(resource, Droppable) {
 }
 
 let choose: with<throwing<bool>>(fail: bool, value: i32): i32 = {
-  if fail {
+  if(fail) {
     throw(true)
-  } else {
+  } else: {
     value
   }
 }
@@ -69,9 +69,9 @@ let main(): i32 = {
     raw_dealloc(drops, size_of<i32>, align_of<i32>)
   }
 
-  if success_value == 42 && failed && drop_count == 1 {
+  if(success_value == 42 && failed && drop_count == 1) {
     42
-  } else {
+  } else: {
     0
   }
 }

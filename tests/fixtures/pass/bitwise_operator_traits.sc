@@ -36,7 +36,7 @@ let main(): i32 = {
   let value = ((((mask(bits{ value: 6 })(bits{ value: 3 }) | bits{ value: 8 }) ^ bits{ value: 3 }) << bits{ value: 1 }) >> bits{ value: 1 }).value
   let builtins = (6 & 3) == 2 && (2 | 8) == 10 && (10 ^ 3) == 9 &&
     (9 << 1) == 18 && (-8 >> 2) == -2 && unsigned_shift(8) == 2
-  if value == 9 && builtins { 42 } else { 0 }
+  if(value == 9 && builtins) { 42 } else: { 0 }
 }
 
 test("bitwise_operator_traits.sc") {

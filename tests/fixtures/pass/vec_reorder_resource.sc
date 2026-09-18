@@ -53,7 +53,7 @@ let main(): i32 = {
       let reference = values.at(3)
       reference.read()
     }
-    if no_drops && first == 1 && second == 3 && third == 2 && fourth == 4 {
+    if(no_drops && first == 1 && second == 3 && third == 2 && fourth == 4) {
       score = 38
     }
   }
@@ -63,7 +63,7 @@ let main(): i32 = {
   unsafe {
     raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
-  if drops == 4 { score + drops } else { 0 }
+  if(drops == 4) { score + drops } else: { 0 }
 }
 
 test("vec_reorder_resource.sc") {

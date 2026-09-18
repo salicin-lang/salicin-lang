@@ -29,10 +29,10 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polls == 0 {
+    if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
-    } else {
+    } else: {
       Poll<i32>.Ready(self.value)
     }
   }
@@ -51,7 +51,7 @@ let run(drops: Ptr<mut><i32>): i32 = {
     ask: { (resume) -> resume(40) },
     action: {
       let mut future = async {
-        await make_step(drops)
+        await(make_step(drops))
       }
       let first = future.poll()
       let second = future.poll()
@@ -70,7 +70,7 @@ let cancel(drops: Ptr<mut><i32>): () = {
     ask: { (resume) -> resume(2) },
     action: {
       let mut cancelled = async {
-        await make_step(drops)
+        await(make_step(drops))
       }
       let pending = cancelled.poll()
       match(pending) { Pending => (), Ready(_) => (),

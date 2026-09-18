@@ -10,7 +10,7 @@ let main(): i32 = {
   decide.handle{
     choose: { (resume) -> resume(true) },
     action: {
-      if choose_value() { 42 } else { 0 }
+      if(choose_value()) { 42 } else: { 0 }
     },
   }
 }

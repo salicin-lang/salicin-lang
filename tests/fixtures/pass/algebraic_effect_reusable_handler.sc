@@ -29,9 +29,11 @@ let main(): i32 = {
   let chosen = left
   let left_runner = run(action: chosen)
   let mut order = 0
-  let selected = run(action: if select(order) { left } else if true { right } else { abort })(next_input(order))
+  let selected = run(action: if(select(order)) { left } else: {
+    if(true) { right } else: { abort }
+  })(next_input(order))
   let answer = left_runner(1) + selected + run(action: abort)(0) - 31
-  if order == 12 { answer } else { 0 }
+  if(order == 12) { answer } else: { 0 }
 }
 
 test("algebraic_effect_reusable_handler.sc") {

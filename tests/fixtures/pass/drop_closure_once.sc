@@ -32,7 +32,7 @@ let invoke_pair(): () = {
 let conditional(flag: bool): () = {
   let resource = resource{ value: 1 }
   let once = { consume(resource) }
-  if flag { once() }
+  if(flag) { once() }
 }
 
 let early(): i32 = {

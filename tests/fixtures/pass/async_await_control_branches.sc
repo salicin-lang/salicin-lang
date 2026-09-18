@@ -12,9 +12,9 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polled {
+    if(self.polled) {
       Poll<i32>.Ready(self.value)
-    } else {
+    } else: {
       self.polled = true
       Poll<i32>.Pending
     }
@@ -32,9 +32,9 @@ extend(other_step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polled {
+    if(self.polled) {
       Poll<i32>.Ready(self.value)
-    } else {
+    } else: {
       self.polled = true
       Poll<i32>.Pending
     }
@@ -56,11 +56,11 @@ let choice = enum {
 
 let main(): i32 = {
   let mut conditional = async {
-    let value = if true {
+    let value = if(true) {
       let prefix = 19
-      let child = await step(1)
+      let child = await(step(1))
       prefix + child
-    } else {
+    } else: {
       0
     }
     value
@@ -71,7 +71,7 @@ let main(): i32 = {
   }
 
   let mut matched = async {
-    let value = match(choice.left) { choice.left => await step(22), choice.right => await other_step(0),
+    let value = match(choice.left) { choice.left => await(step(22)), choice.right => await(other_step(0)),
     }
     value
   }

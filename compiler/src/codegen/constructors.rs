@@ -1,26 +1,56 @@
 use super::*;
 
 impl Analyzer {
-    pub(super) fn lower_struct_literal(
+    pub(super) fn resolve_struct_constructor_name(
+        &self,
+        name: &str,
+        context: &LowerCtx,
+    ) -> Option<String> {
+        if self.collection.struct_layouts.contains_key(name)
+            || self.collection.struct_templates.contains_key(name)
+        {
+            return Some(name.to_owned());
+        }
+        if context.origin.module_path.is_empty() {
+            return None;
+        }
+        let canonical = format!("{}::{name}", context.origin.module_path.join("::"));
+        (self.collection.struct_layouts.contains_key(&canonical)
+            || self.collection.struct_templates.contains_key(&canonical))
+        .then_some(canonical)
+    }
+
+    pub(super) fn lower_struct_construction(
         &mut self,
         constructor: &Expr,
+        resolved_name: Option<&str>,
         fields: &[CallArg],
         expected: Option<&Ty>,
         context: &mut LowerCtx,
     ) -> HirExpr {
         if fields.iter().any(|field| field.label.is_none()) {
-            self.error("struct literal fields must be named; use `field: value` inside `{ ... }`");
+            self.error("struct construction fields must be named; use `field: value` inside `{ ... }`");
             return error_expr();
         }
-        let mut groups = Vec::new();
-        let root = flatten_call(constructor, &mut groups);
-        let Expr::Name(name) = root else {
-            self.error("struct literal requires a struct type name");
+        let flattened = flatten_call(constructor);
+        let root = flattened.root;
+        if flattened
+            .groups
+            .iter()
+            .any(|group| group.delimiter != crate::ast::GroupDelimiter::Angle)
+        {
+            self.error("struct type arguments use `<...>` before `{...}`");
+            return error_expr();
+        }
+        let groups = flattened.argument_groups();
+        let Expr::Name(source_name) = root else {
+            self.error("struct construction requires a struct type name");
             return error_expr();
         };
+        let name = resolved_name.unwrap_or(source_name);
         if context.has_type_parameter(name) {
             self.error(format!(
-                "type parameter `{name}` cannot be used as a struct literal constructor"
+                "type parameter `{name}` cannot be used as a struct construction head"
             ));
             return error_expr();
         }
@@ -32,33 +62,28 @@ impl Analyzer {
             return self.lower_struct_constructor(name, &[fields], context);
         }
         if self.collection.struct_templates.contains_key(name) {
-            let mut construction_groups = groups;
-            construction_groups.push(fields);
-            let Some((canonical, runtime_start)) = self.resolve_inferred_generic_struct_instance(
+            let Some(canonical) = self.resolve_inferred_generic_struct_instance(
                 name,
-                &construction_groups,
+                &groups,
+                fields,
                 expected,
                 context,
             ) else {
                 return error_expr();
             };
-            return self.lower_struct_constructor(
-                &canonical,
-                &construction_groups[runtime_start..],
-                context,
-            );
+            return self.lower_struct_constructor(&canonical, &[fields], context);
         }
         if self.collection.enum_layouts.contains_key(name)
             || self.collection.enum_templates.contains_key(name)
         {
             self.error(format!(
-                "struct literal `{name}{{ ... }}` requires a struct type, found enum `{name}`"
+                "brace construction `{name}{{ ... }}` requires a struct type, found enum `{name}`"
             ));
             return error_expr();
         }
         if self.collection.struct_layouts.contains_key(name) {
             self.error(format!(
-                "struct `{name}` does not accept type argument groups in a struct literal"
+                "struct `{name}` does not accept these type argument groups in brace construction"
             ));
             return error_expr();
         }

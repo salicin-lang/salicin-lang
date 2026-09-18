@@ -42,9 +42,9 @@ let main(): i32 = {
   unsafe {
     raw_dealloc(drops, size_of<i32>, align_of<i32>)
   }
-  if success_total == 42 && drop_count == 1 {
+  if(success_total == 42 && drop_count == 1) {
     42
-  } else {
+  } else: {
     0
   }
 }

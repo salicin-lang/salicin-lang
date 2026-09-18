@@ -90,7 +90,7 @@ evaluated values; the `_else` forms evaluate their callback only on `None` or
 `Err`. All consuming helpers evaluate and move each payload at most once.
 
 `Movable` is an automatically satisfied structural marker for relocatable values. `Copyable` has the
-supertrait constraint `trait(requires: self is Movable)`, while `Droppable` remains independent: an owning resource may
+supertrait constraint `trait<requires: self is Movable>`, while `Droppable` remains independent: an owning resource may
 be movable without being copyable. Source code does not need handwritten `Movable` implementations
 for ordinary aggregates.
 Operators and syntax that lower through these identities use the validated standard-library
@@ -230,8 +230,9 @@ segment of a `with<...>` effect path. Effect
 row parameters such as `e: effects` are resolved as parameters rather than nominal effects.
 Source `throw(error)` targets this ordinary operation when the current effect row has exactly one
 active `throwing<Error>`. Contextual `try { ... }` with an expected `Result<Error><T>` handles
-ordinary `throwing<Error>` through the same algebraic handler path, using `done -> Ok` and
-`raise -> Err`. Without an explicit `Result` context, direct calls and local function-value calls
+ordinary `throwing<Error>` through the same algebraic handler path, mapping
+normal completion to `Ok` and `raise` to `Err`. Without an explicit `Result`
+context, direct calls and local function-value calls
 to ordinary `throwing<Error>` functions infer the same handler result when the success type is
 probeable and the escaping error type is unique. `suspension` currently exposes only a minimal
 `suspend(): ()` operation; executable
@@ -255,8 +256,8 @@ pub let abi = sort<1> {
 Inside a compiler-owned `requires(...)` guard, `left is right` selects the `is`
 relation between the classifiers of its operands. `type` implements
 `Is<constraint>`, allowing function guards such as
-`requires(T is Copyable)` and extension requirement groups such as
-`(requires: T is Copyable)`.
+`requires(T is Copyable)` and extension compile-time groups such as
+`<requires: T is Copyable>`.
 
 `effect` classifies one nominal effect identity; `effects` classifies a normalized zero-or-more
 effect row. Runtime `String` values are accepted by CTFE for compiler-consumed
@@ -372,9 +373,10 @@ under the corresponding algebraic handler through generated poll/resume source s
 when its captures are by-value `Copyable` or move-only values. Move-only fields transfer exactly once
 and are not dropped again with completed future state. Borrowed, suspended, and `throwing`-residual
 bodies remain compiler work. Polling
-enforces `e` while construction remains pure. A single tail-position `await` creates its child on the first parent poll,
+enforces `e` while construction remains pure. A single tail-position
+`await(value)` creates its child on the first parent poll,
 stores it across `Pending`, and completes the parent from `Ready`; cancellation drops a stored child
-exactly once. One non-tail `let value = await child` may continue with a linear suffix whose captures
+exactly once. One non-tail `let value = await(child)` may continue with a linear suffix whose captures
 are retained in parent state. Sequential awaits compose through nested continuation futures and
 preserve earlier results across later `Pending` states. Suspension nested in control flow remains
 compiler work. Locals live across a sequential suspension are state fields with ordinary ownership
@@ -397,7 +399,7 @@ pub let do<e: effects>: with<e>
       next: { () },
       action: { action() },
     }
-    if while() { continue() } else { break() }
+    if(while()) { continue() } else: { break() }
   }
 }
 pub let try<f: effects, T: type, E: type>: with<f>
@@ -517,7 +519,7 @@ pub let Semigroup = trait {
   let combine(left: self, right: self): self
 }
 
-pub let Monoid = trait(requires: self is Semigroup) {
+pub let Monoid = trait<requires: self is Semigroup> {
   let empty(): self
 }
 ```
@@ -534,7 +536,7 @@ pub let Functor = trait<self: <Value: type>: type> {
     (transform: with<e>((A): B)): self<B>
 }
 
-pub let Applicative = trait<self: <Value: type>: type>(requires: self is Functor) {
+pub let Applicative = trait<self: <Value: type>: type><requires: self is Functor> {
   let pure<A: type>
     (value: A): self<A>
 
@@ -543,7 +545,7 @@ pub let Applicative = trait<self: <Value: type>: type>(requires: self is Functor
     (value: self<A>): self<B>
 }
 
-pub let Monad = trait<self: <Value: type>: type>(requires: self is Applicative) {
+pub let Monad = trait<self: <Value: type>: type><requires: self is Applicative> {
   let flat_map<e: effects, A: type, B: type>: with<e>
     (self: self<A>)
     (next: with<e>((A): self<B>)): self<B>

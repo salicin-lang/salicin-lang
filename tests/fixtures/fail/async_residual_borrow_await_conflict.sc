@@ -25,7 +25,7 @@ let make_step: with<ask>(): step = {
 
 let program(value: Borrow<mut><i32>): i32 = {
   let future = async {
-    let amount = await make_step()
+    let amount = await(make_step())
     value = value + amount
     value
   }

@@ -409,7 +409,7 @@ extend(String) {
   }
 
   let byte_at(self: Borrow<self>)(index: u64): u8 = {
-    if index >= self.len_bytes() {
+    if(index >= self.len_bytes()) {
       unsafe { raw_trap() }
     }
     string_byte_at_unchecked(self, index)

@@ -24,10 +24,10 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polls == 0 {
+    if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
-    } else {
+    } else: {
       Poll<i32>.Ready(self.value)
     }
   }
@@ -42,9 +42,9 @@ let make_second: with<throwing<bool>>(
   unsafe {
     *calls = *calls + 1
   }
-  if fail {
+  if(fail) {
     throw(true)
-  } else {
+  } else: {
     step{ drops: drops, polls: 0, value: first + 40, drop_amount: 1 }
   }
 }
@@ -56,15 +56,15 @@ let run(
 ): i32 = {
   let result: Result<bool><i32> = try {
     let mut future = async {
-      let first = await step{ drops: drops, polls: 0, value: 2, drop_amount: 10 }
-      let second = await make_second(drops, calls, first, fail)
+      let first = await(step{ drops: drops, polls: 0, value: 2, drop_amount: 10 })
+      let second = await(make_second(drops, calls, first, fail))
       second
     }
     let first = future.poll()
     let second = future.poll()
-    if fail {
+    if(fail) {
       0
-    } else {
+    } else: {
       let third = future.poll()
       match(first) {
         Pending => do {
@@ -80,7 +80,7 @@ let run(
   }
   match(result) {
     Ok(value) => value, Err(error) => do {
-      if error { 42 } else { 0 }
+      if(error) { 42 } else: { 0 }
     },
   }
 }
@@ -110,10 +110,10 @@ let main(): i32 = {
     raw_dealloc(calls, size_of<i32>, align_of<i32>)
   }
 
-  if success == 42 && failure == 42 &&
-    drop_count == 21 && call_count == 2 {
+  if(success == 42 && failure == 42 &&
+    drop_count == 21 && call_count == 2 ) {
     42
-  } else {
+  } else: {
     0
   }
 }

@@ -95,19 +95,41 @@ let host_seek(
 ): i64 = foreign(c, "sali_host_seek")
 
 let decode_error_kind(value: i32): IoErrorKind = {
-  if value == 0 { NotFound }
-  else if value == 1 { PermissionDenied }
-  else if value == 2 { AlreadyExists }
-  else if value == 3 { InvalidInput }
-  else if value == 4 { InvalidData }
-  else if value == 5 { Interrupted }
-  else if value == 6 { WouldBlock }
-  else if value == 7 { WriteZero }
-  else if value == 8 { UnexpectedEof }
-  else if value == 9 { BrokenPipe }
-  else if value == 10 { Unsupported }
-  else if value == 11 { OutOfMemory }
-  else { Other }
+  if(value == 0) { NotFound }
+  else: {
+    if(value == 1) { PermissionDenied }
+    else: {
+      if(value == 2) { AlreadyExists }
+      else: {
+        if(value == 3) { InvalidInput }
+        else: {
+          if(value == 4) { InvalidData }
+          else: {
+            if(value == 5) { Interrupted }
+            else: {
+              if(value == 6) { WouldBlock }
+              else: {
+                if(value == 7) { WriteZero }
+                else: {
+                  if(value == 8) { UnexpectedEof }
+                  else: {
+                    if(value == 9) { BrokenPipe }
+                    else: {
+                      if(value == 10) { Unsupported }
+                      else: {
+                        if(value == 11) { OutOfMemory }
+                        else: { Other }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 let host_error(failure: i32, raw_code: i32): IoError = {
@@ -123,9 +145,9 @@ let count_result(
   failure: i32,
   raw_code: i32,
 ): core.Result<IoError><u64> = {
-  if count < 0 {
+  if(count < 0) {
     core.Result.Err(host_error(failure, raw_code))
-  } else {
+  } else: {
     match(count.checked_into<Output: u64>()) { Some(value) => core.Result.Ok(value), None => core.Result.Err(generated_error(InvalidData)),
     }
   }
@@ -145,13 +167,13 @@ let read_stream_at: with<io>
   (buffer: Borrow<mut><core.memory.Slice<u8>>)
   (offset: u64): core.Result<IoError><u64> = {
   let length = buffer.len<mut>()
-  if offset >= length {
+  if(offset >= length) {
     return(core.Result.Ok(0))
   }
   let mut failure: i32 = 12
   let mut raw_code: i32 = 0
   let count = unsafe {
-    let data = raw_offset(raw_slice_ptr<mut><buffer>, offset)
+    let data = raw_offset(raw_slice_ptr<mut>(buffer), offset)
     host_read(
       descriptor,
       data,
@@ -180,7 +202,7 @@ let write_stream_at: with<io>
   (bytes: Borrow<core.memory.Slice<u8>>)
   (offset: u64): core.Result<IoError><u64> = {
   let length = bytes.len()
-  if offset >= length {
+  if(offset >= length) {
     return(core.Result.Ok(0))
   }
   let mut failure: i32 = 12
@@ -203,7 +225,7 @@ let write_all_stream: with<io>
   (bytes: Borrow<core.memory.Slice<u8>>): core.Result<IoError><()> = {
   let length = bytes.len()
   let mut written: u64 = 0
-  while { written < length } {
+  while(written < length) {
     match(write_stream_at(descriptor)(bytes)(written)) {
       Ok(0) => return(core.Result.Err(generated_error(WriteZero))), Ok(count) => written = written + count, Err(error) => do {
         match(error.kind()) { Interrupted => (), _ => return(core.Result.Err(error)),
@@ -274,7 +296,7 @@ pub let read_stdin_exact: with<io>
   (buffer: Borrow<mut><core.memory.Slice<u8>>): core.Result<IoError><()> = {
   let length = buffer.len<mut>()
   let mut read: u64 = 0
-  while { read < length } {
+  while(read < length) {
     match(read_stream_at(0)(buffer)(read)) {
       Ok(0) => return(core.Result.Err(generated_error(UnexpectedEof))), Ok(count) => read = read + count, Err(error) => do {
         match(error.kind()) { Interrupted => (), _ => return(core.Result.Err(error)),
@@ -290,7 +312,7 @@ pub let read_stdin_exact: with<io>
 pub let read_line: with<io>(): core.Result<IoError><core.Option<String>> = {
   let mut bytes = alloc.vec.Vec<u8>.new()
   let mut done = false
-  while { !done } {
+  while(!done) {
     let mut byte: Array<u8><1> = [0]
     let outcome = do {
       let buffer = byte.as_slice<mut>()
@@ -300,16 +322,16 @@ pub let read_line: with<io>(): core.Result<IoError><core.Option<String>> = {
       Ok(0) => done = true, Ok(_) => do {
         let value = byte[0]
         bytes.push(value)
-        if value == 10 { done = true }
+        if(value == 10) { done = true }
       }, Err(error) => do {
         match(error.kind()) { Interrupted => (), _ => return(core.Result.Err(error)),
         }
       },
     }
   }
-  if bytes.is_empty() {
+  if(bytes.is_empty()) {
     core.Result.Ok(core.Option.None)
-  } else {
+  } else: {
     match(alloc.string.string_from_utf8(bytes)) { Ok(text) => core.Result.Ok(core.Option.Some(text)), Err(_) => core.Result.Err(generated_error(InvalidData)),
     }
   }
@@ -324,13 +346,13 @@ pub let argument_count: with<io>(): u64 = {
 pub let argument_bytes: with<io>
   (index: u64): core.Option<alloc.vec.Vec<u8>> = {
   let count = argument_count()
-  if index >= count {
+  if(index >= count) {
     core.Option.None
-  } else {
+  } else: {
     let length = unsafe { host_argument_length(index) }
     let mut bytes = alloc.vec.Vec<u8>.with_capacity(length)
     let mut offset: u64 = 0
-    while { offset < length } {
+    while(offset < length) {
       bytes.push(unsafe { host_argument_byte(index, offset) })
       offset = offset + 1
     }
@@ -343,7 +365,7 @@ pub let arguments_bytes: with<io>(): alloc.vec.Vec<ProcessArgument> = {
   let count = argument_count()
   let mut arguments = alloc.vec.Vec<ProcessArgument>.with_capacity(count)
   let mut index: u64 = 0
-  while { index < count } {
+  while(index < count) {
     match(argument_bytes(index)) {
       Some(argument) => do { arguments.push(ProcessArgument{ bytes: argument }) }, None => (),
     }
@@ -361,7 +383,7 @@ pub let arguments: with<io>(): core.Result<IoError><alloc.vec.Vec<String>> = {
   let count = bytes.len()
   let mut text = alloc.vec.Vec<String>.with_capacity(count)
   let mut index: u64 = 0
-  while { index < count } {
+  while(index < count) {
     let argument = bytes.remove(0).into_bytes()
     match(alloc.string.string_from_utf8(argument)) { Ok(value) => text.push(value), Err(_) => return(core.Result.Err(generated_error(InvalidData))),
     }
@@ -425,26 +447,26 @@ extend(OpenOptions) {
 pub let File = struct { descriptor: Ptr<mut><i32> }
 
 let option_flags(options: OpenOptions): core.Result<IoError><i32> = {
-  if !options.read && !options.write {
+  if(!options.read && !options.write) {
     return(core.Result.Err(generated_error(InvalidInput)))
   }
-  if (options.append || options.truncate || options.create || options.create_new) &&
-    !options.write {
+  if((options.append || options.truncate || options.create || options.create_new) &&
+    !options.write) {
     return(core.Result.Err(generated_error(InvalidInput)))
   }
-  if options.create_new && !options.create {
+  if(options.create_new && !options.create) {
     return(core.Result.Err(generated_error(InvalidInput)))
   }
-  if options.append && options.truncate {
+  if(options.append && options.truncate) {
     return(core.Result.Err(generated_error(InvalidInput)))
   }
   let mut flags: i32 = 0
-  if options.write && !options.read { flags = flags + 1 }
-  if options.read && options.write { flags = flags + 2 }
-  if options.create { flags = flags + 4 }
-  if options.create_new { flags = flags + 8 }
-  if options.truncate { flags = flags + 16 }
-  if options.append { flags = flags + 32 }
+  if(options.write && !options.read) { flags = flags + 1 }
+  if(options.read && options.write) { flags = flags + 2 }
+  if(options.create) { flags = flags + 4 }
+  if(options.create_new) { flags = flags + 8 }
+  if(options.truncate) { flags = flags + 16 }
+  if(options.append) { flags = flags + 32 }
   core.Result.Ok(flags)
 }
 
@@ -455,7 +477,7 @@ let descriptor(value: Borrow<File>): i32 = {
 let close_descriptor: with<io>
   (value: Ptr<mut><i32>): core.Result<IoError><()> = {
   let descriptor = unsafe { *value }
-  if descriptor < 0 { return(core.Result.Ok(())) }
+  if(descriptor < 0) { return(core.Result.Ok(())) }
   unsafe { *value = -1 }
   let mut failure: i32 = 12
   let mut raw_code: i32 = 0
@@ -466,9 +488,9 @@ let close_descriptor: with<io>
       ptr<mut>(borrow<mut>(raw_code)),
     )
   }
-  if status == 0 {
+  if(status == 0) {
     core.Result.Ok(())
-  } else {
+  } else: {
     core.Result.Err(host_error(failure, raw_code))
   }
 }
@@ -483,9 +505,9 @@ pub let open: with<io>
   let length = source.len()
   let mut bytes = alloc.vec.Vec<u8>.with_capacity(length + 1)
   let mut index: u64 = 0
-  while { index < length } {
+  while(index < length) {
     let byte = unsafe { *raw_offset(raw_slice_ptr(source), index) }
-    if byte == 0 { return(core.Result.Err(generated_error(InvalidInput))) }
+    if(byte == 0) { return(core.Result.Err(generated_error(InvalidInput))) }
     bytes.push(byte)
     index = index + 1
   }
@@ -501,9 +523,9 @@ pub let open: with<io>
       ptr<mut>(borrow<mut>(raw_code)),
     )
   }
-  if descriptor < 0 {
+  if(descriptor < 0) {
     core.Result.Err(host_error(failure, raw_code))
-  } else {
+  } else: {
     let owner = alloc.boxed.Box<i32>.new(descriptor)
     core.Result.Ok(File{ descriptor: owner.into_raw() })
   }
@@ -521,7 +543,7 @@ extend(File) {
     (buffer: Borrow<mut><core.memory.Slice<u8>>): core.Result<IoError><()> = {
     let length = buffer.len<mut>()
     let mut read: u64 = 0
-    while { read < length } {
+    while(read < length) {
       match(read_stream_at(descriptor(self))(buffer)(read)) {
         Ok(0) => return(core.Result.Err(generated_error(UnexpectedEof))), Ok(count) => read = read + count, Err(error) => do {
           match(error.kind()) { Interrupted => (), _ => return(core.Result.Err(error)),
@@ -555,9 +577,9 @@ extend(File) {
         ptr<mut>(borrow<mut>(raw_code)),
       )
     }
-    if status == 0 {
+    if(status == 0) {
       core.Result.Ok(())
-    } else {
+    } else: {
       core.Result.Err(host_error(failure, raw_code))
     }
   }
@@ -578,9 +600,9 @@ extend(File) {
         ptr<mut>(borrow<mut>(raw_code)),
       )
     }
-    if position < 0 {
+    if(position < 0) {
       core.Result.Err(host_error(failure, raw_code))
-    } else {
+    } else: {
       match(position.checked_into<Output: u64>()) { Some(value) => core.Result.Ok(value), None => core.Result.Err(generated_error(InvalidData)),
       }
     }
@@ -596,7 +618,7 @@ extend(File) {
 extend(File, core.marker.Droppable) {
   let drop(self: Borrow<mut><self>)(): () = {
     let descriptor = unsafe { *self.descriptor }
-    if descriptor >= 0 {
+    if(descriptor >= 0) {
       unsafe { *self.descriptor = -1 }
       let mut failure: i32 = 12
       let mut raw_code: i32 = 0
@@ -620,10 +642,10 @@ pub let read_file: with<io>
   }
   let mut output = alloc.vec.Vec<u8>.new()
   let mut done = false
-  while { !done } {
+  while(!done) {
     let mut chunk = alloc.vec.Vec<u8>.with_capacity(4096)
     let mut initialized: u64 = 0
-    while { initialized < 4096 } {
+    while(initialized < 4096) {
       chunk.push(0)
       initialized = initialized + 1
     }
@@ -633,11 +655,11 @@ pub let read_file: with<io>
     }
     match(outcome) {
       Ok(0) => done = true, Ok(count) => do {
-        if output.len() > limit || count > limit - output.len() {
+        if(output.len() > limit || count > limit - output.len()) {
           return(core.Result.Err(generated_error(InvalidData)))
         }
         let mut index: u64 = 0
-        while { index < count } {
+        while(index < count) {
           output.push(chunk[index])
           index = index + 1
         }

@@ -9,7 +9,7 @@ let main(): i32 = {
   let mut future = async {
     let first = 41
     let copy = first
-    let second = await child()
+    let second = await(child())
     copy + second
   }
   match(future.poll()) { Ready(value) => value, Pending => 0,

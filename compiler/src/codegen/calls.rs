@@ -1,4 +1,4 @@
-use crate::ast::{CallArg, Expr, GroupDelimiter, PassMode, Type};
+use crate::ast::{CallArg, CallGroup, Expr, GroupDelimiter, PassMode, Type};
 use crate::core::LangItemKind;
 
 use super::fallible::InferredEnumHints;
@@ -7,11 +7,23 @@ use super::hir::{
     ContinuationAdapter, EffectCallableAdapter, HirExpr, HirExprKind, HirPlace, LayoutQueryKind,
     LocalCapability, Ty,
 };
-use super::lower::{
-    error_expr, flatten_call, flatten_call_delimiters, BoundMethodConstraint, TypeProbe,
-};
+use super::lower::{error_expr, flatten_call, BoundMethodConstraint, TypeProbe};
 use super::registry::NominalKind;
 use super::Analyzer;
+
+fn normalized_group_delimiters(
+    delimiters: &[GroupDelimiter],
+    group_count: usize,
+) -> Vec<GroupDelimiter> {
+    (0..group_count)
+        .map(|index| {
+            delimiters
+                .get(index)
+                .copied()
+                .unwrap_or(GroupDelimiter::Parenthesis)
+        })
+        .collect()
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(super) struct CallableBridgeKey {
@@ -62,10 +74,14 @@ impl Analyzer {
         expected: Option<&Ty>,
         context: &mut LowerCtx,
     ) -> HirExpr {
-        let mut groups = Vec::new();
-        let root = flatten_call(expression, &mut groups);
-        let mut actual_delimiters = Vec::new();
-        flatten_call_delimiters(expression, &mut actual_delimiters);
+        let flattened = flatten_call(expression);
+        let root = flattened.root;
+        let groups = flattened.argument_groups();
+        let actual_delimiters = flattened
+            .groups
+            .iter()
+            .map(|group| group.delimiter)
+            .collect::<Vec<_>>();
         if let Expr::Name(name) = root {
             if !self.explicit_compile_delimiters_match(
                 name,
@@ -75,54 +91,70 @@ impl Analyzer {
             ) {
                 return error_expr();
             }
-            let expected = context.lookup(name).and_then(|local| {
+            let local_expected = context.lookup(name).and_then(|local| {
                 if let Some(partial) = &local.partial {
                     self.collection
                         .functions
                         .get(&partial.function)
                         .or_else(|| self.collection.function_templates.get(&partial.function))
                         .map(|function| {
-                            function
-                                .effects
-                                .group_delimiters
-                                .iter()
-                                .copied()
+                            let group_count = self
+                                .lowering
+                                .signatures
+                                .get(&partial.function)
+                                .map_or(function.groups.len(), |signature| signature.groups.len())
+                                .max(usize::from(partial.function.starts_with("$trait$impl$")));
+                            normalized_group_delimiters(
+                                &function.effects.group_delimiters,
+                                group_count,
+                            )
+                                .into_iter()
                                 .skip(partial.consumed_groups)
                                 .collect::<Vec<_>>()
                         })
                 } else {
                     match &local.ty {
-                        Ty::Function(function) => Some(function.group_delimiters.clone()),
-                        Ty::Callable(callable) => {
-                            Some(callable.signature.group_delimiters.clone())
-                        }
+                        Ty::Function(function) => Some(normalized_group_delimiters(
+                            &function.group_delimiters,
+                            function.groups.len(),
+                        )),
+                        Ty::Callable(callable) => Some(normalized_group_delimiters(
+                            &callable.signature.group_delimiters,
+                            callable.signature.groups.len(),
+                        )),
                         _ => None,
                     }
                 }
-            }).or_else(|| {
-                self.collection
-                    .functions
-                    .get(name)
-                    .or_else(|| self.collection.function_templates.get(name))
-                    .map(|function| {
-                        function
-                            .effects
-                            .compile_group_delimiters
-                            .iter()
-                            .chain(&function.effects.group_delimiters)
-                            .copied()
-                            .collect::<Vec<_>>()
-                    })
             });
-            if let Some(expected) = expected {
-                let actual_delimiters = if self.is_lang_item_name(name, LangItemKind::Match)
-                    && matches!(groups.last(), Some([CallArg { label: None, value: Expr::PartialClosure(_) }]))
-                {
-                    &actual_delimiters[..actual_delimiters.len().saturating_sub(1)]
-                } else {
-                    actual_delimiters.as_slice()
-                };
-                if !self.call_delimiters_match(name, actual_delimiters, &expected) {
+            let function_expected = self
+                .collection
+                .functions
+                .get(name)
+                .or_else(|| self.collection.function_templates.get(name))
+                .map(|function| {
+                    let group_count = self
+                        .lowering
+                        .signatures
+                        .get(name)
+                        .map_or(function.groups.len(), |signature| signature.groups.len())
+                        .max(usize::from(name.starts_with("$trait$impl$")));
+                    normalized_group_delimiters(
+                        &function.effects.group_delimiters,
+                        group_count,
+                    )
+                });
+            let compile_capacity = self.named_compile_group_capacity(name).unwrap_or(0);
+            let compile_prefix = actual_delimiters
+                .iter()
+                .take_while(|delimiter| **delimiter == GroupDelimiter::Angle)
+                .count()
+                .min(compile_capacity);
+            if let Some(expected) = local_expected.or(function_expected) {
+                if !self.call_delimiters_match(
+                    name,
+                    &actual_delimiters[compile_prefix..],
+                    &expected,
+                ) {
                     return error_expr();
                 }
             }
@@ -130,9 +162,6 @@ impl Analyzer {
         if let Expr::Name(name) = root {
             if self.is_lang_item_name(name, LangItemKind::If) {
                 return self.lower_if_match_call(&groups, expected, context);
-            }
-            if self.is_lang_item_name(name, LangItemKind::Match) {
-                return self.lower_pattern_match_call(&groups, expected, context);
             }
             if name == "$handler$erase$continuation" {
                 if groups.len() != 1 || groups[0].len() != 1 {
@@ -421,6 +450,14 @@ impl Analyzer {
             }
         }
         if let Expr::ChainMember(base, member) = root {
+            let groups = flattened
+                .groups
+                .iter()
+                .map(|group| CallGroup {
+                    delimiter: group.delimiter,
+                    arguments: group.arguments.to_vec(),
+                })
+                .collect::<Vec<_>>();
             return self.lower_chain(base, member, Some(&groups), expected, context);
         }
         if let Expr::Name(name) = root {
@@ -458,6 +495,16 @@ impl Analyzer {
                 return self.lower_raw_slice_len(&groups, context);
             }
             if name == "raw_slice_ptr" {
+                if !matches!(
+                    actual_delimiters.as_slice(),
+                    [GroupDelimiter::Parenthesis]
+                        | [GroupDelimiter::Angle, GroupDelimiter::Parenthesis]
+                ) {
+                    self.error(
+                        "`raw_slice_ptr` expects an optional `<access>` compile-time group followed by a parenthesized runtime group",
+                    );
+                    return error_expr();
+                }
                 return self.lower_raw_slice_ptr(&groups, context);
             }
             if name == "raw_slice_at" {
@@ -509,13 +556,41 @@ impl Analyzer {
                 let Some(selected) = self.resolve_function_overload(name, &groups) else {
                     return error_expr();
                 };
+                if !self.named_call_delimiters_match(
+                    &selected,
+                    &groups,
+                    &actual_delimiters,
+                    context,
+                ) {
+                    return error_expr();
+                }
                 if self.collection.function_templates.contains_key(&selected) {
-                    return self.lower_generic_function_call(&selected, &groups, expected, context);
+                    let explicit = actual_delimiters
+                        .iter()
+                        .take_while(|delimiter| **delimiter == GroupDelimiter::Angle)
+                        .count();
+                    return self.lower_generic_function_call(
+                        &selected,
+                        &groups,
+                        Some(explicit),
+                        expected,
+                        context,
+                    );
                 }
                 return self.lower_named_function_call(&selected, &groups, expected, context);
             }
             if self.collection.function_templates.contains_key(name) {
-                return self.lower_generic_function_call(name, &groups, expected, context);
+                let explicit = actual_delimiters
+                    .iter()
+                    .take_while(|delimiter| **delimiter == GroupDelimiter::Angle)
+                    .count();
+                return self.lower_generic_function_call(
+                    name,
+                    &groups,
+                    Some(explicit),
+                    expected,
+                    context,
+                );
             }
             if self.collection.functions.contains_key(name) {
                 return self.lower_named_function_call(name, &groups, expected, context);
@@ -570,6 +645,7 @@ impl Analyzer {
                         &instance,
                         variant_name,
                         &groups,
+                        Some(&actual_delimiters),
                         expected,
                         context,
                     );
@@ -631,6 +707,7 @@ impl Analyzer {
                         NominalKind::Enum,
                         variant_name,
                         &groups,
+                        Some(&actual_delimiters),
                         expected,
                         context,
                     );
@@ -702,7 +779,18 @@ impl Analyzer {
                                 return error_expr();
                             }
                             return self.lower_generic_function_call(
-                                &canonical, &groups, expected, context,
+                                &canonical,
+                                &groups,
+                                Some(
+                                    actual_delimiters
+                                        .iter()
+                                        .take_while(|delimiter| {
+                                            **delimiter == GroupDelimiter::Angle
+                                        })
+                                        .count(),
+                                ),
+                                expected,
+                                context,
                             );
                         }
                         if let Some(canonical) = self
@@ -720,7 +808,18 @@ impl Analyzer {
                                 return error_expr();
                             }
                             return self.lower_generic_function_call(
-                                &canonical, &groups, expected, context,
+                                &canonical,
+                                &groups,
+                                Some(
+                                    actual_delimiters
+                                        .iter()
+                                        .take_while(|delimiter| {
+                                            **delimiter == GroupDelimiter::Angle
+                                        })
+                                        .count(),
+                                ),
+                                expected,
+                                context,
                             );
                         }
                         if let Some(canonical) = (!self
@@ -817,6 +916,7 @@ impl Analyzer {
                                         kind,
                                         variant_name,
                                         &groups,
+                                        Some(&actual_delimiters),
                                         expected,
                                         context,
                                     );
@@ -833,6 +933,7 @@ impl Analyzer {
                         kind,
                         variant_name,
                         &groups,
+                        Some(&actual_delimiters),
                         expected,
                         context,
                     );
@@ -958,20 +1059,14 @@ impl Analyzer {
         actual: &[GroupDelimiter],
         expected: &[GroupDelimiter],
     ) -> bool {
-        let mut expected_index = 0;
         for (index, actual) in actual.iter().enumerate() {
-            let exhausted_before_match = expected_index >= expected.len();
-            while expected.get(expected_index).is_some_and(|expected| expected != actual) {
-                expected_index += 1;
-            }
-            let Some(_) = expected.get(expected_index) else {
-                if exhausted_before_match && *actual == GroupDelimiter::Parenthesis {
-                    continue;
-                }
-                let expected = expected
-                    .get(index)
-                    .copied()
-                    .unwrap_or(GroupDelimiter::Parenthesis);
+            let Some(expected) = expected.get(index).copied() else {
+                self.error(format!(
+                    "call to `{name}` supplies more argument groups than the declaration"
+                ));
+                return false;
+            };
+            if *actual != expected {
                 self.error(format!(
                     "argument group {} in call to `{name}` uses `{}` but the parameter group uses `{}`",
                     index + 1,
@@ -979,13 +1074,27 @@ impl Analyzer {
                     expected.opening(),
                 ));
                 return false;
-            };
-            expected_index += 1;
+            }
         }
         true
     }
 
-    fn named_call_delimiters_match(
+    fn named_compile_group_capacity(&self, name: &str) -> Option<usize> {
+        self.collection
+            .functions
+            .get(name)
+            .into_iter()
+            .chain(self.collection.function_templates.get(name))
+            .map(|function| {
+                function
+                    .compile_groups
+                    .len()
+                    .max(function.effects.compile_group_delimiters.len())
+            })
+            .max()
+    }
+
+    pub(super) fn named_call_delimiters_match(
         &mut self,
         name: &str,
         groups: &[&[CallArg]],
@@ -1001,15 +1110,25 @@ impl Analyzer {
             .get(name)
             .or_else(|| self.collection.function_templates.get(name))
             .map(|function| {
-                function
-                    .effects
-                    .compile_group_delimiters
-                    .iter()
-                    .chain(&function.effects.group_delimiters)
-                    .copied()
-                    .collect::<Vec<_>>()
+                let group_count = self
+                    .lowering
+                    .signatures
+                    .get(name)
+                    .map_or(function.groups.len(), |signature| signature.groups.len())
+                    .max(usize::from(name.starts_with("$trait$impl$")));
+                normalized_group_delimiters(
+                    &function.effects.group_delimiters,
+                    group_count,
+                )
             });
-        expected.is_none_or(|expected| self.call_delimiters_match(name, actual, &expected))
+        let explicit = actual
+            .iter()
+            .take_while(|delimiter| **delimiter == GroupDelimiter::Angle)
+            .count()
+            .min(self.named_compile_group_capacity(name).unwrap_or(0));
+        expected.is_none_or(|expected| {
+            self.call_delimiters_match(name, &actual[explicit..], &expected)
+        })
     }
 
     pub(super) fn method_call_delimiters_match(
@@ -1027,17 +1146,31 @@ impl Analyzer {
         else {
             return true;
         };
-        let runtime = function
-            .effects
-            .group_delimiters
-            .iter()
-            .copied()
+        let group_count = self
+            .lowering
+            .signatures
+            .get(name)
+            .map_or(function.groups.len(), |signature| signature.groups.len())
+            .max(usize::from(name.starts_with("$trait$impl$")));
+        let mut runtime = normalized_group_delimiters(&function.effects.group_delimiters, group_count)
+            .into_iter()
             .skip(1)
             .collect::<Vec<_>>();
-        let explicit = actual.len().saturating_sub(runtime.len());
-        if explicit > function.effects.compile_group_delimiters.len() {
-            return self.call_delimiters_match(name, actual, &runtime);
+        if runtime.is_empty() {
+            runtime.push(GroupDelimiter::Parenthesis);
         }
+        let compile_capacity = self.named_compile_group_capacity(name).unwrap_or(0);
+        let leading_angle_groups = actual
+            .iter()
+            .take_while(|delimiter| **delimiter == GroupDelimiter::Angle)
+            .count();
+        if compile_capacity > 0 && leading_angle_groups > compile_capacity {
+            self.error(format!(
+                "call to `{name}` supplies {leading_angle_groups} compile-time argument groups, but the declaration has {compile_capacity}",
+            ));
+            return false;
+        }
+        let explicit = leading_angle_groups.min(compile_capacity);
         for (index, delimiter) in actual.iter().take(explicit).enumerate() {
             if *delimiter != GroupDelimiter::Angle {
                 self.error(format!(
@@ -1054,31 +1187,21 @@ impl Analyzer {
     fn explicit_compile_delimiters_match(
         &mut self,
         name: &str,
-        groups: &[&[CallArg]],
+        _groups: &[&[CallArg]],
         actual: &[GroupDelimiter],
-        context: &LowerCtx,
+        _context: &LowerCtx,
     ) -> bool {
-        let Some(compile_groups) = self
-            .collection
-            .function_templates
-            .get(name)
-            .map(|function| function.compile_groups.clone())
-        else {
+        let Some(compile_capacity) = self.named_compile_group_capacity(name) else {
             return true;
         };
-        let explicit = self.explicit_compile_group_prefix(&compile_groups, groups, context);
-        for index in 0..explicit {
-            if actual.get(index) == Some(&GroupDelimiter::Angle) {
-                continue;
-            }
-            let actual = actual
-                .get(index)
-                .copied()
-                .unwrap_or(GroupDelimiter::Parenthesis);
+        let explicit = actual
+            .iter()
+            .take_while(|delimiter| **delimiter == GroupDelimiter::Angle)
+            .count();
+        if compile_capacity > 0 && explicit > compile_capacity {
             self.error(format!(
-                "argument group {} in call to `{name}` uses `{}` but the parameter group uses `<`",
-                index + 1,
-                actual.opening(),
+                "call to `{name}` supplies {explicit} compile-time argument groups, but the declaration has {}",
+                compile_capacity
             ));
             return false;
         }

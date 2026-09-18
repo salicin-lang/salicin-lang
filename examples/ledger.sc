@@ -38,7 +38,7 @@ extend(Ledger, Account) {
   }
 
   let snapshot(self: Borrow<self>)(): i32 = {
-    if self.processed == 4 { self.balance } else { 0 }
+    if(self.processed == 4) { self.balance } else: { 0 }
   }
 }
 
@@ -76,9 +76,9 @@ let count_batch(move batch: Batch): i32 = {
 let apply: with<overdraft>(ledger: Borrow<mut><Ledger>)(move transaction: Transaction): () = {
   match(transaction) {
     Credit(amount) => ledger.credit(amount), Debit(amount) => do {
-      if amount > ledger.balance {
+      if(amount > ledger.balance) {
         overdraft.reject()
-      } else {
+      } else: {
         ledger.debit(amount)
       }
     },
@@ -101,5 +101,5 @@ let main(): i32 = {
     },
   }
   let count = count_batch(Batch{ index: 0 })
-  if balance == 42 && count == 4 { 42 } else { 1 }
+  if(balance == 42 && count == 4) { 42 } else: { 1 }
 }

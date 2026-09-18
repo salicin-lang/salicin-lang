@@ -9,7 +9,7 @@ let main(): i32 = {
       let values = [42, 0]
       match(values[read.read()]) {
         42 => do {
-          if read.read() == 0 { 42 } else { 0 }
+          if(read.read() == 0) { 42 } else: { 0 }
         }, _ => 0,
       }
     },

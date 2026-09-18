@@ -340,8 +340,11 @@ impl Analyzer {
         expression: &'a Expr,
         context: &LowerCtx,
     ) -> Option<InferredCoalesceLhs<'a>> {
-        let mut value_groups = Vec::new();
-        let Expr::Member(base, variant) = flatten_call(expression, &mut value_groups) else {
+        let flattened = flatten_call(expression);
+        // This probe only propagates a payload hint; normal call lowering validates
+        // the variant call's runtime delimiters before accepting the expression.
+        let value_groups = flattened.argument_groups();
+        let Expr::Member(base, variant) = flattened.root else {
             return None;
         };
         let (name, type_groups) = self.inferred_generic_enum_type_head(base, context)?;

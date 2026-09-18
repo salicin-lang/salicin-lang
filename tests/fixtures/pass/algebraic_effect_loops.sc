@@ -7,13 +7,13 @@ let main(): i32 = {
   tick.handle{
     tick: { (resume) -> resume(1) },
     action: {
-      while { count + tick.tick() <= 2 } {
+      while(count + tick.tick() <= 2) {
         count += 1
-        if count == 1 { continue() }
+        if(count == 1) { continue() }
       }
       let stopped = loop {
         count += tick.tick()
-        if count == 3 { break(count) }
+        if(count == 3) { break(count) }
       }
       36 + count + stopped
     },

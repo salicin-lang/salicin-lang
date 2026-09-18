@@ -34,12 +34,12 @@ let audit_outside(
   let mut state = state{ value: 20, drops: drops }
   audit.handle{
     adjust: { (resume) ->
-      if abandon_audit { 40 } else { resume(1) }
+      if(abandon_audit) { 40 } else: { resume(1) }
     },
     action: {
       step.handle{
         delta: { (resume) ->
-          if abandon_step { 40 } else { resume(1) }
+          if(abandon_step) { 40 } else: { resume(1) }
         },
         action: {
           let value = update(state)
@@ -58,12 +58,12 @@ let step_outside(
   let mut state = state{ value: 20, drops: drops }
   step.handle{
     delta: { (resume) ->
-      if abandon_step { 40 } else { resume(1) }
+      if(abandon_step) { 40 } else: { resume(1) }
     },
     action: {
       audit.handle{
         adjust: { (resume) ->
-          if abandon_audit { 40 } else { resume(1) }
+          if(abandon_audit) { 40 } else: { resume(1) }
         },
         action: {
           let value = update(state)

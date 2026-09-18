@@ -6,11 +6,11 @@ let add_one(value: i32): i32 = { value + 1 }
 let keep(value: i32): Option<i32> = { Option.Some(value) }
 let keep_result(value: i32): Result<bool><i32> = { Result.Ok(value) }
 let map_error(value: bool): i32 = {
-  if value { 1 } else { 0 }
+  if(value) { 1 } else: { 0 }
 }
 let option_fallback(): i32 = { 10 }
 let result_fallback(error: bool): i32 = {
-  if error { 11 } else { 10 }
+  if(error) { 11 } else: { 10 }
 }
 let make_error(): bool = { true }
 let impossible: with<unsafety>(): i32 = {
@@ -42,8 +42,8 @@ let main(): i32 = {
       match(outcome.as_ref()) { Ok(value) => value, Err(_) => 0,
     }
     let states =
-      if maybe.is_some() && !maybe.is_none() &&
-      outcome.is_ok() && !outcome.is_err() { 1 } else { 0 }
+      if(maybe.is_some() && !maybe.is_none() &&
+      outcome.is_ok() && !outcome.is_err() ) { 1 } else: { 0 }
     let mapped = Option.Some(1).map(add_one).and_then(keep).unwrap_or(0)
     let mapped_result =
       Result<bool><i32>.Ok(2).map(add_one).and_then(keep_result).unwrap_or(0)
@@ -60,8 +60,8 @@ let main(): i32 = {
 
     borrowed + states + mapped + mapped_result + mapped_error +
       eager_option + eager_result + lazy_option + lazy_result +
-      (if eager_error { 1 } else { 0 }) +
-      (if lazy_error { 1 } else { 0 }) +
-      success + (if error { 1 } else { 0 }) - 8
+      (if(eager_error) { 1 } else: { 0 }) +
+      (if(lazy_error) { 1 } else: { 0 }) +
+      success + (if(error) { 1 } else: { 0 }) - 8
   }
 }

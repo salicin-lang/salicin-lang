@@ -3,8 +3,8 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use crate::ast::{
-    BinaryOp, Binding, CallArg, Expr, Function, FunctionEffects, GroupDelimiter, HandlerChainCall,
-    MatchArm, Param, PassMode, Pattern, Stmt, Type, UnaryOp, Visibility,
+    BinaryOp, Binding, CallArg, CallGroup, Expr, Function, FunctionEffects, GroupDelimiter,
+    HandlerChainCall, MatchArm, Param, PassMode, Pattern, Stmt, Type, UnaryOp, Visibility,
 };
 use crate::core::LangItemKind;
 
@@ -18,7 +18,7 @@ use super::hir::{
     AccessBoundary, ClosureCaptureMode, FunctionSig, LocalCapability, ParamSig,
     RuntimeHandlerAction, Ty,
 };
-use super::lower::flatten_call;
+use super::lower::{apply_call_group, flatten_call};
 use super::names::hex_name;
 use super::source_rewrite::{
     append_innermost_closure_parameter, handler_match_commit, hygienic_inline_function,
@@ -79,19 +79,20 @@ pub(super) struct SourceErasedCallable {
 pub(super) struct SourceResumableClosure {
     pub(super) input: Type,
     pub(super) answer: Type,
-    pub(super) group_lengths: Vec<usize>,
+    pub(super) group_shapes: Vec<(GroupDelimiter, usize)>,
 }
 
 #[derive(Clone, PartialEq, Eq)]
 pub(super) struct SourceDynamicCallable {
     pub(super) targets: Vec<String>,
-    pub(super) group_lengths: Vec<usize>,
+    pub(super) group_shapes: Vec<(GroupDelimiter, usize)>,
 }
 
 #[derive(Clone)]
 pub(super) struct AlgebraicHandlerOperation {
     pub(super) key: String,
     pub(super) labels: Vec<String>,
+    pub(super) group_delimiters: Vec<GroupDelimiter>,
     pub(super) residual_effects: FunctionEffects,
 }
 
@@ -152,48 +153,51 @@ pub(super) fn contextual_annotation(parameter: &Param) -> Option<Type> {
 }
 
 pub(super) fn resume_call_argument(expression: &Expr, resume: &str) -> Option<Expr> {
-    let mut groups = Vec::new();
-    let root = flatten_call(expression, &mut groups);
+    let flattened = flatten_call(expression);
+    let root = flattened.root;
     if !matches!(root, Expr::Name(name) if name == resume)
-        || groups.len() != 1
-        || groups[0].len() != 1
-        || groups[0][0].label.is_some()
+        || flattened.groups.len() != 1
+        || flattened.groups[0].delimiter != GroupDelimiter::Parenthesis
+        || flattened.groups[0].arguments.len() != 1
+        || flattened.groups[0].arguments[0].label.is_some()
     {
         return None;
     }
-    Some(groups[0][0].value.clone())
+    Some(flattened.groups[0].arguments[0].value.clone())
 }
 
 pub(super) fn internal_handler_return_argument(expression: &Expr) -> Option<(String, Expr)> {
-    let mut groups = Vec::new();
-    let root = flatten_call(expression, &mut groups);
+    let flattened = flatten_call(expression);
+    let root = flattened.root;
     let Expr::Name(name) = root else {
         return None;
     };
     if !name.starts_with("$handler$return$")
-        || groups.len() != 1
-        || groups[0].len() != 1
-        || groups[0][0].label.is_some()
+        || flattened.groups.len() != 1
+        || flattened.groups[0].delimiter != GroupDelimiter::Parenthesis
+        || flattened.groups[0].arguments.len() != 1
+        || flattened.groups[0].arguments[0].label.is_some()
     {
         return None;
     }
-    Some((name.clone(), groups[0][0].value.clone()))
+    Some((name.clone(), flattened.groups[0].arguments[0].value.clone()))
 }
 
 pub(super) fn internal_handler_loop_break_argument(expression: &Expr) -> Option<(String, Expr)> {
-    let mut groups = Vec::new();
-    let root = flatten_call(expression, &mut groups);
+    let flattened = flatten_call(expression);
+    let root = flattened.root;
     let Expr::Name(name) = root else {
         return None;
     };
     if !name.starts_with("$handler$loop$break$")
-        || groups.len() != 1
-        || groups[0].len() != 1
-        || groups[0][0].label.is_some()
+        || flattened.groups.len() != 1
+        || flattened.groups[0].delimiter != GroupDelimiter::Parenthesis
+        || flattened.groups[0].arguments.len() != 1
+        || flattened.groups[0].arguments[0].label.is_some()
     {
         return None;
     }
-    Some((name.clone(), groups[0][0].value.clone()))
+    Some((name.clone(), flattened.groups[0].arguments[0].value.clone()))
 }
 
 pub(super) fn rewrite_handler_loop_control(
@@ -242,7 +246,6 @@ pub(super) fn rewrite_handler_loop_control(
         | Expr::Loop { .. }
         | Expr::Closure(_, _)
         | Expr::PatternClosure { .. }
-        | Expr::PartialClosure(_)
         | Expr::Async { .. } => {}
         Expr::Unary(_, value)
         | Expr::Try(value)
@@ -306,16 +309,6 @@ pub(super) fn rewrite_handler_loop_control(
             for argument in arguments {
                 rewrite_handler_loop_control(
                     &mut argument.value,
-                    recursive_name,
-                    break_name,
-                    nested_loop_depth,
-                );
-            }
-        }
-        Expr::StructLiteral { fields, .. } => {
-            for field in fields {
-                rewrite_handler_loop_control(
-                    &mut field.value,
                     recursive_name,
                     break_name,
                     nested_loop_depth,
@@ -454,11 +447,6 @@ pub(super) fn collect_internal_recursion_tokens(expression: &Expr, tokens: &mut 
                 collect_internal_recursion_tokens(&argument.value, tokens);
             }
         }
-        Expr::StructLiteral { fields, .. } => {
-            for field in fields {
-                collect_internal_recursion_tokens(&field.value, tokens);
-            }
-        }
         Expr::Member(base, _) | Expr::ChainMember(base, _) => {
             collect_internal_recursion_tokens(base, tokens)
         }
@@ -489,14 +477,6 @@ pub(super) fn collect_internal_recursion_tokens(expression: &Expr, tokens: &mut 
                 collect_internal_recursion_tokens(guard, tokens);
             }
             collect_internal_recursion_tokens(body, tokens);
-        }
-        Expr::PartialClosure(arms) => {
-            for arm in arms {
-                if let Some(guard) = &arm.guard {
-                    collect_internal_recursion_tokens(guard, tokens);
-                }
-                collect_internal_recursion_tokens(&arm.body, tokens);
-            }
         }
         Expr::If {
             condition,
@@ -651,8 +631,16 @@ pub(super) fn static_callable_selection(
 
     let expression = expression.unlocated();
     if matches!(expression, Expr::Call(_, _)) {
-        let mut groups = Vec::new();
-        if matches!(flatten_call(expression, &mut groups), Expr::Name(name) if name == "$lang$if") {
+        let flattened = flatten_call(expression);
+        if matches!(flattened.root, Expr::Name(name) if name == "$lang$if") {
+            if flattened
+                .groups
+                .iter()
+                .any(|group| group.delimiter != GroupDelimiter::Parenthesis)
+            {
+                return None;
+            }
+            let groups = flattened.argument_groups();
             let [condition_group, then_group, else_group] = groups.as_slice() else {
                 return None;
             };
@@ -780,7 +768,6 @@ pub(super) fn handler_expression_children(expression: &Expr) -> Vec<&Expr> {
             children.extend(arguments.iter().map(|argument| &argument.value));
             children
         }
-        Expr::StructLiteral { fields, .. } => fields.iter().map(|field| &field.value).collect(),
         Expr::Array(elements) | Expr::Tuple(elements) => elements.iter().collect(),
         Expr::Index { base, index } => vec![base, index],
         Expr::Block(statements, tail) => {
@@ -826,7 +813,6 @@ pub(super) fn handler_expression_children(expression: &Expr) -> Vec<&Expr> {
         | Expr::Name(_)
         | Expr::Closure(_, _)
         | Expr::PatternClosure { .. }
-        | Expr::PartialClosure(_)
         | Expr::Continue => Vec::new(),
     }
 }
@@ -1019,16 +1005,6 @@ pub(super) fn rewrite_handler_chain_wrappers(
                 );
             }
         }
-        Expr::StructLiteral { fields, .. } => {
-            for field in fields {
-                rewrite_handler_chain_wrappers(
-                    &mut field.value,
-                    canonical,
-                    success_variant,
-                    residual_variant,
-                );
-            }
-        }
         Expr::Array(elements) | Expr::Tuple(elements) => {
             for element in elements {
                 rewrite_handler_chain_wrappers(
@@ -1063,24 +1039,6 @@ pub(super) fn rewrite_handler_chain_wrappers(
                 rewrite_handler_chain_wrappers(guard, canonical, success_variant, residual_variant);
             }
             rewrite_handler_chain_wrappers(body, canonical, success_variant, residual_variant);
-        }
-        Expr::PartialClosure(arms) => {
-            for arm in arms {
-                if let Some(guard) = &mut arm.guard {
-                    rewrite_handler_chain_wrappers(
-                        guard,
-                        canonical,
-                        success_variant,
-                        residual_variant,
-                    );
-                }
-                rewrite_handler_chain_wrappers(
-                    &mut arm.body,
-                    canonical,
-                    success_variant,
-                    residual_variant,
-                );
-            }
         }
         Expr::If {
             condition,
@@ -1244,8 +1202,8 @@ fn handler_borrow_places_overlap(left: &HandlerBorrowPlace, right: &HandlerBorro
 fn collect_handler_named_calls(expression: &Expr, calls: &mut Vec<String>) {
     let mut expression = expression.clone();
     visit_expr_mut(&mut expression, &mut |expression| {
-        let mut groups = Vec::new();
-        if let Expr::Name(callee) = flatten_call(expression, &mut groups) {
+        let flattened = flatten_call(expression);
+        if let Expr::Name(callee) = flattened.root_ignoring_groups() {
             calls.push(callee.clone());
         }
     });
@@ -1292,9 +1250,12 @@ impl Analyzer {
         &mut self,
         name: &str,
         groups: &[&[CallArg]],
+        delimiters: &[GroupDelimiter],
     ) -> Option<Expr> {
         let function = self.collection.functions.get(name)?.clone();
-        if groups.len() != function.groups.len() {
+        if groups.len() != function.groups.len()
+            || delimiters != function.effects.group_delimiters
+        {
             return None;
         }
         let mut action_positions = self
@@ -1426,8 +1387,8 @@ impl Analyzer {
             }));
             rewritten_groups[group_index][argument_index].value = Expr::Name(local);
             let mut call = Expr::Name(name.to_owned());
-            for group in rewritten_groups {
-                call = Expr::Call(Box::new(call), group);
+            for (delimiter, group) in delimiters.iter().copied().zip(rewritten_groups) {
+                call = apply_call_group(call, delimiter, group);
             }
             return Some(Expr::Block(bindings, Some(Box::new(call))));
         }
@@ -1447,14 +1408,22 @@ impl Analyzer {
             return false;
         };
         let call = call.unlocated_mut();
-        let mut group_refs = Vec::new();
-        let Expr::Name(target) = flatten_call(call, &mut group_refs) else {
+        let flattened = flatten_call(call);
+        let group_refs = flattened.argument_groups();
+        let group_delimiters = flattened
+            .groups
+            .iter()
+            .map(|group| group.delimiter)
+            .collect::<Vec<_>>();
+        let Expr::Name(target) = flattened.root else {
             return false;
         };
         let Some(function) = self.collection.functions.get(target).cloned() else {
             return false;
         };
-        if group_refs.len() != function.groups.len() {
+        if group_refs.len() != function.groups.len()
+            || group_delimiters != function.effects.group_delimiters
+        {
             return false;
         }
 
@@ -1659,8 +1628,8 @@ impl Analyzer {
             );
         }
         let mut rewritten = Expr::Name(canonical);
-        for group in groups {
-            rewritten = Expr::Call(Box::new(rewritten), group);
+        for (delimiter, group) in group_delimiters.into_iter().zip(groups) {
+            rewritten = apply_call_group(rewritten, delimiter, group);
         }
         *call = rewritten;
         true
@@ -1729,17 +1698,30 @@ impl Analyzer {
             return None;
         }
 
+        let ordered_groups = ordered_groups
+            .into_iter()
+            .enumerate()
+            .map(|(index, arguments)| CallGroup {
+                delimiter: function
+                    .effects
+                    .group_delimiters
+                    .get(index)
+                    .copied()
+                    .unwrap_or(GroupDelimiter::Parenthesis),
+                arguments,
+            })
+            .collect::<Vec<_>>();
         let calls = targets
             .into_iter()
             .map(|target| {
                 let mut target_groups = ordered_groups.clone();
-                target_groups[0][0] = CallArg {
+                target_groups[0].arguments[0] = CallArg {
                     label: None,
                     value: Expr::Name(target),
                 };
                 let mut call = Expr::Name(name.to_owned());
                 for group in target_groups {
-                    call = Expr::Call(Box::new(call), group);
+                    call = apply_call_group(call, group.delimiter, group.arguments);
                 }
                 call
             })
@@ -1885,7 +1867,7 @@ impl Analyzer {
             };
             return self.transform_handler_expr(argument, handler, resume, loop_continuation);
         }
-        if let Some((operation, mut arguments)) =
+        if let Some((operation, mut arguments, actual_delimiters)) =
             handled_operation_call(&expression, &handler.identity)
         {
             let candidates = handler
@@ -1918,6 +1900,12 @@ impl Analyzer {
                 ));
                 return Err(());
             };
+            if actual_delimiters != selected.group_delimiters {
+                self.error(format!(
+                    "effect operation `{operation}` uses the wrong argument-group delimiter"
+                ));
+                return Err(());
+            }
             let Some(clause) = handler.clauses.get(&selected.key).cloned() else {
                 self.error(format!("missing handler clause `{operation}`"));
                 return Err(());
@@ -1952,7 +1940,11 @@ impl Analyzer {
                         name: gate_name.clone(),
                         annotation: Some(Type::Function {
                             groups: vec![Vec::new()],
-                            effects: residual_effects.clone(),
+                            // Generated handler ABIs use explicit Parenthesis groups.
+                            effects: FunctionEffects {
+                                group_delimiters: vec![GroupDelimiter::Parenthesis],
+                                ..residual_effects.clone()
+                            },
                             result: Box::new(
                                 analyzer.effect_abi_result_source(Type::Unit, &residual_effects),
                             ),
@@ -2013,6 +2005,7 @@ impl Analyzer {
                     annotation: Some(Type::Function {
                         groups: vec![vec![input.clone()]],
                         effects: FunctionEffects {
+                            group_delimiters: vec![GroupDelimiter::Parenthesis],
                             unsafety: handler_for_clause
                                 .inlining
                                 .borrow()
@@ -2084,6 +2077,16 @@ impl Analyzer {
                 });
                 return self.transform_handler_expr(argument, handler, resume, invoked);
             }
+            let flattened = flatten_call(&expression);
+            if matches!(flattened.root, Expr::Name(name) if name == &source_resume.name)
+                && !flattened.groups.is_empty()
+            {
+                self.error(format!(
+                    "continuation `{}` must be called with one parenthesized positional argument",
+                    source_resume.name
+                ));
+                return Err(());
+            }
             if matches!(&expression, Expr::Name(name) if name == &source_resume.name) {
                 self.error(format!(
                     "continuation `{}` cannot escape its handler clause",
@@ -2093,11 +2096,73 @@ impl Analyzer {
             }
         }
 
-        if matches!(&expression, Expr::Call(_, _)) {
-            let mut direct_groups = Vec::new();
-            if let Expr::Name(name) = flatten_call(&expression, &mut direct_groups) {
+        if let Expr::Index { base, index } = &expression {
+            let known_handler_callable = matches!(base.unlocated(), Expr::Name(name)
+                if handler.resumable_closures.borrow().contains_key(name)
+                    || handler.dynamic_callables.borrow().contains_key(name));
+            if known_handler_callable
+                || matches!(
+                    self.probe_expr_ty(base, None, &handler.inference_context),
+                    super::lower::TypeProbe::Known(Ty::Function(_) | Ty::Callable(_))
+                        | super::lower::TypeProbe::KnownSource(
+                            Ty::Function(_) | Ty::Callable(_),
+                            _,
+                        )
+                )
+            {
+                let call = apply_call_group(
+                    base.as_ref().clone(),
+                    GroupDelimiter::Square,
+                    vec![CallArg {
+                        label: None,
+                        value: index.as_ref().clone(),
+                    }],
+                );
+                return self.transform_handler_expr(call, handler, resume, continuation);
+            }
+        }
+        if matches!(&expression, Expr::Call(_, _) | Expr::DelimitedCall { .. }) {
+            let flattened = flatten_call(&expression);
+            if let Expr::Index { base, index } = flattened.root {
+                if matches!(
+                    self.probe_expr_ty(base, None, &handler.inference_context),
+                    super::lower::TypeProbe::Known(Ty::Function(_) | Ty::Callable(_))
+                        | super::lower::TypeProbe::KnownSource(
+                            Ty::Function(_) | Ty::Callable(_),
+                            _,
+                        )
+                ) {
+                    let mut call = apply_call_group(
+                        base.as_ref().clone(),
+                        GroupDelimiter::Square,
+                        vec![CallArg {
+                            label: None,
+                            value: index.as_ref().clone(),
+                        }],
+                    );
+                    for group in flattened.groups {
+                        call = apply_call_group(
+                            call,
+                            group.delimiter,
+                            group.arguments.to_vec(),
+                        );
+                    }
+                    return self.transform_handler_expr(call, handler, resume, continuation);
+                }
+            }
+            let direct_groups = flattened.argument_groups();
+            let direct_delimiters = flattened
+                .groups
+                .iter()
+                .map(|group| group.delimiter)
+                .collect::<Vec<_>>();
+            if let Expr::Name(name) = flattened.root {
                 if let Some(materialized) =
-                    self.materialize_direct_handler_action(name, &direct_groups)
+                    self.materialize_direct_handler_action(
+                        name,
+                        &direct_groups,
+                        &direct_delimiters,
+                    )
                 {
                     return self.transform_handler_expr(
                         materialized,
@@ -2371,7 +2436,7 @@ impl Analyzer {
                             ));
                             return Err(());
                         };
-                        if destination_callable.group_lengths != source_callable.group_lengths
+                        if destination_callable.group_shapes != source_callable.group_shapes
                             || destination_callable.targets.len() != source_callable.targets.len()
                             || destination_callable.targets.iter().any(|target| {
                                 !source_callable
@@ -2487,20 +2552,22 @@ impl Analyzer {
                 });
                 self.transform_handler_arguments(arguments, Vec::new(), handler, resume, completed)
             }
-            Expr::StructLiteral {
-                constructor,
-                fields,
+            Expr::DelimitedCall {
+                callee,
+                delimiter,
+                arguments,
             } => {
-                let completed: SourceArgumentsContinuation = Rc::new(move |analyzer, fields| {
+                let completed: SourceArgumentsContinuation = Rc::new(move |analyzer, arguments| {
                     continuation(
                         analyzer,
-                        Expr::StructLiteral {
-                            constructor: constructor.clone(),
-                            fields,
+                        Expr::DelimitedCall {
+                            callee: callee.clone(),
+                            delimiter,
+                            arguments,
                         },
                     )
                 });
-                self.transform_handler_arguments(fields, Vec::new(), handler, resume, completed)
+                self.transform_handler_arguments(arguments, Vec::new(), handler, resume, completed)
             }
             Expr::Index { base, index } => {
                 let index = *index;
@@ -2718,10 +2785,7 @@ impl Analyzer {
             }
             Expr::Call(callee, arguments) => {
                 let expression = Expr::Call(callee, arguments);
-                if let Some(match_expression) = self
-                    .pattern_match_call_expression(&expression)
-                    .or_else(|| self.if_call_expression_for_transform(&expression))
-                {
+                if let Some(match_expression) = self.if_call_expression_for_transform(&expression) {
                     return self.transform_handler_expr(
                         match_expression,
                         handler,
@@ -2821,8 +2885,8 @@ impl Analyzer {
         resume: Option<SourceResume>,
         continuation: SourceContinuation,
     ) -> Option<Result<Expr, ()>> {
-        let mut groups = Vec::new();
-        let Expr::Member(receiver, member) = flatten_call(expression, &mut groups) else {
+        let flattened = flatten_call(expression);
+        let Expr::Member(receiver, member) = flattened.root else {
             return None;
         };
         let receiver_ty = match self.probe_expr_ty(receiver, None, &handler.inference_context) {
@@ -2855,15 +2919,36 @@ impl Analyzer {
         let [canonical] = candidates.as_slice() else {
             return None;
         };
-        let mut call = Expr::Call(
-            Box::new(Expr::Name(canonical.clone())),
+        let groups = flattened.argument_groups();
+        let delimiters = flattened
+            .groups
+            .iter()
+            .map(|group| group.delimiter)
+            .collect::<Vec<_>>();
+        if !self.method_call_delimiters_match(
+            canonical,
+            &groups,
+            &delimiters,
+            &handler.inference_context,
+        ) {
+            return Some(Err(()));
+        }
+        let receiver_delimiter = self.collection.functions[canonical]
+            .effects
+            .group_delimiters
+            .first()
+            .copied()
+            .unwrap_or(GroupDelimiter::Parenthesis);
+        let mut call = apply_call_group(
+            Expr::Name(canonical.clone()),
+            receiver_delimiter,
             vec![CallArg {
                 label: None,
                 value: (**receiver).clone(),
             }],
         );
-        for group in groups {
-            call = Expr::Call(Box::new(call), group.to_vec());
+        for group in &flattened.groups {
+            call = apply_call_group(call, group.delimiter, group.arguments.to_vec());
         }
         self.transform_effectful_named_call(&call, handler, resume, continuation)
     }
@@ -2875,12 +2960,15 @@ impl Analyzer {
         resume: Option<SourceResume>,
         continuation: SourceContinuation,
     ) -> Option<Result<Expr, ()>> {
-        let mut groups = Vec::new();
-        let Expr::Name(name) = flatten_call(expression, &mut groups) else {
+        let flattened = flatten_call(expression);
+        let groups = flattened.argument_groups();
+        let Expr::Name(name) = flattened.root else {
             return None;
         };
         let action = handler.erased_callables.get(name)?.clone();
-        if groups.len() != 1
+        if flattened.groups.len() != 1
+            || flattened.groups[0].delimiter != GroupDelimiter::Parenthesis
+            || groups.len() != 1
             || groups[0].len() != usize::from(action.accepts_input)
             || groups[0].iter().any(|argument| argument.label.is_some())
         {
@@ -2912,7 +3000,10 @@ impl Analyzer {
                 name: continuation_name.clone(),
                 annotation: Some(Type::Function {
                     groups: vec![vec![action.output.clone()]],
-                    effects: FunctionEffects::default(),
+                    effects: FunctionEffects {
+                        group_delimiters: vec![GroupDelimiter::Parenthesis],
+                        ..FunctionEffects::default()
+                    },
                     result: Box::new(action.answer.clone()),
                 }),
                 value: Expr::Closure(
@@ -2987,8 +3078,9 @@ impl Analyzer {
         resume: Option<SourceResume>,
         continuation: SourceContinuation,
     ) -> Option<Result<Expr, ()>> {
-        let mut source_groups = Vec::new();
-        let Expr::ChainMember(base, member) = flatten_call(expression, &mut source_groups) else {
+        let flattened = flatten_call(expression);
+        let source_groups = flattened.argument_groups();
+        let Expr::ChainMember(base, member) = flattened.root else {
             return None;
         };
         let base_may_suspend = self.handler_expression_may_suspend(base, &handler);
@@ -2999,9 +3091,13 @@ impl Analyzer {
         if !base_may_suspend && !arguments_may_suspend {
             return None;
         }
-        let groups = source_groups
+        let groups = flattened
+            .groups
             .iter()
-            .map(|group| group.to_vec())
+            .map(|group| CallGroup {
+                delimiter: group.delimiter,
+                arguments: group.arguments.to_vec(),
+            })
             .collect::<Vec<_>>();
         let member = member.clone();
         let handler_for_call = handler.clone();
@@ -3059,7 +3155,7 @@ impl Analyzer {
     fn transform_handler_call_groups(
         &mut self,
         callee: Expr,
-        mut groups: Vec<Vec<CallArg>>,
+        mut groups: Vec<CallGroup>,
         handler: Rc<AlgebraicHandler>,
         resume: Option<SourceResume>,
         continuation: SourceContinuation,
@@ -3067,17 +3163,18 @@ impl Analyzer {
         if groups.is_empty() {
             return continuation(self, callee);
         }
-        let arguments = groups.remove(0);
+        let group = groups.remove(0);
+        let delimiter = group.delimiter;
         let next_handler = handler.clone();
         let next_resume = resume.clone();
         self.transform_handler_arguments(
-            arguments,
+            group.arguments,
             Vec::new(),
             handler,
             resume,
             Rc::new(move |analyzer, arguments| {
                 analyzer.transform_handler_call_groups(
-                    Expr::Call(Box::new(callee.clone()), arguments),
+                    apply_call_group(callee.clone(), delimiter, arguments),
                     groups.clone(),
                     next_handler.clone(),
                     next_resume.clone(),
@@ -3230,8 +3327,8 @@ impl Analyzer {
             return true;
         }
         if matches!(expression, Expr::Call(_, _)) {
-            let mut groups = Vec::new();
-            if let Expr::Name(name) = flatten_call(expression, &mut groups) {
+            let flattened = flatten_call(expression);
+            if let Expr::Name(name) = flattened.root_ignoring_groups() {
                 if handler.resumable_closures.borrow().contains_key(name)
                     || handler.dynamic_callables.borrow().contains_key(name)
                     || handler.erased_callables.contains_key(name)
@@ -3431,7 +3528,10 @@ impl Analyzer {
             name: frame_name.clone(),
             annotation: Some(Type::Function {
                 groups: vec![Vec::new()],
-                effects: FunctionEffects::default(),
+                effects: FunctionEffects {
+                    group_delimiters: vec![GroupDelimiter::Parenthesis],
+                    ..FunctionEffects::default()
+                },
                 result: Box::new(result_source),
             }),
             value: Expr::Closure(Vec::new(), Box::new(transformed)),
@@ -3452,16 +3552,20 @@ impl Analyzer {
         resume: Option<SourceResume>,
         continuation: SourceContinuation,
     ) -> Option<Result<Expr, ()>> {
-        let mut groups = Vec::new();
-        let Expr::Name(name) = flatten_call(expression, &mut groups) else {
+        let flattened = flatten_call(expression);
+        let groups = flattened.argument_groups();
+        let Expr::Name(name) = flattened.root else {
             return None;
         };
         let callable = handler.dynamic_callables.borrow().get(name).cloned()?;
-        if groups.len() != callable.group_lengths.len()
-            || groups
+        if flattened.groups.len() != callable.group_shapes.len()
+            || flattened
+                .groups
                 .iter()
-                .zip(&callable.group_lengths)
-                .any(|(arguments, expected)| arguments.len() != *expected)
+                .zip(&callable.group_shapes)
+                .any(|(group, (delimiter, length))| {
+                    group.delimiter != *delimiter || group.arguments.len() != *length
+                })
         {
             self.error(format!(
                 "dynamic effectful callable `{name}` must be fully applied under its handler"
@@ -3473,7 +3577,7 @@ impl Analyzer {
             .flat_map(|group| group.iter())
             .any(|argument| self.handler_expression_may_suspend(&argument.value, &handler))
         {
-            let group_lengths = callable.group_lengths.clone();
+            let group_shapes = callable.group_shapes.clone();
             let arguments = groups
                 .iter()
                 .flat_map(|group| group.iter().cloned())
@@ -3485,9 +3589,13 @@ impl Analyzer {
             let completed: SourceArgumentsContinuation = Rc::new(move |analyzer, arguments| {
                 let mut offset = 0;
                 let mut call = Expr::Name(callee.clone());
-                for length in &group_lengths {
+                for (delimiter, length) in &group_shapes {
                     let end = offset + length;
-                    call = Expr::Call(Box::new(call), arguments[offset..end].to_vec());
+                    call = apply_call_group(
+                        call,
+                        *delimiter,
+                        arguments[offset..end].to_vec(),
+                    );
                     offset = end;
                 }
                 analyzer
@@ -3514,8 +3622,8 @@ impl Analyzer {
         }
         let rebuild = |target: &str| {
             let mut call = Expr::Name(target.to_owned());
-            for group in &groups {
-                call = Expr::Call(Box::new(call), group.to_vec());
+            for group in &flattened.groups {
+                call = apply_call_group(call, group.delimiter, group.arguments.to_vec());
             }
             call
         };
@@ -3556,16 +3664,20 @@ impl Analyzer {
         resume: Option<SourceResume>,
         continuation: SourceContinuation,
     ) -> Option<Result<Expr, ()>> {
-        let mut groups = Vec::new();
-        let Expr::Name(name) = flatten_call(expression, &mut groups) else {
+        let flattened = flatten_call(expression);
+        let groups = flattened.argument_groups();
+        let Expr::Name(name) = flattened.root else {
             return None;
         };
         let closure = handler.resumable_closures.borrow().get(name).cloned()?;
-        if groups.len() != closure.group_lengths.len()
-            || groups
+        if flattened.groups.len() != closure.group_shapes.len()
+            || flattened
+                .groups
                 .iter()
-                .zip(&closure.group_lengths)
-                .any(|(arguments, expected)| arguments.len() != *expected)
+                .zip(&closure.group_shapes)
+                .any(|(group, (delimiter, length))| {
+                    group.delimiter != *delimiter || group.arguments.len() != *length
+                })
         {
             self.error(format!(
                 "resumable closure `{name}` must be fully applied before it can run under a handler"
@@ -3577,7 +3689,7 @@ impl Analyzer {
             .flat_map(|group| group.iter())
             .any(|argument| self.handler_expression_may_suspend(&argument.value, &handler))
         {
-            let group_lengths = closure.group_lengths.clone();
+            let group_shapes = closure.group_shapes.clone();
             let arguments = groups
                 .iter()
                 .flat_map(|group| group.iter().cloned())
@@ -3589,9 +3701,13 @@ impl Analyzer {
             let completed: SourceArgumentsContinuation = Rc::new(move |analyzer, arguments| {
                 let mut offset = 0;
                 let mut call = Expr::Name(callee.clone());
-                for length in &group_lengths {
+                for (delimiter, length) in &group_shapes {
                     let end = offset + length;
-                    call = Expr::Call(Box::new(call), arguments[offset..end].to_vec());
+                    call = apply_call_group(
+                        call,
+                        *delimiter,
+                        arguments[offset..end].to_vec(),
+                    );
                     offset = end;
                 }
                 analyzer
@@ -3631,7 +3747,10 @@ impl Analyzer {
             name: continuation_name.clone(),
             annotation: Some(Type::Function {
                 groups: vec![vec![closure.input.clone()]],
-                effects: FunctionEffects::default(),
+                effects: FunctionEffects {
+                    group_delimiters: vec![GroupDelimiter::Parenthesis],
+                    ..FunctionEffects::default()
+                },
                 result: Box::new(closure.answer.clone()),
             }),
             value: Expr::Closure(
@@ -3664,7 +3783,9 @@ impl Analyzer {
             ),
         };
         let mut call = Expr::Name(name.clone());
-        for (index, group) in groups.iter().enumerate() {
+        for (index, (group, (delimiter, _))) in
+            groups.iter().zip(&closure.group_shapes).enumerate()
+        {
             let mut arguments = group.to_vec();
             if index + 1 == groups.len() {
                 arguments.push(CallArg {
@@ -3672,7 +3793,7 @@ impl Analyzer {
                     value: Expr::Name(erased_name.clone()),
                 });
             }
-            call = Expr::Call(Box::new(call), arguments);
+            call = apply_call_group(call, *delimiter, arguments);
         }
         Some(Ok(Expr::Block(
             vec![Stmt::Let(continuation_binding), Stmt::Let(erased_binding)],
@@ -3760,6 +3881,10 @@ impl Analyzer {
         };
         *body = transformed;
 
+        if effects.group_delimiters.len() != groups.len() {
+            self.error("resumable closure runtime groups are missing delimiter metadata");
+            return Some(Err(()));
+        }
         let mut rewritten_groups = groups.clone();
         let Some(last_group) = rewritten_groups.last_mut() else {
             self.error("a resumable closure type requires a runtime parameter group");
@@ -3790,7 +3915,12 @@ impl Analyzer {
             SourceResumableClosure {
                 input,
                 answer,
-                group_lengths: groups.iter().map(Vec::len).collect(),
+                group_shapes: effects
+                    .group_delimiters
+                    .iter()
+                    .copied()
+                    .zip(groups.iter().map(Vec::len))
+                    .collect(),
             },
         )))
     }
@@ -3811,6 +3941,7 @@ impl Analyzer {
                 name,
                 &template.compile_groups,
                 groups,
+                None,
                 inference_context,
                 false,
             ) {
@@ -3959,8 +4090,14 @@ impl Analyzer {
         resume: Option<SourceResume>,
         continuation: SourceContinuation,
     ) -> Option<Result<Expr, ()>> {
-        let mut groups = Vec::new();
-        let Expr::Name(source_name) = flatten_call(expression, &mut groups) else {
+        let flattened = flatten_call(expression);
+        let actual_delimiters = flattened
+            .groups
+            .iter()
+            .map(|group| group.delimiter)
+            .collect::<Vec<_>>();
+        let mut groups = flattened.argument_groups();
+        let Expr::Name(source_name) = flattened.root else {
             return None;
         };
         let original_groups = groups.clone();
@@ -3982,6 +4119,23 @@ impl Analyzer {
                     Err(()) => return Some(Err(())),
                 }
             };
+        if actual_delimiters[..runtime_group_start]
+            .iter()
+            .any(|delimiter| *delimiter != GroupDelimiter::Angle)
+        {
+            self.error(format!("compile-time arguments to `{source_name}` use `<...>`"));
+            return Some(Err(()));
+        }
+        let actual_runtime_delimiters = &actual_delimiters[runtime_group_start..];
+        if actual_runtime_delimiters.len() > function.effects.group_delimiters.len()
+            || !actual_runtime_delimiters
+                .iter()
+                .zip(&function.effects.group_delimiters)
+                .all(|(actual, expected)| actual == expected)
+        {
+            self.error(format!("call to `{source_name}` uses the wrong argument-group delimiter"));
+            return Some(Err(()));
+        }
         groups = groups[runtime_group_start..].to_vec();
         if !function
             .effects
@@ -3992,7 +4146,11 @@ impl Analyzer {
             return None;
         }
         if runtime_group_start > 0 {
-            if let Some(materialized) = self.materialize_direct_handler_action(&name, &groups) {
+            if let Some(materialized) = self.materialize_direct_handler_action(
+                &name,
+                &groups,
+                &actual_delimiters[runtime_group_start..],
+            ) {
                 return Some(self.transform_handler_expr(
                     materialized,
                     handler,
@@ -4008,9 +4166,17 @@ impl Analyzer {
         {
             let compile_prefix = original_groups[..runtime_group_start]
                 .iter()
-                .map(|group| group.to_vec())
+                .zip(&actual_delimiters[..runtime_group_start])
+                .map(|(group, delimiter)| CallGroup {
+                    delimiter: *delimiter,
+                    arguments: group.to_vec(),
+                })
                 .collect::<Vec<_>>();
-            let group_lengths = groups.iter().map(|group| group.len()).collect::<Vec<_>>();
+            let group_shapes = groups
+                .iter()
+                .zip(&actual_delimiters[runtime_group_start..])
+                .map(|(group, delimiter)| (*delimiter, group.len()))
+                .collect::<Vec<_>>();
             let arguments = groups
                 .iter()
                 .flat_map(|group| group.iter().cloned())
@@ -4023,11 +4189,19 @@ impl Analyzer {
                 let mut offset = 0;
                 let mut call = Expr::Name(callee.clone());
                 for group in &compile_prefix {
-                    call = Expr::Call(Box::new(call), group.clone());
+                    call = apply_call_group(
+                        call,
+                        group.delimiter,
+                        group.arguments.clone(),
+                    );
                 }
-                for length in &group_lengths {
+                for (delimiter, length) in &group_shapes {
                     let end = offset + length;
-                    call = Expr::Call(Box::new(call), arguments[offset..end].to_vec());
+                    call = apply_call_group(
+                        call,
+                        *delimiter,
+                        arguments[offset..end].to_vec(),
+                    );
                     offset = end;
                 }
                 analyzer
@@ -4070,6 +4244,7 @@ impl Analyzer {
                 annotation: Some(Type::Function {
                     groups: vec![vec![frame.input.clone()]],
                     effects: FunctionEffects {
+                        group_delimiters: vec![GroupDelimiter::Parenthesis],
                         unsafety: has_borrow_channels,
                         ..FunctionEffects::default()
                     },
@@ -4194,6 +4369,40 @@ impl Analyzer {
             .unwrap_or_default();
         let raise_trait = self.lang_item_name(LangItemKind::Raise).to_owned();
         visit_expr_mut(&mut body, &mut |expression| {
+            if let Expr::DelimitedCall {
+                callee,
+                delimiter: GroupDelimiter::Brace,
+                ..
+            } = expression
+            {
+                if let Expr::Name(name) = callee.as_mut() {
+                    if parameter_types
+                        .get(name)
+                        .is_some_and(|ty| !matches!(ty, Type::Function { .. }))
+                    {
+                        let source_name = name.rsplit('$').next().unwrap_or(name);
+                        let canonical = if self
+                            .collection
+                            .struct_layouts
+                            .contains_key(source_name)
+                            || self.collection.struct_templates.contains_key(source_name)
+                        {
+                            Some(source_name.to_owned())
+                        } else if !origin.module_path.is_empty() {
+                            let canonical =
+                                format!("{}::{source_name}", origin.module_path.join("::"));
+                            (self.collection.struct_layouts.contains_key(&canonical)
+                                || self.collection.struct_templates.contains_key(&canonical))
+                            .then_some(canonical)
+                        } else {
+                            None
+                        };
+                        if let Some(canonical) = canonical {
+                            *name = canonical;
+                        }
+                    }
+                }
+            }
             let replacement = match expression {
                 Expr::Call(callee, arguments) if arguments.is_empty() => {
                     let Expr::Member(receiver, member) = callee.as_ref() else {
@@ -4231,21 +4440,28 @@ impl Analyzer {
                     let [(_, canonical)] = candidates.as_slice() else {
                         return;
                     };
-                    let mut call = Expr::Call(
-                        Box::new(Expr::Name(canonical.clone())),
+                    let function = self
+                        .collection
+                        .functions
+                        .get(canonical)
+                        .or_else(|| self.collection.function_templates.get(canonical));
+                    let group_count = function.map_or(1, |function| function.groups.len());
+                    let group_delimiter = |index| {
+                        function
+                            .and_then(|function| function.effects.group_delimiters.get(index))
+                            .copied()
+                            .unwrap_or(GroupDelimiter::Parenthesis)
+                    };
+                    let mut call = apply_call_group(
+                        Expr::Name(canonical.clone()),
+                        group_delimiter(0),
                         vec![CallArg {
                             label: None,
                             value: (**receiver).clone(),
                         }],
                     );
-                    let group_count = self
-                        .collection
-                        .functions
-                        .get(canonical)
-                        .or_else(|| self.collection.function_templates.get(canonical))
-                        .map_or(1, |function| function.groups.len());
-                    for _ in 1..group_count {
-                        call = Expr::Call(Box::new(call), Vec::new());
+                    for index in 1..group_count {
+                        call = apply_call_group(call, group_delimiter(index), Vec::new());
                     }
                     Some(call)
                 }
@@ -4623,6 +4839,7 @@ impl Analyzer {
             annotation: Some(Type::Function {
                 groups: vec![vec![input.clone()]],
                 effects: FunctionEffects {
+                    group_delimiters: vec![GroupDelimiter::Parenthesis],
                     unsafety: !recursive_borrow_channels.is_empty(),
                     ..FunctionEffects::default()
                 },
@@ -4874,6 +5091,8 @@ impl Analyzer {
         if !recursive_borrow_channels.is_empty() {
             frame_effects.unsafety = true;
         }
+        // Specialized handler frames flatten their source groups into one Parenthesis ABI group.
+        frame_effects.group_delimiters = vec![GroupDelimiter::Parenthesis];
         let frame_result = self.effect_abi_result_source(answer, &frame_effects);
         let frame_annotation = Some(Type::Function {
             groups: vec![flattened_parameters
@@ -4963,8 +5182,18 @@ impl Analyzer {
                         if let Some(selection) =
                             static_callable_selection(&binding.value, &mut targets)
                         {
-                            let group_lengths =
-                                callable_groups.iter().map(Vec::len).collect::<Vec<_>>();
+                            if effects.group_delimiters.len() != callable_groups.len() {
+                                self.error(
+                                    "dynamic effectful callable groups are missing delimiter metadata",
+                                );
+                                return Err(());
+                            }
+                            let group_shapes = effects
+                                .group_delimiters
+                                .iter()
+                                .copied()
+                                .zip(callable_groups.iter().map(Vec::len))
+                                .collect::<Vec<_>>();
                             let mut union = Vec::new();
                             let mut sources = Vec::new();
                             let mut tag_bindings = Vec::new();
@@ -4973,7 +5202,7 @@ impl Analyzer {
                                 if let Some(dynamic) =
                                     handler.dynamic_callables.borrow().get(&target).cloned()
                                 {
-                                    if dynamic.group_lengths != group_lengths {
+                                    if dynamic.group_shapes != group_shapes {
                                         valid = false;
                                         break;
                                     }
@@ -5019,7 +5248,7 @@ impl Analyzer {
                                 let name = binding.name.clone();
                                 let callable = SourceDynamicCallable {
                                     targets: union,
-                                    group_lengths,
+                                    group_shapes,
                                 };
                                 let next_handler = handler.clone();
                                 let next_resume = resume.clone();

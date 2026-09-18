@@ -76,15 +76,16 @@ These three spellings occupy different grammatical categories:
   `core.test` contract above. Its metadata name is consumed by syntax and its
   body has type
   `with<core.error.throwing<core.string.String>>((): ())`.
-- `extend(pattern, ...) { ... }` is an implementation declaration. Its
-  optional `(requires: condition)` entry is a compile-time `bool` header
-  parameter; `extend` itself has no fake function declaration in `core`.
+- `extend(pattern, ...)<requires: condition> { ... }` is an implementation
+  declaration. Its optional `requires:` entry is an ordinary angle
+  compile-time group; `extend` itself has no fake function declaration in
+  `core`.
 - `requires(goals) expression` is an initializer guard. It constrains the
   function body through the source-visible `core.requires` contract, passing
   the compile-time `bool` and delayed body closure.
 
-Trait inheritance uses the same labeled `(requires: condition)` compile-time
-`bool` header parameter as `extend`; it does not invoke the function-body
+Trait inheritance uses the same labeled `<requires: condition>` compile-time
+group as `extend`; it does not invoke the function-body
 guard contract.
 
 ### 2.1 Let Declarations
@@ -260,7 +261,7 @@ named_field = [ visibility ], IDENT, ":", type_expr ;
 trait_decl =
     "trait",
     [ "<", self_parameter, ">" ],
-    [ requires_parameter_group ],
+    [ requires_compile_group ],
     "{", separators,
     { trait_member, separators },
     "}" ;
@@ -287,7 +288,7 @@ extend_decl =
     type_expr,
     [ ",", trait_ref ],
     ")",
-    [ requires_parameter_group ],
+    [ requires_compile_group ],
     "{", separators,
     { extend_member, separators },
     "}" ;
@@ -302,11 +303,11 @@ extend_member =
 constraint_guard =
     contextual("requires"), constraint_arguments ;
 
-requires_parameter_group =
-    "(", contextual("requires"), ":",
+requires_compile_group =
+    "<", contextual("requires"), ":",
     constraint_expression,
     { ( "&&" | "," ), constraint_expression },
-    [ "," ], ")" ;
+    [ "," ], ">" ;
 
 constraint_arguments =
     "(", constraint_expression,
@@ -327,9 +328,10 @@ trait_ref =
 trait_argument = [ IDENT, ":" ], type_expr ;
 ```
 
-The `requires:` group in a trait or extension header is a labeled
-compile-time boolean requirement, not a callable declaration and not a new
-static sort. `extend` is parser-owned declaration syntax and has no
+The `requires:` group in a trait or extension header is an ordinary labeled
+angle compile-time group carrying a boolean requirement, not dedicated
+parenthesized syntax, a callable declaration, or a new static sort. `extend`
+is parser-owned declaration syntax and has no
 corresponding `extend` function or language item.
 
 An associated type projection equality follows the trait constraint whose
@@ -350,7 +352,7 @@ let duplicate<T: type>(value: T): (T, T) = requires(T is Copyable) {
 Both forms lower `is` relations and projection equalities to solver goals. An
 unsatisfied concrete goal is a compile-time error; an abstract goal is
 retained until generic instantiation. Trait prerequisites use the same
-constraint arguments directly, for example `trait(requires: self is Movable) {}`.
+constraint arguments directly, for example `trait<requires: self is Movable> {}`.
 
 ### 2.6 Foreign Declarations
 
@@ -516,10 +518,11 @@ trailing_closure =
     [ IDENT, ":" ], closure_expression ;
 ```
 
-Every postfix argument-group opener must be byte-adjacent to its callee. Its delimiter
-must match the corresponding declaration or function-type group. `<>`
-exclusively supplies a compile-time group; `()`, `[]`, and `{}` supply runtime
-groups. Thus `a < b` is a
+Every postfix argument-group opener must be byte-adjacent to its callee. One
+delimiter-aware call model preserves and checks the delimiter against the
+corresponding declaration or function-type group. `<>` exclusively supplies a
+compile-time group, including struct-constructor and effect arguments; `()`,
+`[]`, and `{}` supply runtime groups. Thus `a < b` is a
 comparison (comparison operators require surrounding whitespace), while
 `a<b>` is an angle call. A postfix square group is the uniform surface form
 for calls and retains bounds-checked indexing/place behavior when its callee
@@ -554,7 +557,13 @@ primary =
   | tuple_expression
   | array_expression
   | closure_expression
-  | match_expression ;
+  | match_expression
+  | if_expression
+  | while_expression
+  | do_while_expression
+  | return_expression
+  | break_expression
+  | await_expression ;
 
 literal = INTEGER | FLOAT | CHAR | STRING
         | contextual("true") | contextual("false") | "()" ;
@@ -575,9 +584,9 @@ closure_parameters =
   | "(", [ runtime_parameter, { ",", runtime_parameter }, [ "," ] ], ")" ;
 ```
 
-Control operations such as `if`, `while`, `for`, `loop`, `return`, `break`, `continue`, `do`,
-`try`, `throw`, and `unsafe` begin as contextual identifiers and are recognized by their validated
-call or trailing-closure shape.
+Control operations are contextual and recognized by their dedicated validated
+shapes. In particular, the grammar has no aliases for `if`, `while`, or the
+post-test `do` loop, and `return`, `break`, and `await` require parentheses.
 
 ## 5. Closures and Matches
 
@@ -609,18 +618,34 @@ match_arm =
     [ contextual("if"), expression ],
     "=>",
     expression ;
+
+if_expression =
+    contextual("if"), "(", expression, ")", closure_body,
+    [ contextual("else"), ":", closure_body ] ;
+
+while_expression =
+    contextual("while"), "(", expression, ")", closure_body ;
+
+do_while_expression =
+    contextual("do"), closure_body,
+    contextual("while"), ":", closure_body ;
+
+return_expression = contextual("return"), "(", [ expression ], ")" ;
+break_expression = contextual("break"), "(", [ expression ], ")" ;
+await_expression = contextual("await"), "(", expression, ")" ;
 ```
 
 An ordinary brace expression is a closure, not a generic eagerly evaluated
 block. Function declarations and dedicated control forms consume such closures
-and invoke them at the point required by their contracts. The brace following
-`match(value)` is one multi-partial closure whose comma-separated arms are
-partial functions; it is not a tight Brace `DelimitedCall`.
+and invoke them at the point required by their contracts. `match(value) { ... }`
+maps directly to a match expression whose comma-separated arms are stored as
+match arms. Its brace is not a tight Brace `DelimitedCall`, and parsing does
+not create a closure or other call intermediate.
 
-A single pattern partial remains a closure expression with the surface form
+A single pattern closure remains a closure expression with the surface form
 `{ pattern [if expression] -> expression }`. The former consecutive form
 `callee { P -> ... } { Q -> ... }` is not grammar; multiple cases use the one
-match closure `match(value) { P => ..., Q => ... }`.
+direct match expression `match(value) { P => ..., Q => ... }`.
 
 `c` selects the C data representation and may appear at most once. It is
 orthogonal to named options such as `derive: Copyable`; for example,
@@ -682,11 +707,11 @@ let grouped = (value)
 f
 (x)
 
-let curried = make(T)(value)
+let curried = make<T>(value)
 let field = value.member
 let chained = value?.member
 
-if condition { left() } else { right() }
+if(condition) { left() } else: { right() }
 
 match(value) {
   Some(item) => item,

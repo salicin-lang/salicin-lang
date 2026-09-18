@@ -1,6 +1,6 @@
 use crate::ast::{
-    CallArg, Expr, GroupDelimiter, ItemOrigin, MatchArm, Param, PassMode, Pattern, PatternFields,
-    Type,
+    CallArg, CallGroup, Expr, GroupDelimiter, ItemOrigin, MatchArm, Param, PassMode, Pattern,
+    PatternFields, Type,
 };
 use crate::core::LangItemKind;
 
@@ -8,7 +8,7 @@ use super::fallible::{StandardFallibleInfo, StandardFallibleKind};
 use super::flow::LowerCtx;
 use super::handlers::rewrite_handler_chain_wrappers;
 use super::hir::{HirExpr, LocalCapability, Ty};
-use super::lower::{error_expr, place_root_name, CustomChainPlan, TypeProbe};
+use super::lower::{apply_call_group, error_expr, place_root_name, CustomChainPlan, TypeProbe};
 use super::names::nominal_instance_name;
 use super::registry::{NominalInstanceKey, NominalKind};
 use super::source_rewrite::{expand_alias_type, source_type_expression};
@@ -412,7 +412,7 @@ impl Analyzer {
         payload: &str,
         error: &str,
         member: &str,
-        source_groups: &[Vec<CallArg>],
+        source_groups: &[CallGroup],
         source_success: &Expr,
         source_residual: &Expr,
         expected: Option<&Ty>,
@@ -437,7 +437,10 @@ impl Analyzer {
             ));
             return error_expr();
         };
-        let groups = source_groups.iter().map(Vec::as_slice).collect::<Vec<_>>();
+        let groups = source_groups
+            .iter()
+            .map(|group| group.arguments.as_slice())
+            .collect::<Vec<_>>();
         let Some(output) =
             self.chain_access_ty(&info.payload, member, Some(&groups), &context.origin)
         else {
@@ -525,10 +528,17 @@ impl Analyzer {
         &mut self,
         base: &Expr,
         member: &str,
-        groups: Option<&[&[CallArg]]>,
+        groups: Option<&[CallGroup]>,
         expected: Option<&Ty>,
         context: &mut LowerCtx,
     ) -> HirExpr {
+        let argument_groups = groups.map(|groups| {
+            groups
+                .iter()
+                .map(|group| group.arguments.as_slice())
+                .collect::<Vec<_>>()
+        });
+        let arguments = argument_groups.as_deref();
         let borrowed = matches!(base, Expr::Borrow { .. })
             || place_root_name(base)
                 .and_then(|name| context.lookup(name))
@@ -553,7 +563,7 @@ impl Analyzer {
                 TypeProbe::Defaultable(_) | TypeProbe::Unsupported => None,
             };
             if let Some(plan) = base_ty
-                .and_then(|ty| self.custom_chain_plan_for_ty(ty, member, groups, &context.origin))
+                .and_then(|ty| self.custom_chain_plan_for_ty(ty, member, arguments, &context.origin))
             {
                 return self.lower_custom_chain_call(base, member, groups, plan, expected, context);
             }
@@ -593,7 +603,7 @@ impl Analyzer {
             ));
             return error_expr();
         };
-        let Some(output) = self.chain_access_ty(&info.payload, member, groups, &context.origin)
+        let Some(output) = self.chain_access_ty(&info.payload, member, arguments, &context.origin)
         else {
             return error_expr();
         };
@@ -630,8 +640,12 @@ impl Analyzer {
             member.to_owned(),
         );
         if let Some(groups) = groups {
-            for arguments in groups {
-                access = Expr::Call(Box::new(access), arguments.to_vec());
+            for group in groups {
+                access = apply_call_group(
+                    access,
+                    group.delimiter,
+                    group.arguments.clone(),
+                );
             }
         }
         let wrap = |variant: &str, value: Option<Expr>| {
@@ -687,7 +701,7 @@ impl Analyzer {
         &mut self,
         base: &Expr,
         member: &str,
-        groups: Option<&[&[CallArg]]>,
+        groups: Option<&[CallGroup]>,
         plan: CustomChainPlan,
         expected: Option<&Ty>,
         context: &mut LowerCtx,
@@ -698,8 +712,12 @@ impl Analyzer {
             member.to_owned(),
         );
         if let Some(groups) = groups {
-            for arguments in groups {
-                access = Expr::Call(Box::new(access), arguments.to_vec());
+            for group in groups {
+                access = apply_call_group(
+                    access,
+                    group.delimiter,
+                    group.arguments.clone(),
+                );
             }
         }
         let transform = Expr::Closure(

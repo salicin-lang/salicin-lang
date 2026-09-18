@@ -39,7 +39,7 @@ let run(move action: with<ask>((): i32)): i32 = {
 let outer(move action: with<ask>((): i32), abandon: bool): i32 = {
   ask.handle{
     value: { (resume) ->
-      if abandon { 40 } else { resume(20) }
+      if(abandon) { 40 } else: { resume(20) }
     },
     action: {
       run(action)

@@ -52,7 +52,7 @@ pub let do<e: effects, T: type>: with<e>(move action: with<e>((): T)): T = {
 pub let defer<e: effects>: with<e>(move action: with<e>((): ())): () = builtin()
 
 /// Runs `action` once, then repeats it while the lazy condition remains true.
-pub let do<e: effects>: with<e>(move action: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): ()))(move while: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)): () = {
+pub let do<e: effects>: with<e>(move action: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): ()))(move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)): () = {
   loop {
     core.control.iteration_skip.handle{
       next: { () },
@@ -60,9 +60,9 @@ pub let do<e: effects>: with<e>(move action: with<core.control.loop_exit<()>, co
         action()
       },
     }
-    if while() {
+    if(condition()) {
       continue()
-    } else {
+    } else: {
       break()
     }
   }
@@ -74,9 +74,9 @@ pub let loop<e: effects, T: type>: with<e>(move body: with<core.control.loop_exi
 /// Repeats `body` while the lazy condition remains true.
 pub let while<e: effects>: with<e>(move condition: with<e>((): bool))(move do: with<e>((): ())): () = {
   loop {
-    if condition() {
+    if(condition()) {
       do()
-    } else {
+    } else: {
       break()
     }
   }

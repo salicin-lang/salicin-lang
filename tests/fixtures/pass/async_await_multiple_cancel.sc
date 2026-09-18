@@ -31,10 +31,10 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polls == 0 {
+    if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
-    } else {
+    } else: {
       Poll<i32>.Ready(self.value)
     }
   }
@@ -62,8 +62,8 @@ let main(): i32 = {
     do {
       let resource = resource{ counter: counter }
       let mut future = async {
-        let first = await step{ counter: counter, polls: 0, value: 20 }
-        let second = await step{ counter: counter, polls: 0, value: 22 }
+        let first = await(step{ counter: counter, polls: 0, value: 20 })
+        let second = await(step{ counter: counter, polls: 0, value: 22 })
         consume(resource)
         first + second
       }

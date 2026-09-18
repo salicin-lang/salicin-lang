@@ -15,7 +15,7 @@ let send(
   data: Ptr<u8>,
   length: u64,
 ): () = {
-  if unsafe { host_report(index, status, has_message, data, length) } != 0 {
+  if(unsafe { host_report(index, status, has_message, data, length) } != 0) {
     unsafe {
       raw_trap()
     }
@@ -50,7 +50,7 @@ let report(index: u64, move value: core.testing.Outcome): bool = {
 let finish(registrations: u64, failures: u64): i32 = {
   let empty: u8 = 0
   send(registrations, 2, 0, ptr(borrow(empty)), failures)
-  if failures == 0 { 0 } else { 1 }
+  if(failures == 0) { 0 } else: { 1 }
 }
 
 /// Fails the current test with an exact owned UTF-8 message.
@@ -61,7 +61,7 @@ pub let fail: with<core.error.throwing<core.string.String>>
 
 /// Requires a condition to be true.
 pub let assert: with<core.error.throwing<core.string.String>>(condition: bool): () = {
-  if !condition {
+  if(!condition) {
     fail("assertion failed")
   }
 }
@@ -75,7 +75,7 @@ pub let AssertionDebug = trait {
 extend(bool, AssertionDebug) {
   let assertion_debug(self: Borrow<self>)(): core.string.String = {
     let value: bool = self
-    if value { "true" } else { "false" }
+    if(value) { "true" } else: { "false" }
   }
 }
 
@@ -91,14 +91,11 @@ extend(core.string.str, AssertionDebug) {
   let assertion_debug(self: Borrow<self>)(): core.string.String = {
     let mut writer = alloc.string.StringWriter.new()
     let mut scalars = self.scalars()
-    while {
+    loop {
       match(scalars.next()) {
-        Some(scalar) => do {
-          writer.write_scalar(scalar)
-          true
-        }, None => false,
+        Some(scalar) => writer.write_scalar(scalar), None => break(),
       }
-    } {}
+    }
     writer.finish()
   }
 }
@@ -178,7 +175,7 @@ pub let assert_eq<T: type>: with<core.error.throwing<core.string.String>>
   (left: T)
   (right: T): () =
   requires(T is core.cmp.Eq<T> && T is AssertionDebug) {
-  if !(left == right) {
+  if(!(left == right)) {
     let left_text = left.assertion_debug()
     let right_text = right.assertion_debug()
     let message = equality_message(left_text, right_text)
@@ -191,7 +188,7 @@ pub let assert_ne<T: type>: with<core.error.throwing<core.string.String>>
   (left: T)
   (right: T): () =
   requires(T is core.cmp.Eq<T> && T is AssertionDebug) {
-  if left == right {
+  if(left == right) {
     let value_text = left.assertion_debug()
     let message = inequality_message(value_text)
     fail(message)

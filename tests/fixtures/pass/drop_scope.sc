@@ -15,7 +15,7 @@ let consume(move value: resource): () = { () }
 
 let conditional(flag: bool): () = {
   let value = resource{ value: 1 }
-  if flag { consume(value) }
+  if(flag) { consume(value) }
 }
 
 let inspect(move choice: choice): i32 = {

@@ -84,16 +84,18 @@ impl Analyzer {
                     })
                     .collect(),
             ),
-            Expr::StructLiteral {
-                constructor,
-                fields,
-            } => Expr::StructLiteral {
-                constructor: Box::new(self.rewrite_defer_scopes(*constructor)),
-                fields: fields
+            Expr::DelimitedCall {
+                callee,
+                delimiter,
+                arguments,
+            } => Expr::DelimitedCall {
+                callee: Box::new(self.rewrite_defer_scopes(*callee)),
+                delimiter,
+                arguments: arguments
                     .into_iter()
-                    .map(|field| CallArg {
-                        label: field.label,
-                        value: self.rewrite_defer_scopes(field.value),
+                    .map(|argument| CallArg {
+                        label: argument.label,
+                        value: self.rewrite_defer_scopes(argument.value),
                     })
                     .collect(),
             },

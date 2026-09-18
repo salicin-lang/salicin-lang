@@ -14,7 +14,7 @@ let side_effect(count: Borrow<mut><i32>): i32 = {
 let main(): i32 = {
   let mut count = 0
   let answer = Option<adder>.None?.add(side_effect(count)) ?? 42
-  if count == 0 { answer } else { 0 }
+  if(count == 0) { answer } else: { 0 }
 }
 
 test("chain_option_method_arguments_are_lazy.sc") {

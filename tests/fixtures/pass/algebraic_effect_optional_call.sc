@@ -17,10 +17,10 @@ let main(): i32 = {
   let mut arguments = 0
   let result: i32 = read.handle{
     option_base: { (present, resume) ->
-      resume(if present { Option.Some(adder{ base: 8 }) } else { Option.None })
+      resume(if(present) { Option.Some(adder{ base: 8 }) } else: { Option.None })
     },
     result_base: { (present, resume) ->
-      resume(if present { Result.Ok(adder{ base: 8 }) } else { Result.Err(true) })
+      resume(if(present) { Result.Ok(adder{ base: 8 }) } else: { Result.Err(true) })
     },
     argument: { (resume) ->
       arguments += 1;

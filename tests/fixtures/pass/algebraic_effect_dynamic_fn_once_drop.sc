@@ -32,7 +32,7 @@ let main(): i32 = {
         let value = abort.stop()
         value + consume(right_resource)
       }
-      let action: with<abort>((): i32)  = if true { left } else { right }
+      let action: with<abort>((): i32)  = if(true) { left } else: { right }
       action()
     },
   }

@@ -19,7 +19,7 @@ extend(state, Droppable) {
 }
 
 let accept: with<throwing<bool>>(fail: bool): i32 = {
-  if fail { throw(true) } else { 0 }
+  if(fail) { throw(true) } else: { 0 }
 }
 
 let update: with<step, throwing<bool>>(state: Borrow<mut><state>, fail: bool): i32 = {

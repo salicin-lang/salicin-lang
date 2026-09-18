@@ -17,9 +17,9 @@ let main(): i32 = {
   values.truncate(9)
   values.clear()
   values.clear()
-  if started_empty && values.is_empty() && values.len() == 0 && values.capacity() >= 8 && reserved.len() == 0 && reserved.capacity() == 8 && reusable == 9 {
+  if(started_empty && values.is_empty() && values.len() == 0 && values.capacity() >= 8 && reserved.len() == 0 && reserved.capacity() == 8 && reusable == 9) {
     score
-  } else {
+  } else: {
     0
   }
 }

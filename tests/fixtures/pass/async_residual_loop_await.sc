@@ -25,9 +25,9 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<bool> = {
-    if self.pending {
+    if(self.pending) {
       Poll<bool>.Pending
-    } else {
+    } else: {
       Poll<bool>.Ready(self.done)
     }
   }
@@ -64,10 +64,10 @@ let run_success(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
     action: {
       let mut future = async {
         loop {
-          let done = await make_step(drops, false)
-          if done {
-            break 42
-          } else {
+          let done = await(make_step(drops, false))
+          if(done) {
+            break(42)
+          } else: {
             continue()
           }
         }
@@ -90,10 +90,10 @@ let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
     action: {
       let mut future = async {
         loop {
-          let done = await make_step(drops, true)
-          if done {
-            break 0
-          } else {
+          let done = await(make_step(drops, true))
+          if(done) {
+            break(0)
+          } else: {
             continue()
           }
         }
@@ -107,19 +107,19 @@ let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
 let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   ask.handle{
     ask: {
-      (resume) -> if continue_once(calls) {
+      (resume) -> if(continue_once(calls)) {
         resume(false)
-      } else {
+      } else: {
         42
       }
     },
     action: {
       let mut future = async {
         loop {
-          let done = await make_step(drops, false)
-          if done {
-            break 0
-          } else {
+          let done = await(make_step(drops, false))
+          if(done) {
+            break(0)
+          } else: {
             continue()
           }
         }
@@ -172,24 +172,36 @@ let main(): i32 = {
     raw_dealloc(abandoned_calls, size_of<i32>, align_of<i32>)
   }
 
-  if success == 42 && cancelled == 42 && abandoned == 42 &&
+  if(success == 42 && cancelled == 42 && abandoned == 42 &&
     drop_count == 5 && success_count == 3 &&
-    cancelled_count == 1 && abandoned_count == 2 {
+    cancelled_count == 1 && abandoned_count == 2 ) {
     42
-  } else if success != 42 {
-    1
-  } else if cancelled != 42 {
-    2
-  } else if abandoned != 42 {
-    3
-  } else if drop_count != 5 {
-    10 + drop_count
-  } else if success_count != 3 {
-    20 + success_count
-  } else if cancelled_count != 1 {
-    30 + cancelled_count
-  } else {
-    40 + abandoned_count
+  } else: {
+    if(success != 42) {
+      1
+    } else: {
+      if(cancelled != 42) {
+        2
+      } else: {
+        if(abandoned != 42) {
+          3
+        } else: {
+          if(drop_count != 5) {
+            10 + drop_count
+          } else: {
+            if(success_count != 3) {
+              20 + success_count
+            } else: {
+              if(cancelled_count != 1) {
+                30 + cancelled_count
+              } else: {
+                40 + abandoned_count
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 

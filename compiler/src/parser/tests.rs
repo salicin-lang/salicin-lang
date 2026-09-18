@@ -84,39 +84,35 @@ fn function_tail(function: &Function) -> &Expr {
     tail.unlocated()
 }
 
-fn flatten_test_call<'a>(expression: &'a Expr, groups: &mut Vec<&'a [CallArg]>) -> &'a Expr {
+fn flatten_test_call<'a>(
+    expression: &'a Expr,
+    groups: &mut Vec<(GroupDelimiter, &'a [CallArg])>,
+) -> &'a Expr {
     let expression = expression.unlocated();
-    if let Expr::Call(callee, arguments) = expression {
-        let root = flatten_test_call(callee, groups);
-        groups.push(arguments);
-        root
-    } else {
-        expression
+    match expression {
+        Expr::Call(callee, arguments) => {
+            let root = flatten_test_call(callee, groups);
+            groups.push((GroupDelimiter::Parenthesis, arguments));
+            root
+        }
+        Expr::DelimitedCall {
+            callee,
+            delimiter,
+            arguments,
+        } => {
+            let root = flatten_test_call(callee, groups);
+            groups.push((*delimiter, arguments));
+            root
+        }
+        _ => expression,
     }
 }
 
 fn match_call_parts(expression: &Expr) -> (&Expr, &[MatchArm]) {
-    let mut groups = Vec::new();
-    let root = flatten_test_call(expression, &mut groups);
-    assert_eq!(root, &Parser::core_match_function());
-    let [input_group, cases_group] = groups.as_slice() else {
-        panic!("expected an input and one partial closure");
+    let Expr::Match { scrutinee, arms } = expression.unlocated() else {
+        panic!("expected a match expression");
     };
-    let [CallArg {
-        label: None,
-        value: input,
-    }] = *input_group
-    else {
-        panic!("expected one unlabeled match input");
-    };
-    let [CallArg {
-        label: None,
-        value: Expr::PartialClosure(arms),
-    }] = *cases_group
-    else {
-        panic!("expected one unlabeled partial closure");
-    };
-    (input, arms)
+    (scrutinee, arms)
 }
 
 fn if_call_parts(expression: &Expr) -> (&Expr, &Expr, &Expr) {
@@ -137,7 +133,12 @@ fn if_call_parts(expression: &Expr) -> (&Expr, &Expr, &Expr) {
         flatten_test_call(expression, &mut groups),
         &Parser::core_if_function()
     );
-    let [condition_group, then_group, else_group] = groups.as_slice() else {
+    let [
+        (GroupDelimiter::Parenthesis, condition_group),
+        (GroupDelimiter::Parenthesis, then_group),
+        (GroupDelimiter::Parenthesis, else_group),
+    ] = groups.as_slice()
+    else {
         panic!("expected condition, then, and else groups");
     };
     let [CallArg {
@@ -628,6 +629,18 @@ fn preserves_all_function_group_delimiters_and_tight_calls() {
     let Item::Global(binding) = &program.items[1] else {
         panic!("expected global");
     };
+    let mut groups = Vec::new();
+    let root = flatten_test_call(&binding.value, &mut groups);
+    assert!(matches!(root, Expr::Index { base, .. }
+        if matches!(base.as_ref(), Expr::DelimitedCall {
+            callee,
+            delimiter: GroupDelimiter::Angle,
+            ..
+        } if callee.as_ref() == &Expr::Name("combine".into()))));
+    assert_eq!(
+        groups.iter().map(|(delimiter, _)| *delimiter).collect::<Vec<_>>(),
+        [GroupDelimiter::Brace, GroupDelimiter::Parenthesis]
+    );
     let Expr::Call(paren, _) = &binding.value else {
         panic!("expected parenthesis call");
     };
@@ -719,6 +732,7 @@ fn parses_angle_type_applications_and_official_type_forms() {
 fn rejects_parenthesized_type_trait_effect_associated_and_schema_applications() {
     for source in [
         "let read(value: Option(i32)): i32 = { 0 }\n",
+        "let cell<t: type> = struct { value: t }\nlet read(value: cell(i32)): i32 = { 0 }\n",
         "let marker<t: type>(self: type) = trait {}\nextend(i32, marker(i32)) {}\n",
         "let state<t: type> = effect {}\nlet read(): i32 with<state(i32)> = { 0 }\n",
         "let read(value: Chain.Rebind(i32)): i32 = { 0 }\n",
@@ -726,6 +740,26 @@ fn rejects_parenthesized_type_trait_effect_associated_and_schema_applications() 
     ] {
         assert!(parse(source).is_err(), "legacy application parsed: {source}");
     }
+}
+
+#[test]
+fn rejects_effect_operations_with_non_parenthesis_runtime_groups() {
+    for source in [
+        "let state = effect { let get[]: i32 }\n",
+        "let state = effect { let put{value: i32}: () }\n",
+    ] {
+        let program = parse(source).expect("declaration delimiters are retained for validation");
+        assert!(
+            !crate::standard::delimiter_diagnostics(&program, "core").is_empty(),
+            "invalid official effect operation was accepted: {source}"
+        );
+    }
+}
+
+#[test]
+fn ordinary_user_source_allows_pascal_case_names() {
+    parse("let Service(): i32 = { 42 }\nlet Answer: i32 = Service()\n")
+        .expect("ordinary user declarations are not subject to official API naming checks");
 }
 
 #[test]
@@ -1436,8 +1470,7 @@ fn parses_arithmetic_compound_assignments() {
 fn parses_do_if_else_and_return() {
     let program = parse(
         "let choose(flag: bool): i32 = { do {\n\
-               if flag { return(1) }\n\
-               else { 2 }\n\
+               if(flag) { return(1) } else: { 2 }\n\
              } }\n",
     )
     .unwrap();
@@ -1451,7 +1484,7 @@ fn parses_do_if_else_and_return() {
 fn rejects_removed_if_let_syntax() {
     let error = parse(
         "let choose(value: Option<i32>): i32 = {\n\
-               if let some(found) = value { found } else { 0 }\n\
+               if let some(found) = value { found } else: { 0 }\n\
              }\n",
     )
     .unwrap_err();
@@ -1642,7 +1675,7 @@ fn handler_brace_call_ends_before_the_following_statement() {
                  next: { () },\n\
                  action: { () },\n\
                }\n\
-               if true { 42 } else { 0 }\n\
+               if(true) { 42 } else: { 0 }\n\
              }\n",
     )
     .unwrap();
@@ -2784,33 +2817,57 @@ fn rejects_undeclared_access_parameters() {
 #[test]
 fn rejects_the_legacy_while_condition_form() {
     let error = parse("let main(): () = { while ready() { work() } }\n").unwrap_err();
-    assert!(error.message.contains(
-        "`while` requires condition and `do` closures; write `while { condition } do { body }`"
-    ));
+    assert!(error.message.contains("`while` requires `while(condition) { ... }`"));
 }
 
 #[test]
-fn parses_while_with_positional_or_named_trailing_closures() {
+fn rejects_every_removed_if_while_and_do_alias() {
     for source in [
-        "let main(): () = { while { Ready() } { work() } }\n",
-        "let main(): () = {\n  while\n    condition { Ready() }\n    do { work() }\n}\n",
+        "let main(): i32 = { if true { 1 } else: { 0 } }\n",
+        "let main(): i32 = { if(true) then: { 1 } else: { 0 } }\n",
+        "let main(): i32 = { if true { 1 } { 0 } }\n",
+        "let main(): i32 = { if true then: { 1 } else: { 0 } }\n",
+        "let main(): () = { while { ready() } { work() } }\n",
+        "let main(): () = { while condition: { ready() } do: { work() } }\n",
+        "let main(): () = { do { work() } while { ready() } }\n",
     ] {
-        let program = parse(source).unwrap();
-        let Item::Function(function) = &program.items[0] else {
-            panic!("expected function");
-        };
-        assert!(matches!(
-            function_tail(function),
-            Expr::While { condition, body, post_test: false }
-                if matches!(condition.as_ref(), Expr::Block(_, _))
-                    && matches!(body.as_ref(), Expr::Block(_, _))
-        ));
+        assert!(
+            parse(source).is_err(),
+            "removed control-flow alias parsed: {source}"
+        );
     }
 }
 
 #[test]
+fn rejects_parenthesized_trait_and_extension_requires_groups() {
+    for source in [
+        "let marker = trait {}\nlet bounded = trait(requires: self is marker) {}\n",
+        "let marker = trait {}\nlet cell = struct {}\nextend(cell)(requires: cell is marker) {}\n",
+    ] {
+        assert!(
+            parse(source).is_err(),
+            "parenthesized requirements parsed: {source}"
+        );
+    }
+}
+
+#[test]
+fn parses_canonical_while() {
+    let program = parse("let main(): () = { while(Ready()) { work() } }\n").unwrap();
+    let Item::Function(function) = &program.items[0] else {
+        panic!("expected function");
+    };
+    assert!(matches!(
+        function_tail(function),
+        Expr::While { condition, body, post_test: false }
+            if matches!(condition.as_ref(), Expr::Call(_, _))
+                && matches!(body.as_ref(), Expr::Block(_, _))
+    ));
+}
+
+#[test]
 fn parses_do_while_as_the_labeled_do_overload() {
-    let program = parse("let main(): () = {\n  do { work() }\n  while { Ready() }\n}\n").unwrap();
+    let program = parse("let main(): () = {\n  do { work() } while: { Ready() }\n}\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -2826,32 +2883,24 @@ fn parses_do_while_as_the_labeled_do_overload() {
 }
 
 #[test]
-fn parses_if_with_positional_or_named_trailing_closures() {
-    for source in [
-        "let main(): i32 = { if true { 42 } { 0 } }\n",
-        "let main(): i32 = { if true then { 42 } else { 0 } }\n",
-        "let main(): i32 = { if false { 0 } else if true { 42 } else { 0 } }\n",
-    ] {
-        let program = parse(source).unwrap();
-        let Item::Function(function) = &program.items[0] else {
-            panic!("expected function");
-        };
-        let (_, then_branch, else_branch) = if_call_parts(function_tail(function));
-        assert!(matches!(then_branch, Expr::Block(_, _)));
-        let mut nested_groups = Vec::new();
-        assert!(
-            matches!(else_branch, Expr::Block(_, _))
-                || flatten_test_call(else_branch, &mut nested_groups)
-                    == &Parser::core_if_function()
-        );
-    }
+fn parses_canonical_if() {
+    let program = parse(
+        "let main(): i32 = { if(false) { 0 } else: { if(true) { 42 } else: { 0 } } }\n",
+    )
+    .unwrap();
+    let Item::Function(function) = &program.items[0] else {
+        panic!("expected function");
+    };
+    let (_, then_branch, else_branch) = if_call_parts(function_tail(function));
+    assert!(matches!(then_branch, Expr::Block(_, _)));
+    assert!(matches!(else_branch, Expr::Block(_, _)));
 }
 
 #[test]
 fn rejects_removed_while_let_syntax() {
     let error = parse("let main(): () = { while let some(value) = next() { consume(value) } }\n")
         .unwrap_err();
-    assert!(error.message.contains("condition and `do` closures"));
+    assert!(error.message.contains("`while` requires `while(condition) { ... }`"));
 }
 
 #[test]
@@ -2906,7 +2955,7 @@ fn rejects_bare_control_exits() {
     for (source, expected) in [
         (
             "let run(): () = { loop { break } }\n",
-            "`break` requires one value",
+            "use `break()` or `break(value)`",
         ),
         (
             "let run(): () = { loop { continue } }\n",
@@ -2914,7 +2963,11 @@ fn rejects_bare_control_exits() {
         ),
         (
             "let run(): () = { return }\n",
-            "`return` requires one value",
+            "use `return()` or `return(value)`",
+        ),
+        (
+            "let run(): () = { async { await value } }\n",
+            "`await` requires `await(value)`",
         ),
     ] {
         let error = parse(source).unwrap_err();
@@ -3061,8 +3114,7 @@ fn parses_compile_parameters_on_extend_functions() {
 fn infers_extend_pattern_parameters_from_constructor_sorts() {
     let program = parse(
         "let cell<t: type> = struct { value: t }\n\
-             extend(cell<t>)\n\
-             (requires: t is Copyable) {\n\
+             extend(cell<t>)<requires: t is Copyable> {\n\
                let get(self: Borrow<self>)(): t = { self.value }\n}\n",
     )
     .unwrap();
@@ -3157,8 +3209,7 @@ fn lowers_compile_time_constraint_guards_to_trait_predicates() {
          let duplicate<t: type>(value: t): (t, t) = requires(t is Copyable) {\n\
            (value, value)\n\
          }\n\
-         extend(cell<t>, Copyable)\n\
-         (requires: t is Copyable) {}\n",
+         extend(cell<t>, Copyable)<requires: t is Copyable> {}\n",
     )
     .unwrap();
 
@@ -3356,7 +3407,7 @@ fn parses_constructor_compile_parameter_sorts() {
              let functor = trait<self: <value: type>: type> {\n\
                let map<e: effects, a: type, b: type>(move self: self<a>)(move transform: (a): b with<e>): self<b> with<e>\n\
              }\n\
-             let applicative = trait<self: <value: type>: type>(requires: self is functor) {\n\
+             let applicative = trait<self: <value: type>: type><requires: self is functor> {\n\
                let pure<a: type>(move value: a): self<a>\n}\n",
         )
         .unwrap();
@@ -3505,7 +3556,7 @@ fn parses_optional_fields_and_complete_method_groups() {
 fn records_local_initializer_and_statement_ranges() {
     let program = parse(
         "let main(): i32 = {\n  let value: i32 = true\n  value\n}\n\
-             let choose(): i32 = { if true { 1 } else { 2 } }\n",
+             let choose(): i32 = { if(true) { 1 } else: { 2 } }\n",
     )
     .expect("parse source ranges");
     let Item::Function(function) = &program.items[0] else {
@@ -3554,7 +3605,7 @@ fn records_local_initializer_and_statement_ranges() {
 
 #[test]
 fn parses_contextual_async_and_await_as_language_expressions() {
-    let program = parse("let make(): i32 = {\n  let future = async { await next() }\n  0\n}\n")
+    let program = parse("let make(): i32 = {\n  let future = async { await(next()) }\n  0\n}\n")
         .expect("async expressions must parse");
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
@@ -3574,7 +3625,7 @@ fn parses_contextual_async_and_await_as_language_expressions() {
     assert!(matches!(tail.unlocated(), Expr::Await(_)));
 
     let program = parse(
-            "let make(): i32 = {\n  let future = async {\n    while { true } {\n      let value = await next();\n      break()\n    }\n  }\n  0\n}\n",
+            "let make(): i32 = {\n  let future = async {\n    while(true) {\n      let value = await(next());\n      break()\n    }\n  }\n  0\n}\n",
         )
         .expect("control-flow blocks must preserve their enclosing async context");
     let Item::Function(function) = &program.items[0] else {

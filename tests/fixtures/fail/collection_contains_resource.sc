@@ -6,5 +6,5 @@ extend(resource, Droppable) {
 
 let main(): i32 = {
   let values: Array<resource><1> = [resource{ value: 42 }]
-  if values.contains(resource{ value: 42 }) { 42 } else { 0 }
+  if(values.contains(resource{ value: 42 })) { 42 } else: { 0 }
 }

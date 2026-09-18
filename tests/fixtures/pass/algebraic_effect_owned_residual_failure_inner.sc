@@ -19,7 +19,7 @@ extend(state, Droppable) {
 }
 
 let accept: with<throwing<bool>>(fail: bool): i32 = {
-  if fail { throw(true) } else { 0 }
+  if(fail) { throw(true) } else: { 0 }
 }
 
 let update: with<step, throwing<bool>>(state: Borrow<mut><state>, fail: bool): i32 = {
@@ -33,7 +33,7 @@ let run(drops: Ptr<mut><i32>, fail: bool, abandon: bool): i32 = {
   let mut state = state{ value: 20, drops: drops }
   step.handle{
     delta: { (resume) ->
-      if abandon { 40 } else { resume(1) }
+      if(abandon) { 40 } else: { resume(1) }
     },
     action: {
       let result: Result<bool><i32> = try { update(state, fail) }

@@ -7,7 +7,7 @@ let main(): i32 = {
     stop: { (resume) -> 1 },
     action: {
       let skipped = false && stop.stop()
-      if skipped { 0 } else { 42 }
+      if(skipped) { 0 } else: { 42 }
     },
   }
 }

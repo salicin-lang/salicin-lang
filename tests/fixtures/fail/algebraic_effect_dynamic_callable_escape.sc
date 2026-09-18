@@ -9,7 +9,7 @@ let leak: with<ask>(): (): i32 = {
   ask.handle{
     value: { (resume) -> resume(42) },
     action: {
-      let selected: with<ask>((): i32)  = if true { left } else { right }
+      let selected: with<ask>((): i32)  = if(true) { left } else: { right }
       selected
     },
   }

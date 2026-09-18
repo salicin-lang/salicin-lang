@@ -18,6 +18,9 @@ An operation has explicit runtime parameter groups, passing modes, result type, 
 forwarded effects. A complete operation call performs the effect. Partial application is pure until
 the final group is supplied.
 
+Effect declaration parameters and effect-identity arguments are compile-time
+groups and therefore use angle brackets exclusively, as in `state<S>`.
+
 Operations are selected through their effect identity. They obey ordinary visibility and overload
 rules. A declaration with the same operation name in another effect is unrelated.
 

@@ -16,10 +16,10 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polls == 0 {
+    if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
-    } else {
+    } else: {
       Poll<i32>.Ready(self.value)
     }
   }
@@ -31,7 +31,7 @@ let make_step: with<ask>(): step = {
 
 let main(): i32 = {
   let mut future = async {
-    let value = await make_step()
+    let value = await(make_step())
     value + 2
   }
   ask.handle{

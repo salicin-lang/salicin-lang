@@ -10,9 +10,9 @@ extend(values, Iterator) {
   let Item = OwnedItem<choice>;
 
   let next<r: region>(self: Borrow<mut><r><self>)(): Option<choice> = {
-    if self.done {
+    if(self.done) {
       None
-    } else {
+    } else: {
       self.done = true
       Some(choice.Some(42))
     }

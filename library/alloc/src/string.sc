@@ -28,9 +28,9 @@ pub let string_from_utf8(
     Some(valid_up_to) => do {
       core.Result.Err(FromUtf8Error{ bytes: bytes, valid_prefix: valid_up_to })
     }, None => do {
-      if bytes.is_empty() {
+      if(bytes.is_empty()) {
         core.Result.Ok("")
-      } else {
+      } else: {
         let parts = alloc.vec.vec_into_raw_parts<u8>(bytes)
         let text = unsafe {
           core.string.string_from_raw_parts(parts.0, parts.1, parts.2)
@@ -49,10 +49,10 @@ pub let string_into_bytes(
   let parts = unsafe {
     core.string.string_into_raw_parts(value)
   }
-  if parts.2 == 0 {
+  if(parts.2 == 0) {
     let mut bytes = Vec<u8>.with_capacity(parts.1)
     let mut index: u64 = 0
-    while { index < parts.1 } {
+    while(index < parts.1) {
       let byte = unsafe {
         *raw_offset(parts.0, index)
       }
@@ -60,7 +60,7 @@ pub let string_into_bytes(
       index = index + 1
     }
     bytes
-  } else {
+  } else: {
     unsafe {
       alloc.vec.vec_from_raw_parts<u8>(parts.0, parts.1, parts.2)
     }
@@ -100,14 +100,14 @@ extend(StringWriter, core.fmt.TextWriter<pure>) {
   }
 
   let write_ascii(self: Borrow<mut><self>)(value: u8): () = {
-    if value > 127 {
+    if(value > 127) {
       unsafe {
         raw_trap()
       }
     }
     let mut source = value
     let mut code: u32 = 0
-    while { source != 0 } {
+    while(source != 0) {
       source = source - 1
       code = code + 1
     }

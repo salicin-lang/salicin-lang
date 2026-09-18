@@ -104,8 +104,11 @@ impl Analyzer {
         expression: &Expr,
         context: &LowerCtx,
     ) -> Option<(Ty, Ty)> {
-        let mut groups = Vec::new();
-        let root = flatten_call(expression, &mut groups);
+        let flattened = flatten_call(expression);
+        let root = flattened.root;
+        // Effect discovery is intentionally delimiter-independent. The call is
+        // still routed through strict delimiter validation during lowering.
+        let groups = flattened.argument_groups();
         if let Expr::Name(name) = root {
             if let Some(local) = context.lookup(name) {
                 let function = match &local.ty {
@@ -295,6 +298,8 @@ impl Analyzer {
             body,
             Some(expected.clone()),
             ClosureEffectContext {
+                // Immediate failure bodies use one synthetic Parenthesis group.
+                group_delimiters: vec![crate::ast::GroupDelimiter::Parenthesis],
                 unsafe_depth: context.unsafe_depth,
                 failure_error: Some(error),
                 custom_effects: context.active_custom_effects.clone(),
@@ -463,8 +468,7 @@ impl Analyzer {
             Expr::Throw(_) => true,
             Expr::Try(_)
             | Expr::Closure(_, _)
-            | Expr::PatternClosure { .. }
-            | Expr::PartialClosure(_) => false,
+            | Expr::PatternClosure { .. } => false,
             Expr::Async { body } => {
                 self.expression_uses_standard_failure_identity(body, identity, context)
             }
@@ -540,9 +544,6 @@ impl Analyzer {
             }
             Expr::Array(elements) | Expr::Tuple(elements) => elements.iter().any(|element| {
                 self.expression_uses_standard_failure_identity(element, identity, context)
-            }),
-            Expr::StructLiteral { fields, .. } => fields.iter().any(|field| {
-                self.expression_uses_standard_failure_identity(&field.value, identity, context)
             }),
             Expr::Index { base, index } => {
                 self.expression_uses_standard_failure_identity(base, identity, context)
@@ -661,7 +662,6 @@ impl Analyzer {
             Expr::Try(_)
             | Expr::Closure(_, _)
             | Expr::PatternClosure { .. }
-            | Expr::PartialClosure(_)
             | Expr::Async { .. } => false,
             Expr::Call(callee, arguments)
             | Expr::DelimitedCall {
@@ -713,9 +713,6 @@ impl Analyzer {
             Expr::Array(elements) | Expr::Tuple(elements) => elements
                 .iter()
                 .any(|element| self.try_body_uses_dedicated_failure_call(element, context)),
-            Expr::StructLiteral { fields, .. } => fields
-                .iter()
-                .any(|field| self.try_body_uses_dedicated_failure_call(&field.value, context)),
             Expr::Index { base, index } => {
                 self.try_body_uses_dedicated_failure_call(base, context)
                     || self.try_body_uses_dedicated_failure_call(index, context)
@@ -772,8 +769,11 @@ impl Analyzer {
         expression: &Expr,
         context: &LowerCtx,
     ) -> Option<Vec<String>> {
-        let mut groups = Vec::new();
-        let root = flatten_call(expression, &mut groups);
+        let flattened = flatten_call(expression);
+        let root = flattened.root;
+        // Effect discovery is intentionally delimiter-independent; lowering
+        // separately rejects malformed call-group delimiters.
+        let groups = flattened.argument_groups();
         if let Expr::Name(name) = root {
             if let Some(local) = context.lookup(name) {
                 let function = match &local.ty {
@@ -929,8 +929,11 @@ impl Analyzer {
         expression: &Expr,
         context: &LowerCtx,
     ) -> Option<Vec<Type>> {
-        let mut groups = Vec::new();
-        let root = flatten_call(expression, &mut groups);
+        let flattened = flatten_call(expression);
+        let root = flattened.root;
+        // Source-effect discovery is delimiter-independent and conservative;
+        // normal call lowering remains responsible for syntax validation.
+        let groups = flattened.argument_groups();
         let Expr::Name(name) = root else {
             return None;
         };
@@ -1207,6 +1210,7 @@ impl Analyzer {
                     "raise",
                     &groups,
                     None,
+                    None,
                     context,
                 ))
             }
@@ -1277,7 +1281,6 @@ impl Analyzer {
             | Expr::Name(_)
             | Expr::Closure(_, _)
             | Expr::PatternClosure { .. }
-            | Expr::PartialClosure(_)
             | Expr::Async { .. } => {}
             Expr::Try(_) => {}
             Expr::Throw(value) => {
@@ -1332,8 +1335,11 @@ impl Analyzer {
                 self.collect_standard_failure_errors_from_effect_handler_call(
                     expression, context, errors,
                 );
-                let mut groups = Vec::new();
-                let root = flatten_call(expression, &mut groups);
+                let flattened = flatten_call(expression);
+                let root = flattened.root;
+                // Traversal visits argument expressions regardless of delimiter;
+                // the enclosing call is validated when it is lowered.
+                let groups = flattened.argument_groups();
                 match root {
                     Expr::Member(base, _) | Expr::ChainMember(base, _) => {
                         self.collect_escaping_throwing(base, context, errors)
@@ -1351,11 +1357,6 @@ impl Analyzer {
             Expr::Array(elements) | Expr::Tuple(elements) => {
                 for element in elements {
                     self.collect_escaping_throwing(element, context, errors);
-                }
-            }
-            Expr::StructLiteral { fields, .. } => {
-                for field in fields {
-                    self.collect_escaping_throwing(&field.value, context, errors);
                 }
             }
             Expr::Index { base, index } => {

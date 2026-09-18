@@ -4,11 +4,11 @@ let counter = struct { current: i32, end: i32 }
 
 extend(counter) {
   let next(self: Borrow<mut><self>)(): Option<i32> = {
-    if self.current < self.end {
+    if(self.current < self.end) {
       let value = self.current
       self.current = self.current + 1
       Some(value)
-    } else {
+    } else: {
       None
     }
   }
@@ -20,7 +20,7 @@ let main(): i32 = {
   loop {
     match(counter.next()) {
       Some(value) => do {
-        if value < 3 {
+        if(value < 3) {
           continue()
         }
         total = total + value

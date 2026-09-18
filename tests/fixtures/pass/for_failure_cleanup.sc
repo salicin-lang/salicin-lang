@@ -23,11 +23,11 @@ extend(counter, Iterator) {
   let Item = OwnedItem<i32>;
 
   let next<r: region>(self: Borrow<mut><r><self>)(): Option<i32> = {
-    if self.current < self.end {
+    if(self.current < self.end) {
       let value = self.current
       self.current = self.current + 1
       Some(value)
-    } else {
+    } else: {
       None
     }
   }
@@ -42,7 +42,7 @@ extend(counter, IntoIterator) {
 }
 
 let check: with<throwing<bool>>(value: i32): () = {
-  if value < 0 { throw(true) } else { () }
+  if(value < 0) { throw(true) } else: { () }
 }
 
 let visit: with<throwing<bool>>(move counter: counter): i32 = {

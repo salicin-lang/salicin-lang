@@ -19,7 +19,7 @@ let main(): i32 = {
   let mut iteration = 0
   loop {
     iteration = iteration + 1
-    if iteration < 3 {
+    if(iteration < 3) {
       let resource = resource{ counter: counter }
       continue()
     }

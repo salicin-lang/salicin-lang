@@ -61,11 +61,11 @@ let truncation_checks(): bool = {
 }
 
 let main(): i32 = {
-  if construction_checks() &&
+  if(construction_checks() &&
     append_checks() &&
-    truncation_checks() {
+    truncation_checks() ) {
     42
-  } else {
+  } else: {
     0
   }
 }

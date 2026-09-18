@@ -505,7 +505,7 @@ fn formatter_is_idempotent_checks_without_writing_and_formats_packages() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "main.sc",
-        "let main(): i32 = {  \n// keep { here\nif true {\n42\n} else {\n0\n}\n}",
+        "let main(): i32 = {  \n// keep { here\nif(true) {\n42\n} else: {\n0\n}\n}",
     );
     let original = fs::read_to_string(&source).expect("read unformatted source");
     let check = salic()
@@ -528,7 +528,7 @@ fn formatter_is_idempotent_checks_without_writing_and_formats_packages() {
         output_text(&formatted)
     );
     let expected =
-        "let main(): i32 = {\n  // keep { here\n  if true {\n    42\n  } else {\n    0\n  }\n}\n";
+        "let main(): i32 = {\n  // keep { here\n  if(true) {\n    42\n  } else: {\n    0\n  }\n}\n";
     assert_eq!(fs::read_to_string(&source).unwrap(), expected);
     let checked = salic()
         .args(["fmt", "--check"])
@@ -993,7 +993,7 @@ fn structured_test_abort_runs_owned_cleanup_once() {
            let result = abort(counter)\n\
            let drops = unsafe { *counter }\n\
            unsafe { raw_dealloc(counter, size_of<i32>, align_of<i32>) }\n\
-           match(result) { Passed => 1, Failed(_) => if drops == 1 { 42 } else { 2 } }\n\
+           match(result) { Passed => 1, Failed(_) => if(drops == 1) { 42 } else: { 2 } }\n\
          }\n",
     );
     let output = salic()
@@ -1122,7 +1122,7 @@ fn unicode_identifiers_and_logical_newlines_run_natively() {
 
 #[test]
 fn explicit_calls_preserve_groups_and_precedence() {
-    for (name, output) in batched_native_fixture_outputs(&["parenthesis_free_unary_calls.sc"]) {
+    for (name, output) in batched_native_fixture_outputs(&["explicit_call_groups.sc"]) {
         assert_eq!(
             output.status.code(),
             Some(42),
@@ -1137,7 +1137,19 @@ fn explicit_calls_preserve_groups_and_precedence() {
 fn removed_implicit_syntax_is_rejected() {
     for name in [
         "removed_bare_call.sc",
-        "colonless_named_group.sc",
+        "colonless_handle_clause.sc",
+        "removed_bare_multi_parameter_call.sc",
+        "removed_bare_return.sc",
+        "removed_bare_break.sc",
+        "removed_bare_await.sc",
+        "removed_parenthesis_free_if.sc",
+        "removed_colonless_else.sc",
+        "removed_closure_while.sc",
+        "removed_colonless_do_while.sc",
+        "removed_parenthesized_trait_requires.sc",
+        "removed_parenthesized_extension_requires.sc",
+        "wrong_generic_struct_delimiter.sc",
+        "wrong_generic_effect_delimiter.sc",
         "spaced_struct_construction.sc",
         "legacy_prefix_match.sc",
         "legacy_postfix_match.sc",

@@ -36,32 +36,32 @@ let main(): i32 = {
     empty.copy_from(source_values)
   }
 
-  if !(order[0] == 1 &&
-    order[1] == 4 &&
-    order[2] == 3 &&
-    order[3] == 2 &&
-    order[4] == 5) {
-    return 1
+  if(!(order[0] == 1 &&
+      order[1] == 4 &&
+      order[2] == 3 &&
+      order[3] == 2 &&
+      order[4] == 5) ) {
+    return(1)
   }
-  if !(overlap_right[0] == 1 &&
-    overlap_right[1] == 1 &&
-    overlap_right[2] == 2 &&
-    overlap_right[3] == 3 &&
-    overlap_right[4] == 4) {
-    return 2
+  if(!(overlap_right[0] == 1 &&
+      overlap_right[1] == 1 &&
+      overlap_right[2] == 2 &&
+      overlap_right[3] == 3 &&
+      overlap_right[4] == 4) ) {
+    return(2)
   }
-  if !(overlap_left[0] == 2 &&
-    overlap_left[1] == 3 &&
-    overlap_left[2] == 4 &&
-    overlap_left[3] == 5 &&
-    overlap_left[4] == 5) {
-    return 3
+  if(!(overlap_left[0] == 2 &&
+      overlap_left[1] == 3 &&
+      overlap_left[2] == 4 &&
+      overlap_left[3] == 5 &&
+      overlap_left[4] == 5) ) {
+    return(3)
   }
-  if filled[0] + filled[1] + filled[2] != 42 {
-    return 4
+  if(filled[0] + filled[1] + filled[2] != 42) {
+    return(4)
   }
-  if copied[0] + copied[1] + copied[2] != 42 {
-    return 5
+  if(copied[0] + copied[1] + copied[2] != 42) {
+    return(5)
   }
   42
 }

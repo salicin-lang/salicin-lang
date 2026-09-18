@@ -35,12 +35,12 @@ extend(pending_step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<()> = {
-    if self.polled {
+    if(self.polled) {
       unsafe {
         *self.remaining = *self.remaining - 1
       }
       Poll<()>.Ready(())
-    } else {
+    } else: {
       self.polled = true
       Poll<()>.Pending
     }
@@ -58,10 +58,8 @@ let main(): i32 = {
   let mut pre_remaining = 3
   let pre_ptr = ptr<mut>(borrow<mut>(pre_remaining))
   let mut pre = async {
-    while {
-      unsafe { *pre_ptr > 0 }
-    } {
-      let ignored = await step(pre_ptr, polls_ptr)
+    while(unsafe { *pre_ptr > 0 }) {
+      let ignored = await(step(pre_ptr, polls_ptr))
     }
   }
   let pre_ready = match(pre.poll()) { Pending => 0, Ready(_) => 1,
@@ -70,10 +68,8 @@ let main(): i32 = {
   let mut false_remaining = 0
   let false_ptr = ptr<mut>(borrow<mut>(false_remaining))
   let mut initially_false = async {
-    while {
-      unsafe { *false_ptr > 0 }
-    } {
-      let ignored = await step(false_ptr, polls_ptr)
+    while(unsafe { *false_ptr > 0 }) {
+      let ignored = await(step(false_ptr, polls_ptr))
     }
   }
   let false_ready = match(initially_false.poll()) { Pending => 0, Ready(_) => 1,
@@ -83,9 +79,9 @@ let main(): i32 = {
   let post_ptr = ptr<mut>(borrow<mut>(post_remaining))
   let mut post = async {
     do {
-      let ignored = await step(post_ptr, polls_ptr)
+      let ignored = await(step(post_ptr, polls_ptr))
     }
-    while {
+    while: {
       unsafe { *post_ptr > 0 }
     }
   }
@@ -97,13 +93,13 @@ let main(): i32 = {
   let pending_ptr = ptr<mut>(borrow<mut>(pending_remaining))
   let checks_ptr = ptr<mut>(borrow<mut>(condition_checks))
   let mut pending = async {
-    while {
+    while(
       unsafe {
-        *checks_ptr = *checks_ptr + 1
-        *pending_ptr > 0
-      }
-    } {
-      let ignored = await pending_step(pending_ptr)
+      *checks_ptr = *checks_ptr + 1
+      *pending_ptr > 0
+    }
+    ) {
+      let ignored = await(pending_step(pending_ptr))
     }
   }
   let was_pending = match(pending.poll()) { Pending => 1, Ready(_) => 0,

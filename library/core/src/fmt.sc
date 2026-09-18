@@ -52,14 +52,18 @@ let parse_failure(
 }
 
 let digit_value(byte: u8): core.Option<u8> = {
-  if byte >= 48 && byte <= 57 {
+  if(byte >= 48 && byte <= 57) {
     core.Option.Some(byte - 48)
-  } else if byte >= 65 && byte <= 90 {
-    core.Option.Some(byte - 65 + 10)
-  } else if byte >= 97 && byte <= 122 {
-    core.Option.Some(byte - 97 + 10)
-  } else {
-    core.Option.None
+  } else: {
+    if(byte >= 65 && byte <= 90) {
+      core.Option.Some(byte - 65 + 10)
+    } else: {
+      if(byte >= 97 && byte <= 122) {
+        core.Option.Some(byte - 97 + 10)
+      } else: {
+        core.Option.None
+      }
+    }
   }
 }
 
@@ -72,7 +76,7 @@ let byte_at(value: Borrow<core.string.str>, index: u64): u8 = {
 let widen_u8(value: u8): u64 = {
   let mut source = value
   let mut output: u64 = 0
-  while { source != 0 } {
+  while(source != 0) {
     source = source - 1
     output = output + 1
   }
@@ -85,23 +89,23 @@ let parse_magnitude(
   radix: u8,
   limit: u64,
 ): core.Result<ParseIntError><u64> = {
-  if radix < 2 || radix > 36 {
+  if(radix < 2 || radix > 36) {
     return(parse_failure(InvalidRadix, 0))
   }
-  if start == value.len() {
+  if(start == value.len()) {
     return(parse_failure(Empty, start))
   }
   let base = widen_u8(radix)
   let mut output: u64 = 0
   let mut index = start
-  while { index < value.len() } {
+  while(index < value.len()) {
     let digit = match(digit_value(byte_at(value, index))) { Some(digit) => digit, None => return(parse_failure(InvalidDigit, index)),
     }
-    if digit >= radix {
+    if(digit >= radix) {
       return(parse_failure(InvalidDigit, index))
     }
     let wide_digit = widen_u8(digit)
-    if output > (limit - wide_digit) / base {
+    if(output > (limit - wide_digit) / base) {
       return(parse_failure(Overflow, index))
     }
     output = output * base + wide_digit
@@ -115,14 +119,14 @@ pub let parse_u64_radix(
   value: Borrow<core.string.str>,
   radix: u8,
 ): core.Result<ParseIntError><u64> = {
-  if value.is_empty() {
+  if(value.is_empty()) {
     return(core.Result.Err(ParseIntError{
       failure: Empty,
       byte_offset: 0,
     }))
   }
   let first = byte_at(value, 0)
-  if first == 43 || first == 45 {
+  if(first == 43 || first == 45) {
     return(core.Result.Err(ParseIntError{
       failure: InvalidSign,
       byte_offset: 0,
@@ -137,13 +141,13 @@ pub let parse_i64_radix(
   value: Borrow<core.string.str>,
   radix: u8,
 ): core.Result<ParseIntError><i64> = {
-  if radix < 2 || radix > 36 {
+  if(radix < 2 || radix > 36) {
     return(core.Result.Err(ParseIntError{
       failure: InvalidRadix,
       byte_offset: 0,
     }))
   }
-  if value.is_empty() {
+  if(value.is_empty()) {
     return(core.Result.Err(ParseIntError{
       failure: Empty,
       byte_offset: 0,
@@ -151,8 +155,8 @@ pub let parse_i64_radix(
   }
   let first = byte_at(value, 0)
   let negative = first == 45
-  let start: u64 = if negative || first == 43 { 1 } else { 0 }
-  if start == value.len() {
+  let start: u64 = if(negative || first == 43) { 1 } else: { 0 }
+  if(start == value.len()) {
     return(core.Result.Err(ParseIntError{
       failure: Empty,
       byte_offset: start,
@@ -160,20 +164,20 @@ pub let parse_i64_radix(
   }
   let mut base_source = radix
   let mut base: i64 = 0
-  while { base_source != 0 } {
+  while(base_source != 0) {
     base_source = base_source - 1
     base = base + 1
   }
   let mut output: i64 = 0
   let mut index = start
-  while { index < value.len() } {
+  while(index < value.len()) {
     let digit = match(digit_value(byte_at(value, index))) {
       Some(digit) => digit, None => do { return(core.Result.Err(ParseIntError{
           failure: InvalidDigit,
           byte_offset: index,
         })) },
     }
-    if digit >= radix {
+    if(digit >= radix) {
       return(core.Result.Err(ParseIntError{
         failure: InvalidDigit,
         byte_offset: index,
@@ -181,20 +185,20 @@ pub let parse_i64_radix(
     }
     let mut digit_source = digit
     let mut wide_digit: i64 = 0
-    while { digit_source != 0 } {
+    while(digit_source != 0) {
       digit_source = digit_source - 1
       wide_digit = wide_digit + 1
     }
-    if negative {
-      if output < (-9223372036854775808 + wide_digit) / base {
+    if(negative) {
+      if(output < (-9223372036854775808 + wide_digit) / base) {
         return(core.Result.Err(ParseIntError{
           failure: Overflow,
           byte_offset: index,
         }))
       }
       output = output * base - wide_digit
-    } else {
-      if output > (9223372036854775807 - wide_digit) / base {
+    } else: {
+      if(output > (9223372036854775807 - wide_digit) / base) {
         return(core.Result.Err(ParseIntError{
           failure: Overflow,
           byte_offset: index,
@@ -232,20 +236,36 @@ let write_digit<e: effects, W: type>: with<e>(writer: Borrow<mut><W>)(digit: u8)
 }
 
 let write_unsigned<e: effects, W: type>: with<e>(writer: Borrow<mut><W>)(value: u128): () = requires(W is TextWriter<e>) {
-  if value >= 10 {
+  if(value >= 10) {
     write_unsigned(writer)(value / 10)
   }
   let remainder = value % 10
-  let digit: u8 = if remainder == 0 { 0 }
-  else if remainder == 1 { 1 }
-  else if remainder == 2 { 2 }
-  else if remainder == 3 { 3 }
-  else if remainder == 4 { 4 }
-  else if remainder == 5 { 5 }
-  else if remainder == 6 { 6 }
-  else if remainder == 7 { 7 }
-  else if remainder == 8 { 8 }
-  else { 9 }
+  let digit: u8 = if(remainder == 0) { 0 }
+  else: {
+    if(remainder == 1) { 1 }
+    else: {
+      if(remainder == 2) { 2 }
+      else: {
+        if(remainder == 3) { 3 }
+        else: {
+          if(remainder == 4) { 4 }
+          else: {
+            if(remainder == 5) { 5 }
+            else: {
+              if(remainder == 6) { 6 }
+              else: {
+                if(remainder == 7) { 7 }
+                else: {
+                  if(remainder == 8) { 8 }
+                  else: { 9 }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
   write_digit(writer)(digit)
 }
 
@@ -258,32 +278,48 @@ let display_unsigned<e: effects, W: type>: with<e>(writer: Borrow<mut><W>)(value
 }
 
 let display_signed<e: effects, W: type>: with<e>(writer: Borrow<mut><W>)(negative: bool, magnitude: u128): () = requires(W is TextWriter<e>) {
-  if negative {
+  if(negative) {
     write_minus(writer)
   }
   write_unsigned(writer)(magnitude)
 }
 
 let write_unsigned_u64<e: effects, W: type>: with<e>(writer: Borrow<mut><W>)(value: u64): () = requires(W is TextWriter<e>) {
-  if value >= 10 {
+  if(value >= 10) {
     write_unsigned_u64(writer)(value / 10)
   }
   let remainder = value % 10
-  let digit: u8 = if remainder == 0 { 0 }
-  else if remainder == 1 { 1 }
-  else if remainder == 2 { 2 }
-  else if remainder == 3 { 3 }
-  else if remainder == 4 { 4 }
-  else if remainder == 5 { 5 }
-  else if remainder == 6 { 6 }
-  else if remainder == 7 { 7 }
-  else if remainder == 8 { 8 }
-  else { 9 }
+  let digit: u8 = if(remainder == 0) { 0 }
+  else: {
+    if(remainder == 1) { 1 }
+    else: {
+      if(remainder == 2) { 2 }
+      else: {
+        if(remainder == 3) { 3 }
+        else: {
+          if(remainder == 4) { 4 }
+          else: {
+            if(remainder == 5) { 5 }
+            else: {
+              if(remainder == 6) { 6 }
+              else: {
+                if(remainder == 7) { 7 }
+                else: {
+                  if(remainder == 8) { 8 }
+                  else: { 9 }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
   write_digit(writer)(digit)
 }
 
 let display_signed_i64<e: effects, W: type>: with<e>(writer: Borrow<mut><W>)(negative: bool, magnitude: u64): () = requires(W is TextWriter<e>) {
-  if negative {
+  if(negative) {
     write_minus(writer)
   }
   write_unsigned_u64(writer)(magnitude)
@@ -291,12 +327,12 @@ let display_signed_i64<e: effects, W: type>: with<e>(writer: Borrow<mut><W>)(neg
 
 /// Writes the canonical lowercase boolean spelling.
 pub let write_bool<e: effects, W: type>: with<e>(writer: Borrow<mut><W>)(value: bool): () = requires(W is TextWriter<e>) {
-  if value {
+  if(value) {
     writer.write_ascii(116)
     writer.write_ascii(114)
     writer.write_ascii(117)
     writer.write_ascii(101)
-  } else {
+  } else: {
     writer.write_ascii(102)
     writer.write_ascii(97)
     writer.write_ascii(108)
@@ -322,14 +358,11 @@ extend(core.string.UnicodeScalar, Display) {
 extend(core.string.str, Display) {
   let display<e: effects, W: type>: with<e>(self: Borrow<self>)(writer: Borrow<mut><W>): () = requires(W is TextWriter<e>) {
     let mut scalars = self.scalars()
-    while {
+    loop {
       match(scalars.next()) {
-        Some(scalar) => do {
-          writer.write_scalar(scalar)
-          true
-        }, None => false,
+        Some(scalar) => writer.write_scalar(scalar), None => break(),
       }
-    } {}
+    }
   }
 }
 
@@ -337,14 +370,11 @@ extend(core.string.String, Display) {
   let display<e: effects, W: type>: with<e>(self: Borrow<self>)(writer: Borrow<mut><W>): () = requires(W is TextWriter<e>) {
     let view = self.as_str()
     let mut scalars = view.scalars()
-    while {
+    loop {
       match(scalars.next()) {
-        Some(scalar) => do {
-          writer.write_scalar(scalar)
-          true
-        }, None => false,
+        Some(scalar) => writer.write_scalar(scalar), None => break(),
       }
-    } {}
+    }
   }
 }
 
@@ -393,14 +423,11 @@ extend(core.string.UnicodeScalar, Debug) {
 extend(core.string.str, Debug) {
   let debug<e: effects, W: type>: with<e>(self: Borrow<self>)(writer: Borrow<mut><W>): () = requires(W is TextWriter<e>) {
     let mut scalars = self.scalars()
-    while {
+    loop {
       match(scalars.next()) {
-        Some(scalar) => do {
-          writer.write_scalar(scalar)
-          true
-        }, None => false,
+        Some(scalar) => writer.write_scalar(scalar), None => break(),
       }
-    } {}
+    }
   }
 }
 
@@ -408,14 +435,11 @@ extend(core.string.String, Debug) {
   let debug<e: effects, W: type>: with<e>(self: Borrow<self>)(writer: Borrow<mut><W>): () = requires(W is TextWriter<e>) {
     let view = self.as_str()
     let mut scalars = view.scalars()
-    while {
+    loop {
       match(scalars.next()) {
-        Some(scalar) => do {
-          writer.write_scalar(scalar)
-          true
-        }, None => false,
+        Some(scalar) => writer.write_scalar(scalar), None => break(),
       }
-    } {}
+    }
   }
 }
 

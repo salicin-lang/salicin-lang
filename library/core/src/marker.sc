@@ -2,7 +2,7 @@
 pub let Movable = trait {}
 
 /// Marker trait for types that may be duplicated by implicit copy.
-pub let Copyable = trait(requires: self is Movable) {}
+pub let Copyable = trait<requires: self is Movable> {}
 
 /// Trait for types that need cleanup when their owning value leaves scope.
 pub let Droppable = trait {

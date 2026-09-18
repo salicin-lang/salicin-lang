@@ -44,9 +44,9 @@ let main: with<std.io.io>(): i32 = {
   let view = path.as_str()
   let input = match(std.io.open(view)(std.io.OpenOptions.read_only())) { Ok(value) => value, Err(_) => return(1), }
   match(input.close()) { Ok(_) => return(2), Err(_) => (), }
-  if unsafe { close_calls() } != 1 { return(3) }
+  if(unsafe { close_calls() } != 1) { return(3) }
   abandon(view)
-  if unsafe { close_calls() } == 2 { 42 } else { 5 }
+  if(unsafe { close_calls() } == 2) { 42 } else: { 5 }
 }"#;
     let ir = compile_source(source).expect("compile close-failure fixture");
     let output = link_and_run_ir_with_c(
@@ -74,14 +74,14 @@ fn native_console_and_process_contracts_preserve_bytes_and_utf8() {
         "io.sc",
         r#"let main: with<std.io.io>(): i32 = {
   let argument = match(std.io.argument_bytes(1)) { Some(value) => value, None => return(1), }
-  if argument.len() != 3 || argument[0] != 255 || argument[1] != 111 || argument[2] != 107 {
+  if(argument.len() != 3 || argument[0] != 255 || argument[1] != 111 || argument[2] != 107) {
     return(2)
   }
   match(std.io.arguments()) { Ok(_) => return(3), Err(error) => match(error.kind()) { InvalidData => (), _ => return(4), }, }
   let maybe_line = match(std.io.read_line()) { Ok(value) => value, _ => return(5), }
   let line = match(maybe_line) { Some(value) => value, None => return(5), }
   let expected: String = "hello\n"
-  if line != expected { return(6) }
+  if(line != expected) { return(6) }
   let output: String = "stdout"
   let error: String = "stderr"
   let output_view = output.as_str()
@@ -127,17 +127,17 @@ fn native_io_helpers_report_eof_and_broken_pipe() {
         "io-errors.sc",
         r#"let main: with<std.io.io>(): i32 = {
   let mode = match(std.io.argument_bytes(1)) { Some(value) => value, None => return(1), }
-  if mode[0] == 101 {
+  if(mode[0] == 101) {
     let mut bytes: Array<u8><2> = [0, 0]
     let outcome = do {
       let buffer = bytes.as_slice<mut>()
       std.io.read_stdin_exact(buffer)
     }
     match(outcome) { Err(error) => match(error.kind()) { UnexpectedEof => 42, _ => 2, }, Ok(_) => 3, }
-  } else {
+  } else: {
     let mut bytes = alloc.Vec<u8>.with_capacity(1048576)
     let mut index: u64 = 0
-    while { index < 1048576 } {
+    while(index < 1048576) {
       bytes.push(120)
       index = index + 1
     }
@@ -214,9 +214,9 @@ fn native_file_owners_support_options_seek_flush_limits_and_close() {
     input.read_exact(buffer)
   }
   match(outcome) { Err(_) => return(16), Ok(_) => (), }
-  if bytes[0] == 97 && bytes[1] == 98 && bytes[2] == 99 && bytes[3] == 100 {
+  if(bytes[0] == 97 && bytes[1] == 98 && bytes[2] == 99 && bytes[3] == 100) {
     42
-  } else {
+  } else: {
     17
   }
 }"#,

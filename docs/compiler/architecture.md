@@ -19,7 +19,8 @@ not a stable compiler API.
 
 The implementation lives under `compiler/src`:
 
-- `lexer.rs`, `parser.rs`, and `ast.rs` define the source frontend. `parser/post_parse.rs`
+- `lexer.rs`, `parser.rs`, and `ast.rs` define the source frontend, including
+  delimiter-bearing call nodes and direct match expressions. `parser/post_parse.rs`
   performs extend-parameter inference plus compile-parameter scope normalization and validation
   after syntax parsing; `parser/tests.rs` keeps parser regressions out of the implementation file.
 - `editor.rs` exposes token ranges, phased frontend diagnostics, and a
@@ -111,8 +112,10 @@ The implementation lives under `compiler/src`:
   - `compile_time.rs` encodes compiler-visible compile-time sort values, source effect identities,
     the compatibility adapter for typed `StaticValue`s, and compile-parameter shape helpers.
   - `control.rs` lowers loops, `break`, and `continue`, including loop backedge flow checks.
-  - `constructors.rs` lowers struct literals, struct and enum construction, field argument
-    validation, and context-sensitive short enum variant resolution.
+  - `constructors.rs` late-resolves tight brace calls whose callee is a struct
+    type, then lowers struct and enum construction, field argument validation,
+    and context-sensitive short enum variant resolution. The frontend retains
+    the brace call until semantic resolution.
   - `ctfe_value.rs` defines the recursive runtime-typed value shared by dependent-expression and
     global-constant evaluation, plus exact checked integer operations, while keeping erased
     metadata in `StaticValue`.
@@ -142,7 +145,8 @@ The implementation lives under `compiler/src`:
     reports missing nominal layout diagnostics.
   - `lower.rs` defines shared expression-lowering data, type-probe helpers, and HIR construction
     helpers used by multiple lowering paths.
-  - `matches.rs` lowers scalar and enum `match` expressions and owns pattern binding validation.
+  - `matches.rs` lowers direct scalar and enum `match` expressions and owns
+    match-arm pattern binding validation.
   - `members.rs` lowers value and type member access, including associated constants, unit enum
     variants, and field diagnostics.
   - `names.rs` centralizes stable symbol, monomorphization instance, trait-method, canonical type,

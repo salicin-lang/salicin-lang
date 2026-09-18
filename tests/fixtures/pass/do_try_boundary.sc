@@ -2,7 +2,7 @@ let Result = core.Result
 let throwing = core.error.throwing
 
 let read: with<throwing<bool>>(fail: bool): i32 = {
-  if fail { throw(true) } else { 40 }
+  if(fail) { throw(true) } else: { 40 }
 }
 
 let main(): i32 = {
@@ -21,7 +21,7 @@ let main(): i32 = {
   }
   let value = match(success) { Ok(value) => value, Err(_) => 0,
   }
-  if propagation_ok && throw_ok && value == 42 { 42 } else { 0 }
+  if(propagation_ok && throw_ok && value == 42) { 42 } else: { 0 }
 }
 
 test("do_try_boundary.sc") {

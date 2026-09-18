@@ -77,12 +77,12 @@ let main(): i32 = {
     *counter = 0
     do {
       let mut future = async {
-        if false {
+        if(false) {
           let marker = marker{ counter: counter, amount: 1000 }
-          await first{ counter: counter }
-        } else {
+          await(first{ counter: counter })
+        } else: {
           let marker = marker{ counter: counter, amount: 100 }
-          await second{ counter: counter }
+          await(second{ counter: counter })
         }
       }
       match(future.poll()) { Pending => (), Ready(_) => (),

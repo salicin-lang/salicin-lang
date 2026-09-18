@@ -12,9 +12,9 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polled {
+    if(self.polled) {
       Poll<i32>.Ready(self.value)
-    } else {
+    } else: {
       self.polled = true
       Poll<i32>.Pending
     }
@@ -36,9 +36,9 @@ extend(condition, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<bool> = {
-    if self.polled {
+    if(self.polled) {
       Poll<bool>.Ready(self.value)
-    } else {
+    } else: {
       self.polled = true
       Poll<bool>.Pending
     }
@@ -52,7 +52,7 @@ let condition(value: bool): condition = {
 let main(): i32 = {
   let mut value_loop = async {
     loop {
-      break(await step(40))
+      break(await(step(40)))
     }
   }
   let loop_pending = match(value_loop.poll()) { Pending => 1, Ready(_) => 0,
@@ -61,8 +61,8 @@ let main(): i32 = {
   }
 
   let mut true_while = async {
-    while { true } {
-      let ignored = await step(0);
+    while(true) {
+      let ignored = await(step(0));
       break()
     }
   }
@@ -72,8 +72,8 @@ let main(): i32 = {
   }
 
   let mut false_while = async {
-    while { false } {
-      let ignored = await step(0);
+    while(false) {
+      let ignored = await(step(0));
       break()
     }
   }
@@ -81,7 +81,7 @@ let main(): i32 = {
   }
 
   let mut awaited_condition = async {
-    while { await condition(false) } {
+    while(await(condition(false))) {
       break()
     }
   }

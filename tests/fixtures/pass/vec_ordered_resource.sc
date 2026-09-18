@@ -61,7 +61,7 @@ let main(): i32 = {
       let removed = values.remove(0)
       removed.read()
     }
-    if other.is_empty() && values.is_empty() && values.capacity() == 5 && removed_middle + removed_last + first + second + third + fourth == 21 {
+    if(other.is_empty() && values.is_empty() && values.capacity() == 5 && removed_middle + removed_last + first + second + third + fourth == 21) {
       score = 36
     }
   }
@@ -71,9 +71,9 @@ let main(): i32 = {
   unsafe {
     raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
-  if drops == 6 {
+  if(drops == 6) {
     score + drops
-  } else {
+  } else: {
     0
   }
 }

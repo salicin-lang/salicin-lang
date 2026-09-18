@@ -37,6 +37,7 @@ impl Analyzer {
         kind: NominalKind,
         member: &str,
         groups: &[&[CallArg]],
+        actual_delimiters: Option<&[GroupDelimiter]>,
         expected: Option<&Ty>,
         context: &mut LowerCtx,
     ) -> HirExpr {
@@ -54,8 +55,15 @@ impl Analyzer {
                 else {
                     return error_expr();
                 };
+                if actual_delimiters.is_some_and(|actual| {
+                    !self.named_call_delimiters_match(&canonical, groups, actual, context)
+                }) {
+                    return error_expr();
+                }
                 if self.collection.function_templates.contains_key(&canonical) {
-                    return self.lower_generic_function_call(&canonical, groups, expected, context);
+                    return self.lower_generic_function_call(
+                        &canonical, groups, None, expected, context,
+                    );
                 }
                 return self.lower_named_function_call(&canonical, groups, expected, context);
             }
@@ -66,6 +74,11 @@ impl Analyzer {
                 .and_then(|members| members.functions.get(member))
                 .cloned()
             {
+                if actual_delimiters.is_some_and(|actual| {
+                    !self.named_call_delimiters_match(&canonical, groups, actual, context)
+                }) {
+                    return error_expr();
+                }
                 return self.lower_named_function_call(&canonical, groups, expected, context);
             }
             let self_ty = match kind {
@@ -76,9 +89,14 @@ impl Analyzer {
                 self.trait_associated_function_candidates(&self_ty, member, &context.origin);
             match associated.as_slice() {
                 [canonical] => {
+                    if actual_delimiters.is_some_and(|actual| {
+                        !self.named_call_delimiters_match(canonical, groups, actual, context)
+                    }) {
+                        return error_expr();
+                    }
                     if self.collection.function_templates.contains_key(canonical) {
                         return self
-                            .lower_generic_function_call(canonical, groups, expected, context);
+                            .lower_generic_function_call(canonical, groups, None, expected, context);
                     }
                     return self.lower_named_function_call(canonical, groups, expected, context);
                 }
@@ -96,9 +114,19 @@ impl Analyzer {
                     let matches = self.matching_function_overloads(&associated, groups, 0);
                     match matches.as_slice() {
                         [canonical] => {
+                            if actual_delimiters.is_some_and(|actual| {
+                                !self.named_call_delimiters_match(
+                                    canonical,
+                                    groups,
+                                    actual,
+                                    context,
+                                )
+                            }) {
+                                return error_expr();
+                            }
                             if self.collection.function_templates.contains_key(canonical) {
                                 return self.lower_generic_function_call(
-                                    canonical, groups, expected, context,
+                                    canonical, groups, None, expected, context,
                                 );
                             }
                             return self.lower_named_function_call(
@@ -253,7 +281,7 @@ impl Analyzer {
             }
         };
         if self.collection.function_templates.contains_key(&canonical) {
-            Some(self.lower_generic_function_call(&canonical, groups, expected, context))
+            Some(self.lower_generic_function_call(&canonical, groups, None, expected, context))
         } else {
             Some(self.lower_named_function_call(&canonical, groups, expected, context))
         }
@@ -263,50 +291,21 @@ impl Analyzer {
         &mut self,
         name: &str,
         groups: &[&[CallArg]],
+        explicit_compile_group_count: Option<usize>,
         expected: Option<&Ty>,
         context: &mut LowerCtx,
     ) -> HirExpr {
-        if self.is_lang_item_name(name, LangItemKind::Match) {
-            return self.lower_pattern_match_call(groups, expected, context);
-        }
-        let Some((canonical, runtime_start)) =
-            self.resolve_inferred_generic_function_instance(name, groups, expected, context)
+        let Some((canonical, runtime_start)) = self.resolve_inferred_generic_function_instance(
+            name,
+            groups,
+            explicit_compile_group_count,
+            expected,
+            context,
+        )
         else {
             return error_expr();
         };
         self.lower_named_function_call(&canonical, &groups[runtime_start..], expected, context)
-    }
-
-    pub(super) fn lower_pattern_match_call(
-        &mut self,
-        groups: &[&[CallArg]],
-        expected: Option<&Ty>,
-        context: &mut LowerCtx,
-    ) -> HirExpr {
-        let Some((input_group, case_groups)) = groups.split_first() else {
-            self.error("`match` requires an input group");
-            return error_expr();
-        };
-        let [input] = *input_group else {
-            self.error("`match` input group requires exactly one unlabeled argument");
-            return error_expr();
-        };
-        if input.label.is_some() {
-            self.error("`match` input must be unlabeled");
-        }
-        let [case_group] = case_groups else {
-            self.error("`match` requires one multi-arm partial closure");
-            return error_expr();
-        };
-        let [CallArg {
-            label: None,
-            value: Expr::PartialClosure(arms),
-        }] = *case_group
-        else {
-            self.error("`match` cases must use `{ Pattern [if guard] => expression, ... }`");
-            return error_expr();
-        };
-        self.lower_match(&input.value, arms, expected, context)
     }
 
     pub(super) fn lower_if_match_call(
@@ -370,44 +369,22 @@ impl Analyzer {
         })
     }
 
-    pub(super) fn pattern_match_call_expression(&self, expression: &Expr) -> Option<Expr> {
-        let mut groups = Vec::new();
-        let Expr::Name(name) = flatten_call(expression, &mut groups) else {
-            return None;
-        };
-        if !self.is_lang_item_name(name, LangItemKind::Match) {
-            return None;
-        }
-        let (input_group, case_groups) = groups.split_first()?;
-        let [CallArg {
-            label: None,
-            value: input,
-        }] = *input_group
-        else {
-            return None;
-        };
-        let [case_group] = case_groups else {
-            return None;
-        };
-        let [CallArg {
-            label: None,
-            value: Expr::PartialClosure(arms),
-        }] = *case_group
-        else {
-            return None;
-        };
-        Some(Expr::Match {
-            scrutinee: Box::new(input.clone()),
-            arms: arms.clone(),
-        })
-    }
-
     pub(super) fn if_call_expression_for_transform(&self, expression: &Expr) -> Option<Expr> {
-        let mut groups = Vec::new();
-        let Expr::Name(name) = flatten_call(expression, &mut groups) else {
+        let flattened = flatten_call(expression);
+        let groups = flattened.argument_groups();
+        let Expr::Name(name) = flattened.root else {
             return None;
         };
         if !self.is_lang_item_name(name, LangItemKind::If) {
+            return None;
+        }
+        let expected = &self.collection.functions.get(name)?.effects.group_delimiters;
+        if flattened
+            .groups
+            .iter()
+            .map(|group| group.delimiter)
+            .ne(expected.iter().copied())
+        {
             return None;
         }
         let Expr::Match { scrutinee, arms } = self.if_match_call_expression(&groups)? else {
@@ -693,6 +670,7 @@ impl Analyzer {
             let Some((instance, runtime_start)) = self.resolve_inferred_generic_function_instance(
                 &canonical,
                 &full_groups,
+                Some(compile_prefix),
                 expected,
                 context,
             ) else {
@@ -1293,7 +1271,18 @@ impl Analyzer {
         expected: Option<&Ty>,
         context: &mut LowerCtx,
     ) -> HirExpr {
-        if let Some(materialized) = self.materialize_direct_handler_action(name, groups) {
+        // lower_call has already validated these groups, so the selected
+        // declaration is the authoritative delimiter source at this stage.
+        let delimiters = self
+            .collection
+            .functions
+            .get(name)
+            .or_else(|| self.collection.function_templates.get(name))
+            .map(|function| function.effects.group_delimiters.clone())
+            .unwrap_or_default();
+        if let Some(materialized) =
+            self.materialize_direct_handler_action(name, groups, &delimiters)
+        {
             return self.lower_expr(&materialized, expected, context);
         }
         if let Some(distributed) = self.distribute_static_handler_selection(name, groups, context) {
@@ -2534,6 +2523,7 @@ impl Analyzer {
             body,
             Some((*function_ty.result).clone()),
             ClosureEffectContext {
+                group_delimiters: function_ty.group_delimiters.clone(),
                 unsafe_depth: usize::from(function_ty.unsafety),
                 failure_error: function_ty.failure_error.as_deref().cloned(),
                 custom_effects: function_ty.custom_effects.iter().cloned().collect(),

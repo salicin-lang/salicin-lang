@@ -6,39 +6,39 @@ let main(): i32 = {
   let source_view: Borrow<Slice<i32>> = borrow(source)
   let mut values: Vec<i32> = Vec<i32>.new()
   values.extend_from_slice(source_view)
-  if values.len() != 3 || values.read(0) != 1 || values.read(2) != 3 {
-    return 1
+  if(values.len() != 3 || values.read(0) != 1 || values.read(2) != 3) {
+    return(1)
   }
 
   let extra: Array<i32><2> = [4, 5]
   let extra_view: Borrow<Slice<i32>> = borrow(extra)
   values.extend_from_slice(extra_view)
-  if values.len() != 5 || values.read(3) != 4 || values.read(4) != 5 {
-    return 2
+  if(values.len() != 5 || values.read(3) != 4 || values.read(4) != 5) {
+    return(2)
   }
 
   values.copy_within(0, 4, 1)
-  if values.read(0) != 1 || values.read(1) != 1 ||
-    values.read(2) != 2 || values.read(3) != 3 || values.read(4) != 4 {
-    return 3
+  if(values.read(0) != 1 || values.read(1) != 1 ||
+    values.read(2) != 2 || values.read(3) != 3 || values.read(4) != 4 ) {
+    return(3)
   }
   values.copy_within(1, 5, 0)
-  if values.read(0) != 1 || values.read(1) != 2 ||
-    values.read(2) != 3 || values.read(3) != 4 || values.read(4) != 4 {
-    return 4
+  if(values.read(0) != 1 || values.read(1) != 2 ||
+    values.read(2) != 3 || values.read(3) != 4 || values.read(4) != 4 ) {
+    return(4)
   }
 
   let replacement: Array<i32><5> = [8, 9, 10, 11, 12]
   let replacement_view: Borrow<Slice<i32>> = borrow(replacement)
   values.copy_from(replacement_view)
-  if values.len() != 5 || values.read(0) != 8 || values.read(4) != 12 {
-    return 5
+  if(values.len() != 5 || values.read(0) != 8 || values.read(4) != 12) {
+    return(5)
   }
   values.fill(14)
-  if values.len() != 5 ||
+  if(values.len() != 5 ||
     values.read(0) + values.read(1) + values.read(2) +
-    values.read(3) + values.read(4) != 70 {
-    return 6
+    values.read(3) + values.read(4) != 70 ) {
+    return(6)
   }
 
   let empty_source: Array<i32><0> = []
@@ -47,9 +47,9 @@ let main(): i32 = {
   empty.extend_from_slice(empty_view)
   empty.fill(42)
   empty.copy_within(0, 0, 0)
-  if empty.is_empty() {
+  if(empty.is_empty()) {
     42
-  } else {
+  } else: {
     0
   }
 }

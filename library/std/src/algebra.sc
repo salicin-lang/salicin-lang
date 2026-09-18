@@ -4,6 +4,6 @@ pub let Semigroup = trait {
 }
 
 /// A Semigroup with an identity value.
-pub let Monoid = trait(requires: self is Semigroup) {
+pub let Monoid = trait<requires: self is Semigroup> {
   let empty(): self
 }

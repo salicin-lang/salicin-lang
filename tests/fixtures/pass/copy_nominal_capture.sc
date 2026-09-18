@@ -18,9 +18,9 @@ let main(): i32 = {
     read_pair() == 11 &&
     read_pair() == 11 &&
     pair.left == 10
-  if valid {
+  if(valid) {
     42
-  } else {
+  } else: {
     0
   }
 }

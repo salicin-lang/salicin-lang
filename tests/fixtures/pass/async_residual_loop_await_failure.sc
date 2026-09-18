@@ -39,9 +39,9 @@ let make_step: with<throwing<bool>>(
   fail_at: i32,
 ): step = {
   let call = increment(calls)
-  if call == fail_at {
+  if(call == fail_at) {
     throw(true)
-  } else {
+  } else: {
     step{ drops: drops, done: call == 3 }
   }
 }
@@ -54,16 +54,16 @@ let run(
   let result: Result<bool><i32> = try {
     let mut future = async {
       loop {
-        let done = await make_step(drops, calls, fail_at)
-        if done {
-          break 42
-        } else {
+        let done = await(make_step(drops, calls, fail_at))
+        if(done) {
+          break(42)
+        } else: {
           continue()
         }
       }
     }
     let first = future.poll()
-    if fail_at == 0 {
+    if(fail_at == 0) {
       let second = future.poll()
       match(first) {
         Pending => do {
@@ -71,13 +71,13 @@ let run(
           }
         }, Ready(_) => 0,
       }
-    } else {
+    } else: {
       0
     }
   }
   match(result) {
     Ok(value) => value, Err(error) => do {
-      if error { 42 } else { 0 }
+      if(error) { 42 } else: { 0 }
     },
   }
 }
@@ -115,10 +115,10 @@ let main(): i32 = {
     raw_dealloc(failure_calls, size_of<i32>, align_of<i32>)
   }
 
-  if success == 42 && failure == 42 &&
-    drop_count == 4 && success_count == 3 && failure_count == 2 {
+  if(success == 42 && failure == 42 &&
+    drop_count == 4 && success_count == 3 && failure_count == 2 ) {
     42
-  } else {
+  } else: {
     0
   }
 }

@@ -3,14 +3,14 @@ let Vec = alloc.Vec
 let main(): i32 = {
   let mut values: Vec<()> = Vec<()>.new()
   let mut index: u64 = 0
-  while { index < 100 } {
+  while(index < 100) {
     values.push(())
     index = index + 1
   }
   values.read(50)
-  if values.len() == 100 && values.capacity() >= 100 {
+  if(values.len() == 100 && values.capacity() >= 100) {
     42
-  } else {
+  } else: {
     0
   }
 }

@@ -678,24 +678,55 @@ impl Analyzer {
                 delimiter: crate::ast::GroupDelimiter::Brace,
                 arguments,
             } => {
-                let mut groups = Vec::new();
-                let root = flatten_call(callee, &mut groups);
-                if matches!(root, Expr::Name(name)
-                    if !context.shadows_top_level_name(name)
-                        && (self.collection.struct_layouts.contains_key(name)
-                            || self.collection.struct_templates.contains_key(name)))
+                let root = flatten_call(callee).root_ignoring_groups();
+                let resolved_type = match root {
+                    Expr::Name(name) => self.resolve_struct_constructor_name(name, context),
+                    _ => None,
+                };
+                let callable = match root {
+                    Expr::Name(name) => {
+                        let local = context.lookup(name).is_some_and(|local| {
+                            local.closure.is_some()
+                                || local.partial.is_some()
+                                || matches!(local.ty, Ty::Function(_) | Ty::Callable(_))
+                        });
+                        let accepts_brace = |function: &crate::ast::Function| {
+                            function.body.is_some()
+                                && function.effects.group_delimiters.first()
+                                == Some(&crate::ast::GroupDelimiter::Brace)
+                        };
+                        let top_level = self.collection.function_overloads.get(name).is_some_and(
+                                |overloads| {
+                                    overloads.iter().any(|overload| {
+                                        self.collection
+                                            .functions
+                                            .get(overload)
+                                            .or_else(|| {
+                                                self.collection.function_templates.get(overload)
+                                            })
+                                            .is_some_and(accepts_brace)
+                                    })
+                                });
+                        local || top_level
+                    }
+                    _ => false,
+                };
+                if !callable
+                    && resolved_type.is_some()
                     && arguments.iter().all(|argument| argument.label.is_some())
                 {
-                    self.lower_struct_literal(callee, arguments, expected, context)
+                    self.lower_struct_construction(
+                        callee,
+                        resolved_type.as_deref(),
+                        arguments,
+                        expected,
+                        context,
+                    )
                 } else {
                     self.lower_call(expression, expected, context)
                 }
             }
             Expr::DelimitedCall { .. } => self.lower_call(expression, expected, context),
-            Expr::StructLiteral {
-                constructor,
-                fields,
-            } => self.lower_struct_literal(constructor, fields, expected, context),
             Expr::Member(base, field) => self.lower_member(base, field, expected, context),
             Expr::ChainMember(base, field) => {
                 self.lower_chain(base, field, None, expected, context)
@@ -801,8 +832,9 @@ impl Analyzer {
                                     let (declared_result, mut effects) = match annotation.as_ref() {
                                         Some(Ty::Function(function)) => (
                                             Some((*function.result).clone()),
-                                            ClosureEffectContext {
-                                                unsafe_depth: usize::from(function.unsafety),
+                                             ClosureEffectContext {
+                                                 group_delimiters: function.group_delimiters.clone(),
+                                                 unsafe_depth: usize::from(function.unsafety),
                                                 failure_error: function
                                                     .failure_error
                                                     .as_deref()
@@ -1095,10 +1127,6 @@ impl Analyzer {
             }
             Expr::PatternClosure { .. } => {
                 self.error("pattern closure requires a contextual partial-function type");
-                error_expr()
-            }
-            Expr::PartialClosure(_) => {
-                self.error("multi-arm partial closure is only valid as the case argument to `match`");
                 error_expr()
             }
             Expr::If {
@@ -1398,6 +1426,13 @@ impl Analyzer {
 
         let function = format!("__closure.{}", self.lowering.next_closure);
         self.lowering.next_closure += 1;
+        if effects.group_delimiters.len() != source_groups.len() {
+            effects.group_delimiters =
+                vec![crate::ast::GroupDelimiter::Parenthesis; source_groups.len()];
+        }
+        if let Some(source) = self.collection.functions.get_mut(&function) {
+            source.effects.group_delimiters = effects.group_delimiters.clone();
+        }
         let mut context =
             LowerCtx::for_function(&function, declared_result.clone(), outer.origin.clone());
         context.unsafe_depth = effects.unsafe_depth;
@@ -1796,7 +1831,7 @@ impl Analyzer {
                     .iter()
                     .map(|group| group.iter().map(|param| param.ty.clone()).collect())
                     .collect(),
-                group_delimiters: Vec::new(),
+                group_delimiters: effects.group_delimiters.clone(),
                 unsafety: effects.unsafe_depth > 0,
                 failure_error: effects.failure_error.clone().map(Box::new),
                 custom_effects: custom_effects.clone(),
@@ -1929,6 +1964,7 @@ impl Analyzer {
             &match_body,
             Some((*function.result).clone()),
             ClosureEffectContext {
+                group_delimiters: function.group_delimiters.clone(),
                 unsafe_depth: usize::from(function.unsafety),
                 failure_error: function.failure_error.as_deref().cloned(),
                 custom_effects: function.custom_effects.iter().cloned().collect(),
@@ -2011,9 +2047,6 @@ impl Analyzer {
             Expr::Array(elements) => elements.iter().fold(true, |valid, element| {
                 self.scan_simple_closure_captures(element, bound, outer, captures) & valid
             }),
-            Expr::StructLiteral { fields, .. } => fields.iter().fold(true, |valid, field| {
-                self.scan_simple_closure_captures(&field.value, bound, outer, captures) & valid
-            }),
             Expr::Index { base, index } => {
                 self.scan_simple_closure_captures(base, bound, outer, captures)
                     & self.scan_simple_closure_captures(index, bound, outer, captures)
@@ -2042,8 +2075,11 @@ impl Analyzer {
                 self.scan_simple_closure_captures(base, bound, outer, captures)
             }
             Expr::Call(_, _) | Expr::DelimitedCall { .. } => {
-                let mut groups = Vec::new();
-                let root = flatten_call(expression, &mut groups);
+                let flattened = flatten_call(expression);
+                let root = flattened.root;
+                // Capture discovery traverses arguments independently of call
+                // syntax; the eventual call lowering validates delimiters.
+                let groups = flattened.argument_groups();
                 if matches!(root, Expr::Name(name) if self.lowering.internal_async_loop_constructors.contains_key(name))
                 {
                     return groups.iter().flat_map(|group| group.iter()).fold(
@@ -2361,8 +2397,7 @@ impl Analyzer {
                 } else if matches!(
                     root,
                     Expr::Name(name)
-                        if self.collection.struct_layouts.contains_key(name)
-                            || self.collection.struct_templates.contains_key(name)
+                        if self.resolve_struct_constructor_name(name, outer).is_some()
                             || self.collection.enum_defs.contains_key(name)
                             || self.collection.enum_templates.contains_key(name)
                             || self.collection.effect_defs.contains_key(name)
@@ -2469,24 +2504,6 @@ impl Analyzer {
                 *bound = saved;
                 valid
             }
-            Expr::PartialClosure(arms) => {
-                let mut valid = true;
-                for arm in arms {
-                    let saved = bound.clone();
-                    collect_pattern_binding_names(&arm.pattern, bound);
-                    if let Some(guard) = &arm.guard {
-                        valid &= self.scan_simple_closure_captures(guard, bound, outer, captures);
-                    }
-                    valid &= self.scan_simple_closure_captures(
-                        &arm.body,
-                        bound,
-                        outer,
-                        captures,
-                    );
-                    *bound = saved;
-                }
-                valid
-            }
             Expr::Continue => true,
             Expr::Located { value, .. } => {
                 self.scan_simple_closure_captures(value, bound, outer, captures)
@@ -2501,8 +2518,11 @@ impl Analyzer {
         outer: &LowerCtx,
         captures: &mut Vec<ClosureCaptureUse>,
     ) -> bool {
-        let mut groups = Vec::new();
-        let root = flatten_call(expression, &mut groups);
+        let flattened = flatten_call(expression);
+        let root = flattened.root;
+        // This prepass determines move captures only. The same expression is
+        // subsequently lowered through strict call delimiter validation.
+        let groups = flattened.argument_groups();
         let Expr::Name(function) = root else {
             self.error("fn_once capture requires a direct named-function call");
             return false;
@@ -2535,6 +2555,7 @@ impl Analyzer {
             let Some((canonical, runtime_start)) = self.resolve_inferred_generic_function_instance(
                 resolved_function,
                 &groups,
+                None,
                 None,
                 outer,
             ) else {

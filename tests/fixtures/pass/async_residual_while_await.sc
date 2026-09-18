@@ -44,11 +44,11 @@ let run_true(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
     ask: { (resume) -> resume(next(calls)) },
     action: {
       let mut future = async {
-        while { true } {
-          let done = await make_step(drops)
-          if done {
+        while(true) {
+          let done = await(make_step(drops))
+          if(done) {
             break()
-          } else {
+          } else: {
             continue()
           }
         }
@@ -70,11 +70,11 @@ let run_false(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
     ask: { (resume) -> resume(next(calls)) },
     action: {
       let mut future = async {
-        while { false } {
-          let done = await make_step(drops)
-          if done {
+        while(false) {
+          let done = await(make_step(drops))
+          if(done) {
             break()
-          } else {
+          } else: {
             continue()
           }
         }
@@ -91,9 +91,9 @@ let run_post(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
     action: {
       let mut future = async {
         do {
-          let ignored = await make_step(drops)
+          let ignored = await(make_step(drops))
         }
-        while {
+        while: {
           unsafe { *calls < 3 }
         }
       }
@@ -151,24 +151,36 @@ let main(): i32 = {
     raw_dealloc(post_calls, size_of<i32>, align_of<i32>)
   }
 
-  if true_result == 42 && false_result == 42 && post_result == 42 &&
+  if(true_result == 42 && false_result == 42 && post_result == 42 &&
     drop_count == 6 && true_count == 3 &&
-    false_count == 0 && post_count == 3 {
+    false_count == 0 && post_count == 3 ) {
     42
-  } else if true_result != 42 {
-    1
-  } else if false_result != 42 {
-    2
-  } else if post_result != 42 {
-    3
-  } else if drop_count != 6 {
-    10 + drop_count
-  } else if true_count != 3 {
-    20 + true_count
-  } else if false_count != 0 {
-    30 + false_count
-  } else {
-    40 + post_count
+  } else: {
+    if(true_result != 42) {
+      1
+    } else: {
+      if(false_result != 42) {
+        2
+      } else: {
+        if(post_result != 42) {
+          3
+        } else: {
+          if(drop_count != 6) {
+            10 + drop_count
+          } else: {
+            if(true_count != 3) {
+              20 + true_count
+            } else: {
+              if(false_count != 0) {
+                30 + false_count
+              } else: {
+                40 + post_count
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 

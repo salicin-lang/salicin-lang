@@ -12,13 +12,13 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<bool> = {
-    if self.polled {
+    if(self.polled) {
       let done = unsafe {
         *self.remaining = *self.remaining - 1
         *self.remaining == 0
       }
       Poll<bool>.Ready(done)
-    } else {
+    } else: {
       self.polled = true
       Poll<bool>.Pending
     }
@@ -56,10 +56,10 @@ let main(): i32 = {
   let remaining_ptr = ptr<mut>(borrow<mut>(remaining))
   let mut future = async {
     loop {
-      let done = await next_step(remaining_ptr)
-      if done {
+      let done = await(next_step(remaining_ptr))
+      if(done) {
         break()
-      } else {
+      } else: {
         continue()
       }
     }
@@ -78,10 +78,10 @@ let main(): i32 = {
   let immediate_ptr = ptr<mut>(borrow<mut>(immediate_remaining))
   let mut immediate = async {
     loop {
-      let done = await ready_step(immediate_ptr)
-      if done {
+      let done = await(ready_step(immediate_ptr))
+      if(done) {
         break()
-      } else {
+      } else: {
         continue()
       }
     }

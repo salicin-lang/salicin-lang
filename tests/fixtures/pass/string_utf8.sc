@@ -191,15 +191,15 @@ let text_equality_checks(): bool = {
 
 let main(): i32 = {
   let text = runtime_text()
-  if text.len_bytes() == 7 &&
+  if(text.len_bytes() == 7 &&
     greeting.len_bytes() == 3 &&
     scalar_checks() &&
     borrowed_text_checks() &&
     string_view_checks() &&
     subview_checks() &&
-    text_equality_checks() {
+    text_equality_checks() ) {
     42
-  } else {
+  } else: {
     0
   }
 }

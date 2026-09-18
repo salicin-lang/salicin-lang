@@ -22,17 +22,17 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<bool> = {
-    if self.polled {
-      let done = if self.finish {
+    if(self.polled) {
+      let done = if(self.finish) {
         unsafe {
           *self.remaining = *self.remaining - 1
           *self.remaining == 0
         }
-      } else {
+      } else: {
         false
       }
       Poll<bool>.Ready(done)
-    } else {
+    } else: {
       self.polled = true
       Poll<bool>.Pending
     }
@@ -50,11 +50,11 @@ let main(): i32 = {
   let drops_ptr = ptr<mut>(borrow<mut>(drops))
   let mut future = async {
     loop {
-      let first = await step(remaining_ptr, drops_ptr, false)
-      let done = await step(remaining_ptr, drops_ptr, true)
-      if done {
-        break(if first { 0 } else { 34 })
-      } else {
+      let first = await(step(remaining_ptr, drops_ptr, false))
+      let done = await(step(remaining_ptr, drops_ptr, true))
+      if(done) {
+        break(if(first) { 0 } else: { 34 })
+      } else: {
         continue()
       }
     }
@@ -78,11 +78,11 @@ let main(): i32 = {
   do {
     let mut cancelled = async {
       loop {
-        let first = await step(cancel_remaining_ptr, cancel_drops_ptr, false)
-        let done = await step(cancel_remaining_ptr, cancel_drops_ptr, true)
-        if done {
+        let first = await(step(cancel_remaining_ptr, cancel_drops_ptr, false))
+        let done = await(step(cancel_remaining_ptr, cancel_drops_ptr, true))
+        if(done) {
           break()
-        } else {
+        } else: {
           continue()
         }
       }

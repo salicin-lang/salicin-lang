@@ -10,7 +10,7 @@ let make(count: Borrow<mut><i32>): Option<boxed> = {
 let main(): i32 = {
   let mut count = 0
   let answer = make(count)?.value ?? 0
-  if count == 1 { answer } else { 0 }
+  if(count == 1) { answer } else: { 0 }
 }
 
 test("chain_lhs_once.sc") {

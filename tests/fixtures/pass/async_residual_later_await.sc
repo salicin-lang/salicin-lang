@@ -26,10 +26,10 @@ extend(step, Future<()>) {
   let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
-    if self.polls == 0 {
+    if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
-    } else {
+    } else: {
       Poll<i32>.Ready(self.value)
     }
   }
@@ -55,8 +55,8 @@ let abandon(calls: Ptr<mut><i32>): i32 = {
 
 let run_success(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   let mut future = async {
-    let first = await step{ drops: drops, polls: 0, value: 2, drop_amount: 10 }
-    let second = await make_second(drops, calls, first)
+    let first = await(step{ drops: drops, polls: 0, value: 2, drop_amount: 10 })
+    let second = await(make_second(drops, calls, first))
     second
   }
   ask.handle{
@@ -84,8 +84,8 @@ let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
     ask: { (resume) -> resume(40) },
     action: {
       let mut future = async {
-        let first = await step{ drops: drops, polls: 0, value: 2, drop_amount: 10 }
-        let second = await make_second(drops, calls, first)
+        let first = await(step{ drops: drops, polls: 0, value: 2, drop_amount: 10 })
+        let second = await(make_second(drops, calls, first))
         second
       }
       let first = future.poll()
@@ -105,8 +105,8 @@ let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
     ask: { (_) -> abandon(calls) },
     action: {
       let mut future = async {
-        let first = await step{ drops: drops, polls: 0, value: 2, drop_amount: 10 }
-        let second = await make_second(drops, calls, first)
+        let first = await(step{ drops: drops, polls: 0, value: 2, drop_amount: 10 })
+        let second = await(make_second(drops, calls, first))
         second
       }
       let first = future.poll()
@@ -147,10 +147,10 @@ let main(): i32 = {
     raw_dealloc(calls, size_of<i32>, align_of<i32>)
   }
 
-  if success == 42 && cancelled == 42 && abandoned == 42 &&
-    drop_count == 32 && call_count == 4 {
+  if(success == 42 && cancelled == 42 && abandoned == 42 &&
+    drop_count == 32 && call_count == 4 ) {
     42
-  } else {
+  } else: {
     0
   }
 }

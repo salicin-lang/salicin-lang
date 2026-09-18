@@ -12,7 +12,7 @@ let main(): i32 = {
       c_memset(pointer, 42, 1)
     }
   }
-  if byte == 42 { 42 } else { 0 }
+  if(byte == 42) { 42 } else: { 0 }
 }
 
 test("ffi_c_memset.sc") {

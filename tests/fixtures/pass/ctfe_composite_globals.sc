@@ -26,9 +26,9 @@ let choice_global: choice = choose(pair_global)
 let answer: i32 = sum(choice_global)
 
 let main(): i32 = {
-  if tuple_global.1 && answer == 42 {
+  if(tuple_global.1 && answer == 42) {
     42
-  } else {
+  } else: {
     0
   }
 }

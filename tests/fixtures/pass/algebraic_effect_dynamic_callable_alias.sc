@@ -16,7 +16,7 @@ let main(): i32 = {
         right_total = right_total + value
         ask.value() + right_total
       }
-      let mut action: with<ask>((i32): i32)  = if true { left } else { right }
+      let mut action: with<ask>((i32): i32)  = if(true) { left } else: { right }
       let forwarded = action
       let first = forwarded(1)
       let second = forwarded(2)

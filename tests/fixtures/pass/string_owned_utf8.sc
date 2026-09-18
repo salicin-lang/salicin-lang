@@ -69,12 +69,12 @@ let edge_conversion(): bool = {
 }
 
 let main(): i32 = {
-  if valid_conversion() &&
+  if(valid_conversion() &&
     invalid_conversion() &&
     truncated_conversion() &&
-    edge_conversion() {
+    edge_conversion() ) {
     42
-  } else {
+  } else: {
     0
   }
 }

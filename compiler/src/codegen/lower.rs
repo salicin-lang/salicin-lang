@@ -283,40 +283,72 @@ pub(super) fn reference_value_types_compatible(actual: &Ty, expected: &Ty) -> bo
     )
 }
 
-pub(super) fn flatten_call<'a>(expression: &'a Expr, groups: &mut Vec<&'a [CallArg]>) -> &'a Expr {
-    match expression.unlocated() {
-        Expr::Call(callee, arguments) => {
-            let root = flatten_call(callee, groups);
-            groups.push(arguments);
-            root
-        }
-        Expr::DelimitedCall {
-            callee, arguments, ..
-        } => {
-            let root = flatten_call(callee, groups);
-            groups.push(arguments);
-            root
-        }
-        expression => expression,
+#[derive(Clone, Copy)]
+pub(super) struct FlattenedCallGroup<'a> {
+    pub(super) delimiter: crate::ast::GroupDelimiter,
+    pub(super) arguments: &'a [CallArg],
+}
+
+pub(super) struct FlattenedCall<'a> {
+    pub(super) root: &'a Expr,
+    pub(super) groups: Vec<FlattenedCallGroup<'a>>,
+}
+
+impl<'a> FlattenedCall<'a> {
+    pub(super) fn argument_groups(&self) -> Vec<&'a [CallArg]> {
+        self.groups.iter().map(|group| group.arguments).collect()
+    }
+
+    pub(super) fn root_ignoring_groups(self) -> &'a Expr {
+        self.root
     }
 }
 
-pub(super) fn flatten_call_delimiters(
-    expression: &Expr,
-    delimiters: &mut Vec<crate::ast::GroupDelimiter>,
-) {
-    match expression.unlocated() {
-        Expr::Call(callee, _) => {
-            flatten_call_delimiters(callee, delimiters);
-            delimiters.push(crate::ast::GroupDelimiter::Parenthesis);
+pub(super) fn flatten_call(expression: &Expr) -> FlattenedCall<'_> {
+    fn visit<'a>(expression: &'a Expr, groups: &mut Vec<FlattenedCallGroup<'a>>) -> &'a Expr {
+        match expression.unlocated() {
+        Expr::Call(callee, arguments) => {
+            let root = visit(callee, groups);
+            groups.push(FlattenedCallGroup {
+                delimiter: crate::ast::GroupDelimiter::Parenthesis,
+                arguments,
+            });
+            root
         }
         Expr::DelimitedCall {
-            callee, delimiter, ..
+            callee,
+            delimiter,
+            arguments,
         } => {
-            flatten_call_delimiters(callee, delimiters);
-            delimiters.push(*delimiter);
+            let root = visit(callee, groups);
+            groups.push(FlattenedCallGroup {
+                delimiter: *delimiter,
+                arguments,
+            });
+            root
         }
-        _ => {}
+        expression => expression,
+        }
+    }
+
+    let mut groups = Vec::new();
+    let root = visit(expression, &mut groups);
+    FlattenedCall { root, groups }
+}
+
+pub(super) fn apply_call_group(
+    callee: Expr,
+    delimiter: crate::ast::GroupDelimiter,
+    arguments: Vec<CallArg>,
+) -> Expr {
+    if delimiter == crate::ast::GroupDelimiter::Parenthesis {
+        Expr::Call(Box::new(callee), arguments)
+    } else {
+        Expr::DelimitedCall {
+            callee: Box::new(callee),
+            delimiter,
+            arguments,
+        }
     }
 }
 

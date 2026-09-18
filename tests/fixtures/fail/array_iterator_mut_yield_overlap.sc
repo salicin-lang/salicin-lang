@@ -4,5 +4,5 @@ let main(): i32 = {
   let first = iterator.next()
   let second = iterator.next()
   match(first) { Some(value) => value, None => 0,
-}
+  }
 }

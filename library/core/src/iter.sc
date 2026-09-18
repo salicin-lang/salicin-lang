@@ -32,13 +32,12 @@ pub let ArrayIntoIter<T: type>
   next_index: usize,
 }
 
-extend(ArrayIntoIter<T><l>, Iterator)
-(requires: T is core.marker.Copyable) {
+extend(ArrayIntoIter<T><l>, Iterator)<requires: T is core.marker.Copyable> {
   let Item = OwnedItem<T>;
   let next<r: region>(self: Borrow<mut><r><self>)(): core.Option<T> = {
-    if self.next_index == l {
+    if(self.next_index == l) {
       None
-    } else {
+    } else: {
       let value = self.values[self.next_index]
       self.next_index = self.next_index + 1
       Some(value)
@@ -46,8 +45,7 @@ extend(ArrayIntoIter<T><l>, Iterator)
   }
 }
 
-extend(Array<T><l>, IntoIterator)
-(requires: T is core.marker.Copyable) {
+extend(Array<T><l>, IntoIterator)<requires: T is core.marker.Copyable> {
   let Iter = ArrayIntoIter<T><l>;
   let into_iter(move self)(): ArrayIntoIter<T><l> = {
     ArrayIntoIter<T><l>{ values: self, next_index: 0 }
@@ -66,9 +64,9 @@ extend(SliceIter<a><T>, Iterator) {
   let Item = BorrowedItem<a, T>;
   /// Yields one access-preserving Borrow tied to this `next` Borrow.
   let next<r: region>(self: Borrow<mut><r><self>)(): core.Option<Item<r>> = {
-    if self.next_index == unsafe { raw_slice_len(self.values) } {
+    if(self.next_index == unsafe { raw_slice_len(self.values) }) {
       None
-    } else {
+    } else: {
       let index = self.next_index
       self.next_index = self.next_index + 1
       Some(unsafe {

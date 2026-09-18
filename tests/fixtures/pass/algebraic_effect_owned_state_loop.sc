@@ -9,7 +9,7 @@ let state = struct {
 let program: with<step>(): i32 = {
   let mut state = state{ value: 40 }
   let mut count = 0
-  while { count < 2 } do {
+  while(count < 2) {
     let delta = step.delta()
     state.value = state.value + delta
     count = count + 1

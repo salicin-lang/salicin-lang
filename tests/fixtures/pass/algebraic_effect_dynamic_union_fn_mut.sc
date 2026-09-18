@@ -23,9 +23,9 @@ let main(): i32 = {
         right_total = right_total + value
         ask.value() + right_total
       }
-      let first: with<ask>((i32): i32)  = if true { left } else { middle }
-      let second: with<ask>((i32): i32)  = if false { middle } else { right }
-      let mut action: with<ask>((i32): i32)  = if ask.choose() { first } else { second }
+      let first: with<ask>((i32): i32)  = if(true) { left } else: { middle }
+      let second: with<ask>((i32): i32)  = if(false) { middle } else: { right }
+      let mut action: with<ask>((i32): i32)  = if(ask.choose()) { first } else: { second }
       let first_result = action(1)
       let second_result = action(2)
       first_result + second_result - 22

@@ -18,8 +18,7 @@ extend(override, read) {
 
 let cell<t: type> = struct { value: t }
 
-extend(cell<t>, read)
-(requires: t is read) {
+extend(cell<t>, read)<requires: t is read> {
   let read(self: Borrow<self>)(): i32 = { self.value.read() }
 }
 
