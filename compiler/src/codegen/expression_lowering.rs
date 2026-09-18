@@ -711,10 +711,7 @@ impl Analyzer {
                     }
                     _ => false,
                 };
-                if !callable
-                    && resolved_type.is_some()
-                    && arguments.iter().all(|argument| argument.label.is_some())
-                {
+                if !callable && resolved_type.is_some() {
                     self.lower_struct_construction(
                         callee,
                         resolved_type.as_deref(),

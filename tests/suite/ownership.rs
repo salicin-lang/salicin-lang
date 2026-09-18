@@ -2072,10 +2072,6 @@ fn m1_local_closure_errors_report_their_cause() {
             "pattern_partial_missing_context.sc",
             "requires a function type annotation",
         ),
-        (
-            "consecutive_pattern_closures.sc",
-            "a trailing pattern closure must be the final trailing closure group",
-        ),
         ("pattern_partial_fnonce_twice.sc", "consumed"),
         ("closure_move_capture_source_use.sc", "moved"),
     ] {

@@ -3082,18 +3082,23 @@ fn visit_expr_mut_ordered(
 pub(super) fn normalize_source_call_groups(program: &mut Program) {
     fn expand_control_call(expression: &Expr) -> Option<Expr> {
         let flattened = super::lower::flatten_call(expression);
-        if flattened
-            .groups
-            .iter()
-            .any(|group| group.delimiter != GroupDelimiter::Parenthesis)
-        {
-            return None;
-        }
         let groups = flattened.argument_groups();
         let Expr::Name(name) = flattened.root else {
             return None;
         };
         if name == "$lang$if" {
+            if flattened
+                .groups
+                .iter()
+                .map(|group| group.delimiter)
+                .ne([
+                    GroupDelimiter::Parenthesis,
+                    GroupDelimiter::Brace,
+                    GroupDelimiter::Brace,
+                ])
+            {
+                return None;
+            }
             let [condition_group, then_group, else_group] = groups.as_slice() else {
                 return None;
             };

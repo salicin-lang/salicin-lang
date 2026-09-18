@@ -11,9 +11,9 @@ use std::fmt;
 use std::sync::OnceLock;
 
 use crate::ast::{
-    AssociatedKind, CompileParam, CompileParamDefault, EnumDef, Function, FunctionEffects, Item,
-    ItemOrigin, PassMode, Program, Sort, StaticFragmentKind, TraitDef, TraitMember, Type,
-    TypeFormDef, VariantDef, VariantFields, Visibility,
+    AssociatedKind, CompileParam, CompileParamDefault, EnumDef, Function, FunctionEffects,
+    GroupDelimiter, Item, ItemOrigin, PassMode, Program, Sort, StaticFragmentKind, TraitDef,
+    TraitMember, Type, TypeFormDef, VariantDef, VariantFields, Visibility,
 };
 use crate::manifest::Edition;
 use crate::modules::{self, PackageId, SourceUnit};
@@ -2211,6 +2211,7 @@ fn validate_introspection_builtin(function: &Function, diagnostics: &mut Vec<Str
 fn validate_defer_support(function: &Function, diagnostics: &mut Vec<String>) {
     let effects = effect_parameter("e");
     let valid = function.compile_groups == vec![vec![compile_effects_parameter("e")]]
+        && function.effects.group_delimiters == [GroupDelimiter::Brace]
         && single_moved_callable(function, "action", Type::Unit, effects.clone())
         && function.return_type == Some(Type::Unit)
         && function.effects == effects
@@ -3445,6 +3446,7 @@ fn valid_do(function: &Function) -> bool {
             },
             type_parameter("T"),
         ]]
+        && function.effects.group_delimiters == [GroupDelimiter::Brace]
         && single_moved_callable(function, "action", named_type("T"), effect_parameter("e"))
         && function.return_type == Some(named_type("T"))
         && function.effects.parameters == vec!["e"]
@@ -3470,6 +3472,7 @@ fn valid_do_while(function: &Function) -> bool {
             kind: Sort::Effects,
             default: None,
         }]]
+        && function.effects.group_delimiters == [GroupDelimiter::Brace, GroupDelimiter::Brace]
         && moved_callable_parameter(
             action,
             "action",
@@ -3510,6 +3513,7 @@ fn valid_try(function: &Function) -> bool {
             type_parameter("T"),
             type_parameter("Error"),
         ]]
+        && function.effects.group_delimiters == [GroupDelimiter::Brace]
         && single_moved_callable(function, "action", named_type("T"), effects)
         && function.return_type == Some(result)
         && function.effects.parameters == vec!["f"]
@@ -3549,6 +3553,7 @@ fn valid_unsafe(function: &Function) -> bool {
             },
             type_parameter("T"),
         ]]
+        && function.effects.group_delimiters == [GroupDelimiter::Brace]
         && single_moved_callable(function, "action", named_type("T"), effects)
         && function.return_type == Some(named_type("T"))
         && function.effects.parameters == vec!["e"]
@@ -3568,6 +3573,7 @@ fn valid_loop(function: &Function) -> bool {
             },
             type_parameter("T"),
         ]]
+        && function.effects.group_delimiters == [GroupDelimiter::Brace]
         && single_moved_callable(
             function,
             "body",
@@ -3598,6 +3604,8 @@ fn valid_while(function: &Function) -> bool {
             kind: Sort::Effects,
             default: None,
         }]]
+        && function.effects.group_delimiters
+            == [GroupDelimiter::Parenthesis, GroupDelimiter::Brace]
         && moved_callable_parameter(condition, "condition", Type::Bool, effect_parameter("e"))
         && moved_callable_parameter(body, "do", Type::Unit, effect_parameter("e"))
         && function.return_type == Some(Type::Unit)
@@ -3630,6 +3638,12 @@ fn valid_if(function: &Function) -> bool {
             },
             type_parameter("T"),
         ]]
+        && function.effects.group_delimiters
+            == [
+                GroupDelimiter::Parenthesis,
+                GroupDelimiter::Brace,
+                GroupDelimiter::Brace,
+            ]
         && condition.name == "condition"
         && condition.mode == PassMode::Inferred
         && condition.ty == Type::Bool
@@ -3665,6 +3679,8 @@ fn valid_match(function: &Function) -> bool {
                 default: None,
             },
         ]]
+        && function.effects.group_delimiters
+            == [GroupDelimiter::Parenthesis, GroupDelimiter::Brace]
         && input.name == "input"
         && input.mode == PassMode::Move
         && input.ty == named_type("Input")
@@ -3721,6 +3737,8 @@ fn valid_for(function: &Function) -> bool {
             type_parameter("Iter"),
             type_parameter("Item"),
         ]]
+        && function.effects.group_delimiters
+            == [GroupDelimiter::Parenthesis, GroupDelimiter::Brace]
         && iterable.name == "iterable"
         && iterable.mode == PassMode::Move
         && iterable.ty == named_type("Iterable")

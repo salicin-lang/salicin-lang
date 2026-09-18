@@ -655,8 +655,8 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
     }));
 
     let malformed_defer = EDITION_2026_CONTROL.replace(
-        ": with<e>(move action: with<e>((): ())): () = builtin()",
-        ": with<e>(move action: with<e>((): bool)): () = builtin()",
+        ": with<e>{move action: with<e>((): ())}: () = builtin()",
+        ": with<e>{move action: with<e>((): bool)}: () = builtin()",
     );
     assert_ne!(malformed_defer, EDITION_2026_CONTROL);
     let modules = edition_2026_test_modules(&[("control", &malformed_defer)]);
@@ -872,15 +872,15 @@ fn rejects_malformed_control_contracts() {
             (
                 "do",
                 EDITION_2026_CONTROL.replace(
-                    "(move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)): ()",
-                    "(move until: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)): ()",
+                    "{move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)}: ()",
+                    "{move until: with<core.control.loop_exit<()>, core.control.iteration_skip, e>((): bool)}: ()",
                 ),
             ),
             (
                 "if",
                 EDITION_2026_CONTROL.replace(
-                    ": with<e>(condition: bool)(move then: with<e>((): T))",
-                    ": with<e>(condition: i32)(move then: with<e>((): T))",
+                    ": with<e>(condition: bool){move then: with<e>((): T)}",
+                    ": with<e>(condition: i32){move then: with<e>((): T)}",
                 ),
             ),
             (
@@ -911,8 +911,8 @@ fn rejects_malformed_control_contracts() {
         }
 
     let malformed = EDITION_2026_UNSAFE.replace(
-            "pub let unsafe<e: effects, T: type>: with<e>(move action: with<core.unsafe.unsafety, e>((): T)): T",
-            "pub let unsafe<e: effects, T: type>: with<e>(move action: with<e>((): T)): T",
+            "pub let unsafe<e: effects, T: type>: with<e>{move action: with<core.unsafe.unsafety, e>((): T)}: T",
+            "pub let unsafe<e: effects, T: type>: with<e>{move action: with<e>((): T)}: T",
         );
     let modules = edition_2026_test_modules(&[("unsafe", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();

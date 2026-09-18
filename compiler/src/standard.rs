@@ -229,17 +229,6 @@ pub(crate) fn delimiter_diagnostics(program: &Program, layer: &str) -> Vec<Strin
                 function.name
             ));
         }
-        if function
-                .effects
-                .group_delimiters
-                .iter()
-                .any(|delimiter| *delimiter != GroupDelimiter::Parenthesis)
-        {
-            diagnostics.push(format!(
-                "official {layer} function `{}` must use `(...)` for every runtime parameter group",
-                function.name
-            ));
-        }
     };
     for item in &program.items {
         match item {

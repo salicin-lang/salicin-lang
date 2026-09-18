@@ -4,7 +4,7 @@ let choose(left: i32)(right: i32): i32 = {
   if(left == 40) { right } else: { 0 }
 }
 
-let apply(value: i32)(move action: (i32): i32): i32 = {
+let apply(value: i32){move action: (i32): i32}: i32 = {
   action(value)
 }
 

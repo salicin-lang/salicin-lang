@@ -14,7 +14,11 @@ pub fn format_source(source: &str) -> Result<String, String> {
 
     let (_, source_layout) =
         parse_with_source_layout(&normalized).map_err(|error| error.to_string())?;
-    let expanded = expand_nested_blocks(&normalized, &source_layout);
+    let canonical = space_brace_groups(&normalized, &source_layout);
+    let (_, source_layout) = parse_with_source_layout(&canonical).map_err(|error| {
+        format!("internal formatter error: canonical source no longer parses: {error}")
+    })?;
+    let expanded = expand_nested_blocks(&canonical, &source_layout);
     let (_, source_layout) = parse_with_source_layout(&expanded).map_err(|error| {
         format!("internal formatter error: expanded source no longer parses: {error}")
     })?;
@@ -55,6 +59,21 @@ pub fn format_source(source: &str) -> Result<String, String> {
         format!("internal formatter error: formatted source no longer parses: {error}")
     })?;
     Ok(output)
+}
+
+fn space_brace_groups(source: &str, layout: &SourceLayout) -> String {
+    let mut output = source.to_owned();
+    for byte in layout.brace_groups.iter().copied().rev() {
+        if byte > 0
+            && !source[..byte]
+                .chars()
+                .next_back()
+                .is_some_and(char::is_whitespace)
+        {
+            output.insert(byte, ' ');
+        }
+    }
+    output
 }
 
 fn expand_nested_blocks(source: &str, layout: &SourceLayout) -> String {
@@ -132,7 +151,6 @@ struct LineSyntax {
     is_parameter_group: bool,
     is_repeated_parameter_group: bool,
     is_where_predicate: bool,
-    trailing_closure_depth: usize,
     last: Option<TokenKind>,
     delimiter_indent: usize,
     continuation: usize,
@@ -213,26 +231,6 @@ fn analyze_layout(source: &str, source_layout: &SourceLayout) -> Result<Vec<Line
         }
     }
 
-    for closure in &source_layout.trailing_closures {
-        let Some(start) = tokens
-            .iter()
-            .find(|token| token.start_byte == closure.start_byte)
-        else {
-            continue;
-        };
-        for line in &mut lines[start.line - 1..] {
-            let Some(first_byte) = line.first_byte else {
-                continue;
-            };
-            if first_byte > closure.close_byte {
-                break;
-            }
-            if first_byte >= closure.start_byte {
-                line.trailing_closure_depth = 1;
-            }
-        }
-    }
-
     let mut declaration_continuation = false;
     let mut previous_last = None;
     for (index, line) in lines.iter_mut().enumerate() {
@@ -248,9 +246,8 @@ fn analyze_layout(source: &str, source_layout: &SourceLayout) -> Result<Vec<Line
             && line.first.is_some()
             && previous_last.as_ref().is_some_and(is_continuation_operator)
             && line.delimiter_indent == 0;
-        line.continuation = usize::from(continues_declaration)
-            + line.trailing_closure_depth
-            + usize::from(operator_continuation);
+        line.continuation =
+            usize::from(continues_declaration) + usize::from(operator_continuation);
         if line.is_where_predicate && index != 0 {
             line.continuation = 1;
         }
@@ -458,9 +455,17 @@ mod tests {
     }
 
     #[test]
-    fn preserves_tight_uniform_group_delimiters() {
+    fn canonicalizes_a_space_before_brace_application() {
         let source = "let choose<t: type>[left: t]{right: t}(fallback: t): t = { left }\nlet value = choose<i32>[1]{2}(3)\n";
-        assert_eq!(format_source(source).unwrap(), source);
+        let expected = "let choose<t: type>[left: t]{right: t}(fallback: t): t = { left }\nlet value = choose<i32>[1] {2}(3)\n";
+        assert_eq!(format_source(source).unwrap(), expected);
+    }
+
+    #[test]
+    fn spaces_a_for_iterable_brace_application_without_changing_its_role() {
+        let source = "let visit(): () = {\n  for counter{current: 0, end: 4} { value -> value }\n}\n";
+        let expected = "let visit(): () = {\n  for counter {current: 0, end: 4} { value -> value }\n}\n";
+        assert_eq!(format_source(source).unwrap(), expected);
     }
 
     #[test]

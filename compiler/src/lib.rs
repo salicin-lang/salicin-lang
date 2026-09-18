@@ -651,8 +651,8 @@ mod tests {
                 "expected `i32`, found `bool`",
             ),
             (
-                "trailing closure call",
-                "let choose()(move action: (): bool): bool = { action() }\n\
+                "brace body call",
+                "let choose(){move action: (): bool}: bool = { action() }\n\
                  let main(): i32 = { choose() { true } }\n",
                 2,
                 21,

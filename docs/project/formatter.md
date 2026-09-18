@@ -6,7 +6,7 @@ The Salicin formatter normalizes layout without reconstructing source from
 the semantic AST. This is required because physical newlines separate
 expressions and because comments are intentionally absent
 from the AST. The parser records source-backed layout spans for parameter
-groups, `where` predicates, trailing closures, and braced regions;
+groups, `where` predicates, Brace applications, and braced regions;
 the formatter consumes those roles without recognizing library declaration
 names.
 
@@ -24,14 +24,14 @@ Consequently, the formatter:
   or leading runs of closing braces;
 - never changes token spelling, string contents, comment delimiters or
   non-layout content, semicolons, or other delimiters;
-- never changes horizontal spacing between non-trivia tokens;
+- canonicalizes one space before a Brace application opener;
 - retains blank-line count;
 - normalizes line endings to LF;
 - removes trailing spaces and tabs;
 - indents nonblank lines by two spaces per unmatched source brace;
 - tracks `()` and `[]` delimiter depth within the current braced region;
 - adds one continuation level to parser-identified parameter groups,
-  trailing closures, and operator continuations;
+  Brace groups and operator continuations;
 - adds one continuation level to subsequent `where` predicates;
 - expands directly nested semantic braced regions and leading closing-brace runs into
   one visible block level per line;
@@ -75,7 +75,7 @@ foundation rather than adding an independent second parser.
 
 Unit and CLI tests cover nested block comments, braces inside comments,
 delimiter nesting, ordinary parenthesized expressions, declaration and
-operator continuations, `where` predicates, trailing closures and nested braces,
+operator continuations, `where` predicates, Brace applications and nested braces,
 match expressions, final newlines, invalid source, `--check`, package
 selection, dependency isolation, and repeated formatting. Every passing
 language fixture is formatted twice and must be idempotent.

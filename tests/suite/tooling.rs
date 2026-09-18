@@ -1150,7 +1150,6 @@ fn removed_implicit_syntax_is_rejected() {
         "removed_parenthesized_extension_requires.sc",
         "wrong_generic_struct_delimiter.sc",
         "wrong_generic_effect_delimiter.sc",
-        "spaced_struct_construction.sc",
         "legacy_prefix_match.sc",
         "legacy_postfix_match.sc",
     ] {

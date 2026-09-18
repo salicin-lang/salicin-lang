@@ -466,17 +466,19 @@ of a partial application. Compile-time application is angle-only, including
 generic struct constructors and parameterized effect identities. No group
 mixes compile-time and runtime parameters.
 
-An explicit opener is a postfix call only when it is byte-adjacent to the callee token. Comparison
-operators require whitespace on both sides, so `a < b` compares and `a<b>` calls an angle group.
+Parenthesis, square, and angle openers are postfix calls only when byte-adjacent to the callee.
+Brace application is insensitive to horizontal whitespace: `callee{...}` and `callee {...}` are
+the same Brace runtime group. Comparison operators require whitespace on both sides, so `a < b`
+compares and `a<b>` calls an angle group.
 Postfix `[]` is a square call; indexable values retain bounds checks, borrowing, assignment-place
-lowering, and user index protocol dispatch. Tight `callee{...}` is always parsed as a Brace
-`DelimitedCall`; if name resolution later identifies the callee as a struct type, that call becomes
-struct construction. An uncalled `[...]` remains an array literal. An ordinary `{...}` expression
-is a closure, and spaced `callee {...}` always supplies that closure as a trailing argument.
+lowering, and user index protocol dispatch. Brace application is always a Brace `DelimitedCall`;
+the declaration decides whether its contents are ordinary arguments, struct fields, a handler
+schema, or the body of a callable parameter. An uncalled `[...]` remains an array literal, and a
+standalone `{...}` expression remains a closure. Empty braces are resolved by the declared schema.
 When two angle groups are open, a tight `>>` is split into two closing delimiters. A
 whitespace-separated `a >> b` remains the shift operator.
 
-### 5.1 Labels and Trailing Closures
+### 5.1 Labels and Brace Groups
 
 Runtime parameters may be labeled. Positional arguments must precede labeled arguments, and each
 parameter is supplied exactly once.
@@ -486,11 +488,11 @@ let clamp(value: i32, min lower: i32, max upper: i32): i32 = { ... }
 let bounded = clamp(42, min: 0, max: 100)
 ```
 
-A call supplies every ordinary argument group with its declared delimiter. A trailing closure
-uses its braces as the explicit delimiter for the next unapplied closure group,
-including a first group as in `run { action() }`. Multiple trailing closures
-supply successive groups. A named trailing closure requires `label: { ... }`;
-an identifier without the colon is not a label.
+A call supplies every runtime argument group with its declared delimiter. A function declared
+with `{move action: with<e>((): T)}` accepts `run { action() }`; the Brace contents become the
+callable parameter's body. A function declared with `(...)` rejects that spelling even when its
+parameter is callable. Labels inside a Brace group are ordinary schema labels. Contextual labels
+such as `else:` attach real Brace groups validated by the corresponding control declaration.
 
 ```sc fragment
 if(condition) {
@@ -811,7 +813,7 @@ the validated source traits `core.iter.IntoIterator` and `core.iter.Iterator`, t
 `break()` and `break(value)` exit the nearest loop. The empty forms carry `()`.
 `continue()` starts its next iteration. These exits have type `never`.
 
-`defer { action }` registers a zero-argument trailing closure for the current lexical scope. Registration
+`defer { action }` registers a zero-argument callable Brace body for the current lexical scope. Registration
 evaluates and captures the action immediately. Registered actions run in reverse registration
 order after the scope result or exit value is evaluated and before control leaves the scope.
 They run on normal completion, `return`, `break`, `continue`, and `throw`. `defer` is a statement,

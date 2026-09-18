@@ -228,7 +228,7 @@ Implemented type-system features include:
   parameter-schema arguments;
 - source-level compile-time diagnostics that identify binder, sort, owner, and parameter group;
 - curried compile-time and runtime parameter groups;
-- labeled arguments, overload selection, and trailing closures;
+- labeled arguments, overload selection, and declaration-directed Brace groups;
 - generic nominal types, aliases, inherent extensions, and trait implementations;
 - call-shaped `extend(target) { ... }` and `extend(target, trait) { ... }`
   declarations whose generic binders and sorts are inferred by destructuring
@@ -361,8 +361,8 @@ Implemented data and control features include:
 
 - one delimiter-aware application model, with angle-only compile-time
   application and preserved delimiter identity for runtime groups, including
-  curried groups and methods, plus spaced brace trailing closures and
-  colon-labeled named trailing closures;
+  curried groups and methods, plus whitespace-insensitive, declaration-directed
+  Brace runtime groups;
 - nominal structs and closed enums;
 - target-layout `struct(c)` data with recursive field validation for integers,
   raw pointers, non-zero fixed arrays, nested C structs, and concrete generic
@@ -709,7 +709,7 @@ The conservative [source formatter](formatter.md) provides `salic fmt` and
 `salic fmt --check` for individual files and root packages. It preserves the
 existing physical line boundaries, expands directly nested block boundaries,
 and uses parser-provided source roles for two-space brace, delimiter,
-declaration, `where`, and trailing-closure indentation. Comments and
+declaration, `where`, and Brace-group indentation. Comments and
 dependencies remain source-owned; the passing fixture corpus is idempotent
 under repeated formatting.
 

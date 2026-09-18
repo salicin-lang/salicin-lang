@@ -28,10 +28,6 @@ impl Analyzer {
         expected: Option<&Ty>,
         context: &mut LowerCtx,
     ) -> HirExpr {
-        if fields.iter().any(|field| field.label.is_none()) {
-            self.error("struct construction fields must be named; use `field: value` inside `{ ... }`");
-            return error_expr();
-        }
         let flattened = flatten_call(constructor);
         let root = flattened.root;
         if flattened
@@ -198,21 +194,41 @@ impl Analyzer {
         }
 
         if labeled == 0 {
-            if arguments.len() != fields.len() {
+            let positional = arguments
+                .iter()
+                .map(|argument| {
+                    let value = match argument.value.unlocated() {
+                        Expr::Closure(parameters, body) if parameters.is_empty() => body.as_ref(),
+                        value => value,
+                    };
+                    (argument, value)
+                })
+                .collect::<Vec<_>>();
+            let positional = if fields.is_empty()
+                && matches!(
+                    positional.as_slice(),
+                    [(_, Expr::Block(statements, None))] if statements.is_empty()
+                )
+            {
+                &[][..]
+            } else {
+                positional.as_slice()
+            };
+            if positional.len() != fields.len() {
                 self.error(format!(
                     "argument count mismatch for {constructor}: expected {}, found {}",
                     fields.len(),
-                    arguments.len()
+                    positional.len()
                 ));
             }
-            return arguments
+            return positional
                 .iter()
                 .zip(fields)
                 .enumerate()
-                .map(|(index, (argument, field))| {
+                .map(|(index, ((_, value), field))| {
                     (
                         index,
-                        self.lower_expr(&argument.value, Some(&field.ty), context),
+                        self.lower_expr(value, Some(&field.ty), context),
                     )
                 })
                 .collect();

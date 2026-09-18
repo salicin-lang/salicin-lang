@@ -63,7 +63,7 @@ pub(crate) struct SourceLayout {
     pub where_predicates: Vec<usize>,
     pub blocks: Vec<SourceBracedRegion>,
     pub closures: Vec<SourceBracedRegion>,
-    pub trailing_closures: Vec<SourceTrailingClosure>,
+    pub brace_groups: Vec<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,12 +73,6 @@ pub(crate) struct SourceBracedRegion {
     pub body_start_byte: usize,
     pub open_line: usize,
     pub close_line: usize,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct SourceTrailingClosure {
-    pub start_byte: usize,
-    pub close_byte: usize,
 }
 
 pub(crate) fn parse_with_source_layout(
@@ -120,6 +114,7 @@ struct Parser {
     effect_parameters_in_scope: HashSet<String>,
     next_control_binding: usize,
     async_depth: usize,
+    stop_before_for_body: bool,
     layout: SourceLayout,
     expression_group_closers: Vec<TokenKind>,
 }
@@ -140,6 +135,7 @@ impl Parser {
             effect_parameters_in_scope: HashSet::new(),
             next_control_binding: 0,
             async_depth: 0,
+            stop_before_for_body: false,
             layout: SourceLayout::default(),
             expression_group_closers: Vec::new(),
         }
@@ -1737,6 +1733,7 @@ impl Parser {
                     )));
                 }
             }
+            runtime_group_delimiters.push(GroupDelimiter::Brace);
             runtime_groups.push(vec![Param {
                 mode: PassMode::Inferred,
                 access: None,
@@ -3669,12 +3666,12 @@ impl Parser {
         Ok(outer)
     }
 
-    fn expression(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        self.assignment(allow_trailing_closure)
+    fn expression(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        self.assignment(allow_brace_group)
     }
 
-    fn assignment(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let left = self.coalesce_expression(allow_trailing_closure)?;
+    fn assignment(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let left = self.coalesce_expression(allow_brace_group)?;
         let compound = if self.take(&TokenKind::PlusEqual) {
             Some(BinaryOp::Add)
         } else if self.take(&TokenKind::MinusEqual) {
@@ -3700,7 +3697,7 @@ impl Parser {
         };
         if self.take(&TokenKind::Equal) || compound.is_some() {
             let equals = self.previous().clone();
-            let right = self.assignment(allow_trailing_closure)?;
+            let right = self.assignment(allow_brace_group)?;
             if Self::is_assignable_place(&left) {
                 Ok(match compound {
                     Some(operator) => {
@@ -3719,14 +3716,14 @@ impl Parser {
         }
     }
 
-    fn coalesce_expression(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        self.coalesce(allow_trailing_closure)
+    fn coalesce_expression(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        self.coalesce(allow_brace_group)
     }
 
-    fn coalesce(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let left = self.logical_or(allow_trailing_closure)?;
+    fn coalesce(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let left = self.logical_or(allow_brace_group)?;
         if self.take(&TokenKind::QuestionQuestion) {
-            let right = self.coalesce(allow_trailing_closure)?;
+            let right = self.coalesce(allow_brace_group)?;
             Ok(Expr::Coalesce(Box::new(left), Box::new(right)))
         } else {
             Ok(left)
@@ -3876,53 +3873,53 @@ impl Parser {
         }
     }
 
-    fn logical_or(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let mut expression = self.logical_and(allow_trailing_closure)?;
+    fn logical_or(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let mut expression = self.logical_and(allow_brace_group)?;
         while self.take(&TokenKind::OrOr) {
-            let right = self.logical_and(allow_trailing_closure)?;
+            let right = self.logical_and(allow_brace_group)?;
             expression = Expr::Binary(Box::new(expression), BinaryOp::Or, Box::new(right));
         }
         Ok(expression)
     }
 
-    fn logical_and(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let mut expression = self.bitwise_or(allow_trailing_closure)?;
+    fn logical_and(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let mut expression = self.bitwise_or(allow_brace_group)?;
         while self.take(&TokenKind::AndAnd) {
-            let right = self.bitwise_or(allow_trailing_closure)?;
+            let right = self.bitwise_or(allow_brace_group)?;
             expression = Expr::Binary(Box::new(expression), BinaryOp::And, Box::new(right));
         }
         Ok(expression)
     }
 
-    fn bitwise_or(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let mut expression = self.bitwise_xor(allow_trailing_closure)?;
+    fn bitwise_or(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let mut expression = self.bitwise_xor(allow_brace_group)?;
         while self.take(&TokenKind::Pipe) {
-            let right = self.bitwise_xor(allow_trailing_closure)?;
+            let right = self.bitwise_xor(allow_brace_group)?;
             expression = Expr::Binary(Box::new(expression), BinaryOp::BitOr, Box::new(right));
         }
         Ok(expression)
     }
 
-    fn bitwise_xor(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let mut expression = self.bitwise_and(allow_trailing_closure)?;
+    fn bitwise_xor(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let mut expression = self.bitwise_and(allow_brace_group)?;
         while self.take(&TokenKind::Caret) {
-            let right = self.bitwise_and(allow_trailing_closure)?;
+            let right = self.bitwise_and(allow_brace_group)?;
             expression = Expr::Binary(Box::new(expression), BinaryOp::BitXor, Box::new(right));
         }
         Ok(expression)
     }
 
-    fn bitwise_and(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let mut expression = self.equality(allow_trailing_closure)?;
+    fn bitwise_and(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let mut expression = self.equality(allow_brace_group)?;
         while self.take(&TokenKind::Amp) {
-            let right = self.equality(allow_trailing_closure)?;
+            let right = self.equality(allow_brace_group)?;
             expression = Expr::Binary(Box::new(expression), BinaryOp::BitAnd, Box::new(right));
         }
         Ok(expression)
     }
 
-    fn equality(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let left = self.relation(allow_trailing_closure)?;
+    fn equality(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let left = self.relation(allow_brace_group)?;
         let operator = if self.take(&TokenKind::EqualEqual) {
             Some(BinaryOp::Eq)
         } else if self.take(&TokenKind::BangEqual) {
@@ -3934,15 +3931,15 @@ impl Parser {
         let Some(operator) = operator else {
             return Ok(left);
         };
-        let right = self.relation(allow_trailing_closure)?;
+        let right = self.relation(allow_brace_group)?;
         if self.at(&TokenKind::EqualEqual) || self.at(&TokenKind::BangEqual) {
             return Err(self.error_here("equality operators cannot be chained"));
         }
         Ok(Expr::Binary(Box::new(left), operator, Box::new(right)))
     }
 
-    fn relation(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let left = self.shift(allow_trailing_closure)?;
+    fn relation(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let left = self.shift(allow_brace_group)?;
         if matches!(
             self.current().kind,
             TokenKind::Less | TokenKind::LessEqual | TokenKind::Greater | TokenKind::GreaterEqual
@@ -3982,7 +3979,7 @@ impl Parser {
         let Some(operator) = operator else {
             return Ok(left);
         };
-        let right = self.shift(allow_trailing_closure)?;
+        let right = self.shift(allow_brace_group)?;
         if matches!(
             self.current().kind,
             TokenKind::Less | TokenKind::LessEqual | TokenKind::Greater | TokenKind::GreaterEqual
@@ -3992,8 +3989,8 @@ impl Parser {
         Ok(Expr::Binary(Box::new(left), operator, Box::new(right)))
     }
 
-    fn shift(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let mut expression = self.additive(allow_trailing_closure)?;
+    fn shift(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let mut expression = self.additive(allow_brace_group)?;
         loop {
             if self.at(&TokenKind::Shr)
                 && self
@@ -4017,14 +4014,14 @@ impl Parser {
             let Some(operator) = operator else {
                 break;
             };
-            let right = self.additive(allow_trailing_closure)?;
+            let right = self.additive(allow_brace_group)?;
             expression = Expr::Binary(Box::new(expression), operator, Box::new(right));
         }
         Ok(expression)
     }
 
-    fn additive(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let mut expression = self.multiplicative(allow_trailing_closure)?;
+    fn additive(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let mut expression = self.multiplicative(allow_brace_group)?;
         loop {
             let operator = if self.take(&TokenKind::Plus) {
                 Some(BinaryOp::Add)
@@ -4036,14 +4033,14 @@ impl Parser {
             let Some(operator) = operator else {
                 break;
             };
-            let right = self.multiplicative(allow_trailing_closure)?;
+            let right = self.multiplicative(allow_brace_group)?;
             expression = Expr::Binary(Box::new(expression), operator, Box::new(right));
         }
         Ok(expression)
     }
 
-    fn multiplicative(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let mut expression = self.unary(allow_trailing_closure)?;
+    fn multiplicative(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let mut expression = self.unary(allow_brace_group)?;
         loop {
             let operator = if self.take(&TokenKind::Star) {
                 Some(BinaryOp::Mul)
@@ -4057,13 +4054,13 @@ impl Parser {
             let Some(operator) = operator else {
                 break;
             };
-            let right = self.unary(allow_trailing_closure)?;
+            let right = self.unary(allow_brace_group)?;
             expression = Expr::Binary(Box::new(expression), operator, Box::new(right));
         }
         Ok(expression)
     }
 
-    fn unary(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
+    fn unary(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
         if self.async_depth > 0 && self.at_context_ident("await") {
             let await_token = self.current().clone();
             self.advance();
@@ -4076,28 +4073,28 @@ impl Parser {
             };
             Ok(Expr::Await(Box::new(value.clone())))
         } else if self.take(&TokenKind::Minus) {
-            let operand = self.unary(allow_trailing_closure)?;
+            let operand = self.unary(allow_brace_group)?;
             Ok(Expr::Unary(UnaryOp::Neg, Box::new(operand)))
         } else if self.take(&TokenKind::Bang) {
-            let operand = self.unary(allow_trailing_closure)?;
+            let operand = self.unary(allow_brace_group)?;
             Ok(Expr::Unary(UnaryOp::Not, Box::new(operand)))
         } else if self.take(&TokenKind::Star) {
-            let operand = self.unary(allow_trailing_closure)?;
+            let operand = self.unary(allow_brace_group)?;
             Ok(Expr::Unary(UnaryOp::Deref, Box::new(operand)))
         } else if self.take(&TokenKind::Borrow) {
             let borrow = self.previous().clone();
-            self.borrow_expression(&borrow, allow_trailing_closure)
+            self.borrow_expression(&borrow, allow_brace_group)
         } else if self.take(&TokenKind::Mut) {
             Ok(Expr::Name("mut".to_owned()))
         } else {
-            self.postfix(allow_trailing_closure)
+            self.postfix(allow_brace_group)
         }
     }
 
     fn borrow_expression(
         &mut self,
         operator: &Token,
-        _allow_trailing_closure: bool,
+        _allow_brace_group: bool,
     ) -> Result<Expr, ParseError> {
         let (mutable, access) = if self.borrow_qualifier_group_follows() {
             let (mutable, access, _) = self.optional_borrow_arguments()?;
@@ -4136,13 +4133,14 @@ impl Parser {
         })
     }
 
-    fn postfix(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
-        let mut expression = self.primary(allow_trailing_closure)?;
-        let mut can_take_trailing_closure = false;
-        let mut has_pattern_trailing_closure = false;
+    fn postfix(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
+        let mut expression = self.primary(allow_brace_group)?;
 
         loop {
-            if let Some(delimiter) = self.explicit_call_delimiter_follows() {
+            if let Some(delimiter) = self.call_delimiter_follows(allow_brace_group) {
+                if delimiter == GroupDelimiter::Brace {
+                    self.layout.brace_groups.push(self.current().start_byte);
+                }
                 let arguments = self.call_argument_group(delimiter)?;
                 expression = match (delimiter, arguments.as_slice()) {
                     (GroupDelimiter::Parenthesis, _) => {
@@ -4158,7 +4156,6 @@ impl Parser {
                         arguments,
                     },
                 };
-                can_take_trailing_closure = true;
             } else if self.take(&TokenKind::Dot) {
                 let member =
                     if self.at(&TokenKind::Super) && Self::is_super_path_expression(&expression) {
@@ -4193,57 +4190,6 @@ impl Parser {
                     Box::new(Expr::Member(Box::new(expression), method.to_owned())),
                     Vec::new(),
                 );
-            } else if allow_trailing_closure && self.at(&TokenKind::LBrace) {
-                if has_pattern_trailing_closure {
-                    return Err(self.error_here(
-                        "a trailing pattern closure must be the final trailing closure group",
-                    ));
-                }
-                let start_byte = self.current().start_byte;
-                let closure = self.trailing_closure(start_byte)?;
-                let is_pattern_closure = matches!(&closure, Expr::PatternClosure { .. });
-                expression = Expr::Call(
-                    Box::new(expression),
-                    vec![CallArg {
-                        label: None,
-                        value: closure,
-                    }],
-                );
-                has_pattern_trailing_closure = is_pattern_closure;
-                can_take_trailing_closure = true;
-            } else if allow_trailing_closure
-                && can_take_trailing_closure
-                && self.named_trailing_closure_follows()
-            {
-                if has_pattern_trailing_closure {
-                    return Err(self.error_here(
-                        "a trailing pattern closure must be the final trailing closure group",
-                    ));
-                }
-                let start_byte = self.current().start_byte;
-                let label = self.expect_ident("a trailing closure label")?;
-                self.expect(&TokenKind::Colon, "`:` after trailing closure label")?;
-                let closure = self.trailing_closure(start_byte)?;
-                let is_pattern_closure = matches!(&closure, Expr::PatternClosure { .. });
-                expression = Expr::Call(
-                    Box::new(expression),
-                    vec![CallArg {
-                        label: Some(label),
-                        value: closure,
-                    }],
-                );
-                has_pattern_trailing_closure = is_pattern_closure;
-                can_take_trailing_closure = true;
-            } else if allow_trailing_closure && self.at(&TokenKind::Newline) {
-                let before_newlines = self.index;
-                while self.take(&TokenKind::Newline) {}
-                if can_take_trailing_closure
-                    && (self.at(&TokenKind::LBrace) || self.named_trailing_closure_follows())
-                {
-                    continue;
-                }
-                self.index = before_newlines;
-                break;
             } else {
                 break;
             }
@@ -4259,14 +4205,65 @@ impl Parser {
             .then_some(delimiter)
     }
 
+    fn call_delimiter_follows(&self, allow_brace_group: bool) -> Option<GroupDelimiter> {
+        let delimiter = self.current_group_delimiter()?;
+        if delimiter == GroupDelimiter::Brace && allow_brace_group {
+            if self.stop_before_for_body && self.brace_group_has_top_level_arrow() {
+                return None;
+            }
+            return (self.previous().kind != TokenKind::Newline).then_some(delimiter);
+        }
+        self.explicit_call_delimiter_follows()
+    }
+
+    fn brace_group_has_top_level_arrow(&self) -> bool {
+        let mut index = self.index + 1;
+        let mut closers = Vec::new();
+        while let Some(token) = self.tokens.get(index) {
+            match &token.kind {
+                TokenKind::LParen => closers.push(TokenKind::RParen),
+                TokenKind::LBracket => closers.push(TokenKind::RBracket),
+                TokenKind::LBrace => closers.push(TokenKind::RBrace),
+                TokenKind::Less
+                    if self.tokens.get(index - 1).is_some_and(|previous| {
+                        previous.kind != TokenKind::Newline
+                            && previous.end_byte == token.start_byte
+                    }) =>
+                {
+                    closers.push(TokenKind::Greater);
+                }
+                TokenKind::Shr if closers.last() == Some(&TokenKind::Greater) => {
+                    closers.pop();
+                    if closers.last() == Some(&TokenKind::Greater) {
+                        closers.pop();
+                    }
+                }
+                kind if closers.last() == Some(kind) => {
+                    closers.pop();
+                }
+                TokenKind::RBrace if closers.is_empty() => return false,
+                TokenKind::Arrow if closers.is_empty() => return true,
+                _ => {}
+            }
+            index += 1;
+        }
+        false
+    }
+
     fn call_argument_group(
         &mut self,
         delimiter: GroupDelimiter,
     ) -> Result<Vec<CallArg>, ParseError> {
+        if delimiter == GroupDelimiter::Brace && !self.brace_group_is_argument_list() {
+            return Ok(vec![CallArg {
+                label: None,
+                value: self.closure()?,
+            }]);
+        }
         let close = Self::group_close(delimiter);
         self.advance();
         let mut arguments = Vec::new();
-        let mut labeled = None;
+        let mut saw_labeled = false;
         while self.take(&TokenKind::Newline) {}
         if self.take(&close) {
             return Ok(arguments);
@@ -4280,14 +4277,13 @@ impl Parser {
             } else {
                 None
             };
-            let is_labeled = label.is_some();
-            if labeled.is_some_and(|expected| expected != is_labeled) {
+            if label.is_none() && saw_labeled {
                 return Err(self.error_at(
                     &argument_start,
-                    "labeled and positional arguments cannot be mixed",
+                    "positional arguments must precede labeled arguments",
                 ));
             }
-            labeled.get_or_insert(is_labeled);
+            saw_labeled |= label.is_some();
             self.expression_group_closers.push(close.clone());
             let value = self.expression(true)?;
             self.expression_group_closers.pop();
@@ -4305,13 +4301,61 @@ impl Parser {
         Ok(arguments)
     }
 
-    fn trailing_closure(&mut self, start_byte: usize) -> Result<Expr, ParseError> {
-        let closure = self.closure()?;
-        self.layout.trailing_closures.push(SourceTrailingClosure {
-            start_byte,
-            close_byte: self.previous().start_byte,
-        });
-        Ok(closure)
+    fn brace_group_is_argument_list(&self) -> bool {
+        let mut index = self.index + 1;
+        let mut closers = Vec::new();
+        let mut at_group_start = true;
+        while let Some(token) = self.tokens.get(index) {
+            let nested = !closers.is_empty();
+            match &token.kind {
+                TokenKind::LParen => {
+                    at_group_start &= nested;
+                    closers.push(TokenKind::RParen);
+                }
+                TokenKind::LBracket => {
+                    at_group_start &= nested;
+                    closers.push(TokenKind::RBracket);
+                }
+                TokenKind::LBrace => {
+                    at_group_start &= nested;
+                    closers.push(TokenKind::RBrace);
+                }
+                TokenKind::Less
+                    if self.tokens.get(index - 1).is_some_and(|previous| {
+                        previous.kind != TokenKind::Newline
+                            && previous.end_byte == token.start_byte
+                    }) =>
+                {
+                    at_group_start &= nested;
+                    closers.push(TokenKind::Greater);
+                }
+                TokenKind::Shr if closers.last() == Some(&TokenKind::Greater) => {
+                    closers.pop();
+                    if closers.last() == Some(&TokenKind::Greater) {
+                        closers.pop();
+                    }
+                }
+                kind if closers.last() == Some(kind) => {
+                    closers.pop();
+                }
+                TokenKind::RBrace if !nested => break,
+                TokenKind::Comma if !nested => return true,
+                TokenKind::Ident(_) if !nested && at_group_start => {
+                    if matches!(
+                        self.tokens.get(index + 1).map(|next| &next.kind),
+                        Some(TokenKind::Colon)
+                    ) {
+                        return true;
+                    }
+                    at_group_start = false;
+                }
+                TokenKind::Newline if !nested && at_group_start => {}
+                _ if !nested => at_group_start = false,
+                _ => {}
+            }
+            index += 1;
+        }
+        false
     }
 
     fn match_arms(
@@ -4358,7 +4402,7 @@ impl Parser {
         Ok(arms)
     }
 
-    fn named_trailing_closure_follows(&self) -> bool {
+    fn named_brace_attachment_follows(&self) -> bool {
         self.trailing_label_at(self.index)
             .is_some_and(|label| label != "match")
             && self.at_offset(1, &TokenKind::Colon)
@@ -4375,7 +4419,7 @@ impl Parser {
         }
     }
 
-    fn primary(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
+    fn primary(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
         let token = self.current().clone();
         match token.kind {
             TokenKind::Integer(value) => {
@@ -4432,7 +4476,7 @@ impl Parser {
                         return Ok(Expr::Name("unsafe".to_owned()));
                     }
                     return Err(self.error_here(
-                        "expected a trailing closure after `unsafe`; write `unsafe { ... }`",
+                        "expected a brace body after `unsafe`; write `unsafe { ... }`",
                     ));
                 }
                 Ok(Expr::Unsafe(Box::new(Expr::DoBlock {
@@ -4447,7 +4491,7 @@ impl Parser {
                 Ok(Self::core_control_function("throw"))
             }
             TokenKind::Ident(ref name) if name == "return" => {
-                self.return_expression(allow_trailing_closure)
+                self.return_expression(allow_brace_group)
             }
             TokenKind::Ident(ref name) if name == "if" => self.if_expression(),
             TokenKind::Ident(ref name) if name == "while" => self.while_expression(),
@@ -4459,7 +4503,7 @@ impl Parser {
                 self.loop_expression()
             }
             TokenKind::Ident(ref name) if name == "break" => {
-                self.break_expression(allow_trailing_closure)
+                self.break_expression(allow_brace_group)
             }
             TokenKind::Ident(ref name) if name == "continue" => {
                 self.continue_expression()
@@ -4519,7 +4563,7 @@ impl Parser {
                         return Ok(Expr::Name("unsafe".to_owned()));
                     }
                     return Err(self.error_here(
-                        "expected a trailing closure after `unsafe`; write `unsafe { ... }`",
+                        "expected a brace body after `unsafe`; write `unsafe { ... }`",
                     ));
                 }
                 Ok(Expr::Unsafe(Box::new(Expr::DoBlock {
@@ -4528,7 +4572,7 @@ impl Parser {
             }
             TokenKind::If => self.if_expression(),
             TokenKind::Match => self.match_expression(),
-            TokenKind::Return => self.return_expression(allow_trailing_closure),
+            TokenKind::Return => self.return_expression(allow_brace_group),
             TokenKind::Throw => {
                 self.advance();
                 if !self.at(&TokenKind::LParen) && !self.at_control_expression_boundary() {
@@ -4542,7 +4586,7 @@ impl Parser {
             TokenKind::While => self.while_expression(),
             TokenKind::For => self.for_expression(),
             TokenKind::Loop => self.loop_expression(),
-            TokenKind::Break => self.break_expression(allow_trailing_closure),
+            TokenKind::Break => self.break_expression(allow_brace_group),
             TokenKind::Continue => {
                 self.continue_expression()
             }
@@ -4634,29 +4678,31 @@ impl Parser {
             .optional_else_branch()?
             .map_or(Expr::Unit, |branch| *branch);
 
-        Ok(Expr::Call(
-            Box::new(Expr::Call(
-                Box::new(Expr::Call(
+        Ok(Expr::DelimitedCall {
+            callee: Box::new(Expr::DelimitedCall {
+                callee: Box::new(Expr::Call(
                     Box::new(Self::core_if_function()),
                     vec![CallArg {
                         label: None,
                         value: condition.clone(),
                     }],
                 )),
-                vec![CallArg {
+                delimiter: GroupDelimiter::Brace,
+                arguments: vec![CallArg {
                     label: None,
                     value: Expr::Closure(Vec::new(), Box::new(then_branch)),
                 }],
-            )),
-            vec![CallArg {
+            }),
+            delimiter: GroupDelimiter::Brace,
+            arguments: vec![CallArg {
                 label: None,
                 value: Expr::Closure(Vec::new(), Box::new(else_branch)),
             }],
-        ))
+        })
     }
 
     fn optional_else_branch(&mut self) -> Result<Option<Box<Expr>>, ParseError> {
-        // A second trailing closure is the lazy else branch. It may begin on
+        // A named Brace group is the lazy else branch. It may begin on
         // the next logical line. If absent, restore the newlines so the
         // containing block can still see its separator.
         let before_newlines = self.index;
@@ -4678,7 +4724,7 @@ impl Parser {
         Ok(None)
     }
 
-    fn return_expression(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
+    fn return_expression(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
         self.expect(&TokenKind::Return, "`return`")?;
         if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
             return Err(self.error_here("use `return()` or `return(value)`"));
@@ -4687,7 +4733,7 @@ impl Parser {
         if self.take(&TokenKind::RParen) {
             return Ok(Expr::Return(None));
         }
-        let value = self.expression(allow_trailing_closure)?;
+        let value = self.expression(allow_brace_group)?;
         self.expect(&TokenKind::RParen, "`)` after `return` argument")?;
         Ok(Expr::Return(Some(Box::new(value))))
     }
@@ -4723,14 +4769,14 @@ impl Parser {
         let before_newlines = self.index;
         while self.take(&TokenKind::Newline) {}
         if self.trailing_label_at(self.index).as_deref() == Some("while") {
-            if !self.named_trailing_closure_follows() {
+            if !self.named_brace_attachment_follows() {
                 return Err(self.error_here(
                     "a post-test loop uses `do { ... } while: { condition }`",
                 ));
             }
             self.advance();
             self.expect(&TokenKind::Colon, "`:` after `while`")?;
-            let condition = self.zero_parameter_trailing_closure("do-while condition")?;
+            let condition = self.zero_parameter_brace_body("do-while condition")?;
             return Ok(Expr::While {
                 condition: Box::new(condition),
                 body: Box::new(body),
@@ -4743,8 +4789,8 @@ impl Parser {
         })
     }
 
-    fn zero_parameter_trailing_closure(&mut self, context: &str) -> Result<Expr, ParseError> {
-        // `while` and `do ... while` use trailing-closure surface syntax, but
+    fn zero_parameter_brace_body(&mut self, context: &str) -> Result<Expr, ParseError> {
+        // `while` and `do ... while` use Brace groups, but
         // their blocks are control-flow scopes rather than closure boundaries.
         // Preserve an enclosing async context so contextual `await` remains
         // available in the condition and body.
@@ -4760,10 +4806,14 @@ impl Parser {
 
     fn for_expression(&mut self) -> Result<Expr, ParseError> {
         self.expect(&TokenKind::For, "`for`")?;
-        let iterable = self.expression(false)?;
+        let previous_stop_before_for_body = self.stop_before_for_body;
+        self.stop_before_for_body = true;
+        let iterable = self.expression(true);
+        self.stop_before_for_body = previous_stop_before_for_body;
+        let iterable = iterable?;
         if !self.at(&TokenKind::LBrace) {
             return Err(self.error_here(
-                "`for` requires a trailing pattern closure; write `for iterable { pattern -> body }`",
+                "`for` requires a brace pattern body; write `for iterable { pattern -> body }`",
             ));
         }
         self.expect(&TokenKind::LBrace, "`{` before the `for` body pattern")?;
@@ -4845,7 +4895,7 @@ impl Parser {
         })
     }
 
-    fn break_expression(&mut self, allow_trailing_closure: bool) -> Result<Expr, ParseError> {
+    fn break_expression(&mut self, allow_brace_group: bool) -> Result<Expr, ParseError> {
         self.expect(&TokenKind::Break, "`break`")?;
         if self.explicit_call_delimiter_follows() != Some(GroupDelimiter::Parenthesis) {
             return Err(self.error_here("use `break()` or `break(value)`"));
@@ -4854,7 +4904,7 @@ impl Parser {
         if self.take(&TokenKind::RParen) {
             return Ok(Expr::Break(None));
         }
-        let value = self.expression(allow_trailing_closure)?;
+        let value = self.expression(allow_brace_group)?;
         self.expect(&TokenKind::RParen, "`)` after `break` argument")?;
         Ok(Expr::Break(Some(Box::new(value))))
     }

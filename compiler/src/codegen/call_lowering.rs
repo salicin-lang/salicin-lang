@@ -1202,7 +1202,18 @@ impl Analyzer {
         let mut temporary_loans = Vec::new();
         let mut temporary_bindings = Vec::new();
         let mut lowered_arguments = Vec::new();
-        for (arguments, parameters) in groups.iter().zip(&function_ty.groups) {
+        for (group_index, (arguments, parameters)) in
+            groups.iter().zip(&function_ty.groups).enumerate()
+        {
+            let arguments = if function_ty.group_delimiters.get(group_index)
+                == Some(&GroupDelimiter::Brace)
+                && parameters.is_empty()
+                && matches!(*arguments, [argument] if is_empty_brace_body(&argument.value))
+            {
+                &[][..]
+            } else {
+                *arguments
+            };
             if arguments.len() != parameters.len() {
                 self.error(format!(
                     "argument count mismatch in indirect call `{local_name}`: expected {}, found {}",
@@ -1212,8 +1223,16 @@ impl Analyzer {
                 return error_expr();
             }
             for (argument, parameter) in arguments.iter().zip(parameters) {
+                let value = if function_ty.group_delimiters.get(group_index)
+                    == Some(&GroupDelimiter::Brace)
+                    && !matches!(parameter, Ty::Function(_) | Ty::Callable(_))
+                {
+                    brace_body_value(&argument.value).unwrap_or(&argument.value)
+                } else {
+                    &argument.value
+                };
                 lowered_arguments.push(self.lower_call_argument(
-                    &argument.value,
+                    value,
                     &ParamSig {
                         name: String::new(),
                         ty: parameter.clone(),
@@ -1336,6 +1355,14 @@ impl Analyzer {
         for (group_index, (arguments_ast, params)) in
             groups.iter().zip(&signature.groups).enumerate()
         {
+            let arguments_ast = if delimiters.get(group_index) == Some(&GroupDelimiter::Brace)
+                && params.is_empty()
+                && matches!(*arguments_ast, [argument] if is_empty_brace_body(&argument.value))
+            {
+                &[][..]
+            } else {
+                *arguments_ast
+            };
             let parameter_names = params
                 .iter()
                 .map(|parameter| parameter.name.clone())
@@ -1348,6 +1375,14 @@ impl Analyzer {
             for (parameter_index, (argument, parameter)) in
                 ordered.into_iter().zip(params).enumerate()
             {
+                let argument_value = if delimiters.get(group_index)
+                    == Some(&GroupDelimiter::Brace)
+                    && !matches!(parameter.ty, Ty::Function(_) | Ty::Callable(_))
+                {
+                    brace_body_value(&argument.value).unwrap_or(&argument.value)
+                } else {
+                    &argument.value
+                };
                 if let Some(action) = self.lowering.runtime_handler_actions.get(&(
                     name.to_owned(),
                     group_index,
@@ -1401,7 +1436,7 @@ impl Analyzer {
                     continue;
                 }
                 arguments.push(self.lower_call_argument(
-                    &argument.value,
+                    argument_value,
                     parameter,
                     context,
                     &mut temporary_loans,
@@ -2728,4 +2763,20 @@ impl Analyzer {
             kind: HirExprKind::Block(statements, Some(Box::new(expression))),
         }
     }
+}
+
+fn brace_body_value(expression: &Expr) -> Option<&Expr> {
+    match expression.unlocated() {
+        Expr::Closure(parameters, body) if parameters.is_empty() => Some(body),
+        _ => None,
+    }
+}
+
+fn is_empty_brace_body(expression: &Expr) -> bool {
+    matches!(
+        expression.unlocated(),
+        Expr::Closure(parameters, body)
+            if parameters.is_empty()
+                && matches!(body.unlocated(), Expr::Block(statements, None) if statements.is_empty())
+    )
 }

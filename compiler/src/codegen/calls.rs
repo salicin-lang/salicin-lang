@@ -1440,19 +1440,12 @@ impl Analyzer {
             ));
             return None;
         }
-        if arguments.iter().all(|argument| argument.label.is_none()) {
-            return Some(arguments.iter().collect());
-        }
-        if arguments.iter().any(|argument| argument.label.is_none()) {
-            self.error(format!(
-                "cannot mix named and positional arguments in group {group_number} of `{owner}`"
-            ));
-            return None;
-        }
-
         let mut ordered = vec![None; parameter_names.len()];
         for (source_index, argument) in arguments.iter().enumerate() {
-            let label = argument.label.as_deref().expect("all arguments are named");
+            let Some(label) = argument.label.as_deref() else {
+                ordered[source_index] = Some(argument);
+                continue;
+            };
             let Some(index) = parameter_names.iter().position(|name| name == label) else {
                 self.error(format!(
                     "unknown parameter `{label}` in group {group_number} of `{owner}`"

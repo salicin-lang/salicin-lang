@@ -63,7 +63,7 @@ test_registration =
 ```
 
 A test registration cannot have an attribute or visibility. Its string must be
-non-empty, and the trailing closure is the test body. `test` remains an ordinary
+non-empty, and the Brace group is the test body. `test` remains an ordinary
 identifier outside this top-level form. The edition-owned
 `pub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()`
 declaration validates the static name and body contract.
@@ -507,31 +507,30 @@ postfix_suffix =
     argument_group
   | ".", IDENT
   | "?.", IDENT
-  | trailing_closure ;
+  | brace_application ;
 
 argument_group =
     delimited_group(argument) ;
 
 argument = [ IDENT, ":" ], expression ;
 
-trailing_closure =
-    [ IDENT, ":" ], closure_expression ;
+brace_application =
+    [ horizontal_space ], "{", brace_group_contents, "}" ;
 ```
 
-Every postfix argument-group opener must be byte-adjacent to its callee. One
-delimiter-aware call model preserves and checks the delimiter against the
+Parenthesis, square, and angle postfix openers must be byte-adjacent to their
+callee. Brace application permits horizontal whitespace before `{`. One
+delimiter-aware call model preserves and checks every delimiter against the
 corresponding declaration or function-type group. `<>` exclusively supplies a
 compile-time group, including struct-constructor and effect arguments; `()`,
 `[]`, and `{}` supply runtime groups. Thus `a < b` is a
 comparison (comparison operators require surrounding whitespace), while
 `a<b>` is an angle call. A postfix square group is the uniform surface form
 for calls and retains bounds-checked indexing/place behavior when its callee
-is indexable. A tight brace group is always a Brace `DelimitedCall`; after resolution,
-that call becomes struct construction when its callee is a struct type. A
-whitespace-separated brace closure is always a trailing closure. Named trailing
-closures require a colon, as in `dispatch fallback: { value -> value }`.
-Effect handler calls do not use this production: `effect.handle{...}` is an
-adjacent Brace `DelimitedCall` containing labeled, comma-separated arguments.
+is indexable. Tight and spaced brace groups are the same Brace `DelimitedCall`.
+The declaration schema resolves their contents as ordinary/labeled arguments or
+as a callable parameter body. Struct construction and effect handlers use the
+same production. Standalone brace expressions remain closures.
 
 ```ebnf
 delimited_group(item) =

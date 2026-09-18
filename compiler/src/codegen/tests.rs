@@ -7508,34 +7508,108 @@ let main(): i32 = {
 }
 
 #[test]
-fn trailing_closure_can_supply_an_ordinary_functions_first_group() {
+fn declared_brace_group_accepts_a_closure_body() {
     compile_text(
         r#"
-let run(move action: (): i32): i32 = { action() }
-let main(): i32 = { run { 42 } }
+let add(left: i32, right: i32): i32 = { left + right }
+let run{move action: (): i32}: i32 = { action() }
+let main(): i32 = {
+  run {
+    let value: i32 = add(left: 40, right: 2)
+    value
+  }
+}
 "#,
     )
-    .expect("a trailing closure must supply an ordinary function's first runtime group");
+    .expect("a declared brace group must accept a multiline closure body");
+}
+
+#[test]
+fn brace_application_is_spacing_independent_and_schema_directed() {
+    compile_text(
+        r#"
+let value{number: i32}: i32 = { number }
+let run{move action: (): i32}: i32 = { action() }
+let main(): i32 = { value{40} + run { 2 } }
+"#,
+    )
+    .expect("tight and spaced Brace groups must use their declared schemas");
+}
+
+#[test]
+fn declared_brace_group_accepts_multiple_positional_arguments() {
+    for call in ["pair{1, 2}", "pair { 1, 2 }"] {
+        compile_text(&format!(
+            "let pair{{left: i32, right: i32}}: i32 = {{ left + right }}\n\
+             let main(): i32 = {{ {call} }}\n"
+        ))
+        .expect("a Brace runtime group must accept multiple positional arguments");
+    }
+}
+
+#[test]
+fn declared_brace_group_accepts_positional_arguments_before_labeled_arguments() {
+    compile_text(
+        "let pair{left: i32, right: i32}: i32 = { left + right }\n\
+         let main(): i32 = { pair { 1, right: 2 } }\n",
+    )
+    .expect("a Brace runtime group must accept a positional prefix before labeled arguments");
+}
+
+#[test]
+fn empty_braces_follow_the_declared_schema() {
+    compile_text(
+        r#"
+let Marker = struct {}
+let ping{}: () = { () }
+let run{move action: (): ()}: () = { action() }
+let main(): i32 = {
+  let marker = Marker {}
+  ping {}
+  run {}
+  42
+}
+"#,
+    )
+    .expect("empty struct construction and an empty closure body must both resolve");
+}
+
+#[test]
+fn runtime_brace_and_parenthesis_delimiters_reject_mismatch_both_directions() {
+    for (source, actual, expected) in [
+        (
+            "let run(move action: (): i32): i32 = { action() }\nlet main(): i32 = { run { 42 } }\n",
+            "uses `{`",
+            "uses `(`",
+        ),
+        (
+            "let run{move action: (): i32}: i32 = { action() }\nlet main(): i32 = { run({ 42 }) }\n",
+            "uses `(`",
+            "uses `{`",
+        ),
+    ] {
+        let diagnostics = compile_text(source).expect_err("delimiter mismatch must be rejected");
+        assert!(diagnostics.iter().any(|diagnostic| {
+            diagnostic.message.contains(actual) && diagnostic.message.contains(expected)
+        }), "{diagnostics:?}");
+    }
 }
 
 #[test]
 fn ordinary_curried_closures_lower_as_successive_calls() {
-    for call in [
-        "choose(0) { true } { 42 }",
-        "choose(0) condition: { true } body: { 42 }",
-    ] {
+    for call in ["choose(0) { true } { 42 }"] {
         let program = crate::parser::parse(&format!(
             r#"
 let choose(seed: i32)
-  (move condition: (): bool)
-  (move body: (): i32): i32 = {{
+  {{move condition: (): bool}}
+  {{move body: (): i32}}: i32 = {{
   if(condition()) {{ body() }} else: {{ seed }}
 }}
 let main(): i32 = {{ {call} }}
 "#
         ))
-        .expect("multiple trailing closure source must parse");
-        compile(&program).expect("multiple trailing closures must lower as successive calls");
+        .expect("multiple brace group source must parse");
+        compile(&program).expect("multiple brace groups must lower as successive calls");
     }
 
     for while_expression in ["while(value < 42) { value += 1 }"] {
@@ -11621,7 +11695,7 @@ fn reusable_handler_capturing_action_materializes_direct_literals() {
     let llvm = compile_text(
         r#"
 let ask = effect { let value(): i32 }
-let run()(move action: (): i32 with<ask>): i32 = {
+let run(){move action: (): i32 with<ask>}: i32 = {
   ask.handle{value: { (resume) -> resume(10) }, action: { action() }}
 }
 let main(): i32 = {
@@ -11633,7 +11707,7 @@ ask.value() + base
 }
 "#,
     )
-    .expect("direct trailing-closure actions must materialize before specialization");
+    .expect("direct Brace-body actions must materialize before specialization");
     assert!(llvm.contains("24636170747572696e672468616e646c657224"));
 }
 
@@ -11642,7 +11716,7 @@ fn reusable_handler_materializes_arguments_before_direct_action() {
     let llvm = compile_text(
         r#"
 let ask = effect { let value(): i32 }
-let run(seed: i32)(move action: (): i32 with<ask>): i32 = {
+let run(seed: i32){move action: (): i32 with<ask>}: i32 = {
   ask.handle{value: { (resume) -> resume(20) }, action: { action() + seed }}
 }
 let prepare(order: Borrow<mut><i32>): i32 = {
@@ -11667,7 +11741,7 @@ fn reusable_handler_stages_borrowed_arguments_before_direct_action() {
     compile_text(
         r#"
 let ask = effect { let value(): i32 }
-let run(left: Borrow<i32>, right: Borrow<mut><i32>)(move action: (): i32 with<ask>): i32 = {
+let run(left: Borrow<i32>, right: Borrow<mut><i32>){move action: (): i32 with<ask>}: i32 = {
   ask.handle{value: { (resume) -> resume(2) }, action: {
     right = right + action()
     left + right

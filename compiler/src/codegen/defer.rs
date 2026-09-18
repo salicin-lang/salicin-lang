@@ -1,4 +1,4 @@
-use crate::ast::{Binding, CallArg, Expr, Stmt};
+use crate::ast::{Binding, CallArg, Expr, GroupDelimiter, Stmt};
 
 use super::Analyzer;
 
@@ -358,7 +358,12 @@ fn take_defer_action(expression: &Expr) -> Option<Expr> {
     if !is_defer_call(expression) {
         return None;
     }
-    let Expr::Call(_, arguments) = expression.unlocated() else {
+    let Expr::DelimitedCall {
+        delimiter: GroupDelimiter::Brace,
+        arguments,
+        ..
+    } = expression.unlocated()
+    else {
         return None;
     };
     let [argument] = arguments.as_slice() else {
@@ -370,7 +375,11 @@ fn take_defer_action(expression: &Expr) -> Option<Expr> {
 pub(super) fn is_defer_call(expression: &Expr) -> bool {
     matches!(
         expression.unlocated(),
-        Expr::Call(callee, _)
+        Expr::DelimitedCall {
+            callee,
+            delimiter: GroupDelimiter::Brace,
+            ..
+        }
             if matches!(callee.unlocated(), Expr::Name(name) if name == "core::control::defer")
     )
 }

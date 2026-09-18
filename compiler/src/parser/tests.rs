@@ -135,8 +135,8 @@ fn if_call_parts(expression: &Expr) -> (&Expr, &Expr, &Expr) {
     );
     let [
         (GroupDelimiter::Parenthesis, condition_group),
-        (GroupDelimiter::Parenthesis, then_group),
-        (GroupDelimiter::Parenthesis, else_group),
+        (GroupDelimiter::Brace, then_group),
+        (GroupDelimiter::Brace, else_group),
     ] = groups.as_slice()
     else {
         panic!("expected condition, then, and else groups");
@@ -743,17 +743,14 @@ fn rejects_parenthesized_type_trait_effect_associated_and_schema_applications() 
 }
 
 #[test]
-fn rejects_effect_operations_with_non_parenthesis_runtime_groups() {
-    for source in [
-        "let state = effect { let get[]: i32 }\n",
-        "let state = effect { let put{value: i32}: () }\n",
-    ] {
-        let program = parse(source).expect("declaration delimiters are retained for validation");
-        assert!(
-            !crate::standard::delimiter_diagnostics(&program, "core").is_empty(),
-            "invalid official effect operation was accepted: {source}"
-        );
-    }
+fn effect_operations_retain_declared_runtime_group_delimiters() {
+    let program = parse("let state = effect { let get[]: i32; let put{value: i32}: () }\n")
+        .expect("effect operation delimiters");
+    let Item::Effect(effect) = &program.items[0] else {
+        panic!("expected effect");
+    };
+    assert_eq!(effect.operations[0].effects.group_delimiters, [GroupDelimiter::Square]);
+    assert_eq!(effect.operations[1].effects.group_delimiters, [GroupDelimiter::Brace]);
 }
 
 #[test]
@@ -1181,21 +1178,75 @@ fn adjacent_braces_are_delimited_calls_even_when_empty_or_labeled() {
     };
     assert!(matches!(
         &empty.value,
-        Expr::DelimitedCall { callee: constructor, delimiter: GroupDelimiter::Brace, arguments: fields }
-            if constructor.as_ref() == &Expr::Name("marker".into()) && fields.is_empty()
+        Expr::DelimitedCall { callee: constructor, delimiter: GroupDelimiter::Brace, arguments }
+            if constructor.as_ref() == &Expr::Name("marker".into())
+                && matches!(arguments.as_slice(), [CallArg { label: None, value: Expr::Closure(parameters, _) }] if parameters.is_empty())
     ));
 }
 
 #[test]
-fn spaced_braces_are_trailing_closures_not_construction() {
-    assert!(parse("let value = marker { field: 42 }\n").is_err());
-
-    let program = parse("let value = marker { 42 }\n").unwrap();
+fn tight_and_spaced_braces_are_the_same_delimited_application() {
+    let tight = parse("let value = marker{ field: 42 }\n").unwrap();
+    let program = parse("let value = marker { field: 42 }\n").unwrap();
+    assert_eq!(tight.items, program.items);
     let Item::Global(binding) = &program.items[0] else {
         panic!("expected value binding");
     };
-    assert!(matches!(&binding.value, Expr::Call(_, arguments)
-        if matches!(arguments.as_slice(), [CallArg { label: None, value: Expr::Closure(_, _) }])));
+    assert!(matches!(binding.value, Expr::DelimitedCall { delimiter: GroupDelimiter::Brace, .. }));
+}
+
+#[test]
+fn spaced_brace_application_in_for_iterable_stops_before_pattern_body() {
+    let source = "let visit(): () = { for counter { current: 0, end: 4 } { value -> value } }\n";
+    parse(source).expect("the declared Brace application must remain part of the iterable");
+}
+
+#[test]
+fn brace_argument_lists_accept_positional_and_mixed_arguments() {
+    let tight = parse("let value = pair{1, right: 2}\n").unwrap();
+    let spaced = parse("let value = pair { 1, right: 2 }\n").unwrap();
+    assert_eq!(tight.items, spaced.items);
+
+    let Item::Global(binding) = &tight.items[0] else {
+        panic!("expected value binding");
+    };
+    assert!(matches!(
+        &binding.value,
+        Expr::DelimitedCall { delimiter: GroupDelimiter::Brace, arguments, .. }
+            if matches!(arguments.as_slice(), [
+                CallArg { label: None, value: Expr::Integer(1) },
+                CallArg { label: Some(label), value: Expr::Integer(2) },
+            ] if label == "right")
+    ));
+
+    let positional = parse("let value = pair { 1, 2 }\n").unwrap();
+    let Item::Global(binding) = &positional.items[0] else {
+        panic!("expected value binding");
+    };
+    assert!(matches!(
+        &binding.value,
+        Expr::DelimitedCall { delimiter: GroupDelimiter::Brace, arguments, .. }
+            if arguments.len() == 2 && arguments.iter().all(|argument| argument.label.is_none())
+    ));
+}
+
+#[test]
+fn nested_commas_and_labels_do_not_make_a_brace_body_an_argument_list() {
+    let program = parse(
+        "let value = run {\n\
+           let result: i32 = call<i32, i32>(left: 1, right: 2)\n\
+           result\n\
+         }\n",
+    )
+    .unwrap();
+    let Item::Global(binding) = &program.items[0] else {
+        panic!("expected value binding");
+    };
+    assert!(matches!(
+        &binding.value,
+        Expr::DelimitedCall { delimiter: GroupDelimiter::Brace, arguments, .. }
+            if matches!(arguments.as_slice(), [CallArg { label: None, value: Expr::Closure(parameters, _) }] if parameters.is_empty())
+    ));
 }
 
 #[test]
@@ -1571,27 +1622,29 @@ fn rejects_parenthesis_free_ordinary_calls() {
 }
 
 #[test]
-fn trailing_closure_creates_a_new_call_group() {
+fn brace_body_creates_a_brace_call_group() {
     let program = parse("let value = map(items) { (x: i32) -> x + 1 }\n").unwrap();
     let Item::Global(binding) = &program.items[0] else {
         panic!("expected global");
     };
-    let Expr::Call(first_call, trailing_group) = &binding.value else {
-        panic!("expected trailing call group");
+    let Expr::DelimitedCall { callee: first_call, delimiter, arguments } = &binding.value else {
+        panic!("expected brace call group");
     };
-    assert_eq!(trailing_group.len(), 1);
+    assert_eq!(*delimiter, GroupDelimiter::Brace);
+    assert_eq!(arguments.len(), 1);
     assert!(matches!(first_call.as_ref(), Expr::Call(_, _)));
 }
 
 #[test]
-fn trailing_closure_can_supply_the_first_call_group() {
+fn brace_body_can_supply_the_first_call_group() {
     let program = parse("let invoke(): () = { run { cleanup() } }\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
-    let Expr::Call(callee, arguments) = function_tail(function) else {
-        panic!("expected trailing closure call");
+    let Expr::DelimitedCall { callee, delimiter, arguments } = function_tail(function) else {
+        panic!("expected brace call");
     };
+    assert_eq!(*delimiter, GroupDelimiter::Brace);
     assert!(matches!(callee.as_ref(), Expr::Name(name) if name == "run"));
     let [argument] = arguments.as_slice() else {
         panic!("expected one closure argument");
@@ -1600,42 +1653,28 @@ fn trailing_closure_can_supply_the_first_call_group() {
 }
 
 #[test]
-fn multiple_trailing_closures_create_successive_call_groups() {
-    let program = parse(
-        "let value = choose()\n\
-               { true }\n\
-               { 1 }\n",
-    )
-    .unwrap();
+fn multiple_brace_groups_create_successive_delimited_calls() {
+    let program = parse("let value = choose() { true } { 1 }\n").unwrap();
     let Item::Global(binding) = &program.items[0] else {
         panic!("expected global");
     };
-    let Expr::Call(second_call, second_group) = &binding.value else {
-        panic!("expected second trailing call group");
+    let Expr::DelimitedCall { callee: second_call, delimiter: second_delimiter, arguments: second_group } = &binding.value else {
+        panic!("expected second brace group");
     };
+    assert_eq!(*second_delimiter, GroupDelimiter::Brace);
     assert_eq!(second_group.len(), 1);
-    let Expr::Call(first_call, first_group) = second_call.as_ref() else {
-        panic!("expected first trailing call group");
+    let Expr::DelimitedCall { callee: first_call, delimiter: first_delimiter, arguments: first_group } = second_call.as_ref() else {
+        panic!("expected first brace group");
     };
+    assert_eq!(*first_delimiter, GroupDelimiter::Brace);
     assert_eq!(first_group.len(), 1);
     assert!(matches!(first_call.as_ref(), Expr::Call(_, arguments) if arguments.is_empty()));
 
 }
 
 #[test]
-fn named_trailing_closures_create_labeled_call_groups() {
-    let program = parse("let value = choose() condition: { true } body: { 1 }\n").unwrap();
-    let Item::Global(binding) = &program.items[0] else {
-        panic!("expected global");
-    };
-    let Expr::Call(first_call, body_group) = &binding.value else {
-        panic!("expected body group");
-    };
-    assert_eq!(body_group[0].label.as_deref(), Some("body"));
-    let Expr::Call(_, condition_group) = first_call.as_ref() else {
-        panic!("expected condition group");
-    };
-    assert_eq!(condition_group[0].label.as_deref(), Some("condition"));
+fn removed_named_closure_attachments_do_not_parse_as_calls() {
+    assert!(parse("let value = choose() condition: { true } body: { 1 }\n").is_err());
 }
 
 #[test]
@@ -1701,18 +1740,7 @@ fn rejects_old_successive_handler_groups() {
 }
 
 #[test]
-fn rejects_trailing_groups_after_a_pattern_closure() {
-    for source in [
-        "let value = consume() { value -> value } { 42 }\n",
-        "let value = consume() { value if true -> value } next: { 42 }\n",
-    ] {
-        let error = parse(source).unwrap_err();
-        assert!(error.message.contains("final trailing closure group"), "{error:?}");
-    }
-}
-
-#[test]
-fn rejects_colonless_named_trailing_closures() {
+fn rejects_colonless_named_brace_attachments() {
     for source in [
         "let value = choose() condition { true }\n",
         "let run(): i32 = { ask.handle get { (resume) -> resume(42) } action { ask.get() } }\n",
@@ -1950,9 +1978,11 @@ fn parses_coalesce_right_associatively_between_match_and_logical_or() {
 }
 
 #[test]
-fn rejects_mixed_labeled_and_positional_arguments() {
+fn rejects_positional_arguments_after_labeled_arguments() {
     let error = parse("let value = call(x: 1, 2)\n").unwrap_err();
-    assert!(error.message.contains("cannot be mixed"));
+    assert!(error
+        .message
+        .contains("positional arguments must precede labeled arguments"));
 }
 
 #[test]
@@ -3588,15 +3618,15 @@ fn records_local_initializer_and_statement_ranges() {
         }
     ));
     let Item::Function(function) = &program.items[1] else {
-        panic!("expected trailing-closure function");
+        panic!("expected brace-body function");
     };
     let Some(Expr::Block(_, Some(tail))) = &function.body else {
-        panic!("expected trailing-closure block");
+        panic!("expected brace-body block");
     };
     assert!(matches!(
         tail.as_ref(),
         Expr::Located { value, .. }
-            if matches!(value.as_ref(), Expr::Call(_, arguments)
+            if matches!(value.as_ref(), Expr::DelimitedCall { delimiter: GroupDelimiter::Brace, arguments, .. }
                 if arguments.iter().any(|argument| {
                     matches!(argument.value, Expr::Closure(_, _))
                 }))

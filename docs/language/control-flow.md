@@ -11,7 +11,7 @@ only after validating its canonical lang-item identity and exact signature. A us
 `if`, `match`, or `loop` remains an ordinary function and gains no control-flow authority.
 
 The parser uses contextual productions to distinguish dedicated control syntax and pattern payloads
-from ordinary brace closures and trailing closures.
+from standalone brace closures. Control contracts retain actual Brace runtime groups.
 Name resolution and type checking still bind the canonical source declaration before privileged
 lowering occurs.
 
@@ -26,8 +26,8 @@ Conceptually, `if` has this shape:
 ```sc fragment
 let if<e: effects, T: type>: with<e>
   (condition: bool)
-  (move then: with<e>((): T))
-  (move else: with<e>((): T)): T
+  {move then: with<e>((): T)}
+  {move else: with<e>((): T)}: T
 ```
 
 The ordinary surface form:
@@ -69,7 +69,7 @@ left, without dropping transferred values or running cleanup twice.
 
 ## Deferred Actions
 
-`defer { action }` registers `action` in the current lexical scope. The trailing closure is captured at the
+`defer { action }` registers `action` in the current lexical scope. The declared Brace body is captured at the
 registration point and invoked only when that scope exits. Multiple actions run last-in,
 first-out.
 
