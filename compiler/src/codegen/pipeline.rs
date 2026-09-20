@@ -251,10 +251,10 @@ mod tests {
 
     #[test]
     fn binary_check_validates_the_entry_point_without_emitting_ir() {
-        let valid = parse("let main(): i32 = { 42 }\n").expect("parse binary");
+        let valid = parse("let main = (): i32 => { 42 }\n").expect("parse binary");
         check(&valid).expect("check binary");
 
-        let library = parse("let answer(): i32 = { 42 }\n").expect("parse library");
+        let library = parse("let answer = (): i32 => { 42 }\n").expect("parse library");
         let diagnostics = check(&library).expect_err("binary check requires main");
         assert!(diagnostics
             .iter()

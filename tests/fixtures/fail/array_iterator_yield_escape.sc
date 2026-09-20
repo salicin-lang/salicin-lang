@@ -1,4 +1,4 @@
-let escape(): Borrow<i32> = {
+let escape = (): Borrow<i32> => {
   let values: Array<i32><1> = [42]
   let mut iterator = values.iter()
   match(iterator.next()) {
@@ -8,4 +8,4 @@ let escape(): Borrow<i32> = {
   }
 }
 
-let main(): i32 = { 0 }
+let main = (): i32 => { 0 }

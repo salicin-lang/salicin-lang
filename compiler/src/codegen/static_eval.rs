@@ -1885,17 +1885,6 @@ impl Analyzer {
                     parameters.len()
                 ));
             }
-            let labeled = arguments
-                .first()
-                .is_some_and(|argument| argument.label.is_some());
-            if arguments
-                .iter()
-                .any(|argument| argument.label.is_some() != labeled)
-            {
-                return Err(format!(
-                    "ctfe call to `{display_name}` cannot mix labeled and positional arguments"
-                ));
-            }
             let mut ordered = vec![None; parameters.len()];
             for (position, argument) in arguments.iter().enumerate() {
                 let parameter_index = if let Some(label) = &argument.label {
@@ -1910,6 +1899,12 @@ impl Analyzer {
                 } else {
                     position
                 };
+                if argument.label.is_some() && parameter_index != position {
+                    return Err(format!(
+                        "ctfe arguments in group {} of `{display_name}` must follow parameter declaration order",
+                        group_index + 1
+                    ));
+                }
                 if ordered[parameter_index].is_some() {
                     return Err(format!(
                         "duplicate ctfe argument for `{}.{}`",

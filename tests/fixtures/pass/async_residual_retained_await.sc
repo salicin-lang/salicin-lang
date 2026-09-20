@@ -9,7 +9,7 @@ let resource = struct {
 }
 
 extend(resource, Droppable) {
-  let drop(self: Borrow<mut><self>)(): () = {
+  let drop = (self: Borrow<mut><self>)(): () => {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -24,9 +24,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll<r: region>
+  let poll = <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<i32> = {
+    (): Poll<i32> => {
     if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
@@ -36,19 +36,19 @@ extend(step, Future<()>) {
   }
 }
 
-let make_step: with<throwing<bool>>(fail: bool): step = {
+let make_step = with<throwing<bool>>(fail: bool): step => {
   if(fail) {
     throw(true)
   } else: {
-    step{ polls: 0, value: 2 }
+    step { polls: 0, value: 2 }
   }
 }
 
-let run_success(drops: Ptr<mut><i32>): i32 = {
+let run_success = (drops: Ptr<mut><i32>): i32 => {
   let result: Result<bool><i32> = try {
-    let outer = resource{ drops: drops, value: 1 }
+    let outer = resource { drops: drops, value: 1 }
     let mut future = async {
-      let inner = resource{ drops: drops, value: 39 }
+      let inner = resource { drops: drops, value: 39 }
       let value = await(make_step(false))
       outer.value + inner.value + value
     }
@@ -65,11 +65,11 @@ let run_success(drops: Ptr<mut><i32>): i32 = {
   }
 }
 
-let run_throwing(drops: Ptr<mut><i32>): i32 = {
+let run_throwing = (drops: Ptr<mut><i32>): i32 => {
   let result: Result<bool><i32> = try {
-    let outer = resource{ drops: drops, value: 1 }
+    let outer = resource { drops: drops, value: 1 }
     let mut future = async {
-      let inner = resource{ drops: drops, value: 39 }
+      let inner = resource { drops: drops, value: 39 }
       let value = await(make_step(true))
       outer.value + inner.value + value
     }
@@ -83,11 +83,11 @@ let run_throwing(drops: Ptr<mut><i32>): i32 = {
   }
 }
 
-let run_cancelled(drops: Ptr<mut><i32>): i32 = {
+let run_cancelled = (drops: Ptr<mut><i32>): i32 => {
   let result: Result<bool><i32> = try {
-    let outer = resource{ drops: drops, value: 1 }
+    let outer = resource { drops: drops, value: 1 }
     let mut future = async {
-      let inner = resource{ drops: drops, value: 39 }
+      let inner = resource { drops: drops, value: 39 }
       let value = await(make_step(false))
       outer.value + inner.value + value
     }
@@ -98,7 +98,7 @@ let run_cancelled(drops: Ptr<mut><i32>): i32 = {
   }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

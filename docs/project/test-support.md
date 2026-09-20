@@ -17,7 +17,7 @@ test("parses a count") {
 ```
 
 Its body has the conceptual callable type
-`with<core.error.throwing<core.string.String>>((): ())`. Normal return of `()`
+`with<core.error.throwing<core.string.String>>(): ()`. Normal return of `()`
 passes. A failure throws an owned UTF-8 `String`, normally through a
 `std.test` assertion or `std.test.fail`. Every other effect must be handled
 inside the body; the registration boundary does not grant I/O, allocation,
@@ -34,8 +34,8 @@ let Outcome = enum {
   Failed(String),
 }
 
-let run(
-  move action: with<core.error.throwing<String>>((): ()),
+let run = (
+  move action: with<core.error.throwing<String>>(): (),
 ): Outcome
 ```
 

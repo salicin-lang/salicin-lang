@@ -1059,7 +1059,7 @@ impl Analyzer {
             && !drop_trait_has_required_shape(&definition)
         {
             self.error(
-                "`Droppable` language trait must have shape `let Droppable = trait { let drop(self: Borrow<mut><self>)(): () }`",
+                "`Droppable` language trait must have shape `let Droppable = trait { let drop = (self: Borrow<mut><self>)(): () }`",
             );
             valid = false;
         }
@@ -1073,10 +1073,10 @@ impl Analyzer {
                 let method = operator_trait.method();
                 let shape = match operator_trait.lang_item {
                     LangItemKind::Eq => format!(
-                        "let Eq<Rhs: type> = trait {{ let {method}(self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
+                        "let Eq = <Rhs: type> trait {{ let {method} = (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
                     ),
                     LangItemKind::PartialOrd => format!(
-                        "let PartialOrd<Rhs: type> = trait {{ let {method}(self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
+                        "let PartialOrd = <Rhs: type> trait {{ let {method} = (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
                     ),
                     _ => format!(
                         "let {trait_name}<Rhs: type> = trait {{ let Output: type; let {method}(self)(rhs: Rhs): Output }}"

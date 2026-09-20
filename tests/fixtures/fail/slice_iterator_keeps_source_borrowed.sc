@@ -1,6 +1,6 @@
 let Slice = core.memory.Slice
 
-let main(): i32 = {
+let main = (): i32 => {
   let mut values: Array<i32><2> = [40, 2]
   let slice: Borrow<Slice<i32>> = borrow(values)
   let iterator = Slice.iter()

@@ -154,12 +154,12 @@ let Record = struct(c) {
   next: Ptr<u8>,
 }
 
-let c_record_size(): u64 = foreign(c)
-let c_record_align(): u64 = foreign(c)
-let c_verify_record(record: Ptr<Record>): i32 = foreign(c)
-let c_fill_record(record: Ptr<mut><Record>): () = foreign(c)
+let c_record_size = (): u64 foreign(c)
+let c_record_align = (): u64 foreign(c)
+let c_verify_record = (record: Ptr<Record>): i32 foreign(c)
+let c_fill_record = (record: Ptr<mut><Record>): () foreign(c)
 
-let main(): i32 = {
+let main = (): i32 => {
   let byte: u8 = 31
   let mut record = Record{ tag: 7, inner: Inner{ small: -3, wide: 1000 }, huge: -4000, values: [11, 13, 17], next: ptr(borrow(byte)) }
   let verified = unsafe {
@@ -259,19 +259,19 @@ fn c_ffi_scalars_and_raw_pointers_link_and_run_natively() {
 #[test]
 fn c_ffi_integer_widths_match_c_parameters_and_returns() {
     let source = r#"
-let c_i8(): i8 = foreign(c)
-let c_i16(): i16 = foreign(c)
-let c_i32(): i32 = foreign(c)
-let c_i64(): i64 = foreign(c)
-let c_i128(): i128 = foreign(c)
-let c_isize(): isize = foreign(c)
-let c_u8(): u8 = foreign(c)
-let c_u16(): u16 = foreign(c)
-let c_u32(): u32 = foreign(c)
-let c_u64(): u64 = foreign(c)
-let c_u128(): u128 = foreign(c)
-let c_usize(): usize = foreign(c)
-let c_accept(
+let c_i8 = (): i8 foreign(c)
+let c_i16 = (): i16 foreign(c)
+let c_i32 = (): i32 foreign(c)
+let c_i64 = (): i64 foreign(c)
+let c_i128 = (): i128 foreign(c)
+let c_isize = (): isize foreign(c)
+let c_u8 = (): u8 foreign(c)
+let c_u16 = (): u16 foreign(c)
+let c_u32 = (): u32 foreign(c)
+let c_u64 = (): u64 foreign(c)
+let c_u128 = (): u128 foreign(c)
+let c_usize = (): usize foreign(c)
+let c_accept = (
   a: i8,
   b: i16,
   c: i32,
@@ -284,9 +284,9 @@ let c_accept(
   j: u64,
   k: u128,
   l: usize,
-): i32 = foreign(c)
+): i32 foreign(c)
 
-let main(): i32 = {
+let main = (): i32 => {
   unsafe {
     if(c_i8() == -8 &&
       c_i16() == -16 &&
@@ -362,7 +362,7 @@ fn package_qualified_exports_link_across_independent_llvm_modules() {
             sources: vec![SourceUnit {
                 path: format!("<{name}>"),
                 module_path: Vec::new(),
-                source: format!("pub let answer(): i32 = {{ {value} }}\n"),
+                source: format!("pub let answer = (): i32 => {{ {value} }}\n"),
                 is_root: true,
             }],
         }
@@ -392,7 +392,8 @@ fn package_qualified_exports_link_across_independent_llvm_modules() {
     let beta_path = temporary.write("beta.ll", &beta);
     let driver_path = temporary.write("driver.ll", &driver);
     let executable = temporary.join("linked");
-    let linked = Command::new("/usr/bin/clang")
+    let linked = Command::new("clang")
+        .arg("-Qunused-arguments")
         .arg("-Wno-override-module")
         .arg("-x")
         .arg("ir")
@@ -450,7 +451,7 @@ fn export_contracts_are_stable_and_reject_incompatible_binding() {
                 "1.0.0",
                 true,
                 &[("dep", dependency_id)],
-                "pub let echo(move value: dep.Token): dep.Token = { value }\n",
+                "pub let echo = (move value: dep.Token): dep.Token => { value }\n",
             ),
             source_package(
                 dependency_id,
@@ -459,7 +460,7 @@ fn export_contracts_are_stable_and_reject_incompatible_binding() {
                 false,
                 &[],
                 "pub let Token = struct { value: i32 }\n\
-                 pub let dependency_only(): i32 = { 42 }\n",
+             pub let dependency_only = (): i32 => { 42 }\n",
             ),
         ]
     }
@@ -478,7 +479,7 @@ fn export_contracts_are_stable_and_reject_incompatible_binding() {
         "1.0.0",
         true,
         &[],
-        "pub let identity(move value: i32): i32 = { value }\n",
+        "pub let identity = (move value: i32): i32 => { value }\n",
     )])
     .expect("compile i32 signature");
     let i64_ir = compile_library_source_packages(&[source_package(
@@ -487,7 +488,7 @@ fn export_contracts_are_stable_and_reject_incompatible_binding() {
         "1.0.0",
         true,
         &[],
-        "pub let identity(move value: i64): i64 = { value }\n",
+        "pub let identity = (move value: i64): i64 => { value }\n",
     )])
     .expect("compile i64 signature");
     assert_ne!(
@@ -502,7 +503,7 @@ fn export_contracts_are_stable_and_reject_incompatible_binding() {
         "1.0.0",
         true,
         &[],
-        "pub let answer(): i32 = { 42 }\n",
+        "pub let answer = (): i32 => { 42 }\n",
     );
     public_provider.identity = "registry:public|same@1.0.0".to_owned();
     let mut private_provider = public_provider.clone();

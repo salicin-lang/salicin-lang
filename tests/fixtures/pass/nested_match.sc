@@ -1,5 +1,5 @@
 let inner = enum {
-  value( value: i32 ),
+  value { value: i32 },
   Empty,
 }
 
@@ -8,7 +8,7 @@ let outer = enum {
   Empty,
 }
 
-let read(value: outer): i32 = {
+let read = (value: outer): i32 => {
   match(value) {
     outer.wrapped(inner) => do {
       match(inner) { inner.value( value: number ) => number, inner.Empty => 0,
@@ -17,7 +17,7 @@ let read(value: outer): i32 = {
   }
 }
 
-let main(): i32 = { read(outer.wrapped(inner.value( value: 42 ))) }
+let main = (): i32 => { read(outer.wrapped(inner.value { value: 42 })) }
 
 test("nested_match.sc") {
   std.test.assert(main() == 42)

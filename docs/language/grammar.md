@@ -65,7 +65,7 @@ test_registration =
 A test registration cannot have an attribute or visibility. Its string must be
 non-empty, and the Brace group is the test body. `test` remains an ordinary
 identifier outside this top-level form. The edition-owned
-`pub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()`
+`pub let test = <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () builtin()`
 declaration validates the static name and body contract.
 
 ### 2.0.1 Declaration and guard forms
@@ -75,7 +75,7 @@ These three spellings occupy different grammatical categories:
 - `test("name") { ... }` is a declaration form backed by the source-visible
   `core.test` contract above. Its metadata name is consumed by syntax and its
   body has type
-  `with<core.error.throwing<core.string.String>>((): ())`.
+  `with<core.error.throwing<core.string.String>>(): ()`.
 - `extend(pattern, ...)<requires: condition> { ... }` is an implementation
   declaration. Its optional `requires:` entry is an ordinary angle
   compile-time group; `extend` itself has no fake function declaration in
@@ -92,19 +92,20 @@ guard contract.
 
 ```ebnf
 let_decl = "let", [ contextual("mut") ], IDENT,
-           { compile_parameter_group },
-           ( effect_callable_declaration
-           | { runtime_parameter_group },
-             [ "...", type_expr ],
-             [ ":", declaration_annotation ] ),
-           [ where_clause ],
-           [ "=", initializer ] ;
+           ( ":", type_expr, "=", expression
+           | "=", declaration_rhs ) ;
 
-effect_callable_declaration =
-    ":", with_clause,
-    runtime_parameter_group, { runtime_parameter_group },
+declaration_rhs =
+    { compile_parameter_group },
+    [ with_clause ],
+    { runtime_parameter_group },
     [ "...", type_expr ],
-    [ ":", type_expr ] ;
+    [ ":", declaration_annotation ],
+    [ where_clause ],
+    [ callable_implementation | initializer ] ;
+
+callable_implementation =
+    "=>", expression ;
 
 declaration_annotation =
     type_expr
@@ -137,11 +138,17 @@ edition static-sort registry, rather than a source declaration or open-ended
 name lookup, determines which compiler-owned fragment classifiers are valid.
 `let name = sort<1> { ... }` declares a sort with a known member set. Bare `sort`, `= type`,
 and `= type { ... }` are not productions.
+`let Name = { field: Type, ... }` is a bodyless Brace schema declaration; it introduces a nominal
+struct and the same-named Brace constructor.
 
 `builtin()` is a complete initializer available only to the embedded `core`
 package. It may define a compiler-owned function, type, type constructor, or
 extension method whose exact declaration is validated by the edition
 contract. It is not an expression initializer available to user packages.
+After any callable signature groups and result annotation, an implementation
+must begin with `=>`; a following expression without that separator is not a
+callable implementation. A declaration with no implementation remains a
+bodyless callable contract.
 
 ### 2.2 Compile-Time Parameters
 
@@ -229,9 +236,9 @@ effect_decl =
     { effect_operation, separators }, "}" ;
 
 effect_operation =
-    "let", IDENT,
-    ( ":", with_clause, runtime_parameter_group, { runtime_parameter_group }
-    | runtime_parameter_group, { runtime_parameter_group } ),
+    "let", IDENT, "=",
+    [ with_clause ],
+    runtime_parameter_group, { runtime_parameter_group },
     ":", type_expr ;
 
 struct_decl =
@@ -269,12 +276,13 @@ trait_decl =
 self_parameter = contextual("self"), ":", compile_parameter_sort ;
 
 trait_member =
-    "let", IDENT,
+    "let", IDENT, "=",
     { compile_parameter_group },
-    ( effect_callable_declaration
-    | { runtime_parameter_group },
-      ":", ( type_expr | contextual("type") | contextual("parameters") ) ),
-    [ "=", [ constraint_guard ], expression ] ;
+    [ with_clause ],
+    { runtime_parameter_group },
+    [ "...", type_expr ],
+    ":", ( type_expr | contextual("type") | contextual("parameters") ),
+    [ constraint_guard ], [ callable_implementation ] ;
 ```
 
 An associated type or associated constructor has no runtime parameter groups. Its compile-time
@@ -294,11 +302,11 @@ extend_decl =
     "}" ;
 
 extend_member =
-    "let", IDENT,
+    "let", IDENT, "=",
     { compile_parameter_group },
-    ( effect_callable_declaration
-    | { runtime_parameter_group }, [ ":", type_expr ] ),
-    [ "=", [ constraint_guard ], expression ] ;
+    [ with_clause ],
+    { runtime_parameter_group }, [ ":", type_expr ],
+    [ constraint_guard ], [ callable_implementation ] ;
 
 constraint_guard =
     contextual("requires"), constraint_arguments ;
@@ -344,7 +352,7 @@ its compile-time parameters. A function applies the same compiler-owned
 `requires` guard to its body:
 
 ```sc fragment
-let duplicate<T: type>(value: T): (T, T) = requires(T is Copyable) {
+let duplicate = <T: type>(value: T): (T, T) requires(T is Copyable) => {
   (value, value)
 }
 ```
@@ -358,10 +366,10 @@ constraint arguments directly, for example `trait<requires: self is Movable> {}`
 
 ```ebnf
 foreign_function =
-    "let", IDENT,
+    "let", IDENT, "=",
     runtime_parameter_group,
     ":", type_expr,
-    "=", foreign_initializer ;
+    foreign_initializer ;
 ```
 
 A foreign declaration has exactly one runtime parameter group, no
@@ -374,14 +382,14 @@ declarations and `@` attributes are not grammar productions.
 
 ```ebnf
 builtin_definition =
-    "let", IDENT,
+    "let", IDENT, "=",
     { declaration_group },
     ":", declaration_annotation,
-    "=", builtin_initializer ;
+    builtin_initializer ;
 ```
 
 The core-private bootstrap has the exact shape
-`let builtin() = builtin()`. It is the sole compiler definition that omits a
+`let builtin = () builtin()`. It is the sole compiler definition that omits a
 result annotation; validation assigns its uninhabited bootstrap result.
 Every other marker must match a known
 compiler-owned edition contract and is removed before code generation.
@@ -389,9 +397,9 @@ Trait requirements, effect operations, and user opaque types remain
 bodyless declarations rather than builtin definitions.
 
 The root `core` module also contains the public overloads
-`pub let foreign<abi: abi>: never = builtin()` and
-`pub let foreign<abi: abi, symbol: String>: never = builtin()`, plus
-`pub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()`
+`pub let foreign = <abi: abi>: never builtin()` and
+`pub let foreign = <abi: abi, symbol: String>: never builtin()`, plus
+`pub let test = <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () builtin()`
 and the generic `requires(condition, body)` contract. They authorize the
 `foreign(c, ...)` initializer, top-level test registration, and function-body
 guard respectively;
@@ -403,7 +411,7 @@ guard respectively;
 type_expr = effect_callable_type | function_type | postfix_type ;
 
 effect_callable_type =
-    with_clause, "(", function_type, ")" ;
+    with_clause, function_type ;
 
 function_type =
     function_type_group,
@@ -463,12 +471,13 @@ edition's validated `Array` type form; other constructor arguments remain type e
 `static_usize_expression` admits literals, static names, checked operators, and calls to eligible
 ordinary pure functions.
 
-`with<E>(F)` accepts only a callable `F` and applies one normalized effect row
-to the complete multi-group call. `with<>((a): b)` is equivalent to the pure
-callable `(a): b`. An effectful declaration uses a `:` callable-type/body
-boundary before `with<E>`; the final `:` introduces the callable result.
-Pure declarations retain the compact `let f(a): b` form and do not require
-that boundary.
+`with<E>(a): b` applies one normalized effect row to the complete multi-group
+callable `(a): b`. Declarations place every compile-time group, optional
+effect row, runtime group, and result annotation after `=`. The final `:`
+introduces both a declaration's result and a callable type's result. `=>`
+separates a callable signature from its implementation expression.
+Canonical presentation separates an adjacent compile-time group and effect
+prefix with whitespace: `<T: type> with<e>`, not `<T: type>with<e>`.
 
 ## 4. Expressions
 
@@ -576,11 +585,14 @@ array_expression =
     "[", [ expression, { ",", expression }, [ "," ] ], "]" ;
 
 closure_expression =
-    [ closure_parameters, "->" ], closure_body ;
+    closure_body
+  | closure_parameters,
+    { runtime_parameter_group },
+    [ ":", type_expr ],
+    "=>", expression ;
 
 closure_parameters =
-    IDENT
-  | "(", [ runtime_parameter, { ",", runtime_parameter }, [ "," ] ], ")" ;
+    "(", [ runtime_parameter, { ",", runtime_parameter }, [ "," ] ], ")" ;
 ```
 
 Control operations are contextual and recognized by their dedicated validated

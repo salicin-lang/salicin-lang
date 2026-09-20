@@ -1,12 +1,12 @@
-let scalar_is(
+let scalar_is = (
   value: core.Option<core.string.UnicodeScalar>,
   expected: u32,
-): bool = {
+): bool => {
   match(value) { Some(value) => value.to_u32() == expected, None => false,
   }
 }
 
-let byte_checks(): bool = {
+let byte_checks = (): bool => {
   let text: String = "A柳"
   let view = text.as_str()
   let mut bytes = view.bytes()
@@ -25,7 +25,7 @@ let byte_checks(): bool = {
   }
 }
 
-let scalar_checks(): bool = {
+let scalar_checks = (): bool => {
   let text: String = "Aé柳🙂"
   let view = text.as_str()
   let mut values = view.scalars()
@@ -39,7 +39,7 @@ let scalar_checks(): bool = {
     view.scalar_at(4).is_none()
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   if(byte_checks() && scalar_checks()) {
     42
   } else: {

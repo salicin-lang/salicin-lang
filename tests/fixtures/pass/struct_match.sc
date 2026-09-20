@@ -3,13 +3,13 @@ let pair = struct {
   right: i32,
 }
 
-let select(value: pair): i32 = {
+let select = (value: pair): i32 => {
   match(value) { pair(right: right, left: 40) => right, _ => 0,
   }
 }
 
-let main(): i32 = {
-  select(pair{ right: 42, left: 40 })
+let main = (): i32 => {
+  select(pair { left: 40, right: 42 })
 }
 
 test("struct_match.sc") {

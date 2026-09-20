@@ -1,6 +1,6 @@
-let invalid<t: type>(value: t): t = {
+let invalid = <t: type>(value: t): t => {
   let first = value
   value
 }
 
-let main(): i32 = { 42 }
+let main = (): i32 => { 42 }

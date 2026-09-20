@@ -1,6 +1,6 @@
 let Vec = alloc.Vec
 
-let main(): i32 = {
+let main = (): i32 => {
   let mut values: Vec<i32> = Vec<i32>.new()
   let reserved: Vec<i32> = Vec<i32>.with_capacity(8)
   let started_empty = values.is_empty()

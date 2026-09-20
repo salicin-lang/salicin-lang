@@ -825,12 +825,6 @@ impl Analyzer {
             .cloned()
             .collect::<Vec<_>>();
         let labels = call_argument_labels(&arguments);
-        if labels.is_none() && arguments.iter().any(|argument| argument.label.is_some()) {
-            self.error(format!(
-                "cannot mix named and positional arguments in effect operation `{operation}`"
-            ));
-            return error_expr();
-        }
         let selected = if candidates.len() == 1 {
             Some(candidates[0])
         } else if let Some(labels) = labels {

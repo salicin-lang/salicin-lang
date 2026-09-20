@@ -1,5 +1,5 @@
 let read = trait {
-  let read(self: Borrow<self>)(): i32
+  let read = (self: Borrow<self>)(): i32
 }
 
 let number = struct { value: i32 }
@@ -7,4 +7,4 @@ let number = struct { value: i32 }
 extend(number, read) {
 }
 
-let main(): i32 = { 0 }
+let main = (): i32 => { 0 }

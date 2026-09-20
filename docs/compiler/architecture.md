@@ -222,7 +222,7 @@ continuation and handler state machine would create more coupling than it remove
 
 The compiler embeds edition-matched sources from `library/core`, `library/alloc`, and the C allocator
 from `runtime`. Embedded Salicin declarations still pass through the normal parser and semantic
-pipeline. Compiler-provided core definitions carry complete `= builtin()`
+pipeline. Compiler-provided core definitions carry complete `builtin()`
 initializers. Bootstrap validation checks the unique private marker, exact
 known declarations, and the abstract boundary for trait requirements and
 effect operations. The analyzer rejects marker use outside `core` and

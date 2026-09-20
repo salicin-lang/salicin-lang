@@ -1,6 +1,4 @@
-let defer = core.control.defer
-
-let main(): i32 = {
-  let value = defer: { () }
+let main = (): i32 => {
+  let value = core.control.defer{action: () => { () }}
   42
 }

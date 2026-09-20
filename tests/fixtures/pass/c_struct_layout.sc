@@ -9,12 +9,12 @@ let header = struct(c) {
   next: Ptr<u8>,
 }
 
-let pair<t: type> = struct(c) {
+let pair = <t: type> struct(c) {
   left: t,
   right: t,
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   if(size_of<timespec> == 16 &&
     align_of<timespec> == 8 &&
     size_of<header> == 32 &&

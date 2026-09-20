@@ -1,20 +1,20 @@
 let Option = core.Option
 let Slice = core.memory.Slice
 let Vec = alloc.Vec
-let read(value: Borrow<i32>): i32 = { value }
+let read = (value: Borrow<i32>): i32 => { value }
 
-let greater_than_ten(value: Borrow<i32>): bool = { read(value) > 10 }
-let greater_than_seventeen(value: Borrow<i32>): bool = { read(value) > 17 }
-let greater_than_twenty(value: Borrow<i32>): bool = { read(value) > 20 }
-let greater_than_two(value: Borrow<i32>): bool = { read(value) > 2 }
-let greater_than_zero(value: Borrow<i32>): bool = { read(value) > 0 }
-let less_than_eighteen(value: Borrow<i32>): bool = { read(value) < 18 }
+let greater_than_ten = (value: Borrow<i32>): bool => { read(value) > 10 }
+let greater_than_seventeen = (value: Borrow<i32>): bool => { read(value) > 17 }
+let greater_than_twenty = (value: Borrow<i32>): bool => { read(value) > 20 }
+let greater_than_two = (value: Borrow<i32>): bool => { read(value) > 2 }
+let greater_than_zero = (value: Borrow<i32>): bool => { read(value) > 0 }
+let less_than_eighteen = (value: Borrow<i32>): bool => { read(value) < 18 }
 
-let add(total: i32, value: Borrow<i32>): i32 = {
+let add = (total: i32, value: Borrow<i32>): i32 => {
   total + read(value)
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let values: Array<i32><4> = [3, 9, 12, 18]
   let view: Borrow<Slice<i32>> = borrow(values)
 

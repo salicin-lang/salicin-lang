@@ -8,9 +8,9 @@ This document defines the implementation contract for source-declared algebraic 
 An effect is a nominal compile-time identity with zero or more operations:
 
 ```sc fragment
-let state<S: type> = effect {
-  let get: (): S
-  let put: (move value: S): ()
+let state = <S: type> effect {
+  let get = (): S
+  let put = (move value: S): ()
 }
 ```
 
@@ -26,27 +26,26 @@ rules. A declaration with the same operation name in another effect is unrelated
 
 ## Effect Rows
 
-`with<E>(F)` adds the normalized effect row `E` to callable type `F`:
+`with<E>` adds the normalized effect row `E` to a callable signature or type:
 
 ```sc fragment
-let increment: with<state<i32>>(): i32 = {
+let increment = with<state<i32>>(): i32 => {
   let value = state<i32>.get()
   state<i32>.put(value + 1)
   value
 }
 
-let apply<e: effects>: with<e>
-  (action: with<e>((i32): i32))
-  (value: i32): i32 = {
+let apply = <e: effects> with<e>
+  (action: with<e>(i32): i32)
+  (value: i32): i32 => {
   action(value)
 }
 ```
 
-The declaration boundary after the function name and compile-time parameters
-starts the complete runtime callable type. A function value uses the fully
-parenthesized form, such as `with<state<i32>>((): i32)`. The row belongs to
+Every declaration signature group follows `=`. A function value uses the
+callable type `with<state<i32>>(): i32`. The row belongs to
 the complete multi-group call, not to a parameter group or result value.
-`with<>((a): b)` is the pure callable `(a): b`; a non-callable operand is
+`with<>(a): b` is the pure callable `(a): b`; a non-callable operand is
 rejected.
 
 Rows are unordered sets of nominal effect identities. Handling one identity removes exactly that
@@ -71,8 +70,8 @@ Conceptually:
 
 ```sc fragment
 let answer = state<i32>.handle{
-  get: { resume -> resume(41) },
-  put: { (value, resume) -> resume(()) },
+  get: (resume) => resume(41),
+  put: (value, resume) => resume(()),
   action: {
     increment() + 1
   },
@@ -146,8 +145,8 @@ specialize into CPS frames. An unknown callable must not be silently treated as 
 ## Runtime Contracts
 
 `Continuation<Input, Output>` and `EffectCallable<Input, Output, Answer>` are
-source-declared type forms with complete core-private `= builtin()`
-initializers and compiler-owned representations. They are not empty
+source-declared type forms with complete core-private `builtin()` initializers
+and compiler-owned representations. They are not empty
 structures, and their values are linear resources.
 
 The runtime representation may use generated frames and adapters, but those details are not

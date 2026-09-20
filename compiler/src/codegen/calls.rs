@@ -5,7 +5,7 @@ use super::fallible::InferredEnumHints;
 use super::flow::{LowerCtx, RecursiveFrameCall};
 use super::hir::{
     ContinuationAdapter, EffectCallableAdapter, HirExpr, HirExprKind, HirPlace, LayoutQueryKind,
-    LocalCapability, Ty,
+    LocalCapability, ParamSig, Ty,
 };
 use super::lower::{error_expr, flatten_call, BoundMethodConstraint, TypeProbe};
 use super::registry::NominalKind;
@@ -68,6 +68,36 @@ pub(super) fn rewrite_callable_bridge_groups(
 }
 
 impl Analyzer {
+    pub(super) fn elaborate_runtime_group(
+        &mut self,
+        owner: &str,
+        group_number: usize,
+        delimiter: GroupDelimiter,
+        arguments: &[CallArg],
+        parameters: &[ParamSig],
+    ) -> Option<Vec<CallArg>> {
+        let mut arguments = arguments.to_vec();
+        if delimiter == GroupDelimiter::Brace {
+            if parameters.is_empty()
+                && matches!(arguments.as_slice(), [argument] if is_empty_brace_body(&argument.value))
+            {
+                arguments.clear();
+            } else if let ([argument], [parameter]) = (arguments.as_mut_slice(), parameters) {
+                if !matches!(parameter.ty, Ty::Function(_) | Ty::Callable(_)) {
+                    if let Some(body) = brace_body_value(&argument.value) {
+                        argument.value = body.clone();
+                    }
+                }
+            }
+        }
+        let names = parameters
+            .iter()
+            .map(|parameter| parameter.name.clone())
+            .collect::<Vec<_>>();
+        self.ordered_call_arguments(owner, group_number, &arguments, &names)
+            .map(|ordered| ordered.into_iter().cloned().collect())
+    }
+
     pub(super) fn lower_call(
         &mut self,
         expression: &Expr,
@@ -616,7 +646,13 @@ impl Analyzer {
             if let Some((enum_name, variant)) =
                 self.resolve_short_variant(name, expected, &context.origin)
             {
-                return self.lower_enum_constructor(&enum_name, variant, &groups, context);
+                return self.lower_enum_constructor(
+                    &enum_name,
+                    variant,
+                    &groups,
+                    Some(&actual_delimiters),
+                    context,
+                );
             }
             self.error(format!("`{name}` is not a function or constructor"));
             return error_expr();
@@ -1002,7 +1038,13 @@ impl Analyzer {
                             .position(|variant| variant.name == *variant_name)
                         {
                             return self
-                                .lower_enum_constructor(enum_name, variant, &groups, context);
+                                .lower_enum_constructor(
+                                    enum_name,
+                                    variant,
+                                    &groups,
+                                    Some(&actual_delimiters),
+                                    context,
+                                );
                         }
                         if self
                             .collection
@@ -1432,7 +1474,9 @@ impl Analyzer {
         arguments: &'a [CallArg],
         parameter_names: &[String],
     ) -> Option<Vec<&'a CallArg>> {
-        if arguments.len() != parameter_names.len() {
+        if arguments.iter().all(|argument| argument.label.is_none())
+            && arguments.len() != parameter_names.len()
+        {
             self.error(format!(
                 "argument count mismatch in group {group_number} of `{owner}`: expected {}, found {}",
                 parameter_names.len(),
@@ -1441,30 +1485,40 @@ impl Analyzer {
             return None;
         }
         let mut ordered = vec![None; parameter_names.len()];
+        let mut labeled = false;
+        let mut last_labeled_index = None;
         for (source_index, argument) in arguments.iter().enumerate() {
             let Some(label) = argument.label.as_deref() else {
+                if labeled || source_index >= ordered.len() {
+                    self.error(format!(
+                        "positional arguments in group {group_number} of `{owner}` must precede named arguments"
+                    ));
+                    return None;
+                }
                 ordered[source_index] = Some(argument);
                 continue;
             };
+            labeled = true;
             let Some(index) = parameter_names.iter().position(|name| name == label) else {
                 self.error(format!(
                     "unknown parameter `{label}` in group {group_number} of `{owner}`"
                 ));
                 return None;
             };
-            if index != source_index {
-                self.error(format!(
-                    "named arguments in group {group_number} of `{owner}` must follow parameter declaration order; expected `{}` before `{label}`",
-                    parameter_names[source_index]
-                ));
-                return None;
-            }
-            if ordered[index].replace(argument).is_some() {
+            if ordered[index].is_some() {
                 self.error(format!(
                     "duplicate argument for parameter `{label}` in group {group_number} of `{owner}`"
                 ));
                 return None;
             }
+            if last_labeled_index.is_some_and(|previous| index < previous) {
+                self.error(format!(
+                    "named arguments in group {group_number} of `{owner}` must follow parameter declaration order"
+                ));
+                return None;
+            }
+            ordered[index] = Some(argument);
+            last_labeled_index = Some(index);
         }
         for (index, argument) in ordered.iter().enumerate() {
             if argument.is_none() {
@@ -1477,4 +1531,20 @@ impl Analyzer {
         }
         Some(ordered.into_iter().flatten().collect())
     }
+}
+
+fn brace_body_value(expression: &Expr) -> Option<&Expr> {
+    match expression.unlocated() {
+        Expr::Closure(parameters, body) if parameters.is_empty() => Some(body),
+        _ => None,
+    }
+}
+
+fn is_empty_brace_body(expression: &Expr) -> bool {
+    matches!(
+        expression.unlocated(),
+        Expr::Closure(parameters, body)
+            if parameters.is_empty()
+                && matches!(body.unlocated(), Expr::Block(statements, None) if statements.is_empty())
+    )
 }

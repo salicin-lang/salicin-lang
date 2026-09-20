@@ -1,10 +1,10 @@
 let read = effect {
-  let read(): usize
+  let read = (): usize
 }
 
-let main(): i32 = {
-  read.handle{
-    read: { (resume) -> resume(0) },
+let main = (): i32 => {
+  read.handle {
+    read: (resume) => { resume(0) },
     action: {
       let values = [42, 0]
       match(values[read.read()]) {

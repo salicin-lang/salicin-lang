@@ -3,8 +3,8 @@ let pair = struct {
   right: i32,
 }
 
-let main(): i32 = {
-  let mut pair = pair{ left: 18, right: 20 }
+let main = (): i32 => {
+  let mut pair = pair { left: 18, right: 20 }
   let mut values = [10, 10]
   do {
     let pointer = ptr<mut>(borrow<mut>(pair))

@@ -1876,12 +1876,6 @@ impl Analyzer {
                 .cloned()
                 .unwrap_or_default();
             let labels = call_argument_labels(&arguments);
-            if labels.is_none() && arguments.iter().any(|argument| argument.label.is_some()) {
-                self.error(format!(
-                    "cannot mix named and positional arguments in effect operation `{operation}`"
-                ));
-                return Err(());
-            }
             let selected = match labels {
                 Some(labels) => candidates
                     .iter()
@@ -1894,7 +1888,7 @@ impl Analyzer {
                     return Err(());
                 }
             };
-            let Some(selected) = selected else {
+            let Some(selected) = selected.cloned() else {
                 self.error(format!(
                     "no effect operation `{operation}` matches the supplied argument names"
                 ));
@@ -1911,14 +1905,30 @@ impl Analyzer {
                 return Err(());
             };
             let residual_effects = selected.residual_effects.clone();
-            if arguments.len() != clause.parameters.len() {
-                self.error(format!(
-                    "effect operation `{operation}` expects {} argument(s), found {}",
-                    clause.parameters.len(),
-                    arguments.len()
-                ));
+            let parameters = clause
+                .parameters
+                .iter()
+                .map(|parameter| ParamSig {
+                    name: parameter.name.clone(),
+                    ty: self.lower_source_type(&parameter.ty),
+                    mode: parameter.mode,
+                })
+                .collect::<Vec<_>>();
+            let delimiter = selected
+                .group_delimiters
+                .first()
+                .copied()
+                .unwrap_or(GroupDelimiter::Parenthesis);
+            let Some(elaborated) = self.elaborate_runtime_group(
+                &format!("effect operation `{operation}`"),
+                1,
+                delimiter,
+                &arguments,
+                &parameters,
+            ) else {
                 return Err(());
-            }
+            };
+            arguments = elaborated;
             for argument in &mut arguments {
                 argument.label = None;
             }

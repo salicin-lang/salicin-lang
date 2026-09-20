@@ -2209,6 +2209,7 @@ fn invoke_clang(ir: &Path, runtime: &Path, output: &Path) -> Result<(), String> 
 
     let runtime_object = cached_allocator_runtime(compiler, runtime)?;
     let status = Command::new(compiler)
+        .arg("-Qunused-arguments")
         .arg("-Wno-override-module")
         .arg("-x")
         .arg("ir")

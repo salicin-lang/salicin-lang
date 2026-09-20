@@ -10,7 +10,7 @@ let step = struct {
 let resource = struct { counter: Ptr<mut><i32> }
 
 extend(step, Droppable) {
-  let drop(self: Borrow<mut><self>)(): () = {
+  let drop = (self: Borrow<mut><self>)(): () => {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -18,7 +18,7 @@ extend(step, Droppable) {
 }
 
 extend(resource, Droppable) {
-  let drop(self: Borrow<mut><self>)(): () = {
+  let drop = (self: Borrow<mut><self>)(): () => {
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -28,9 +28,9 @@ extend(resource, Droppable) {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll<r: region>
+  let poll = <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<i32> = {
+    (): Poll<i32> => {
     if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
@@ -40,30 +40,30 @@ extend(step, Future<()>) {
   }
 }
 
-let consume(move resource: resource): () = { () }
+let consume = (move resource: resource): () => { () }
 
-let allocate: with<unsafety>(): Ptr<mut><i32> = {
+let allocate = with<unsafety>(): Ptr<mut><i32> => {
   unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
 }
 
-let release: with<unsafety>(counter: Ptr<mut><i32>): () = {
+let release = with<unsafety>(counter: Ptr<mut><i32>): () => {
   unsafe {
     raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   unsafe {
     let counter = allocate()
     *counter = 0
 
     do {
-      let resource = resource{ counter: counter }
+      let resource = resource { counter: counter }
       let mut future = async {
-        let first = await(step{ counter: counter, polls: 0, value: 20 })
-        let second = await(step{ counter: counter, polls: 0, value: 22 })
+        let first = await(step { counter: counter, polls: 0, value: 20 })
+        let second = await(step { counter: counter, polls: 0, value: 22 })
         consume(resource)
         first + second
       }

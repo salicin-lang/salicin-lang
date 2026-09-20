@@ -164,7 +164,13 @@ impl Analyzer {
                     .iter()
                     .position(|variant| variant.name == member)
                 {
-                    return self.lower_enum_constructor(target, variant, groups, context);
+                    return self.lower_enum_constructor(
+                        target,
+                        variant,
+                        groups,
+                        actual_delimiters,
+                        context,
+                    );
                 }
             }
         }
@@ -820,16 +826,18 @@ impl Analyzer {
         for (relative_group, arguments_ast) in runtime_groups.iter().enumerate() {
             let group_index = relative_group + 1;
             let params = &signature.groups[group_index];
-            let parameter_names = params
-                .iter()
-                .map(|parameter| parameter.name.clone())
-                .collect::<Vec<_>>();
             let owner = format!("{target}.{member}");
-            let Some(ordered) = self.ordered_call_arguments(
+            let delimiter = actual_delimiters
+                .and_then(|delimiters| delimiters.get(relative_group))
+                .copied()
+                .or_else(|| function_ty.group_delimiters.get(group_index).copied())
+                .unwrap_or(GroupDelimiter::Parenthesis);
+            let Some(ordered) = self.elaborate_runtime_group(
                 &owner,
                 relative_group + 1,
+                delimiter,
                 arguments_ast,
-                &parameter_names,
+                params,
             ) else {
                 return error_expr();
             };
@@ -958,16 +966,6 @@ impl Analyzer {
             ));
             return error_expr();
         }
-        for (index, (arguments, parameters)) in groups.iter().zip(&closure.groups).enumerate() {
-            if arguments.len() != parameters.len() {
-                self.error(format!(
-                    "argument count mismatch in group {} of closure `{local_name}`: expected {}, found {}",
-                    index + 1,
-                    parameters.len(),
-                    arguments.len()
-                ));
-            }
-        }
         let complete = groups.len() == closure.groups.len();
         if complete {
             let sources =
@@ -1062,15 +1060,22 @@ impl Analyzer {
         for (group_index, (argument_group, parameters)) in
             groups.iter().zip(&closure.groups).enumerate()
         {
-            let parameter_names = parameters
-                .iter()
-                .map(|parameter| parameter.name.clone())
-                .collect::<Vec<_>>();
-            let Some(ordered) = self.ordered_call_arguments(
+            let delimiter = match &local.ty {
+                Ty::Callable(callable) => callable
+                    .signature
+                    .group_delimiters
+                    .get(group_index)
+                    .copied(),
+                Ty::Function(function) => function.group_delimiters.get(group_index).copied(),
+                _ => None,
+            }
+            .unwrap_or(GroupDelimiter::Parenthesis);
+            let Some(ordered) = self.elaborate_runtime_group(
                 local_name,
                 group_index + 1,
+                delimiter,
                 argument_group,
-                &parameter_names,
+                parameters,
             ) else {
                 return error_expr();
             };
@@ -1121,7 +1126,20 @@ impl Analyzer {
                         .iter()
                         .map(|group| group.iter().map(|parameter| parameter.ty.clone()).collect())
                         .collect(),
-                    group_delimiters: Vec::new(),
+                    group_delimiters: match &local.ty {
+                        Ty::Callable(callable) => callable
+                            .signature
+                            .group_delimiters
+                            .get(consumed_groups..)
+                            .unwrap_or_default()
+                            .to_vec(),
+                        Ty::Function(function) => function
+                            .group_delimiters
+                            .get(consumed_groups..)
+                            .unwrap_or_default()
+                            .to_vec(),
+                        _ => Vec::new(),
+                    },
                     unsafety: closure.unsafety,
                     failure_error: closure.failure_error.clone().map(Box::new),
                     custom_effects: closure.custom_effects.clone(),
@@ -1205,34 +1223,31 @@ impl Analyzer {
         for (group_index, (arguments, parameters)) in
             groups.iter().zip(&function_ty.groups).enumerate()
         {
-            let arguments = if function_ty.group_delimiters.get(group_index)
-                == Some(&GroupDelimiter::Brace)
-                && parameters.is_empty()
-                && matches!(*arguments, [argument] if is_empty_brace_body(&argument.value))
-            {
-                &[][..]
-            } else {
-                *arguments
-            };
-            if arguments.len() != parameters.len() {
-                self.error(format!(
-                    "argument count mismatch in indirect call `{local_name}`: expected {}, found {}",
-                    parameters.len(),
-                    arguments.len()
-                ));
+            let parameter_signatures = parameters
+                .iter()
+                .map(|parameter| ParamSig {
+                    name: String::new(),
+                    ty: parameter.clone(),
+                    mode: PassMode::Inferred,
+                })
+                .collect::<Vec<_>>();
+            let delimiter = function_ty
+                .group_delimiters
+                .get(group_index)
+                .copied()
+                .unwrap_or(GroupDelimiter::Parenthesis);
+            let Some(arguments) = self.elaborate_runtime_group(
+                local_name,
+                group_index + 1,
+                delimiter,
+                arguments,
+                &parameter_signatures,
+            ) else {
                 return error_expr();
-            }
+            };
             for (argument, parameter) in arguments.iter().zip(parameters) {
-                let value = if function_ty.group_delimiters.get(group_index)
-                    == Some(&GroupDelimiter::Brace)
-                    && !matches!(parameter, Ty::Function(_) | Ty::Callable(_))
-                {
-                    brace_body_value(&argument.value).unwrap_or(&argument.value)
-                } else {
-                    &argument.value
-                };
                 lowered_arguments.push(self.lower_call_argument(
-                    value,
+                    &argument.value,
                     &ParamSig {
                         name: String::new(),
                         ty: parameter.clone(),
@@ -1355,34 +1370,24 @@ impl Analyzer {
         for (group_index, (arguments_ast, params)) in
             groups.iter().zip(&signature.groups).enumerate()
         {
-            let arguments_ast = if delimiters.get(group_index) == Some(&GroupDelimiter::Brace)
-                && params.is_empty()
-                && matches!(*arguments_ast, [argument] if is_empty_brace_body(&argument.value))
-            {
-                &[][..]
-            } else {
-                *arguments_ast
-            };
-            let parameter_names = params
-                .iter()
-                .map(|parameter| parameter.name.clone())
-                .collect::<Vec<_>>();
-            let Some(ordered) =
-                self.ordered_call_arguments(name, group_index + 1, arguments_ast, &parameter_names)
+            let delimiter = delimiters
+                .get(group_index)
+                .copied()
+                .unwrap_or(GroupDelimiter::Parenthesis);
+            let Some(ordered) = self.elaborate_runtime_group(
+                name,
+                group_index + 1,
+                delimiter,
+                arguments_ast,
+                params,
+            )
             else {
                 return error_expr();
             };
             for (parameter_index, (argument, parameter)) in
                 ordered.into_iter().zip(params).enumerate()
             {
-                let argument_value = if delimiters.get(group_index)
-                    == Some(&GroupDelimiter::Brace)
-                    && !matches!(parameter.ty, Ty::Function(_) | Ty::Callable(_))
-                {
-                    brace_body_value(&argument.value).unwrap_or(&argument.value)
-                } else {
-                    &argument.value
-                };
+                let argument_value = &argument.value;
                 if let Some(action) = self.lowering.runtime_handler_actions.get(&(
                     name.to_owned(),
                     group_index,
@@ -2253,15 +2258,17 @@ impl Analyzer {
         let mut temporary_bindings = Vec::new();
         for (relative_group, arguments_ast) in groups.iter().enumerate() {
             let params = &remaining_parameters[relative_group];
-            let parameter_names = params
-                .iter()
-                .map(|parameter| parameter.name.clone())
-                .collect::<Vec<_>>();
-            let Some(ordered) = self.ordered_call_arguments(
+            let delimiter = function_ty
+                .group_delimiters
+                .get(relative_group)
+                .copied()
+                .unwrap_or(GroupDelimiter::Parenthesis);
+            let Some(ordered) = self.elaborate_runtime_group(
                 local_name,
                 relative_group + 1,
+                delimiter,
                 arguments_ast,
-                &parameter_names,
+                params,
             ) else {
                 return error_expr();
             };
@@ -2542,6 +2549,25 @@ impl Analyzer {
         parameter_name: &str,
         context: &mut LowerCtx,
     ) -> HirExpr {
+        let expected_parameters = function_ty
+            .groups
+            .first()
+            .map(Vec::as_slice)
+            .unwrap_or(&[]);
+        let mut contextual_params = params.to_vec();
+        for (parameter, expected) in contextual_params.iter_mut().zip(expected_parameters) {
+            if parameter.ty == Type::Named("$context$infer".to_owned(), Vec::new()) {
+                let Some(source) = self.source_type_for_ty(expected) else {
+                    self.error(format!(
+                        "cannot infer source type for closure parameter `{}`",
+                        parameter.name
+                    ));
+                    return error_expr();
+                };
+                parameter.ty = source;
+            }
+        }
+        let params = contextual_params.as_slice();
         let Some(captures) = self.closure_literal_capture_uses(params, body, context) else {
             return error_expr();
         };
@@ -2763,20 +2789,4 @@ impl Analyzer {
             kind: HirExprKind::Block(statements, Some(Box::new(expression))),
         }
     }
-}
-
-fn brace_body_value(expression: &Expr) -> Option<&Expr> {
-    match expression.unlocated() {
-        Expr::Closure(parameters, body) if parameters.is_empty() => Some(body),
-        _ => None,
-    }
-}
-
-fn is_empty_brace_body(expression: &Expr) -> bool {
-    matches!(
-        expression.unlocated(),
-        Expr::Closure(parameters, body)
-            if parameters.is_empty()
-                && matches!(body.unlocated(), Expr::Block(statements, None) if statements.is_empty())
-    )
 }

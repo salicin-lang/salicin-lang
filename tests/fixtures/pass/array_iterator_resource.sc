@@ -4,16 +4,16 @@ let resource = struct {
 }
 
 extend(resource, Droppable) {
-  let drop(self: Borrow<mut><self>)(): () = {
+  let drop = (self: Borrow<mut><self>)(): () => {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let read(value: Borrow<resource>): i32 = { value.value }
+let read = (value: Borrow<resource>): i32 => { value.value }
 
-let main(): i32 = {
+let main = (): i32 => {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
@@ -21,9 +21,9 @@ let main(): i32 = {
 
   let total = do {
     let values: Array<resource><3> = [
-      resource{ value: 9, drops: drops },
-      resource{ value: 12, drops: drops },
-      resource{ value: 21, drops: drops },
+      resource { value: 9, drops: drops },
+      resource { value: 12, drops: drops },
+      resource { value: 21, drops: drops },
     ]
     let mut sum = 0
     for values.iter() { value ->

@@ -9,9 +9,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = bool;
 
-  let poll<r: region>
+  let poll = <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<bool> = {
+    (): Poll<bool> => {
     if(self.polled) {
       let done = unsafe {
         *self.remaining = *self.remaining - 1
@@ -25,8 +25,8 @@ extend(step, Future<()>) {
   }
 }
 
-let next_step(remaining: Ptr<mut><i32>): step = {
-  step{ polled: false, remaining: remaining }
+let next_step = (remaining: Ptr<mut><i32>): step => {
+  step { polled: false, remaining: remaining }
 }
 
 let ready_step = struct {
@@ -36,9 +36,9 @@ let ready_step = struct {
 extend(ready_step, Future<()>) {
   let Output = bool;
 
-  let poll<r: region>
+  let poll = <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<bool> = {
+    (): Poll<bool> => {
     let done = unsafe {
       *self.remaining = *self.remaining - 1
       *self.remaining == 0
@@ -47,11 +47,11 @@ extend(ready_step, Future<()>) {
   }
 }
 
-let ready_step(remaining: Ptr<mut><i32>): ready_step = {
-  ready_step{ remaining: remaining }
+let ready_step = (remaining: Ptr<mut><i32>): ready_step => {
+  ready_step { remaining: remaining }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let mut remaining = 3
   let remaining_ptr = ptr<mut>(borrow<mut>(remaining))
   let mut future = async {

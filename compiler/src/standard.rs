@@ -649,9 +649,9 @@ mod tests {
     #[test]
     fn standard_names_encode_semantics_instead_of_declaration_categories() {
         let valid = parser::parse(
-            "pub let Option<T: type> = enum { Some(T), None }\n\
+            "pub let Option = <T: type> enum { Some(T), None }\n\
              pub let Copyable = trait {}\n\
-             pub let suspension = effect { let suspend(): () }\n",
+             pub let suspension = effect { let suspend = (): () }\n",
         )
         .unwrap();
         assert!(naming_diagnostics(&valid, "test").is_empty());
@@ -665,7 +665,7 @@ mod tests {
                 "pub let Iterator = trait { let item: type }\n",
                 "associated type",
             ),
-            ("pub let Service(): () = {}\n", "snake_case"),
+            ("pub let Service = (): () => {}\n", "snake_case"),
         ] {
             let program = parser::parse(source).unwrap();
             let diagnostics = naming_diagnostics(&program, "test");

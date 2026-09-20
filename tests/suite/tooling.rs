@@ -12,7 +12,7 @@ fn digest_hex(bytes: &[u8]) -> String {
 #[test]
 fn emit_ir_build_and_run_reuse_the_same_validated_binary_cache_entry() {
     let temporary = TestDirectory::new();
-    let source = temporary.write("main.sc", "let main(): i32 = { 42 }\n");
+    let source = temporary.write("main.sc", "let main = (): i32 => { 42 }\n");
     let cache = temporary.create_dir("cache");
     let first_ir = temporary.join("first.ll");
     let second_ir = temporary.join("second.ll");
@@ -146,7 +146,7 @@ fn test_list_reuses_cached_ordered_test_names() {
 #[test]
 fn cache_trace_reports_cold_warm_and_bypassed_decisions_only_on_stderr() {
     let temporary = TestDirectory::new();
-    let source = temporary.write("main.sc", "let main(): i32 = { 0 }\n");
+    let source = temporary.write("main.sc", "let main = (): i32 => { 0 }\n");
     let cache = temporary.create_dir("cache");
 
     let invoke = || {
@@ -241,7 +241,7 @@ fn cache_trace_reports_cold_warm_and_bypassed_decisions_only_on_stderr() {
 #[test]
 fn cache_clean_preserves_unowned_root_data_and_refuses_unowned_roots() {
     let temporary = TestDirectory::new();
-    let source = temporary.write("main.sc", "let main(): i32 = { 0 }\n");
+    let source = temporary.write("main.sc", "let main = (): i32 => { 0 }\n");
     let cache = temporary.create_dir("cache");
     let populated = salic()
         .arg("emit-ir")
@@ -297,13 +297,13 @@ fn cache_reuses_byte_identical_ir_across_checkout_relocation_and_command_targets
         );
         project.write(
             "src/main.sc",
-            "let main(): i32 = { shared.answer() }\ntest(\"answer\") { () }\n",
+            "let main = (): i32 => { shared.answer() }\ntest(\"answer\") { () }\n",
         );
         project.write(
             "src/lib.sc",
-            "pub let answer(): i32 = { shared.answer() }\n",
+            "pub let answer = (): i32 => { shared.answer() }\n",
         );
-        project.write("src/shared.sc", "pub(package) let answer(): i32 = { 42 }\n");
+        project.write("src/shared.sc", "pub(package) let answer = (): i32 => { 42 }\n");
     }
     let first = TestDirectory::new();
     let relocated = TestDirectory::new();
@@ -351,7 +351,7 @@ fn cache_reuses_byte_identical_ir_across_checkout_relocation_and_command_targets
 #[test]
 fn cache_rejects_canonical_schema_and_compiler_metadata_changes_end_to_end() {
     let temporary = TestDirectory::new();
-    let source = temporary.write("main.sc", "let main(): i32 = { 0 }\n");
+    let source = temporary.write("main.sc", "let main = (): i32 => { 0 }\n");
     let cache = temporary.create_dir("cache");
     let populate = salic()
         .arg("emit-ir")
@@ -397,7 +397,7 @@ fn cache_rejects_canonical_schema_and_compiler_metadata_changes_end_to_end() {
 #[test]
 fn failed_compilation_never_publishes_its_fingerprint() {
     let temporary = TestDirectory::new();
-    let source = temporary.write("broken.sc", "let main(): i32 = { missing }\n");
+    let source = temporary.write("broken.sc", "let main = (): i32 => { missing }\n");
     let cache = temporary.create_dir("cache");
     let fingerprint = command_fingerprint(&source);
     let output = salic()
@@ -416,7 +416,7 @@ fn failed_compilation_never_publishes_its_fingerprint() {
 #[test]
 fn concurrent_cache_readers_observe_only_the_complete_warm_artifact() {
     let temporary = TestDirectory::new();
-    let source = temporary.write("main.sc", "let main(): i32 = { 42 }\n");
+    let source = temporary.write("main.sc", "let main = (): i32 => { 42 }\n");
     let cache = temporary.create_dir("cache");
     let cold = salic()
         .arg("emit-ir")
@@ -505,7 +505,7 @@ fn formatter_is_idempotent_checks_without_writing_and_formats_packages() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "main.sc",
-        "let main(): i32 = {  \n// keep { here\nif(true) {\n42\n} else: {\n0\n}\n}",
+        "let main = (): i32 => {  \n// keep { here\nif(true) {\n42\n} else: {\n0\n}\n}",
     );
     let original = fs::read_to_string(&source).expect("read unformatted source");
     let check = salic()
@@ -528,7 +528,7 @@ fn formatter_is_idempotent_checks_without_writing_and_formats_packages() {
         output_text(&formatted)
     );
     let expected =
-        "let main(): i32 = {\n  // keep { here\n  if(true) {\n    42\n  } else: {\n    0\n  }\n}\n";
+        "let main = (): i32 => {\n  // keep { here\n  if(true) {\n    42\n  } else: {\n    0\n  }\n}\n";
     assert_eq!(fs::read_to_string(&source).unwrap(), expected);
     let checked = salic()
         .args(["fmt", "--check"])
@@ -542,7 +542,7 @@ fn formatter_is_idempotent_checks_without_writing_and_formats_packages() {
         "dep/salicin.toml",
         "[package]\nname = \"fmt-dep\"\nversion = \"0.1.0\"\nedition = \"2026\"\n",
     );
-    let dependency = workspace.write("dep/src/lib.sc", "pub let answer(): i32 = {\n42\n}\n");
+    let dependency = workspace.write("dep/src/lib.sc", "pub let answer = (): i32 => {\n42\n}\n");
     workspace.write(
         "app/salicin.toml",
         "[package]\n\
@@ -553,10 +553,10 @@ fn formatter_is_idempotent_checks_without_writing_and_formats_packages() {
          [dependencies]\n\
          dep = { path = \"../dep\" }\n",
     );
-    let main = workspace.write("app/src/main.sc", "let main(): i32 = {\ndep.answer()\n}\n");
+    let main = workspace.write("app/src/main.sc", "let main = (): i32 => {\ndep.answer()\n}\n");
     let module = workspace.write(
         "app/src/local.sc",
-        "pub(package) let value(): i32 = {\n1\n}\n",
+        "pub(package) let value = (): i32 => {\n1\n}\n",
     );
     let package = salic()
         .arg("fmt")
@@ -570,7 +570,7 @@ fn formatter_is_idempotent_checks_without_writing_and_formats_packages() {
     assert!(fs::read_to_string(module).unwrap().contains("\n  1\n"));
     assert_eq!(
         fs::read_to_string(dependency).unwrap(),
-        "pub let answer(): i32 = {\n42\n}\n",
+        "pub let answer = (): i32 => {\n42\n}\n",
         "formatting a package must not rewrite path dependencies"
     );
 }
@@ -702,11 +702,11 @@ fn throwing_test_failures_report_all_messages_and_reject_unhandled_effects() {
 
     let unrelated = temporary.write(
         "unrelated.sc",
-        "let unrelated = effect { let escape(): () }\n\
-         test(\"wrong effect\") {\n\
-           unrelated.escape()\n\
-           ()\n\
-         }\n",
+        "let unrelated = effect { let escape = (): () }\n\
+             test(\"wrong effect\") {\n\
+             unrelated.escape()\n\
+             ()\n\
+             }\n",
     );
     let rejected = salic()
         .arg("test")
@@ -731,28 +731,28 @@ fn standard_test_assertions_evaluate_once_and_report_stable_messages() {
     let temporary = TestDirectory::new();
     let passing = temporary.write(
         "assertions-pass.sc",
-        "let evaluate(counter: Borrow<mut><i32>): i64 = {\n\
-           counter = counter + 1\n\
-           42\n\
-         }\n\
-         let common_assertions_pass: with<core.error.throwing<core.string.String>>(): () = {\n\
-           let mut counter = 0\n\
-           std.test.assert(true)\n\
-           std.test.assert_eq(evaluate(counter))(evaluate(counter))\n\
-           let same: i64 = 42\n\
-           let different: i64 = 43\n\
-           std.test.assert_ne<i64>(same)(different)\n\
-           let some_value: core.Option<i32> = core.Option.Some(40)\n\
-           let none_value: core.Option<i64> = core.Option.None\n\
-           let ok_value: core.Result<i64><i32> = core.Result.Ok(2)\n\
-           let error_value: core.Result<i64><i64> = core.Result.Err(7)\n\
-           let some = std.test.expect_some<i32>(some_value)\n\
-           std.test.expect_none<i64>(none_value)\n\
-           let ok = std.test.expect_ok<i64, i32>(ok_value)\n\
-           let error = std.test.expect_err<i64, i64>(error_value)\n\
-           std.test.assert(some + ok == 42 && error == 7 && counter == 2)\n\
-         }\n\
-         test(\"common assertions pass\") { common_assertions_pass() }\n",
+        "let evaluate = (counter: Borrow<mut><i32>): i64 => {\n\
+             counter = counter + 1\n\
+             42\n\
+             }\n\
+             let common_assertions_pass = with<core.error.throwing<core.string.String>>(): () => {\n\
+             let mut counter = 0\n\
+             std.test.assert(true)\n\
+             std.test.assert_eq(evaluate(counter))(evaluate(counter))\n\
+             let same: i64 = 42\n\
+             let different: i64 = 43\n\
+             std.test.assert_ne<i64>(same)(different)\n\
+             let some_value: core.Option<i32> = core.Option.Some(40)\n\
+             let none_value: core.Option<i64> = core.Option.None\n\
+             let ok_value: core.Result<i64><i32> = core.Result.Ok(2)\n\
+             let error_value: core.Result<i64><i64> = core.Result.Err(7)\n\
+             let some = std.test.expect_some<i32>(some_value)\n\
+             std.test.expect_none<i64>(none_value)\n\
+             let ok = std.test.expect_ok<i64, i32>(ok_value)\n\
+             let error = std.test.expect_err<i64, i64>(error_value)\n\
+             std.test.assert(some + ok == 42 && error == 7 && counter == 2)\n\
+             }\n\
+             test(\"common assertions pass\") { common_assertions_pass() }\n",
     );
     let passed = salic()
         .arg("test")
@@ -763,42 +763,42 @@ fn standard_test_assertions_evaluate_once_and_report_stable_messages() {
 
     let failing = temporary.write(
         "assertions-fail.sc",
-        "let fail_assert: with<core.error.throwing<core.string.String>>(): () = {\n\
-           std.test.assert(false)\n\
-         }\n\
-         let fail_assert_eq: with<core.error.throwing<core.string.String>>(): () = {\n\
-           let left: i64 = 1\n\
-           let right: i64 = 2\n\
-           std.test.assert_eq<i64>(left)(right)\n\
-         }\n\
-         let fail_assert_ne: with<core.error.throwing<core.string.String>>(): () = {\n\
-           let value: i64 = 7\n\
-           std.test.assert_ne<i64>(value)(value)\n\
-         }\n\
-         let fail_expect_some: with<core.error.throwing<core.string.String>>(): () = {\n\
-           let value: core.Option<i64> = core.Option.None\n\
-           let _ = std.test.expect_some<i64>(value)\n\
-         }\n\
-         let fail_expect_none: with<core.error.throwing<core.string.String>>(): () = {\n\
-           let value: core.Option<i64> = core.Option.Some(9)\n\
-           std.test.expect_none<i64>(value)\n\
-         }\n\
-         let fail_expect_ok: with<core.error.throwing<core.string.String>>(): () = {\n\
-           let value: core.Result<i64><i64> = core.Result.Err(0)\n\
-           let _ = std.test.expect_ok<i64, i64>(value)\n\
-         }\n\
-         let fail_expect_err: with<core.error.throwing<core.string.String>>(): () = {\n\
-           let value: core.Result<i64><i64> = core.Result.Ok(11)\n\
-           let _ = std.test.expect_err<i64, i64>(value)\n\
-         }\n\
-         test(\"assert\") { fail_assert() }\n\
-         test(\"assert_eq\") { fail_assert_eq() }\n\
-         test(\"assert_ne\") { fail_assert_ne() }\n\
-         test(\"expect_some\") { fail_expect_some() }\n\
-         test(\"expect_none\") { fail_expect_none() }\n\
-         test(\"expect_ok\") { fail_expect_ok() }\n\
-         test(\"expect_err\") { fail_expect_err() }\n\
-         test(\"fail\") { std.test.fail(\"explicit failure\") }\n",
+        "let fail_assert = with<core.error.throwing<core.string.String>>(): () => {\n\
+             std.test.assert(false)\n\
+             }\n\
+             let fail_assert_eq = with<core.error.throwing<core.string.String>>(): () => {\n\
+             let left: i64 = 1\n\
+             let right: i64 = 2\n\
+             std.test.assert_eq<i64>(left)(right)\n\
+             }\n\
+             let fail_assert_ne = with<core.error.throwing<core.string.String>>(): () => {\n\
+             let value: i64 = 7\n\
+             std.test.assert_ne<i64>(value)(value)\n\
+             }\n\
+             let fail_expect_some = with<core.error.throwing<core.string.String>>(): () => {\n\
+             let value: core.Option<i64> = core.Option.None\n\
+             let _ = std.test.expect_some<i64>(value)\n\
+             }\n\
+             let fail_expect_none = with<core.error.throwing<core.string.String>>(): () => {\n\
+             let value: core.Option<i64> = core.Option.Some(9)\n\
+             std.test.expect_none<i64>(value)\n\
+             }\n\
+             let fail_expect_ok = with<core.error.throwing<core.string.String>>(): () => {\n\
+             let value: core.Result<i64><i64> = core.Result.Err(0)\n\
+             let _ = std.test.expect_ok<i64, i64>(value)\n\
+             }\n\
+             let fail_expect_err = with<core.error.throwing<core.string.String>>(): () => {\n\
+             let value: core.Result<i64><i64> = core.Result.Ok(11)\n\
+             let _ = std.test.expect_err<i64, i64>(value)\n\
+             }\n\
+             test(\"assert\") { fail_assert() }\n\
+             test(\"assert_eq\") { fail_assert_eq() }\n\
+             test(\"assert_ne\") { fail_assert_ne() }\n\
+             test(\"expect_some\") { fail_expect_some() }\n\
+             test(\"expect_none\") { fail_expect_none() }\n\
+             test(\"expect_ok\") { fail_expect_ok() }\n\
+             test(\"expect_err\") { fail_expect_err() }\n\
+             test(\"fail\") { std.test.fail(\"explicit failure\") }\n",
     );
     let failed = salic()
         .arg("test")
@@ -976,25 +976,25 @@ fn structured_test_abort_runs_owned_cleanup_once() {
     let source = temporary.write(
         "cleanup.sc",
         "pub let resource = struct { pub counter: Ptr<mut><i32> }\n\
-         extend(resource, Droppable) {\n\
-           let drop(self: Borrow<mut><self>)(): () = {\n\
+             extend(resource, Droppable) {\n\
+             let drop = (self: Borrow<mut><self>)(): () => {\n\
              unsafe { *self.counter = *self.counter + 1 }\n\
-           }\n\
-         }\n\
-         let abort(counter: Ptr<mut><i32>): core.testing.Outcome = {\n\
-           core.testing.run {\n\
+             }\n\
+             }\n\
+             let abort = (counter: Ptr<mut><i32>): core.testing.Outcome => {\n\
+             core.testing.run(() => {\n\
              let owned = resource{ counter: counter }\n\
              core.error.throw(\"cleanup probe\")\n\
-           }\n\
-         }\n\
-         let main(): i32 = {\n\
-           let counter = unsafe { raw_alloc<i32>(size_of<i32>, align_of<i32>) }\n\
-           unsafe { *counter = 0 }\n\
-           let result = abort(counter)\n\
-           let drops = unsafe { *counter }\n\
-           unsafe { raw_dealloc(counter, size_of<i32>, align_of<i32>) }\n\
-           match(result) { Passed => 1, Failed(_) => if(drops == 1) { 42 } else: { 2 } }\n\
-         }\n",
+             })\n\
+             }\n\
+             let main = (): i32 => {\n\
+             let counter = unsafe { raw_alloc<i32>(size_of<i32>, align_of<i32>) }\n\
+             unsafe { *counter = 0 }\n\
+             let result = abort(counter)\n\
+             let drops = unsafe { *counter }\n\
+             unsafe { raw_dealloc(counter, size_of<i32>, align_of<i32>) }\n\
+             match(result) { Passed => 1, Failed(_) => if(drops == 1) { 42 } else: { 2 } }\n\
+             }\n",
     );
     let output = salic()
         .arg("run")
@@ -1007,7 +1007,7 @@ fn structured_test_abort_runs_owned_cleanup_once() {
 #[test]
 fn source_extension_is_sc_without_a_legacy_alias() {
     let temporary = TestDirectory::new();
-    let legacy = temporary.write("legacy.sali", "let main(): i32 = { 42 }\n");
+    let legacy = temporary.write("legacy.sali", "let main = (): i32 => { 42 }\n");
     let output = salic()
         .arg("check")
         .arg(legacy)
@@ -1184,7 +1184,7 @@ fn malformed_unicode_source_and_confusable_module_names_are_diagnostic() {
         "project/salicin.toml",
         "[package]\nname = \"unicode-boundary\"\nversion = \"0.1.0\"\nedition = \"2026\"\n",
     );
-    temporary.write("project/src/main.sc", "let main(): i32 = { 42 }\n");
+    temporary.write("project/src/main.sc", "let main = (): i32 => { 42 }\n");
     temporary.write("project/src/mоdule.sc", "let value = 1\n");
     let project = temporary.join("project");
     let output = salic()

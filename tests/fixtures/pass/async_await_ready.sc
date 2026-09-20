@@ -1,7 +1,7 @@
 let Poll = core.async.Poll
 let Future = core.async.Future
 
-let main(): i32 = {
+let main = (): i32 => {
   let mut future = async {
     await(async { 42 })
   }

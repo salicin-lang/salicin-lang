@@ -1,10 +1,10 @@
 let ask = effect {
-  let value(): i32
+  let value = (): i32
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   ask.handle{
-    value: { (resume) ->
+    value: (resume) => {
       let escaped = resume
       42
     },

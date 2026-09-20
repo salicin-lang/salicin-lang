@@ -1595,8 +1595,7 @@ impl Analyzer {
                         origin: "default pure effect".to_owned(),
                     });
             } else if let (Sort::Named(compile_type), Some(CompileParamDefault::Name(member))) =
-                (&parameter.kind, &parameter.default)
-            {
+                (&parameter.kind, &parameter.default) {
                 if self
                     .collection
                     .closed_type_values
@@ -1714,8 +1713,7 @@ impl Analyzer {
                         origin: "default pure effect".to_owned(),
                     });
             } else if let (Sort::Named(compile_type), Some(CompileParamDefault::Name(member))) =
-                (&parameter.kind, &parameter.default)
-            {
+                (&parameter.kind, &parameter.default) {
                 if self
                     .collection
                     .closed_type_values

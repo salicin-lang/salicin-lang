@@ -4,8 +4,8 @@ let Box = alloc.Box
 
 let node = struct { value: i32, next: Option<Box<node>> }
 
-let main(): i32 = {
-  let tail = node{ value: 42, next: None }
+let main = (): i32 => {
+  let tail = node { value: 42, next: None }
   let head = Box.new(tail)
   42
 }

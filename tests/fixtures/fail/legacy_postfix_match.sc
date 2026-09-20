@@ -1,3 +1,3 @@
-let main(): i32 = {
+let main = (): i32 => {
   42 match { _ => 42 }
 }

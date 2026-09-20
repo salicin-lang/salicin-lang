@@ -26,7 +26,7 @@ fn m1_array_errors_report_their_cause() {
         ("array_constant_oob.sc", "out of bounds"),
         ("array_negative_oob.sc", "out of bounds"),
         ("array_empty_without_context.sc", "empty array"),
-        ("array_resource_dynamic_index.sc", "requires Copyable"),
+        ("array_resource_dynamic_index.sc", "requires `Copyable`"),
         ("array_resource_element_use_after_move.sc", "moved"),
         ("array_resource_partial_root_move.sc", "moved"),
         ("array_dynamic_index_assignment.sc", "compile-time"),
@@ -176,7 +176,7 @@ fn m1_inherent_member_errors_report_their_cause() {
             "qualified_method_borrowed_partial.sc",
             "partial application",
         ),
-        ("self_expression_outside_extend.sc", "only available inside"),
+        ("self_expression_outside_extend.sc", "module `self` cannot be used"),
     ] {
         let output = salic()
             .arg("check")
@@ -742,24 +742,24 @@ fn compile_time_argument_diagnostics_name_binders_sorts_and_groups() {
 fn qualified_generic_calls_require_angle_compile_groups() {
     let prefix = r#"let cell = struct {}
 extend(cell) {
-  let identity<T: type>(self: Borrow<self>)(move value: T): T = { value }
+  let identity = <T: type>(self: Borrow<self>)(move value: T): T => { value }
 }
 "#;
 
     check_source(&format!(
-        "{prefix}let main(): i32 = {{ cell {{}}.identity<i32>(42) }}\n"
+        "{prefix}let main = (): i32 => {{ cell {{}}.identity<i32>(42) }}\n"
     ))
     .expect("qualified generic calls accept angle compile groups");
 
     let diagnostics = check_source(&format!(
-        "{prefix}let main(): i32 = {{ cell {{}}.identity(i32)(42) }}\n"
+        "{prefix}let main = (): i32 => {{ cell {{}}.identity(i32)(42) }}\n"
     ))
     .expect_err("qualified generic calls reject parenthesized compile groups");
     assert!(
         diagnostics
             .iter()
             .any(|diagnostic| diagnostic.contains(
-                "argument group 1 in call to `cell::method::identity` uses `(` but the parameter group uses `<`"
+                "call to `cell::method::identity` supplies more argument groups than the declaration"
             )),
         "{diagnostics:#?}"
     );

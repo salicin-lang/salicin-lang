@@ -3,13 +3,13 @@ let Vec = alloc.Vec
 let resource = struct { value: i32 }
 
 extend(resource) {
-  let read(self: Borrow<self>)(): i32 = { self.value }
+  let read = (self: Borrow<self>)(): i32 => { self.value }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let mut values: Vec<resource> = Vec<resource>.new()
-  values.push(resource{ value: 20 })
-  values.push(resource{ value: 0 })
+  values.push(resource { value: 20 })
+  values.push(resource { value: 0 })
   let first = do {
     let reference = values.at(0)
     reference.read()

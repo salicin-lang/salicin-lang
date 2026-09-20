@@ -1,15 +1,15 @@
-let state<s: type> = effect {
-  let get(): s
-  let put(move value: s): ()
+let state = <s: type> effect {
+  let get = (): s
+  let put = (move value: s): ()
 }
 
-let add_two(value: i32): i32 = { value + 2 }
+let add_two = (value: i32): i32 => { value + 2 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let mut state_value = 40
-  state<i32>.handle{
-    get: { (resume) -> resume(state_value) },
-    put: { (value, resume) ->
+  state<i32>.handle {
+    get: (resume) => { resume(state_value) },
+    put: (value, resume) => {
       state_value = value;
       resume(())
     },

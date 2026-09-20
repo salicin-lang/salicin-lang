@@ -3,7 +3,7 @@ let pair = struct {
   right: i32,
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let pair = pair{ left: 20, right: 22 }
   let pointer = ptr(borrow(pair))
   (*pointer).left

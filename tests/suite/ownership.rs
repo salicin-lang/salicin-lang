@@ -882,15 +882,15 @@ edition = "2026"
     );
     project.write(
         "src/main.sc",
-        "let main(): i32 = {\n  let cell = api.cell.new(42)\n  cell.take()\n}\n",
+        "let main = (): i32 => {\n  let cell = api.cell.new(42)\n  cell.take()\n}\n",
     );
     project.write(
         "src/api.sc",
-         "pub(package) let cell<t: type> = struct { value: t }\n\
-          extend(cell<t>) {\n\
-            let new(move value: t): cell<t> = { cell{ value: value } }\n\
-           let take(move self)(): t = { self.value }\n\
-         }\n",
+         "pub(package) let cell = <t: type> struct { value: t }\n\
+             extend(cell<t>) {\n\
+             let new = (move value: t): cell<t> => { cell{ value: value } }\n\
+             let take = (move self)(): t => { self.value }\n\
+             }\n",
     );
 
     let output = salic()
@@ -914,22 +914,22 @@ edition = "2026"
     );
     project.write(
         "src/main.sc",
-        "let main(): i32 = {\n  api.cell.new().choose<i32>(42)\n}\n",
+        "let main = (): i32 => {\n  api.cell.new().choose<i32>(42)\n}\n",
     );
     project.write(
         "src/api.sc",
         "pub(package) let choose = trait {\n\
-           let choose<value_type: type>(self: Borrow<self>)(move value: value_type): value_type\n\
-         }\n\
-         pub(package) let cell = struct {}\n\
-         extend(cell, choose) {\n\
-           let choose<result: type>(self: Borrow<self>)(move value: result): result = {\n\
+             let choose = <value_type: type>(self: Borrow<self>)(move value: value_type): value_type\n\
+             }\n\
+             pub(package) let cell = struct {}\n\
+             extend(cell, choose) {\n\
+             let choose = <result: type>(self: Borrow<self>)(move value: result): result => {\n\
              value\n\
-           }\n\
-         }\n\
-         extend(cell) {\n\
-            let new(): cell = { cell{} }\n\
-         }\n",
+             }\n\
+             }\n\
+             extend(cell) {\n\
+             let new = (): cell => { cell{} }\n\
+             }\n",
     );
 
     let output = salic()
@@ -956,7 +956,7 @@ path = "src/lib.sc"
     );
     project.write(
         "dep/src/lib.sc",
-        "pub let cell<t: type> = struct { pub value: t }\n",
+        "pub let cell = <t: type> struct { pub value: t }\n",
     );
     project.write(
         "app/salicin.toml",
@@ -972,9 +972,9 @@ dep = { path = "../dep" }
     project.write(
         "app/src/main.sc",
         "extend(dep.cell<t>) {\n\
-           let take(move self)(): t = { self.value }\n\
-         }\n\
-         let main(): i32 = { 0 }\n",
+             let take = (move self)(): t => { self.value }\n\
+             }\n\
+             let main = (): i32 => { 0 }\n",
     );
 
     let output = salic()
@@ -1012,7 +1012,7 @@ fn raw_allocator_abi_can_be_replaced_by_strong_link_symbols() {
     let directory = TestDirectory::new();
     let source = directory.write(
         "main.sc",
-        "let main(): i32 = {\n  let pointer = unsafe { raw_alloc<i32>(4, 4) }\n  unsafe { *pointer = 42 }\n  unsafe { raw_dealloc(pointer, 4, 4) }\n  0\n}\n",
+        "let main = (): i32 => {\n  let pointer = unsafe { raw_alloc<i32>(4, 4) }\n  unsafe { *pointer = 42 }\n  unsafe { raw_dealloc(pointer, 4, 4) }\n  0\n}\n",
     );
     let ir = directory.join("main.ll");
     let executable = directory.join("main");
@@ -1030,7 +1030,8 @@ fn raw_allocator_abi_can_be_replaced_by_strong_link_symbols() {
     assert!(emitted.status.success(), "{}", output_text(&emitted));
 
     let runtime = Path::new(env!("CARGO_MANIFEST_DIR")).join("runtime/allocator.c");
-    let linked = Command::new("/usr/bin/clang")
+    let linked = Command::new("clang")
+        .arg("-Qunused-arguments")
         .args(["-Wno-override-module", "-x", "ir"])
         .arg(&ir)
         .args(["-x", "c", "-std=c11"])
@@ -1053,7 +1054,7 @@ fn vec_drop_releases_its_allocation_through_the_allocator_abi() {
     let directory = TestDirectory::new();
     let source = directory.write(
         "main.sc",
-        "use alloc.Vec\n\nlet main(): i32 = {\n  let values: Vec<i32> = Vec<i32>.new()\n  values.len()\n  0\n}\n",
+        "use alloc.Vec\n\nlet main = (): i32 => {\n  let values: Vec<i32> = Vec<i32>.new()\n  values.len()\n  0\n}\n",
     );
     let ir = directory.join("main.ll");
     let executable = directory.join("main");
@@ -1071,7 +1072,8 @@ fn vec_drop_releases_its_allocation_through_the_allocator_abi() {
     assert!(emitted.status.success(), "{}", output_text(&emitted));
 
     let runtime = Path::new(env!("CARGO_MANIFEST_DIR")).join("runtime/allocator.c");
-    let linked = Command::new("/usr/bin/clang")
+    let linked = Command::new("clang")
+        .arg("-Qunused-arguments")
         .args(["-Wno-override-module", "-x", "ir"])
         .arg(&ir)
         .args(["-x", "c", "-std=c11"])
@@ -1094,9 +1096,9 @@ fn standard_library_acceptance_balances_allocations_on_return_and_throw() {
     let directory = TestDirectory::new();
     let source = directory.write(
         "main.sc",
-        r#"let live_allocations(): i64 = foreign(c, "live_allocations")
+        r#"let live_allocations = (): i64 foreign(c, "live_allocations")
 
-let exercise: with<core.error.throwing<core.string.String>>(fail: bool): () = {
+let exercise = with<core.error.throwing<core.string.String>>(fail: bool): () => {
   let mut writer = alloc.string.StringWriter.new()
   "柳".display(writer)
   let number: i64 = 42
@@ -1110,7 +1112,7 @@ let exercise: with<core.error.throwing<core.string.String>>(fail: bool): () = {
   }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let success: core.Result<core.string.String><()> = try { exercise(false) }
   match(success) { Err(_) => return(1), Ok(_) => (), }
   if(unsafe { live_allocations() } != 0) { return(2) }
@@ -1153,7 +1155,8 @@ let main(): i32 = {
     assert!(emitted.status.success(), "{}", output_text(&emitted));
 
     let runtime = Path::new(env!("CARGO_MANIFEST_DIR")).join("runtime/allocator.c");
-    let linked = Command::new("/usr/bin/clang")
+    let linked = Command::new("clang")
+        .arg("-Qunused-arguments")
         .args(["-Wno-override-module", "-x", "ir"])
         .arg(&ir)
         .args(["-x", "c", "-std=c11"])
@@ -1235,19 +1238,19 @@ fn type_constructor_aliases_cross_module_boundaries() {
     );
     project.write(
         "src/types.sc",
-        "pub(package) let cell<t: type> = struct { pub(package) value: t }\n\
-         pub(package) let family<t: type>: type = cell<t>\n\
-         pub(package) let constructor: <t: type>: type = cell\n\
-         pub(package) let scalar = i32\n",
+        "pub(package) let cell = <t: type> struct { pub(package) value: t }\n\
+             pub(package) let family = <t: type>: type cell<t>\n\
+             pub(package) let constructor: <t: type>: type = cell\n\
+             pub(package) let scalar = i32\n",
     );
     project.write(
         "src/main.sc",
         "use types.{family, constructor, scalar}\n\n\
-         let main(): scalar = {\n\
-            let left: family<i32> = family<i32>{ value: 40 }\n\
-            let right = constructor<i32>{ value: 2 }\n\
-           left.value + right.value\n\
-         }\n",
+             let main = (): scalar => {\n\
+             let left: family<i32> = family<i32>{ value: 40 }\n\
+             let right = constructor<i32>{ value: 2 }\n\
+             left.value + right.value\n\
+             }\n",
     );
 
     let output = salic()
@@ -1290,7 +1293,7 @@ fn algebraic_effect_operations_check_their_instantiated_row() {
 fn m1_struct_errors_report_their_cause() {
     for (name, expected) in [
         ("unknown_field.sc", "unknown field"),
-        ("constructor_missing_field.sc", "missing field"),
+        ("constructor_missing_field.sc", "missing argument"),
         ("constructor_duplicate_field.sc", "duplicate field"),
         ("constructor_mixed_arguments.sc", "mixed"),
         ("immutable_field_assignment.sc", "immutable"),

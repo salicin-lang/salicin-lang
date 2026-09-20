@@ -3,18 +3,18 @@ let Vec = alloc.Vec
 let resource = struct { counter: Ptr<mut><i32>, value: i32 }
 
 extend(resource) {
-  let read(self: Borrow<self>)(): i32 = { self.value }
+  let read = (self: Borrow<self>)(): i32 => { self.value }
 }
 
 extend(resource, Droppable) {
-  let drop(self: Borrow<mut><self>)(): () = {
+  let drop = (self: Borrow<mut><self>)(): () => {
     unsafe {
       *self.counter = *self.counter + 1
     }
   }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let counter = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
@@ -24,8 +24,8 @@ let main(): i32 = {
   let mut score = 0
   do {
     let mut values = Vec.new<T: resource>()
-    values.push(resource{ counter: counter, value: 1 })
-    values[0] = resource{ counter: counter, value: 40 }
+    values.push(resource { counter: counter, value: 1 })
+    values[0] = resource { counter: counter, value: 40 }
     let current = borrow(values[0])
     score = current.read()
   }

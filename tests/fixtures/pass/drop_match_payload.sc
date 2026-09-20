@@ -2,15 +2,15 @@ let resource = struct { value: i32 }
 let choice = enum { pair(resource, resource), None }
 
 extend(resource, Droppable) {
-  let drop(self: Borrow<mut><self>)(): () = {
+  let drop = (self: Borrow<mut><self>)(): () => {
     let checked = 1 / self.value
     self.value = 0
   }
 }
 
-let consume(move value: resource): () = { () }
+let consume = (move value: resource): () => { () }
 
-let inspect(move choice: choice): i32 = {
+let inspect = (move choice: choice): i32 => {
   match(choice) {
     pair(left, _) => do {
       do {
@@ -21,7 +21,7 @@ let inspect(move choice: choice): i32 = {
   }
 }
 
-let escape(move choice: choice): i32 = {
+let escape = (move choice: choice): i32 => {
   match(choice) {
     pair(left, _) => do {
       do {
@@ -32,9 +32,9 @@ let escape(move choice: choice): i32 = {
   }
 }
 
-let main(): i32 = {
-  let first = inspect(choice.pair(resource{ value: 1 }, resource{ value: 1 }))
-  let second = escape(choice.pair(resource{ value: 1 }, resource{ value: 1 }))
+let main = (): i32 => {
+  let first = inspect(choice.pair(resource { value: 1 }, resource { value: 1 }))
+  let second = escape(choice.pair(resource { value: 1 }, resource { value: 1 }))
   first + second - 42
 }
 

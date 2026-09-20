@@ -1,19 +1,19 @@
 let read = effect {
-  let read(): i32
+  let read = (): i32
 }
 
-let add_read: with<read>(base: Borrow<i32>): i32 = {
+let add_read = with<read>(base: Borrow<i32>): i32 => {
   read.read() + base
 }
 
-let update: with<read>(base: Borrow<mut><i32>): () = {
+let update = with<read>(base: Borrow<mut><i32>): () => {
   base += read.read()
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let mut base = 1
-  read.handle{
-    read: { (resume) -> resume(20) },
+  read.handle {
+    read: (resume) => { resume(20) },
     action: {
       let first = add_read(base)
       update(base)

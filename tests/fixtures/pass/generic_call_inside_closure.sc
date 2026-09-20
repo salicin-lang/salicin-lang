@@ -1,11 +1,11 @@
-let identity<t: type>(move value: t): t = { value }
+let identity = <t: type>(move value: t): t => { value }
 
-let through_closure<t: type>(move value: t): t = {
-  let apply = { (item: t) -> identity<t>(item) }
+let through_closure = <t: type>(move value: t): t => {
+  let apply = (item: t) => { identity<t>(item) }
   apply(value)
 }
 
-let main(): i32 = { through_closure<i32>(42) }
+let main = (): i32 => { through_closure<i32>(42) }
 
 test("generic_call_inside_closure.sc") {
   std.test.assert(main() == 42)

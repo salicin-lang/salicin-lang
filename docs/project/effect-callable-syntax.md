@@ -4,48 +4,44 @@ Status: accepted and implemented for Edition 2026
 
 ## Contract
 
-`with<E>(F)` is a type constructor that adds the normalized effect row `E` to
-the callable type `F`. Its operand must be callable:
+`with<E>` prefixes a callable type and adds the normalized effect row `E`:
 
 ```salicin
-with<io>((str): String)
-with<e>((i32): i32)
+with<io>(str): String
+with<e>(i32): i32
 ```
 
 The row belongs to the complete callable, including every runtime parameter
-group. `with<>((A): B)` is equivalent to the pure callable `(A): B`.
-A non-callable operand such as `with<io>(i32)` is rejected.
+group. `with<>(A): B` is equivalent to the pure callable `(A): B`.
+A callable type always ends in a colon followed by its result type.
 
-An effectful declaration places a callable-type/body boundary after its name
-and compile-time parameter groups:
+An effectful declaration places all signature groups after `=`:
 
 ```salicin
-let read: with<io>(path: str): String = { ... }
+let read = with<io>(path: str): String => ...
 
-let apply<e: effects>: with<e>
-  (action: with<e>((i32): i32))
-  (value: i32): i32 = {
+let apply = <e: effects> with<e>
+  (action: with<e>(i32): i32)
+  (value: i32): i32 => {
   action(value)
 }
 ```
 
-The first colon starts the runtime callable type; the final colon introduces
-its result. A pure declaration stays compact:
+The final colon introduces the declaration result. A pure declaration uses the
+same RHS signature structure:
 
 ```salicin
-let identity(value: i32): i32 = { value }
+let identity = (value: i32): i32 => value
 ```
 
-`let f(...): with<e>(R)` is not an effect annotation: it attempts to use
-`with` on a non-callable result and is rejected. This keeps the result
-position available for future task or computation types.
+`let f = (...): with<e>(R)` is not an effect annotation: it attempts to use
+`with` as a non-callable result and is rejected. This keeps the result position
+available for future task or computation types.
 
 ## Migration
 
-The Edition 2026 grammar and library sources use only the prefix form. The
-parser temporarily accepts the former postfix form as migration input, but it
-is not canonical syntax and new documentation, fixtures, and formatter tests
-must not produce it. A later edition may remove that compatibility path.
+The Edition 2026 grammar, library sources, documentation, and fixtures use only
+the prefix effect form and colon-delimited callable results.
 
 The surface rewrite does not change the semantic representation:
 `Type::Function` continues to carry one normalized row. It therefore does not

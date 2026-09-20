@@ -1,14 +1,14 @@
 let abort = effect {
-  let stop(value: i32): never
+  let stop = (value: i32): never
 }
 
-let fail: with<abort>(): never = {
+let fail = with<abort>(): never => {
   abort.stop(42)
 }
 
-let main(): i32 = {
-  abort.handle{
-    stop: { (value) -> value },
+let main = (): i32 => {
+  abort.handle {
+    stop: (value) => { value },
     action: {
       fail()
     },

@@ -1,6 +1,6 @@
-let identity<t: type>(move value: t): t = { value }
+let identity = <t: type>(move value: t): t => { value }
 
-let main(): i32 = {
+let main = (): i32 => {
   let value: i64 = identity(42)
   if(value == 42) { 42 } else: { 0 }
 }

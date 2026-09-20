@@ -24,10 +24,10 @@ the contract requires it. Conditions are eager where their source order requires
 Conceptually, `if` has this shape:
 
 ```sc fragment
-let if<e: effects, T: type>: with<e>
+let if = <e: effects, T: type> with<e>
   (condition: bool)
-  {move then: with<e>((): T)}
-  {move else: with<e>((): T)}: T
+  {move then: with<e>(): T}
+  {move else: with<e>(): T}: T
 ```
 
 The ordinary surface form:
@@ -49,6 +49,9 @@ must therefore preserve these properties:
 - produce one common result type, allowing `never` coercion.
 
 `while(condition) { ... }` evaluates its condition before each iteration.
+
+When a `for` iterable itself ends in a Brace pattern body, parenthesize that
+application to separate it from the loop body: `for (make { x -> x }) { (item) => ... }`.
 `do { ... } while: { condition }` evaluates its condition after each iteration.
 These and `if(condition) { ... } else: { ... }` are the sole spellings; the
 language has no unlabeled-condition or named-closure aliases. `loop` has the
@@ -78,7 +81,7 @@ begin. Deferred actions therefore cannot change the selected exit value. A `cont
 registered in the iteration body before starting the next iteration; a break or continue belonging
 to a nested loop does not exit an enclosing lexical scope outside that loop.
 
-`defer` is valid only as a standalone statement. Its action has type `with<e>((): ())`, so ordinary
+`defer` is valid only as a standalone statement. Its action has type `with<e>(): ()`, so ordinary
 effect checking and handler selection apply to the invocation. Lowering must preserve the action's
 capture ownership and must not expose compiler-generated binding names in diagnostics.
 
@@ -141,8 +144,8 @@ Compiler-generated internal match names must never appear in user diagnostics.
 
 ```sc fragment
 let Iterator = trait {
-  let Item<r: region>: type
-  let next<r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>>
+  let Item = <r: region>: type
+  let next = <r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>>
 }
 ```
 

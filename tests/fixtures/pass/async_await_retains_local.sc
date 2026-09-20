@@ -1,11 +1,11 @@
 let Poll = core.async.Poll
 let Future = core.async.Future
 
-let child() = {
+let child = () => {
   async { 1 }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let mut future = async {
     let first = 41
     let copy = first

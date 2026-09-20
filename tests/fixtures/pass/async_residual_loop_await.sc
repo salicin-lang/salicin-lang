@@ -2,7 +2,7 @@ let Future = core.async.Future
 let Poll = core.async.Poll
 
 let ask = effect {
-  let ask(): bool
+  let ask = (): bool
 }
 
 let step = struct {
@@ -12,7 +12,7 @@ let step = struct {
 }
 
 extend(step, Droppable) {
-  let drop(self: Borrow<mut><self>)(): () = {
+  let drop = (self: Borrow<mut><self>)(): () => {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -22,9 +22,9 @@ extend(step, Droppable) {
 extend(step, Future<()>) {
   let Output = bool;
 
-  let poll<r: region>
+  let poll = <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<bool> = {
+    (): Poll<bool> => {
     if(self.pending) {
       Poll<bool>.Pending
     } else: {
@@ -33,34 +33,34 @@ extend(step, Future<()>) {
   }
 }
 
-let make_step: with<ask>(drops: Ptr<mut><i32>, pending: bool): step = {
-  step{ drops: drops, pending: pending, done: ask.ask() }
+let make_step = with<ask>(drops: Ptr<mut><i32>, pending: bool): step => {
+  step { drops: drops, pending: pending, done: ask.ask() }
 }
 
-let next(calls: Ptr<mut><i32>): bool = {
+let next = (calls: Ptr<mut><i32>): bool => {
   unsafe {
     *calls = *calls + 1
     *calls == 3
   }
 }
 
-let record_false(calls: Ptr<mut><i32>): bool = {
+let record_false = (calls: Ptr<mut><i32>): bool => {
   unsafe {
     *calls = *calls + 1
   }
   false
 }
 
-let continue_once(calls: Ptr<mut><i32>): bool = {
+let continue_once = (calls: Ptr<mut><i32>): bool => {
   unsafe {
     *calls = *calls + 1
     *calls == 1
   }
 }
 
-let run_success(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
-  ask.handle{
-    ask: { (resume) -> resume(next(calls)) },
+let run_success = (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 => {
+  ask.handle {
+    ask: (resume) => { resume(next(calls)) },
     action: {
       let mut future = async {
         loop {
@@ -84,9 +84,9 @@ let run_success(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   }
 }
 
-let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
-  ask.handle{
-    ask: { (resume) -> resume(record_false(calls)) },
+let run_cancelled = (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 => {
+  ask.handle {
+    ask: (resume) => { resume(record_false(calls)) },
     action: {
       let mut future = async {
         loop {
@@ -104,10 +104,10 @@ let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   }
 }
 
-let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
-  ask.handle{
-    ask: {
-      (resume) -> if(continue_once(calls)) {
+let run_abandoned = (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 => {
+  ask.handle {
+    ask: (resume) => {
+      if(continue_once(calls)) {
         resume(false)
       } else: {
         42
@@ -130,7 +130,7 @@ let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

@@ -1,8 +1,8 @@
-let pair<t: type> = struct { first: bool, second: t }
+let pair = <t: type> struct { first: bool, second: t }
 
-let layout_sum<t: type>(): u64 = { size_of<t> + align_of<t> }
+let layout_sum = <t: type>(): u64 => { size_of<t> + align_of<t> }
 
-let main(): i32 = {
+let main = (): i32 => {
   if(layout_sum<pair<i64>>() == 24) {
     42
   } else: {

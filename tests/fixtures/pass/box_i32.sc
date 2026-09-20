@@ -1,6 +1,6 @@
 let Box = alloc.Box
 
-let main(): i32 = {
+let main = (): i32 => {
   Box.new(42).read()
 }
 

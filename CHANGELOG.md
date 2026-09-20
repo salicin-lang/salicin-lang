@@ -378,7 +378,7 @@ subset.
 
 - Replaced boolean-returning test registrations and the dedicated
   `core.testing.failure` effect with one canonical callable contract:
-  `with<core.error.throwing<core.string.string>>((): ())`.
+  `with<core.error.throwing<core.string.string>>() {()}`.
 - Migrated all source test fixtures to unit-returning assertion bodies;
   failures now always throw an owned UTF-8 message, while normal `()` return
   passes.
@@ -1335,7 +1335,7 @@ subset.
   `move(P: parameters): parameters` functions in `core.passing`. Also allowed `bool` and
   user-declared closed types in compile-time parameter groups with typed defaults and stable
   monomorphization identities. Runtime parameter prefixes now accept
-  `M: (P: parameters): parameters` function parameters and compose parameter-schema modifiers
+  `M: (P: parameters) {parameters` function parameters and compose parameter-schema modifiers}
   rather than using a parser-only passing slot.
 - Unified shared and mutable raw pointers under the access-parameterized
   `Ptr(A: access = shared)(T: type)` family. `Ptr(T)` remains the shared spelling,
@@ -1469,7 +1469,7 @@ subset.
 ## 0.182.0 - 2026-07-22
 
 - Split trait parameters from the implemented subject by adding explicit trait self-kind headers
-  such as `trait(Self: type)` and `trait(Self: (Value: type): type)`. Omitting the header still
+  such as `trait(Self: type)` and `trait(Self: (Value: type) {type})`. Omitting the header still
   means `Self: type`, so `let Copy = trait {}` remains the simple first-order form.
 - Migrated `core.algebra` to `Self`-subject protocols, with `Monoid where Self: Semigroup`.
 - Migrated `core.functional` to higher-kinded `Self` subjects. `map`, `apply`, and `flat_map` are
@@ -1717,7 +1717,7 @@ subset.
 - Added a dedicated constructor-trait-implementation header table so generic nominal constructors can
   implement marker traits whose first compile-time parameter is a matching type-constructor kind.
 - Allowed declarations such as `extend(Carrier, Higher) {}` and `extend(Carrier, Tagged(i32)) {}` when
-  `Higher`/`Tagged` abstract over `F: (Value: type): type`, including duplicate, arity, orphan, and
+  `Higher`/`Tagged` abstract over `F: (Value: type) {type`}, including duplicate, arity, orphan, and
   unsupported-member diagnostics.
 - Kept constructor trait implementations limited to marker traits for now; generic method lowering,
   associated types, `where` clauses, and executable implementations of `Functor`/`Applicative`/`Monad`
@@ -1725,9 +1725,9 @@ subset.
 
 ## 0.156.0 - 2026-07-22
 
-- Added constructor compile-time kinds such as `F: (Value: type): type` and
-  `E: (Error: type): effect` to the AST and parser, with disambiguating lookahead so function types
-  like `action: (): T with<E>` remain runtime parameter types rather than compile-time parameters.
+- Added constructor compile-time kinds such as `F: (Value: type) {type` and}
+  `E: (Error: type) {effect` to the AST and parser}, with disambiguating lookahead so function types
+  like `action: () {T with<E>` remain runtime parameter types rather than compile-time parameters.}
 - Extended trait signature validation to understand type-constructor parameters in method types and
   effect-constructor parameters in `with<...>` rows, while keeping constructor-valued generic
   functions and trait implementations explicitly unsupported with diagnostics.
@@ -2245,7 +2245,7 @@ subset.
 
 - Added transparent concrete aliases and parameterized type-family aliases.
 - Added first-class type-constructor binding syntax such as
-  `let Constructor: (T: type): type = Box` without a runtime representation.
+  `let Constructor: (T: type) {type}= Box` without a runtime representation.
 - Expanded aliases across signatures, bodies, constructors, traits, extensions, and modules before
   semantic lowering while preserving nominal identity and constructor inference.
 - Added deterministic diagnostics for recursive aliases and constructor-arity mismatches.

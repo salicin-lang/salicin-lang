@@ -1,4 +1,4 @@
-let main(): i32 = {
+let main = (): i32 => {
   let mut value = 8
   value += 4
   value -= 2

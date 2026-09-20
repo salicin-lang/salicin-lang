@@ -68,7 +68,8 @@ pub(crate) fn test_allocator_object() -> &'static Path {
             std::env::temp_dir().join(format!("salic-test-allocator-{}.c", std::process::id()));
         let object = source.with_extension("o");
         fs::write(&source, TEST_ALLOCATOR_RUNTIME).expect("write test allocator runtime");
-        let output = Command::new("/usr/bin/clang")
+        let output = Command::new("clang")
+            .arg("-Qunused-arguments")
             .arg("-c")
             .arg("-x")
             .arg("c")
@@ -88,7 +89,8 @@ pub(crate) fn link_and_run_ir(ir: &str, description: &str) -> Output {
     let temporary = TestDirectory::new();
     let ir_path = temporary.write("module.ll", ir);
     let executable = temporary.join("program");
-    let linked = Command::new("/usr/bin/clang")
+    let linked = Command::new("clang")
+        .arg("-Qunused-arguments")
         .arg("-Wno-override-module")
         .arg("-x")
         .arg("ir")
@@ -115,7 +117,8 @@ pub(crate) fn link_and_run_ir_with_c(ir: &str, c_source: &str, description: &str
     let ir_path = temporary.write("module.ll", ir);
     let c_path = temporary.write("interop.c", c_source);
     let executable = temporary.join("program");
-    let linked = Command::new("/usr/bin/clang")
+    let linked = Command::new("clang")
+        .arg("-Qunused-arguments")
         .arg("-Wno-override-module")
         .arg("-std=c11")
         .arg("-x")
@@ -373,7 +376,7 @@ pub(crate) fn check_passing_fixture_corpus() -> Result<(), Vec<String>> {
             let mut sources = vec![SourceUnit {
                 path: format!("<pass-fixture-root-{index}>"),
                 module_path: Vec::new(),
-                source: "let main(): i32 = { 42 }\n".to_owned(),
+                source: "let main = (): i32 => { 42 }\n".to_owned(),
                 is_root: true,
             }];
             sources.extend_from_slice(fixtures);

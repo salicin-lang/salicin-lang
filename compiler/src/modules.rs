@@ -3874,8 +3874,7 @@ impl Resolver {
                     .first()
                     .is_some_and(|first| value_scope.contains(first))
                 {
-                    if let Some((canonical, consumed)) = self.resolve_longest_prefix(path, context)
-                    {
+                    if let Some((canonical, consumed)) = self.resolve_longest_prefix(path, context) {
                         let mut resolved = vec![canonical];
                         resolved.extend(path[consumed..].iter().cloned());
                         *path = resolved;

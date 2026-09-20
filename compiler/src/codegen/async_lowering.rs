@@ -2152,8 +2152,7 @@ impl Analyzer {
         });
         let mut branch_start_helpers = Vec::new();
         if let (Ty::Enum(branch_name), Some((_, _, _, branch_types))) =
-            (&awaited.ty, branch_factory.as_ref())
-        {
+            (&awaited.ty, branch_factory.as_ref()) {
             for (variant, branch_ty) in branch_types.iter().enumerate() {
                 let helper = format!("{start_helper}$branch${variant}");
                 let local = 50_100 + variant;

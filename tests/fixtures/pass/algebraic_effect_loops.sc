@@ -1,11 +1,11 @@
 let tick = effect {
-  let tick(): i32
+  let tick = (): i32
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let mut count = 0
-  tick.handle{
-    tick: { (resume) -> resume(1) },
+  tick.handle {
+    tick: (resume) => { resume(1) },
     action: {
       while(count + tick.tick() <= 2) {
         count += 1

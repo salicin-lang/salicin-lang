@@ -1,5 +1,5 @@
 let step = effect {
-  let delta(): i32
+  let delta = (): i32
 }
 
 let state = struct {
@@ -9,41 +9,41 @@ let state = struct {
 }
 
 extend(state, Droppable) {
-  let drop(self: Borrow<mut><self>)(): () = {
+  let drop = (self: Borrow<mut><self>)(): () => {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let update: with<step>(left: Borrow<mut><i32>, right: Borrow<mut><i32>): () = {
+let update = with<step>(left: Borrow<mut><i32>, right: Borrow<mut><i32>): () => {
   let delta = step.delta()
   left = left + delta
   right = right + delta
 }
 
-let program: with<step>(drops: Ptr<mut><i32>): i32 = {
-  let mut state = state{ left: 20, right: 20, drops: drops }
+let program = with<step>(drops: Ptr<mut><i32>): i32 => {
+  let mut state = state { left: 20, right: 20, drops: drops }
   update(state.left, state.right)
   state.left + state.right
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *drops = 0 }
 
-  let resumed = step.handle{
-    delta: { (resume) ->
+  let resumed = step.handle {
+    delta: (resume) => {
       resume(1)
     },
     action: {
       program(drops)
     },
   }
-  let abandoned = step.handle{
-    delta: { (_) ->
+  let abandoned = step.handle {
+    delta: (_) => {
       40
     },
     action: {

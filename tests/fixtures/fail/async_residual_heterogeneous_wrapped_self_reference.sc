@@ -2,7 +2,7 @@ let Future = core.async.Future
 let Poll = core.async.Poll
 
 let ask = effect {
-  let ask(): i32
+  let ask = (): i32
 }
 
 let first = struct {
@@ -16,9 +16,9 @@ let second = struct {
 extend(first, Future<()>) {
   let Output = i32;
 
-  let poll<r: region>
+  let poll = <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<i32> = {
+    (): Poll<i32> => {
     Poll<i32>.Ready(self.value)
   }
 }
@@ -26,14 +26,14 @@ extend(first, Future<()>) {
 extend(second, Future<()>) {
   let Output = i32;
 
-  let poll<r: region>
+  let poll = <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<i32> = {
+    (): Poll<i32> => {
     Poll<i32>.Ready(self.value)
   }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let future = async {
     let value = 1
     let reference: Borrow<i32> = borrow(value)

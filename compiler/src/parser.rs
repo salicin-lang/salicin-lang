@@ -156,7 +156,7 @@ impl Parser {
                 uses.extend(self.use_declaration(visibility)?);
             } else if self.at_context_ident("extern") {
                 return Err(self.error_here(
-                    "grouped `extern` declarations have been removed; use `let name(...): result = foreign(c, \"symbol\")`",
+                    "grouped `extern` declarations have been removed; use `let name = (...): result foreign(c, \"symbol\")`",
                 ));
             } else if self.at_context_ident("test") {
                 if visibility != Visibility::Private {
@@ -248,6 +248,8 @@ impl Parser {
                     "core.error.throwing".to_owned(),
                     vec![Type::Named("core.string.String".to_owned(), Vec::new())],
                 )],
+                // Tests lower to private zero-argument runner functions; this
+                // delimiter is the runner ABI, not the source `test { body }` group.
                 group_delimiters: vec![GroupDelimiter::Parenthesis],
                 ..FunctionEffects::default()
             },
@@ -469,11 +471,42 @@ impl Parser {
         let mutable = self.take(&TokenKind::Mut);
         let name = self.declaration_name()?;
 
+        let rhs_signature = self.take(&TokenKind::Equal);
+        if !rhs_signature
+            && (self.current_group_delimiter().is_some() || self.at_context_ident("with"))
+        {
+            return Err(self.error_here("declaration signature groups must follow `=`"));
+        }
+
         let (compile_groups, groups, mut effects, has_callable_boundary, mut has_effect_clause) =
             self.declaration_groups(false, &[])?;
 
         if mutable && (!compile_groups.is_empty() || !groups.is_empty()) {
             return Err(self.error_here("`let mut` cannot declare a function"));
+        }
+
+        if rhs_signature
+            && groups.is_empty()
+            && !compile_groups.is_empty()
+            && self.at(&TokenKind::Colon)
+            && self.at_offset(1, &TokenKind::Type)
+        {
+            self.advance();
+            self.advance();
+            self.take_newlines_if_followed_by(&[TokenKind::Ident("builtin".to_owned())]);
+            if self.at_context_ident("builtin") {
+                self.consume_builtin_initializer()?;
+                return self.type_form_definition(name, compile_groups, mutable, true);
+            }
+            if self.at_separator() || self.at(&TokenKind::Eof) || self.at(&TokenKind::RBrace) {
+                return self.type_form_definition(name, compile_groups, mutable, false);
+            }
+            let target = self.type_expr()?;
+            return Ok(Item::TypeAlias(TypeAliasDef {
+                name,
+                compile_groups,
+                target,
+            }));
         }
 
         if groups.is_empty() && self.at(&TokenKind::Colon) {
@@ -556,7 +589,29 @@ impl Parser {
         self.effect_parameters_in_scope.clear();
 
         if !compile_groups.is_empty() || !groups.is_empty() {
-            self.take_newlines_if_followed_by(&[TokenKind::Where, TokenKind::Equal]);
+            self.take_newlines_if_followed_by(&[
+                TokenKind::Where,
+                TokenKind::Equal,
+                TokenKind::FatArrow,
+                TokenKind::Ident("requires".to_owned()),
+            ]);
+        }
+
+        if rhs_signature && self.at(&TokenKind::Newline) {
+            let mut next = self.index;
+            while matches!(self.tokens.get(next).map(|token| &token.kind), Some(TokenKind::Newline)) {
+                next += 1;
+            }
+            let continues = match self.tokens.get(next).map(|token| &token.kind) {
+                Some(TokenKind::LBrace | TokenKind::FatArrow) => true,
+                Some(TokenKind::Ident(name)) => {
+                    matches!(name.as_str(), "requires" | "builtin" | "foreign")
+                }
+                _ => false,
+            };
+            if continues {
+                self.skip_newlines();
+            }
         }
 
         if self.at(&TokenKind::Where) {
@@ -567,7 +622,44 @@ impl Parser {
         let mut where_predicates = Vec::new();
         self.take_newlines_if_followed_by(&[TokenKind::Equal]);
 
-        if !self.at(&TokenKind::Equal) && (!compile_groups.is_empty() || !groups.is_empty()) {
+        if rhs_signature
+            && annotation.is_none()
+            && !has_effect_clause
+            && matches!(groups.as_slice(), [group] if group.iter().all(|parameter| {
+                parameter.mode == PassMode::Inferred
+                    && parameter.access.is_none()
+                    && parameter.modifiers.is_empty()
+                    && parameter.region.is_none()
+            }))
+            && effects.group_delimiters == [GroupDelimiter::Brace]
+            && (self.at_separator() || self.at(&TokenKind::Eof) || self.at(&TokenKind::RBrace))
+        {
+            let fields = groups
+                .into_iter()
+                .next()
+                .expect("one brace declaration group")
+                .into_iter()
+                .map(|parameter| Field {
+                    visibility: Visibility::Private,
+                    name: parameter.name,
+                    ty: parameter.ty,
+                })
+                .collect();
+            return Ok(Item::Struct(StructDef {
+                name,
+                compile_groups,
+                representation: StructRepresentation::Salicin,
+                derives: Vec::new(),
+                fields,
+            }));
+        }
+
+        if (rhs_signature
+            && (self.at_separator() || self.at(&TokenKind::Eof) || self.at(&TokenKind::RBrace)))
+            || (!rhs_signature
+                && !self.at(&TokenKind::Equal)
+                && (!compile_groups.is_empty() || !groups.is_empty()))
+        {
             return Ok(Item::Function(Function {
                 name,
                 foreign: None,
@@ -581,7 +673,9 @@ impl Parser {
             }));
         }
 
-        self.expect(&TokenKind::Equal, "`=`")?;
+        if !rhs_signature {
+            self.expect(&TokenKind::Equal, "`=` before a declaration value")?;
+        }
 
         if self.at_context_ident("requires") {
             self.advance();
@@ -783,8 +877,9 @@ impl Parser {
                 && compile_groups.len() == 1
                 && compile_groups[0].len() == 1
                 && compile_groups[0][0].kind == Sort::ParameterModifier;
-            if transparent_modifier && !self.at(&TokenKind::LBrace) {
-                let body = self.expression(true)?;
+            if transparent_modifier {
+                self.expect(&TokenKind::FatArrow, "`=>` before callable implementation")?;
+                let body = self.callable_body()?;
                 return Ok(Item::Function(Function {
                     name,
                     foreign: None,
@@ -797,12 +892,8 @@ impl Parser {
                     body: Some(body),
                 }));
             }
-            if !self.at(&TokenKind::LBrace) {
-                return Err(self.error_here(
-                    "named closure declarations require a braced body; write `= { expression }`",
-                ));
-            }
-            let body = self.block()?;
+            self.expect(&TokenKind::FatArrow, "`=>` before callable implementation")?;
+            let body = self.callable_body()?;
             Ok(Item::Function(Function {
                 name,
                 foreign: None,
@@ -877,6 +968,7 @@ impl Parser {
                     "effect operation name `{operation}` is reserved by handler lowering"
                 )));
             }
+            self.expect(&TokenKind::Equal, "`=` before an effect operation signature")?;
             let (
                 operation_compile_groups,
                 groups,
@@ -1265,6 +1357,12 @@ impl Parser {
             return Err(self.error_at(&mutable, "extend members cannot be declared with `let mut`"));
         }
         let name = self.expect_ident("an extend member name")?;
+        let rhs_signature = self.take(&TokenKind::Equal);
+        if !rhs_signature
+            && (self.current_group_delimiter().is_some() || self.at_context_ident("with"))
+        {
+            return Err(self.error_here("declaration signature groups must follow `=`"));
+        }
 
         let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
             self.declaration_groups(true, &[])?;
@@ -1286,7 +1384,12 @@ impl Parser {
             logical_result.map(|result| Self::apply_failure_effect(result, failure_error.clone()));
         self.effect_parameters_in_scope.clear();
         if !compile_groups.is_empty() || !groups.is_empty() {
-            self.take_newlines_if_followed_by(&[TokenKind::Where, TokenKind::Equal]);
+            self.take_newlines_if_followed_by(&[
+                TokenKind::Where,
+                TokenKind::Equal,
+                TokenKind::FatArrow,
+                TokenKind::Ident("requires".to_owned()),
+            ]);
         }
         if self.at(&TokenKind::Where) {
             return Err(self.error_here(
@@ -1295,7 +1398,10 @@ impl Parser {
         }
         let where_predicates = Vec::new();
         self.take_newlines_if_followed_by(&[TokenKind::Equal]);
-        if !self.at(&TokenKind::Equal) && (!compile_groups.is_empty() || !groups.is_empty()) {
+        if !rhs_signature
+            && !self.at(&TokenKind::Equal)
+            && (!compile_groups.is_empty() || !groups.is_empty())
+        {
             return Ok(ExtendMember::Function(Function {
                 name,
                 foreign: None,
@@ -1308,7 +1414,9 @@ impl Parser {
                 body: None,
             }));
         }
-        self.expect(&TokenKind::Equal, "`=` in extend member")?;
+        if !rhs_signature {
+            self.expect(&TokenKind::Equal, "`=` in extend member")?;
+        }
 
         let mut where_predicates = where_predicates;
         if self.at_context_ident("requires") {
@@ -1368,12 +1476,8 @@ impl Parser {
                 value: self.expression(true)?,
             }))
         } else {
-            if !self.at(&TokenKind::LBrace) {
-                return Err(self.error_here(
-                    "named closure declarations require a braced body; write `= { expression }`",
-                ));
-            }
-            let body = self.block()?;
+            self.expect(&TokenKind::FatArrow, "`=>` before callable implementation")?;
+            let body = self.callable_body()?;
             Ok(ExtendMember::Function(Function {
                 name,
                 foreign: None,
@@ -1617,7 +1721,11 @@ impl Parser {
             ]);
         }
 
-        while self.current_runtime_group_delimiter().is_some() {
+        let (mut prefix_effects, _failure_error, prefix_has_effect_clause) =
+            self.function_effect_clause()?;
+        prefix_effects.compile_group_delimiters = compile_group_delimiters.clone();
+
+        while self.runtime_parameter_group_follows() {
             runtime_group_delimiters.push(self.current_runtime_group_delimiter().unwrap());
             runtime_groups.push(
                 self.runtime_parameter_group(
@@ -1642,17 +1750,86 @@ impl Parser {
                 "compile-time parameter groups must precede runtime parameter groups",
             ));
         }
+        if self.take(&TokenKind::Ellipsis) {
+            self.layout
+                .repeated_parameter_groups
+                .push(self.previous().start_byte);
+            let schema = self.repeated_parameter_group_schema()?;
+            let Type::Named(pack, arguments) = &schema else {
+                return Err(self.error_here(
+                    "a repeated runtime parameter group requires a parameter schema",
+                ));
+            };
+            if arguments.is_empty()
+                && !compile_groups.iter().flatten().any(|parameter| {
+                    parameter.name == *pack && parameter.kind == Sort::ParameterPack
+                })
+            {
+                return Err(self.error_here(format!(
+                    "repeated runtime group `{pack}` requires a preceding `...{pack}: parameters` declaration"
+                )));
+            }
+            runtime_group_delimiters.push(GroupDelimiter::Brace);
+            runtime_groups.push(vec![Param {
+                mode: PassMode::Inferred,
+                access: None,
+                modifiers: Vec::new(),
+                region: None,
+                name: pack.clone(),
+                ty: Type::Named("$parameter$groups$expand".to_owned(), vec![schema]),
+            }]);
+            self.take_newlines_if_followed_by(&[
+                TokenKind::LParen,
+                TokenKind::LBracket,
+                TokenKind::LBrace,
+                TokenKind::Colon,
+                TokenKind::Equal,
+            ]);
+            let modifier_parameters = compile_groups
+                .iter()
+                .flatten()
+                .filter(|parameter| parameter.kind.is_parameter_modifier())
+                .map(|parameter| parameter.name.clone())
+                .collect::<HashSet<_>>();
+            while self.current_runtime_group_delimiter().is_some() {
+                if self.group_starts_with_compile_parameter() {
+                    return Err(self.error_here(
+                        "compile-time parameter groups must precede repeated runtime parameter groups",
+                    ));
+                }
+                runtime_group_delimiters.push(self.current_runtime_group_delimiter().unwrap());
+                runtime_groups.push(self.runtime_parameter_group(
+                    allow_receiver,
+                    &modifier_parameters,
+                    true,
+                )?);
+                self.take_newlines_if_followed_by(&[
+                    TokenKind::LParen,
+                    TokenKind::LBracket,
+                    TokenKind::LBrace,
+                    TokenKind::Colon,
+                    TokenKind::Equal,
+                ]);
+            }
+        }
         if !runtime_groups.is_empty() {
+            prefix_effects.group_delimiters = runtime_group_delimiters;
             return Ok((
                 compile_groups,
                 runtime_groups,
-                FunctionEffects {
-                    compile_group_delimiters,
-                    group_delimiters: runtime_group_delimiters,
-                    ..FunctionEffects::default()
-                },
-                false,
-                false,
+                prefix_effects,
+                prefix_has_effect_clause,
+                prefix_has_effect_clause,
+            ));
+        }
+
+        if prefix_has_effect_clause {
+            return Ok((
+                compile_groups,
+                runtime_groups,
+                prefix_effects,
+                true,
+                true,
             ));
         }
 
@@ -1744,6 +1921,7 @@ impl Parser {
             }]);
             self.take_newlines_if_followed_by(&[
                 TokenKind::LParen,
+                TokenKind::LBrace,
                 TokenKind::Colon,
                 TokenKind::Equal,
             ]);
@@ -1767,6 +1945,7 @@ impl Parser {
                 )?);
                 self.take_newlines_if_followed_by(&[
                     TokenKind::LParen,
+                    TokenKind::LBrace,
                     TokenKind::Colon,
                     TokenKind::Equal,
                 ]);
@@ -1784,6 +1963,97 @@ impl Parser {
             true,
             has_effect_clause,
         ))
+    }
+
+    fn runtime_parameter_group_follows(&self) -> bool {
+        let Some(initial_delimiter) = self.current_runtime_group_delimiter() else {
+            return false;
+        };
+        let terminal_brace_schema = initial_delimiter == GroupDelimiter::Brace
+            && self.brace_group_is_argument_list();
+        let mut group_start = self.index;
+        loop {
+            let Some(group_end) = self.group_end(group_start) else {
+                return false;
+            };
+            let mut next = group_end + 1;
+            if terminal_brace_schema
+                && matches!(
+                    self.tokens.get(next).map(|token| &token.kind),
+                    Some(
+                        TokenKind::Newline
+                            | TokenKind::Semicolon
+                            | TokenKind::Eof
+                            | TokenKind::RBrace
+                    )
+                )
+            {
+                return true;
+            }
+            while matches!(
+                self.tokens.get(next).map(|token| &token.kind),
+                Some(TokenKind::Newline)
+            ) {
+                next += 1;
+            }
+            match self.tokens.get(next).map(|token| &token.kind) {
+                Some(
+                    TokenKind::LBrace
+                        | TokenKind::Less
+                        | TokenKind::Colon
+                        | TokenKind::FatArrow
+                        | TokenKind::Ellipsis
+                        | TokenKind::Struct
+                        | TokenKind::Enum
+                        | TokenKind::Trait,
+                ) => return true,
+                Some(TokenKind::LParen | TokenKind::LBracket) => group_start = next,
+                Some(TokenKind::Where) => return true,
+                Some(TokenKind::Newline | TokenKind::Semicolon | TokenKind::Eof)
+                    if terminal_brace_schema =>
+                {
+                    return true;
+                }
+                Some(TokenKind::Ident(name))
+                    if matches!(
+                        name.as_str(),
+                        "requires"
+                            | "builtin"
+                            | "foreign"
+                            | "struct"
+                            | "enum"
+                            | "trait"
+                            | "effect"
+                            | "sort"
+                    ) =>
+                {
+                    return true;
+                }
+                _ => return false,
+            }
+        }
+    }
+
+    fn group_end(&self, start: usize) -> Option<usize> {
+        let mut closes = Vec::new();
+        for (index, token) in self.tokens.iter().enumerate().skip(start) {
+            match token.kind {
+                TokenKind::LParen => closes.push(TokenKind::RParen),
+                TokenKind::LBracket => closes.push(TokenKind::RBracket),
+                TokenKind::LBrace => closes.push(TokenKind::RBrace),
+                TokenKind::RParen | TokenKind::RBracket | TokenKind::RBrace => {
+                    if closes.pop().as_ref() != Some(&token.kind) {
+                        return None;
+                    }
+                    if closes.is_empty() {
+                        return Some(index);
+                    }
+                }
+                TokenKind::Eof => return None,
+                _ => {}
+            }
+        }
+        None
     }
 
     fn repeated_parameter_group_schema(&mut self) -> Result<Type, ParseError> {
@@ -2324,6 +2594,7 @@ impl Parser {
         }
         let (_, close) = self.open_group("for runtime parameters")?;
         let mut params = Vec::new();
+        while self.take(&TokenKind::Newline) {}
         if self.take(&close) {
             return Ok(params);
         }
@@ -2444,6 +2715,7 @@ impl Parser {
             });
 
             if self.take(&TokenKind::Comma) {
+                while self.take(&TokenKind::Newline) {}
                 if self.take(&close) {
                     break;
                 }
@@ -2650,8 +2922,6 @@ impl Parser {
                 self.skip_separators();
                 if self.take(&TokenKind::RParen) {
                     VariantFields::Positional(Vec::new())
-                } else if self.ident_followed_by_colon() || self.at(&TokenKind::Pub) {
-                    VariantFields::Named(self.named_type_fields_after_open()?)
                 } else {
                     let mut types = Vec::new();
                     loop {
@@ -2669,6 +2939,8 @@ impl Parser {
                     }
                     VariantFields::Positional(types)
                 }
+            } else if self.take(&TokenKind::LBrace) {
+                VariantFields::Named(self.braced_type_fields()?)
             } else {
                 VariantFields::Unit
             };
@@ -2803,6 +3075,12 @@ impl Parser {
             return Err(self.error_at(&mutable, "trait members cannot be declared with `let mut`"));
         }
         let name = self.expect_ident("a trait member name")?;
+        let rhs_signature = self.take(&TokenKind::Equal);
+        if !rhs_signature
+            && (self.current_group_delimiter().is_some() || self.at_context_ident("with"))
+        {
+            return Err(self.error_here("declaration signature groups must follow `=`"));
+        }
         let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
             self.declaration_groups(true, outer_effect_parameters)?;
         self.validate_receiver_groups(&name, &groups)?;
@@ -2822,12 +3100,17 @@ impl Parser {
                         "associated declarations cannot have runtime parameter groups",
                     ));
                 }
-                if kind == AssociatedKind::Parameters && self.at(&TokenKind::Equal) {
+                let rhs_default = rhs_signature
+                    && !self.at_separator()
+                    && !self.at(&TokenKind::RBrace);
+                if kind == AssociatedKind::Parameters
+                    && (self.at(&TokenKind::Equal) || rhs_default)
+                {
                     return Err(self
                         .error_here("default associated parameter schemas are not supported yet"));
                 }
                 self.take_newlines_if_followed_by(&[TokenKind::Equal]);
-                let default = if self.take(&TokenKind::Equal) {
+                let default = if rhs_default || self.take(&TokenKind::Equal) {
                     Some(self.type_expr()?)
                 } else {
                     None
@@ -2860,7 +3143,12 @@ impl Parser {
             );
         }
 
-        self.take_newlines_if_followed_by(&[TokenKind::Where, TokenKind::Equal]);
+        self.take_newlines_if_followed_by(&[
+            TokenKind::Where,
+            TokenKind::Equal,
+            TokenKind::FatArrow,
+            TokenKind::Ident("requires".to_owned()),
+        ]);
         if self.at(&TokenKind::Where) {
             return Err(self.error_here(
                 "colon-style trait-member predicates were removed; write `= requires(t is trait)`",
@@ -2868,7 +3156,9 @@ impl Parser {
         }
         let mut where_predicates = Vec::new();
         self.take_newlines_if_followed_by(&[TokenKind::Equal]);
-        let body = if self.take(&TokenKind::Equal) {
+        let body = if rhs_signature && (self.at_separator() || self.at(&TokenKind::RBrace)) {
+            None
+        } else if rhs_signature || self.take(&TokenKind::Equal) {
             if self.at_context_ident("requires") {
                 self.advance();
                 where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
@@ -2880,24 +3170,22 @@ impl Parser {
                             "trait requirements are abstract and cannot use `builtin()`",
                         ));
                     }
-                    if !self.at(&TokenKind::LBrace) {
-                        return Err(self.error_here(
-                            "trait default closure declarations require a braced body after `requires(...)`",
-                        ));
-                    }
-                    Some(self.block()?)
+                    self.expect(
+                        &TokenKind::FatArrow,
+                        "`=>` before trait default implementation",
+                    )?;
+                    Some(self.callable_body()?)
                 }
             } else {
                 if self.at_context_ident("builtin") {
                     return Err(self
                         .error_here("trait requirements are abstract and cannot use `builtin()`"));
                 }
-                if !self.at(&TokenKind::LBrace) {
-                    return Err(self.error_here(
-                    "trait default closure declarations require a braced body; write `= { expression }`",
-                ));
-                }
-                Some(self.block()?)
+                self.expect(
+                    &TokenKind::FatArrow,
+                    "`=>` before trait default implementation",
+                )?;
+                Some(self.callable_body()?)
             }
         } else {
             None
@@ -3048,6 +3336,26 @@ impl Parser {
     }
 
     fn function_result_type(&mut self) -> Result<Type, ParseError> {
+        if self.at(&TokenKind::LParen) && !self.parenthesized_result_is_callable() {
+            self.advance();
+            if self.take(&TokenKind::RParen) {
+                return Ok(Type::Unit);
+            }
+            let first = self.type_expr()?;
+            if !self.take(&TokenKind::Comma) {
+                self.expect(&TokenKind::RParen, "`)` after grouped result type")?;
+                return Ok(first);
+            }
+            let mut fields = vec![first];
+            while !self.take(&TokenKind::RParen) {
+                fields.push(self.type_expr()?);
+                if !self.take(&TokenKind::Comma) {
+                    self.expect(&TokenKind::RParen, "`)` after tuple result type")?;
+                    break;
+                }
+            }
+            return Ok(Type::Tuple(fields));
+        }
         if self.at_context_ident("sort")
             && self.at_offset(1, &TokenKind::Less)
             && matches!(
@@ -3077,6 +3385,47 @@ impl Parser {
         self.type_expr()
     }
 
+    fn callable_body(&mut self) -> Result<Expr, ParseError> {
+        if self.at(&TokenKind::LBrace) {
+            self.block()
+        } else {
+            self.expression(true)
+        }
+    }
+
+    fn parenthesized_result_is_callable(&self) -> bool {
+        let mut depth = 0usize;
+        let mut index = self.index;
+        while let Some(token) = self.tokens.get(index) {
+            match token.kind {
+                TokenKind::LParen => depth += 1,
+                TokenKind::RParen => {
+                    depth -= 1;
+                    if depth == 0 {
+                        let mut next = index + 1;
+                        while matches!(
+                            self.tokens.get(next).map(|token| &token.kind),
+                            Some(TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace)
+                        ) {
+                            let Some(end) = self.group_end(next) else {
+                                return false;
+                            };
+                            next = end + 1;
+                        }
+                        return self
+                            .tokens
+                            .get(next)
+                            .is_some_and(|token| token.kind == TokenKind::Colon);
+                    }
+                }
+                TokenKind::Eof => return false,
+                _ => {}
+            }
+            index += 1;
+        }
+        false
+    }
+
     fn braced_type_fields(&mut self) -> Result<Vec<Field>, ParseError> {
         self.skip_separators();
         if self.take(&TokenKind::RBrace) {
@@ -3100,32 +3449,6 @@ impl Parser {
             } else {
                 self.skip_separators();
                 self.expect(&TokenKind::RBrace, "`}` after fields")?;
-                break;
-            }
-        }
-        Ok(fields)
-    }
-
-    fn named_type_fields_after_open(&mut self) -> Result<Vec<Field>, ParseError> {
-        self.skip_separators();
-        let mut fields = Vec::new();
-        loop {
-            let visibility = self.visibility()?;
-            let name = self.expect_ident("a field name")?;
-            self.expect(&TokenKind::Colon, "`:` after field name")?;
-            fields.push(Field {
-                visibility,
-                name,
-                ty: self.type_expr()?,
-            });
-            if self.take(&TokenKind::Comma) {
-                self.skip_separators();
-                if self.take(&TokenKind::RParen) {
-                    break;
-                }
-            } else {
-                self.skip_separators();
-                self.expect(&TokenKind::RParen, "`)` after fields")?;
                 break;
             }
         }
@@ -3210,15 +3533,12 @@ impl Parser {
     fn type_expr(&mut self) -> Result<Type, ParseError> {
         if self.at_context_ident("with") {
             let (outer, _failure_error, _has_effect_clause) = self.function_effect_clause()?;
-            if !self.at(&TokenKind::LParen) {
-                return Err(self.error_here("expected the callable operand of `with<...>`"));
+            if self.current_runtime_group_delimiter() != Some(GroupDelimiter::Parenthesis) {
+                return Err(self.error_here(
+                    "`with<E>` callable operands must begin with a parenthesized parameter group",
+                ));
             }
-            self.advance();
             let operand = self.type_expr()?;
-            self.expect(
-                &TokenKind::RParen,
-                "`)` after the callable operand of `with<...>`",
-            )?;
             let Type::Function {
                 groups,
                 effects: inner,
@@ -3226,9 +3546,14 @@ impl Parser {
             } = operand
             else {
                 return Err(self.error_here(
-                    "`with<E>(F)` accepts only a callable type `F`; it cannot wrap an ordinary result type",
+                    "`with<E>` must prefix a callable type ending in `: Result`",
                 ));
             };
+            if inner.group_delimiters.first() != Some(&GroupDelimiter::Parenthesis) {
+                return Err(self.error_here(
+                    "`with<E>` callable operands must begin with a parenthesized parameter group",
+                ));
+            }
             let effects = self.merge_function_effects(outer, inner)?;
             return Ok(Type::Function {
                 groups,
@@ -3292,7 +3617,7 @@ impl Parser {
                 ));
             }
             self.expression_group_closers.push(second_close.clone());
-            let length_expression = self.expression(false)?;
+            let length_expression = self.expression(true)?;
             self.expression_group_closers.pop();
             let static_expression =
                 Self::static_expression(&length_expression).map_err(|message| {
@@ -3451,13 +3776,35 @@ impl Parser {
                     function: function.clone(),
                     groups: groups
                         .iter()
-                        .map(|group| {
+                        .zip(&group_delimiters)
+                        .map(|(group, delimiter)| {
+                            if *delimiter == GroupDelimiter::Brace
+                                && matches!(*group, [CallArg { label: None, value }]
+                                    if matches!(value.unlocated(), Expr::Closure(parameters, body)
+                                        if parameters.is_empty()
+                                            && matches!(body.unlocated(), Expr::Block(statements, None) if statements.is_empty())))
+                            {
+                                return Ok(Vec::new());
+                            }
                             group
                                 .iter()
                                 .map(|argument| {
+                                    let value = if *delimiter == GroupDelimiter::Brace {
+                                        match argument.value.unlocated() {
+                                            Expr::Closure(parameters, body) if parameters.is_empty() =>
+                                                match body.unlocated() {
+                                                    Expr::Block(statements, Some(tail))
+                                                        if statements.is_empty() => tail.as_ref(),
+                                                    _ => body.as_ref(),
+                                                },
+                                            value => value,
+                                        }
+                                    } else {
+                                        &argument.value
+                                    };
                                     Ok(StaticCallArg {
                                         label: argument.label.clone(),
-                                        value: Self::static_expression(&argument.value)?,
+                                        value: Self::static_expression(value)?,
                                     })
                                 })
                                 .collect::<Result<Vec<_>, _>>()
@@ -3614,28 +3961,29 @@ impl Parser {
             groups.push(group);
         }
 
-        if !self.take(&TokenKind::Colon) {
-            if groups.len() == 1 {
-                let mut fields = groups.pop().expect("one parenthesized type group");
-                if fields.is_empty() {
-                    return Ok(Type::Unit);
-                }
-                if first_group_had_comma {
-                    return Ok(Type::Tuple(fields));
-                }
-                return Ok(fields.pop().expect("one grouped type"));
-            }
-            return Err(self.error_here("function types require `:` before the result type"));
+        if self.take(&TokenKind::Colon) {
+            let logical_result = self.function_result_type()?;
+            let (mut effects, failure_error, _has_legacy_effect_clause) =
+                (FunctionEffects::default(), None, false);
+            effects.group_delimiters = group_delimiters;
+            let result = Self::apply_failure_effect(logical_result, failure_error);
+            return Ok(Type::Function {
+                groups,
+                effects,
+                result: Box::new(result),
+            });
         }
-        let logical_result = self.function_result_type()?;
-        let (mut effects, failure_error, _has_legacy_effect_clause) = self.function_effect_clause()?;
-        effects.group_delimiters = group_delimiters;
-        let result = Self::apply_failure_effect(logical_result, failure_error);
-        Ok(Type::Function {
-            groups,
-            effects,
-            result: Box::new(result),
-        })
+        if groups.len() == 1 && first_delimiter == GroupDelimiter::Parenthesis {
+            let mut fields = groups.pop().expect("one parenthesized type group");
+            if fields.is_empty() {
+                return Ok(Type::Unit);
+            }
+            if first_group_had_comma {
+                return Ok(Type::Tuple(fields));
+            }
+            return Ok(fields.pop().expect("one grouped type"));
+        }
+        Err(self.error_here("callable types require `:` before their result type"))
     }
 
     fn merge_function_effects(
@@ -4211,7 +4559,9 @@ impl Parser {
             if self.stop_before_for_body && self.brace_group_has_top_level_arrow() {
                 return None;
             }
-            return (self.previous().kind != TokenKind::Newline).then_some(delimiter);
+            return (self.previous().kind != TokenKind::Newline
+                && self.previous().end_line == self.current().line)
+                .then_some(delimiter);
         }
         self.explicit_call_delimiter_follows()
     }
@@ -4370,7 +4720,7 @@ impl Parser {
             } else {
                 let pattern = self.pattern()?;
                 let guard = if self.take(&TokenKind::If) {
-                    Some(Box::new(self.expression(false)?))
+                    Some(Box::new(self.expression(true)?))
                 } else {
                     None
                 };
@@ -4525,13 +4875,22 @@ impl Parser {
                 Ok(Expr::Name("super".into()))
             }
             TokenKind::LParen => {
+                if !self.stop_before_for_body
+                    && (self.runtime_parameter_group_follows()
+                        || self.anonymous_untyped_parameter_group_follows())
+                {
+                    return self.anonymous_function_expression();
+                }
                 self.advance();
                 if self.take(&TokenKind::RParen) {
                     return Ok(Expr::Unit);
                 }
+                let stop_before_for_body = self.stop_before_for_body;
+                self.stop_before_for_body = false;
                 let first = self.expression(true)?;
                 if !self.take(&TokenKind::Comma) {
                     self.expect(&TokenKind::RParen, "`)` after parenthesized expression")?;
+                    self.stop_before_for_body = stop_before_for_body;
                     return Ok(first);
                 }
                 let mut fields = vec![first];
@@ -4542,6 +4901,7 @@ impl Parser {
                         break;
                     }
                 }
+                self.stop_before_for_body = stop_before_for_body;
                 Ok(Expr::Tuple(fields))
             }
             TokenKind::LBracket => self.array_literal(),
@@ -4811,6 +5171,14 @@ impl Parser {
         let iterable = self.expression(true);
         self.stop_before_for_body = previous_stop_before_for_body;
         let iterable = iterable?;
+        if self.at(&TokenKind::LBrace)
+            && self.brace_group_has_top_level_arrow()
+            && self.brace_group_is_followed_by_brace()
+        {
+            return Err(self.error_here(
+                "an iterable ending in a Brace pattern body is ambiguous; parenthesize the iterable application before the `for` body",
+            ));
+        }
         if !self.at(&TokenKind::LBrace) {
             return Err(self.error_here(
                 "`for` requires a brace pattern body; write `for iterable { pattern -> body }`",
@@ -4883,6 +5251,35 @@ impl Parser {
             ],
             None,
         ))
+    }
+
+    fn brace_group_is_followed_by_brace(&self) -> bool {
+        let mut depth = 0usize;
+        let mut index = self.index;
+        while let Some(token) = self.tokens.get(index) {
+            match token.kind {
+                TokenKind::LBrace => depth += 1,
+                TokenKind::RBrace => {
+                    depth = depth.saturating_sub(1);
+                    if depth == 0 {
+                        index += 1;
+                        while matches!(
+                            self.tokens.get(index).map(|token| &token.kind),
+                            Some(TokenKind::Newline)
+                        ) {
+                            index += 1;
+                        }
+                        return matches!(
+                            self.tokens.get(index).map(|token| &token.kind),
+                            Some(TokenKind::LBrace)
+                        );
+                    }
+                }
+                _ => {}
+            }
+            index += 1;
+        }
+        false
     }
 
     fn loop_expression(&mut self) -> Result<Expr, ParseError> {
@@ -5043,6 +5440,15 @@ impl Parser {
             ));
         }
 
+        if self.runtime_parameter_group_follows()
+            || self.anonymous_untyped_parameter_group_follows()
+        {
+            let callable = self.anonymous_function_expression()?;
+            self.skip_separators();
+            self.expect(&TokenKind::RBrace, "`}` after callable block")?;
+            return Ok(callable);
+        }
+
         if self.at(&TokenKind::Arrow) {
             return Err(
                 self.error_here("zero-parameter closures do not use `->`; write `{ expression }`")
@@ -5053,7 +5459,7 @@ impl Parser {
             let pattern_start = self.index;
             if let Ok(pattern) = self.pattern() {
                 let guard = if self.take(&TokenKind::If) {
-                    Some(Box::new(self.expression(false)?))
+                    Some(Box::new(self.expression(true)?))
                 } else {
                     None
                 };
@@ -5073,22 +5479,63 @@ impl Parser {
             self.index = pattern_start;
         }
 
-        let mut groups = Vec::new();
         if self.closure_parameter_arrow_follows() {
-            while self.at(&TokenKind::LParen) {
-                groups.push(self.parameter_group()?);
-            }
-            self.expect(&TokenKind::Arrow, "`->` after closure parameters")?;
-        } else {
-            groups.push(Vec::new());
+            return Err(self.error_here(
+                "ordinary callable expressions do not use `->`; write `(parameters) => body`",
+            ));
         }
 
         let body = self.block_contents()?;
-        let mut expression = body;
-        for params in groups.into_iter().rev() {
-            expression = Expr::Closure(params, Box::new(expression));
+        Ok(Expr::Closure(Vec::new(), Box::new(body)))
+    }
+
+    fn anonymous_function_expression(&mut self) -> Result<Expr, ParseError> {
+        let mut groups = Vec::new();
+        while self.runtime_parameter_group_follows()
+            || self.anonymous_untyped_parameter_group_follows()
+        {
+            groups.push(self.parameter_group()?);
+        }
+        if self.take(&TokenKind::Colon) {
+            self.function_result_type()?;
+        }
+        self.expect(&TokenKind::FatArrow, "`=>` before callable implementation")?;
+        let mut expression = self.callable_body()?;
+        for parameters in groups.into_iter().rev() {
+            expression = Expr::Closure(parameters, Box::new(expression));
         }
         Ok(expression)
+    }
+
+    fn anonymous_untyped_parameter_group_follows(&self) -> bool {
+        if !self.untyped_closure_parameter_group_follows() {
+            return false;
+        }
+        let mut index = self.index + 1;
+        let mut depth = 1usize;
+        while let Some(token) = self.tokens.get(index) {
+            match token.kind {
+                TokenKind::LParen => depth += 1,
+                TokenKind::RParen => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return matches!(
+                            self.tokens.get(index + 1).map(|token| &token.kind),
+                            Some(
+                                TokenKind::LParen
+                                    | TokenKind::LBrace
+                                    | TokenKind::Colon
+                                    | TokenKind::FatArrow
+                            )
+                        );
+                    }
+                }
+                TokenKind::Eof => return false,
+                _ => {}
+            }
+            index += 1;
+        }
+        false
     }
 
     fn body_start_byte(&self, mut index: usize) -> usize {

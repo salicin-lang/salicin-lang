@@ -1,6 +1,6 @@
-let choose<t: type>(first: t)(second: t): t = { second }
+let choose = <t: type>(first: t)(second: t): t => { second }
 
-let main(): i32 = {
+let main = (): i32 => {
   let choose_after_zero = choose(0)
   choose_after_zero(42)
 }

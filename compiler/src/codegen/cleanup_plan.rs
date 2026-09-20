@@ -222,8 +222,7 @@ impl<'a> HirCleanupPlanner<'a> {
         if let Some(end) = end {
             cursor = end;
             if let (Some(source), Some(return_destination)) =
-                (body_stage, planner.return_destination.clone())
-            {
+                (body_stage, planner.return_destination.clone()) {
                 planner
                     .transfer(
                         cursor,
@@ -1634,8 +1633,7 @@ impl<'a> HirCleanupPlanner<'a> {
                     };
                 }
                 if let (Some(cursor), Some(variant_destination)) =
-                    (current, variant_destination.as_ref())
-                {
+                    (current, variant_destination.as_ref()) {
                     self.operation(cursor.block, CleanupOp::Init(variant_destination.path))?;
                     self.initialize_result(cursor, &result_use)?;
                 }
@@ -1694,8 +1692,7 @@ impl<'a> HirCleanupPlanner<'a> {
                 }
                 if let Some(cursor) = current {
                     if let (Some(source), Some(destination)) =
-                        (stage.as_ref(), self.return_destination.clone())
-                    {
+                        (stage.as_ref(), self.return_destination.clone()) {
                         self.transfer(cursor, source, &destination, TransferKind::Initialize)?;
                     }
                     self.emit_storage_dead_to(cursor.block, cursor.scope, self.root_scope)?;
@@ -1731,8 +1728,7 @@ impl<'a> HirCleanupPlanner<'a> {
                     return Err(self.diagnostic("HIR break has no cleanup loop frame"));
                 };
                 if let (Some(source), Some(destination)) =
-                    (stage.as_ref(), frame.result_destination.as_ref())
-                {
+                    (stage.as_ref(), frame.result_destination.as_ref()) {
                     self.transfer(cursor, source, destination, TransferKind::Initialize)?;
                 } else if value.is_none() {
                     if let Some(destination) = frame.result_destination.as_ref() {

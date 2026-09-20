@@ -1,12 +1,12 @@
-let cell<t: type> = struct { value: t }
+let cell = <t: type> struct { value: t }
 let holder = struct { cell: cell<i32> }
 
 extend(cell<t>) {
-  let take(move self)(): t = { self.value }
+  let take = (move self)(): t => { self.value }
 }
 
-let main(): i32 = {
-  let holder = holder{ cell: cell{ value: 42 } }
+let main = (): i32 => {
+  let holder = holder { cell: cell { value: 42 } }
   holder.cell.take()
 }
 

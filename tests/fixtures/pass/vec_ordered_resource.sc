@@ -3,18 +3,18 @@ let Vec = alloc.Vec
 let resource = struct { counter: Ptr<mut><i32>, value: i32 }
 
 extend(resource) {
-  let read(self: Borrow<self>)(): i32 = { self.value }
+  let read = (self: Borrow<self>)(): i32 => { self.value }
 }
 
 extend(resource, Droppable) {
-  let drop(self: Borrow<mut><self>)(): () = {
+  let drop = (self: Borrow<mut><self>)(): () => {
     unsafe {
       *self.counter = *self.counter + 1
     }
   }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let counter = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
@@ -24,13 +24,13 @@ let main(): i32 = {
   let mut score = 0
   do {
     let mut values: Vec<resource> = Vec<resource>.new()
-    values.push(resource{ counter: counter, value: 1 })
-    values.push(resource{ counter: counter, value: 3 })
-    values.insert(1)(resource{ counter: counter, value: 2 })
+    values.push(resource { counter: counter, value: 1 })
+    values.push(resource { counter: counter, value: 3 })
+    values.insert(1)(resource { counter: counter, value: 2 })
 
     let mut other: Vec<resource> = Vec<resource>.new()
-    other.push(resource{ counter: counter, value: 4 })
-    other.push(resource{ counter: counter, value: 5 })
+    other.push(resource { counter: counter, value: 4 })
+    other.push(resource { counter: counter, value: 5 })
     values.append(other)
     values.shrink_to_fit()
 
@@ -39,7 +39,7 @@ let main(): i32 = {
       removed.read()
     }
     let end = values.len()
-    values.insert(end)(resource{ counter: counter, value: 6 })
+    values.insert(end)(resource { counter: counter, value: 6 })
     let last = values.len() - 1
     let removed_last = do {
       let removed = values.remove(last)

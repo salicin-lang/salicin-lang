@@ -177,8 +177,8 @@ Implemented lexical and declaration features include:
 - UTF-8 source and NFC-normalized Unicode XID identifiers;
 - logical newlines, semicolons, line comments, and nested block comments;
 - uniform `let` declarations and mutable local value bindings;
-- prefix effect callable types `with<E>(F)` and effectful declaration
-  boundaries, with compact boundary-free syntax retained for pure functions;
+- prefix effect callable types `with<E>(A): B` and unified RHS declaration
+  signatures for pure and effectful functions;
 - the compiler-validated `std.io.io` authority identity, accepted only at the
   native `main` boundary, plus source-defined `IoErrorKind` and `IoError`;
 - private, package, and public visibility;
@@ -196,7 +196,7 @@ Implemented lexical and declaration features include:
 - explicit erased inputs for those syntax declarations:
   the one- and two-argument `foreign` overloads select the finite
   `abi.c` value, while
-  `pub let test<name: String>(move body: with<core.error.throwing<core.string.String>>((): ())): () = builtin()`
+  `pub let test = <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () builtin()`
   receives the UTF-8 name and unit-returning throwing body;
   `core.requires` receives a compile-time boolean and delayed function body.
   Trait and extension requirements remain labeled boolean header parameters,

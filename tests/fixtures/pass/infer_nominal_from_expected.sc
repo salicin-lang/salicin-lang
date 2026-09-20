@@ -1,7 +1,7 @@
-let cell<t: type> = struct { value: t }
+let cell = <t: type> struct { value: t }
 
-let main(): i32 = {
-  let cell: cell<i64> = cell{ value: 42 }
+let main = (): i32 => {
+  let cell: cell<i64> = cell { value: 42 }
   if(cell.value == 42) { 42 } else: { 0 }
 }
 

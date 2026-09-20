@@ -269,6 +269,16 @@ impl fmt::Display for Ty {
             Self::Never => f.write_str("never"),
             Self::Error => f.write_str("<error>"),
             Self::Function(function) => {
+                let mut effects = function.custom_effects.clone();
+                if function.unsafety {
+                    effects.insert(0, "unsafety".to_owned());
+                }
+                if let Some(error) = &function.failure_error {
+                    effects.push(format!("throwing<{error}>"));
+                }
+                if !effects.is_empty() {
+                    write!(f, "with<{}>", effects.join(", "))?;
+                }
                 for (group_index, group) in function.groups.iter().enumerate() {
                     let delimiter = function
                         .group_delimiters
@@ -284,19 +294,7 @@ impl fmt::Display for Ty {
                     }
                     write!(f, "{}", delimiter.closing())?;
                 }
-                f.write_str(": ")?;
-                write!(f, "{}", function.result)?;
-                let mut effects = function.custom_effects.clone();
-                if function.unsafety {
-                    effects.insert(0, "unsafety".to_owned());
-                }
-                if let Some(error) = &function.failure_error {
-                    effects.push(format!("throwing<{error}>"));
-                }
-                if !effects.is_empty() {
-                    write!(f, " with<{}>", effects.join(", "))?;
-                }
-                Ok(())
+                write!(f, ": {}", function.result)
             }
             Self::Callable(callable) => write!(f, "{}", Ty::Function(callable.signature.clone())),
             Self::Continuation { input, output } => {

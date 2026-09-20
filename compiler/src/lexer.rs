@@ -685,7 +685,7 @@ mod tests {
 
     #[test]
     fn recognizes_extend_as_a_keyword() {
-        let tokens = lex("extend(a) { let identity<t: type>(value: t) = value }").unwrap();
+        let tokens = lex("extend(a) { let identity = <t: type>(value: t): t => { value } }").unwrap();
         assert!(tokens.iter().any(|token| token.kind == TokenKind::Extend));
         assert!(tokens
             .iter()
@@ -704,7 +704,7 @@ mod tests {
     #[test]
     fn recognizes_region_parameters_and_names() {
         let tokens =
-            lex("let choose<r: region>(value: Borrow<r><i32>): Borrow<r><i32>").unwrap();
+            lex("let choose = <r: region>(value: Borrow<r><i32>): Borrow<r><i32>").unwrap();
         assert!(tokens
             .iter()
             .any(|token| token.kind == TokenKind::Ident("region".to_owned())));

@@ -1,4 +1,5 @@
 use super::*;
+use crate::ast::GroupDelimiter;
 
 impl Analyzer {
     pub(super) fn resolve_struct_constructor_name(
@@ -113,6 +114,7 @@ impl Analyzer {
             groups[0],
             &layout.fields,
             true,
+            GroupDelimiter::Brace,
             &format!("struct `{name}`"),
             context,
         );
@@ -130,6 +132,7 @@ impl Analyzer {
         enum_name: &str,
         variant: usize,
         groups: &[&[CallArg]],
+        actual_delimiters: Option<&[GroupDelimiter]>,
         context: &mut LowerCtx,
     ) -> HirExpr {
         if groups.len() != 1 {
@@ -142,6 +145,19 @@ impl Analyzer {
             return error_expr();
         };
         let variant_layout = &layout.variants[variant];
+        let expected_delimiter = if variant_layout.named {
+            GroupDelimiter::Brace
+        } else {
+            GroupDelimiter::Parenthesis
+        };
+        if actual_delimiters.is_some_and(|actual| actual != [expected_delimiter]) {
+            self.error(format!(
+                "enum variant constructor `{enum_name}.{}` must use `{}`",
+                variant_layout.name,
+                expected_delimiter.opening()
+            ));
+            return error_expr();
+        }
         if variant_layout.fields.is_empty() {
             self.error(format!(
                 "unit variant `{enum_name}.{}` is a value and must not be called",
@@ -161,6 +177,7 @@ impl Analyzer {
             groups[0],
             &variant_layout.fields,
             variant_layout.named,
+            expected_delimiter,
             &format!("variant `{enum_name}.{}`", variant_layout.name),
             context,
         );
@@ -179,95 +196,63 @@ impl Analyzer {
         arguments: &[CallArg],
         fields: &[FieldLayout],
         labels_allowed: bool,
+        delimiter: GroupDelimiter,
         constructor: &str,
         context: &mut LowerCtx,
     ) -> Vec<(usize, HirExpr)> {
-        let labeled = arguments
-            .iter()
-            .filter(|argument| argument.label.is_some())
-            .count();
-        if labeled != 0 && labeled != arguments.len() {
-            self.error(format!(
-                "cannot mix labeled and positional arguments in {constructor}"
-            ));
-            return Vec::new();
-        }
-
-        if labeled == 0 {
-            let positional = arguments
-                .iter()
-                .map(|argument| {
-                    let value = match argument.value.unlocated() {
-                        Expr::Closure(parameters, body) if parameters.is_empty() => body.as_ref(),
-                        value => value,
-                    };
-                    (argument, value)
-                })
-                .collect::<Vec<_>>();
-            let positional = if fields.is_empty()
-                && matches!(
-                    positional.as_slice(),
-                    [(_, Expr::Block(statements, None))] if statements.is_empty()
-                )
-            {
-                &[][..]
-            } else {
-                positional.as_slice()
-            };
-            if positional.len() != fields.len() {
-                self.error(format!(
-                    "argument count mismatch for {constructor}: expected {}, found {}",
-                    fields.len(),
-                    positional.len()
-                ));
-            }
-            return positional
-                .iter()
-                .zip(fields)
-                .enumerate()
-                .map(|(index, ((_, value), field))| {
-                    (
-                        index,
-                        self.lower_expr(value, Some(&field.ty), context),
-                    )
-                })
-                .collect();
-        }
-
-        if !labels_allowed {
+        if !labels_allowed && arguments.iter().any(|argument| argument.label.is_some()) {
             self.error(format!("{constructor} does not accept labeled arguments"));
             return Vec::new();
         }
-        let mut initialized = HashSet::new();
-        let mut lowered = Vec::new();
-        for argument in arguments {
-            let label = argument
-                .label
-                .as_deref()
-                .expect("all arguments are labeled");
-            let Some((index, field)) = fields
-                .iter()
-                .enumerate()
-                .find(|(_, field)| field.name == label)
-            else {
-                self.error(format!("unknown field `{label}` in {constructor}"));
-                continue;
-            };
-            if !initialized.insert(index) {
-                self.error(format!("duplicate field `{label}` in {constructor}"));
-                continue;
-            }
-            lowered.push((
-                index,
-                self.lower_expr(&argument.value, Some(&field.ty), context),
-            ));
-        }
-        for (index, field) in fields.iter().enumerate() {
-            if !initialized.contains(&index) {
-                self.error(format!("missing field `{}` in {constructor}", field.name));
+        let parameters = fields
+            .iter()
+            .map(|field| ParamSig {
+                name: field.name.clone(),
+                ty: field.ty.clone(),
+                mode: PassMode::Inferred,
+            })
+            .collect::<Vec<_>>();
+        for (index, argument) in arguments.iter().enumerate() {
+            if let Some(label) = argument.label.as_deref() {
+                if arguments[..index]
+                    .iter()
+                    .any(|previous| previous.label.as_deref() == Some(label))
+                {
+                    self.error(format!("duplicate field `{label}` in {constructor}"));
+                }
             }
         }
-        lowered
+        let Some(arguments) = self.elaborate_runtime_group(
+            constructor,
+            1,
+            delimiter,
+            arguments,
+            &parameters,
+        ) else {
+            return Vec::new();
+        };
+        arguments
+            .iter()
+            .zip(fields)
+            .enumerate()
+            .map(|(index, (argument, field))| {
+                let value = match (&field.ty, argument.value.unlocated()) {
+                    (Ty::Function(function), Expr::Closure(parameters, body)) => self
+                        .lower_noncapturing_closure_argument_as_function(
+                            parameters,
+                            body,
+                            function,
+                            &field.name,
+                            context,
+                        ),
+                    _ => self.lower_expr(&argument.value, Some(&field.ty), context),
+                };
+                (
+                    index,
+                    value,
+                )
+            })
+            .collect()
     }
 
     pub(super) fn resolve_short_variant(

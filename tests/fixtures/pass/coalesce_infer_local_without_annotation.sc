@@ -1,6 +1,6 @@
 let Option = core.Option
 
-let main(): i32 = {
+let main = (): i32 => {
   let answer = Option.None ?? 42
   answer
 }

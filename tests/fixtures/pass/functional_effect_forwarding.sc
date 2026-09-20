@@ -4,25 +4,25 @@ let Applicative = std.functional.Applicative
 let Functor = std.functional.Functor
 let Monad = std.functional.Monad
 
-let unsafe_add_one: with<unsafety>(value: i32): i32 = {
+let unsafe_add_one = with<unsafety>(value: i32): i32 => {
   value + 1
 }
 
-let unsafe_next: with<unsafety>(value: i32): Option<i32> = {
+let unsafe_next = with<unsafety>(value: i32): Option<i32> => {
   Option<i32>.Some(value + 2)
 }
 
-let read_option(value: Option<i32>): i32 = {
+let read_option = (value: Option<i32>): i32 => {
   match(value) { Some(number) => number, None => 0,
   }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let mapped = unsafe {
     Option<i32>.Some(40).map(unsafe_add_one)
   }
   let applied = unsafe {
-    let transform: Option<with<unsafety>((i32): i32)>  = Option.Some(unsafe_add_one)
+    let transform: Option<with<unsafety>(i32): i32>  = Option.Some(unsafe_add_one)
     transform.apply(Option<i32>.Some(1))
   }
   let chained = unsafe {

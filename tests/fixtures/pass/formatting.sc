@@ -3,27 +3,27 @@ let parse_u64_radix = core.fmt.parse_u64_radix
 let parse_i64_radix = core.fmt.parse_i64_radix
 let StringWriter = alloc.string.StringWriter
 
-let text_equal(left: Borrow<String>, right: Borrow<String>): bool = {
+let text_equal = (left: Borrow<String>, right: Borrow<String>): bool => {
   let left_view = left.as_str()
   let right_view = right.as_str()
   left_view == right_view
 }
 
-let parse_hex(): bool = {
+let parse_hex = (): bool => {
   let source: String = "ff"
   let view = source.as_str()
   match(parse_u64_radix(view, 16)) { Ok(value) => value == 255, Err(_) => false,
   }
 }
 
-let parse_minimum(): bool = {
+let parse_minimum = (): bool => {
   let source: String = "-9223372036854775808"
   let view = source.as_str()
   match(parse_i64_radix(view, 10)) { Ok(value) => value == -9223372036854775808, Err(_) => false,
   }
 }
 
-let rejects_overflow(): bool = {
+let rejects_overflow = (): bool => {
   let source: String = "18446744073709551616"
   let view = source.as_str()
   match(parse_u64_radix(view, 10)) {
@@ -34,31 +34,31 @@ let rejects_overflow(): bool = {
   }
 }
 
-let format_u64(value: u64): String = {
+let format_u64 = (value: u64): String => {
   let mut writer = StringWriter.new()
   value.display(writer)
   writer.finish()
 }
 
-let format_i64(value: i64): String = {
+let format_i64 = (value: i64): String => {
   let mut writer = StringWriter.new()
   value.display(writer)
   writer.finish()
 }
 
-let format_bool(value: bool): String = {
+let format_bool = (value: bool): String => {
   let mut writer = StringWriter.new()
   core.fmt.write_bool(writer)(value)
   writer.finish()
 }
 
-let format_scalar(value: core.string.UnicodeScalar): String = {
+let format_scalar = (value: core.string.UnicodeScalar): String => {
   let mut writer = StringWriter.new()
   value.display(writer)
   writer.finish()
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let maximum: u64 = 18446744073709551615
   let minimum: i64 = -9223372036854775808
   let truth: bool = true

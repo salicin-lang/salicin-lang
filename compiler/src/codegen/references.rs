@@ -330,8 +330,7 @@ impl Analyzer {
         let (expected_region, expected_mutable) = expected_requirements[0].clone();
         if !expected_requirements
             .iter()
-            .all(|requirement| *requirement == (expected_region.clone(), expected_mutable))
-        {
+            .all(|requirement| *requirement == (expected_region.clone(), expected_mutable)) {
             return;
         }
         let inferred_origin = self.reference_origin_for_hir_expr(value, context);

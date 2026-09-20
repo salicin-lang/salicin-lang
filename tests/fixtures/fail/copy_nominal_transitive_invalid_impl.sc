@@ -8,4 +8,4 @@ extend(branch, Copyable) {}
 
 extend(tree, Copyable) {}
 
-let main(): i32 = { 42 }
+let main = (): i32 => { 42 }

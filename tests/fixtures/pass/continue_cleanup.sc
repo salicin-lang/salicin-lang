@@ -1,14 +1,14 @@
 let resource = struct { counter: Ptr<mut><i32> }
 
 extend(resource, Droppable) {
-  let drop(self: Borrow<mut><self>)(): () = {
+  let drop = (self: Borrow<mut><self>)(): () => {
     unsafe {
       *self.counter = *self.counter + 1
     }
   }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let counter = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
@@ -20,7 +20,7 @@ let main(): i32 = {
   loop {
     iteration = iteration + 1
     if(iteration < 3) {
-      let resource = resource{ counter: counter }
+      let resource = resource { counter: counter }
       continue()
     }
     break()

@@ -6,7 +6,7 @@ let marker = struct {
   }
 
 extend(marker, Droppable) {
-  let drop(self: Borrow<mut><self>)(): () = {
+  let drop = (self: Borrow<mut><self>)(): () => {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -20,18 +20,18 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = marker;
 
-  let poll<r: region>
+  let poll = <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<marker> = {
-    Poll<marker>.Ready(marker{ drops: self.drops })
+    (): Poll<marker> => {
+    Poll<marker>.Ready(marker { drops: self.drops })
   }
 }
 
-let step(drops: Ptr<mut><i32>): step = {
-  step{ drops: drops }
+let step = (drops: Ptr<mut><i32>): step => {
+  step { drops: drops }
 }
 
-let main(): i32 = {
+let main = (): i32 => {
   let mut remaining = 2
   let mut drops = 0
   let remaining_ptr = ptr<mut>(borrow<mut>(remaining))

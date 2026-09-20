@@ -30,21 +30,21 @@ pub let Movable = trait {}
 `core.async` owns the allocation-free async contracts:
 
 ```sc future
-pub let Poll<T: type> = enum {
+pub let Poll = <T: type> enum {
   Pending
   Ready(T)
 }
 
-pub let Future<e: effects> = trait<requires: self is Movable> {
+pub let Future = <e: effects> trait<requires: self is Movable> {
   let Output: type
-  let poll<r: region>: with<e>
+  let poll = <r: region> with<e>
     (self: Borrow<mut><r><self>)(): Poll<Output>
 }
 
 pub let Executor = trait {
-  let run<e: effects, F: type>: with<e>
+  let run = <e: effects, F: type> with<e>
     (self: Borrow<mut><self>)
-    (move future: F): F.Output =
+    (move future: F): F.Output
     requires(F is Future<e>)
 }
 ```
@@ -153,7 +153,7 @@ nesting of anonymous futures. Conceptually, one suspended iteration completes wi
 compiler-internal outcomes:
 
 ```sc future
-let AsyncLoopStep<Carry: type, Output: type> = enum {
+let AsyncLoopStep = <Carry: type, Output: type> enum {
   IterationSkip(Carry)
   LoopExit(Output)
 }

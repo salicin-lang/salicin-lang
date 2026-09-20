@@ -1,1 +1,1 @@
-let invalid(value: ()): i32 = foreign(c)
+let invalid = (value: ()): i32 foreign(c)
