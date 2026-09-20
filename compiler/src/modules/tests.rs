@@ -488,6 +488,64 @@ fn reinfers_cross_module_extend_pattern_sorts_after_resolution() {
 }
 
 #[test]
+fn rewrites_cross_module_associated_declaration_sorts() {
+    let program = resolve_sources(&[
+        unit(
+            "src/main.sc",
+            &[],
+            "use root.api.mode\n\
+             let protocol = trait { Item: <a: mode>: type }\n\
+             let main = { (): i32 => 0 }\n",
+            true,
+        ),
+        unit(
+            "src/api.sc",
+            &["api"],
+            "pub let mode = sort<1> { shared unique }\n",
+            false,
+        ),
+    ])
+    .unwrap();
+
+    let trait_definition = program
+        .items
+        .iter()
+        .find_map(|item| match item {
+            Item::Trait(definition) => Some(definition),
+            _ => None,
+        })
+        .expect("missing resolved trait");
+    let TraitMember::AssociatedType { compile_groups, .. } = &trait_definition.members[0] else {
+        panic!("missing associated declaration");
+    };
+    assert_eq!(
+        compile_groups[0][0].kind,
+        Sort::Named("api::mode".into())
+    );
+
+    let errors = resolve_sources(&[
+        unit(
+            "src/main.sc",
+            &[],
+            "use root.api.mode\n\
+             pub let protocol = trait { Item: <a: mode>: type }\n",
+            true,
+        ),
+        unit(
+            "src/api.sc",
+            &["api"],
+            "pub(package) let mode = sort<1> { shared unique }\n",
+            false,
+        ),
+    ])
+    .unwrap_err();
+    assert!(errors.iter().any(|diagnostic| {
+        diagnostic.contains("associated declaration `protocol.Item` parameter `a` sort")
+            && diagnostic.contains("pub(package)")
+    }));
+}
+
+#[test]
 fn leaves_unknown_names_for_semantic_analysis() {
     let program = resolve_sources(&[unit(
         "src/main.sc",
@@ -1399,7 +1457,7 @@ fn validates_trait_signatures_without_treating_bound_types_as_nominals() {
         "src/valid.sc",
         &[],
         "pub let convert = <t: type> trait {\n\
-             output: type = t\n\
+             output: type\n\
              convert: <u: type>(self: Borrow<self>)(value: t): output\n\
              }\n",
         true,
@@ -1411,18 +1469,14 @@ fn validates_trait_signatures_without_treating_bound_types_as_nominals() {
         &[],
         "let hidden = struct {}\n\
              pub let expose = trait {\n\
-             output: type = hidden\n\
+             output: type\n\
              convert: (self: Borrow<self>)(value: hidden): hidden\n\
              }\n",
         true,
     )])
     .unwrap_err();
 
-    assert_eq!(errors.len(), 3, "{errors:?}");
-    assert!(errors.iter().any(|diagnostic| {
-        diagnostic.contains("associated type `expose.output` default")
-            && diagnostic.contains("private type `hidden`")
-    }));
+    assert_eq!(errors.len(), 2, "{errors:?}");
     assert!(errors.iter().any(|diagnostic| {
         diagnostic.contains("trait method `expose.convert` parameter `value`")
             && diagnostic.contains("private type `hidden`")

@@ -527,6 +527,17 @@ mod tests {
     }
 
     #[test]
+    fn preserves_trait_and_effect_member_declarations_idempotently() {
+        let source = "let marker = trait {}\nlet protocol = trait {\nItem: <r: region>: type\nArgs: <T: type>: parameters\nread: <T: type>(self)(value: T): T requires(T is marker) = value\n}\nlet state = effect {\nget: (): i32\n}\n";
+        let formatted = format_source(source).expect("format trait and effect declarations");
+        parse(&formatted).expect("formatted member declarations must reparse");
+        assert_eq!(
+            format_source(&formatted).expect("format output again"),
+            formatted
+        );
+    }
+
+    #[test]
     fn does_not_treat_closure_parameters_as_declaration_continuations() {
         let source = "let main = { (): i32 => \nlet closure = { (left: i32) =>  do {\nleft\n}\n}\nclosure(42)\n}\n";
         let expected = "let main = { (): i32 =>\n  let closure = {\n    (left: i32) =>  do {\n      left\n    }\n  }\n  closure(42)\n}\n";

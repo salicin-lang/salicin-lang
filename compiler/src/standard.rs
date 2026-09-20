@@ -8,7 +8,7 @@ use std::error::Error;
 use std::fmt;
 use std::sync::OnceLock;
 
-use crate::ast::{ExtendMember, GroupDelimiter, Item, Program, TraitMember, Type, Visibility};
+use crate::ast::{ExtendMember, GroupDelimiter, Item, Program, TraitMember, Visibility};
 use crate::manifest::Edition;
 use crate::modules::{self, PackageId, SourceUnit};
 use crate::parser;
@@ -157,22 +157,16 @@ pub(crate) fn naming_diagnostics(program: &Program, layer: &str) -> Vec<String> 
                         TraitMember::AssociatedType {
                             name,
                             compile_groups,
+                            kind,
                             ..
                         } => {
-                            check(name, "associated type", StandardNameStyle::PascalCase);
+                            let description = if *kind == crate::ast::AssociatedKind::Parameters {
+                                "associated parameter schema"
+                            } else {
+                                "associated type"
+                            };
+                            check(name, description, StandardNameStyle::PascalCase);
                             check_compile_parameters(compile_groups, &mut check);
-                        }
-                        TraitMember::Function(function)
-                            if function.groups.is_empty()
-                                && function.return_type
-                                    == Some(Type::Named("parameters".to_owned(), Vec::new())) =>
-                        {
-                            check(
-                                &function.name,
-                                "associated parameter schema",
-                                StandardNameStyle::PascalCase,
-                            );
-                            check_compile_parameters(&function.compile_groups, &mut check);
                         }
                         TraitMember::Function(function) => check_function(function, &mut check),
                     }

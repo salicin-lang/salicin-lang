@@ -286,22 +286,22 @@ self_parameter = contextual("self"), ":", compile_parameter_sort ;
 
 trait_member =
     IDENT, ":", callable_signature, [ "=", callable_body ]
-  | IDENT, ":", ( contextual("type") | contextual("parameters") ), [ "=", type ]
+  | IDENT, ":", ( contextual("type") | contextual("parameters") )
   | IDENT, ":", compile_parameter_group, { compile_parameter_group },
-    ":", ( contextual("type") | contextual("parameters") ), [ "=", type ] ;
+    ":", ( contextual("type") | contextual("parameters") ) ;
 ```
 
-Trait callable members use colon-prefixed callable type declarations:
-`name: signature` for an abstract requirement and `name: signature = body`
+Trait callable members use declarations of the form `name: signature`:
+the bodyless form declares an abstract requirement and `name: signature = body`
 for a default implementation. Associated declarations also omit `let`.
 
-Effect operations use colon-prefixed callable type declarations: they omit
-`let` and `=`, require an explicit runtime group, and have no implementation body. Their
-constructor-style names are used by qualified operation calls and handler
-arms. `Return` is reserved for handler completion.
+Effect operations use the same `name: signature` form: they omit `let` and `=`,
+require an explicit runtime group, and have no implementation body. Their names
+are used by qualified operation calls and handler arms. `Return` is reserved for
+handler completion.
 
 An associated type or associated constructor has no runtime parameter groups. Its compile-time
-groups appear before `: type`.
+groups appear before `: type`. Associated declaration defaults are not supported yet.
 
 ### 2.5 Extensions and Predicates
 

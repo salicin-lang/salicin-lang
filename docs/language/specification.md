@@ -668,9 +668,9 @@ goal); an applicable `extend(T, Iterator)` supplies implementation evidence. Ass
 bindings add projection-equality constraints to the same goal. Trait declarations and evidence are
 erased after static dispatch.
 
-A trait declares associated types and colon-prefixed callable type
-declarations. `name: signature` is required; `name: signature = body`
-provides a default implementation:
+A trait declares associated types and callable members of the form `name: signature`.
+The bodyless form declares a requirement; `name: signature = body` provides a
+default implementation:
 
 ```sc fragment
 let Iterator = trait {
@@ -841,12 +841,12 @@ An effect declares operations:
 
 ```sc fragment
 let counter = effect {
-  Next: (): i32
+  next: (): i32
 }
 ```
 
-Effect operations are colon-prefixed callable type declarations: they omit
-`let` and `=`, use constructor-style names, and have no bodies. Calling `counter.Next()` performs
+Effect operations use callable declarations of the form `name: signature`: they omit
+`let` and `=`, use `snake_case` names, and have no bodies. Calling `counter.next()` performs
 the operation rather than constructing data.
 
 `with<E>` prefixes an effectful callable signature or callable type. In a
@@ -855,7 +855,7 @@ introduces the result:
 
 ```sc fragment
 let read = { with<counter>(): i32 =>
-  counter.Next()
+  counter.next()
 }
 
 let apply = { <e: effects> with<e>
@@ -879,7 +879,7 @@ parentheses, then a spaced brace group of pattern-like arms:
 
 ```sc fragment
 counter.handle(read()) {
-  Next(resume) => resume(41),
+  next(resume) => resume(41),
   Return(value) => value,
 }
 ```
@@ -917,7 +917,7 @@ materializes private nominal state containing a state word and captured fields. 
 structurally `Movable`; relocation transfers its initialized captures, and cancellation drops them
 exactly once. `core.async.async` is the intrinsic that materializes this
 anonymous state. `core.async.await` is a source polling loop: `Pending`
-performs `suspension.Suspend()`, while `Ready(value)` returns the value.
+performs `suspension.suspend()`, while `Ready(value)` returns the value.
 Syntax-directed lowering may specialize `await` into the generated state
 machine without changing its source contract.
 A compiler-generated future implements `Future<()>` with associated `Output == T`. Polling a body with

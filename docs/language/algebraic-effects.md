@@ -9,8 +9,8 @@ An effect is a nominal compile-time identity with zero or more operations:
 
 ```sc fragment
 let state = <S: type> effect {
-  Get: (): S
-  Put: (move value: S): ()
+  get: (): S
+  put: (move value: S): ()
 }
 ```
 
@@ -21,8 +21,8 @@ the final group is supplied.
 Effect declaration parameters and effect-identity arguments are compile-time
 groups and therefore use angle brackets exclusively, as in `state<S>`.
 
-Operations use colon-prefixed callable type declarations: they omit `let` and
-`=`, use constructor-style names, and cannot have bodies. They are selected through
+Operations use callable declarations of the form `name: signature`: they omit
+`let` and `=`, use `snake_case` names, and cannot have bodies. They are selected through
 their effect identity and obey ordinary visibility and overload rules. A
 declaration with the same operation name in another effect is unrelated.
 
@@ -32,8 +32,8 @@ declaration with the same operation name in another effect is unrelated.
 
 ```sc fragment
 let increment = { with<state<i32>>(): i32 =>
-  let value = state<i32>.Get()
-  state<i32>.Put(value + 1)
+  let value = state<i32>.get()
+  state<i32>.put(value + 1)
   value
 }
 
@@ -44,8 +44,9 @@ let apply = { <e: effects> with<e>
 }
 ```
 
-Every declaration signature group follows `=`. A function value uses the
-callable type `with<state<i32>>(): i32`. The row belongs to
+An ordinary callable value places its signature after `=` inside outer braces;
+trait and effect members place it after `:`. A function value uses the callable
+type `with<state<i32>>(): i32`. The row belongs to
 the complete multi-group call, not to a parameter group or result value.
 `with<>(a): b` is the pure callable `(a): b`; a non-callable operand is
 rejected.
@@ -72,8 +73,8 @@ Conceptually:
 
 ```sc fragment
 let answer = state<i32>.handle(increment() + 1) {
-  Get(resume) => resume(41),
-  Put(value, resume) => resume(()),
+  get(resume) => resume(41),
+  put(value, resume) => resume(()),
   Return(value) => value,
 }
 ```
@@ -152,7 +153,7 @@ structures, and their values are linear resources.
 The runtime representation may use generated frames and adapters, but those details are not
 observable language entities. Generated names must not appear in user diagnostics or participate in
 source lookup. A continuation currently cannot escape its handler arm.
-Consequently `suspension.handle` can interpret `suspension.Suspend()` directly, but a
+Consequently `suspension.handle` can interpret `suspension.suspend()` directly, but a
 source handler cannot yet store the suspended continuation as future state;
 `core.async.async` remains the compiler boundary that materializes that state.
 

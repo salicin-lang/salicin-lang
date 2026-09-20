@@ -2329,11 +2329,12 @@ let main = { (): i32 =>
 }
 
 #[test]
-fn generic_associated_type_constructor_preserves_compile_parameter_sorts() {
+fn generic_associated_declarations_preserve_compile_parameter_sorts() {
     let program = resolve_text(
         r#"
 let lend = trait {
   Item: <a: access><r: region>: type
+  Args: <a: access><r: region>: parameters
   view: <a: access, r: region>(self: Borrow<a><r><self>)(): Item<a><r>
 }
 let main = { (): i32 =>  0 }
@@ -2344,6 +2345,12 @@ let main = { (): i32 =>  0 }
     assert_eq!(parameters.len(), 2);
     assert_eq!(parameters[0].kind, Sort::Named("access".into()));
     assert_eq!(parameters[1].kind, Sort::Region);
+    let schema = &analyzer.collection.traits["lend"];
+    let parameters = &schema.associated_type_parameters["Args"];
+    assert_eq!(parameters.len(), 2);
+    assert_eq!(parameters[0].kind, Sort::Named("access".into()));
+    assert_eq!(parameters[1].kind, Sort::Region);
+    assert_eq!(schema.associated_type_parameter_groups["Args"].len(), 2);
     assert!(
         analyzer.diagnostics.is_empty(),
         "unexpected gat sort diagnostics: {:?}",

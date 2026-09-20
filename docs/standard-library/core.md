@@ -214,28 +214,28 @@ should alias these identities through `core.effect`:
 pub let unsafety = effect {}
 
 pub let throwing = <Error: type> effect {
-  Raise: (move error: Error): never
+  raise: (move error: Error): never
 }
 
 pub let suspension = effect {
-  Suspend: (): ()
+  suspend: (): ()
 }
 ```
 
 `unsafety`, `throwing<Error>`, and `suspension` are validated lang-item identities, but their declarations use
-the same source-level effect forms as user code. `throwing<Error>.Raise` is an ordinary `never`-returning
-effect operation and can be handled with a normal abort arm such as `Raise(error) => ...`.
+the same source-level effect forms as user code. `throwing<Error>.raise` is an ordinary `never`-returning
+effect operation and can be handled with a normal abort arm such as `raise(error) => ...`.
 Standard and user effect identities use `snake_case`, including the final
 segment of a `with<...>` effect path. Effect
 row parameters such as `e: effects` are resolved as parameters rather than nominal effects.
 Source `throw(error)` targets this ordinary operation when the current effect row has exactly one
 active `throwing<Error>`. Contextual `try { ... }` with an expected `Result<Error><T>` handles
 ordinary `throwing<Error>` through the same algebraic handler path, mapping
-normal completion to `Ok` and `Raise` to `Err`. Without an explicit `Result`
+normal completion to `Ok` and `raise` to `Err`. Without an explicit `Result`
 context, direct calls and local function-value calls
 to ordinary `throwing<Error>` functions infer the same handler result when the success type is
 probeable and the escaping error type is unique. `suspension` currently exposes only a minimal
-`Suspend(): ()` operation; executable
+`suspend: (): ()` operation; executable
 async/future lowering will add its handler contracts in the same implementation slice rather than
 pretending `await` already works.
 
@@ -347,8 +347,8 @@ with a borrow-capturing environment. `handle` is an effect-kinded lang trait aut
 `effect` declaration. Its `Clauses` associated parameter schema describes the
 compiler-derived handler arms used by `.handle`. A source invocation supplies
 one unlabeled action expression followed by a spaced arm group, for example
-`state<i32>.handle(state<i32>.Get()) { Get(resume) => ..., Return(value) => value }`.
-Operation arms use constructor-style names, and `Return` handles normal
+`state<i32>.handle(state<i32>.get()) { get(resume) => ..., Return(value) => value }`.
+Operation arms use the operation's `snake_case` name, and `Return` handles normal
 completion. The removed `action:` and `done:` labeled fields are not syntax.
 The generated implementation still has exactly the shape
 declared by the trait. These low-level operations and generated handler
@@ -364,7 +364,7 @@ Constructing a cold future does not select or run an executor.
 state selected for its action, while `await` is source-defined. Their
 signatures expose their effect rows and `Future<e>` plus `Output == T` relationship.
 `await` repeatedly calls `poll`; `Pending` invokes
-`suspension.Suspend()`, and `Ready(value)` exits the source loop. The compiler may
+`suspension.suspend()`, and `Ready(value)` exits the source loop. The compiler may
 take an equivalent syntax-directed state-machine path for `await`.
 Compiler-generated futures without suspension already
 implement the inferred `Future<e>` instance and transition from cold state to `Poll.Ready` exactly
@@ -396,7 +396,7 @@ pub let do = { <e: effects> with<e>
   {move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(): bool}: () =>
   loop {
     core.control.iteration_skip.handle(action()) {
-      Next() => (),
+      next() => (),
       Return(value) => value,
     }
     if(while()) { continue() } else: { break() }
@@ -451,14 +451,14 @@ pub let do = { <e: effects, T: type> with<e>
 pub let try = { <f: effects, T: type, E: type> with<f>
   {move action: with<core.error.throwing<E>, f>(): T}: core.Result<E><T> =>
   core.error.throwing<E>.handle(action()) {
-    Raise(error) => core.Result.Err(error),
+    raise(error) => core.Result.Err(error),
     Return(value) => core.Result.Ok(value),
   }
 }
 
 pub let throw = { <Error: type> with<core.error.throwing<Error>>
   (move error: Error): never =>
-  core.error.throwing<Error>.Raise(error)
+  core.error.throwing<Error>.raise(error)
 }
 ```
 

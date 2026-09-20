@@ -112,21 +112,21 @@ fn brace_calls_treat_pattern_arms_as_one_callable_argument() {
 }
 
 #[test]
-fn parses_enum_like_effects_and_normalizes_enum_like_handlers() {
+fn parses_callable_effect_operations_and_normalizes_handler_clauses() {
     let program = parse(
-        "let State = <S: type> effect {\n\
-         Get: (): S\n\
-         Put: (value: S): ()\n\
+        "let state_effect = <S: type> effect {\n\
+         get: (): S\n\
+         put: (value: S): ()\n\
          }\n\
          let run = { (state: i32): i32 =>\n\
-         State<i32>.handle(State<i32>.Get()) {\n\
-         Get(resume) => resume(state),\n\
-         Put(value, resume) => do { resume(value) },\n\
+         state_effect<i32>.handle(state_effect<i32>.get()) {\n\
+         get(resume) => resume(state),\n\
+         put(value, resume) => do { resume(value) },\n\
          Return(value) => value,\n\
          }\n\
          }\n",
     )
-    .expect("enum-like effects and handlers must parse");
+    .expect("callable effect operations and handler clauses must parse");
     let Item::Effect(effect) = &program.items[0] else {
         panic!("expected effect");
     };
@@ -136,7 +136,7 @@ fn parses_enum_like_effects_and_normalizes_enum_like_handlers() {
             .iter()
             .map(|operation| operation.name.as_str())
             .collect::<Vec<_>>(),
-        ["Get", "Put"]
+        ["get", "put"]
     );
     let Item::Function(run) = &program.items[1] else {
         panic!("expected run function");
@@ -155,7 +155,7 @@ fn parses_enum_like_effects_and_normalizes_enum_like_handlers() {
             .iter()
             .map(|argument| argument.label.as_deref())
             .collect::<Vec<_>>(),
-        [Some("Get"), Some("Put"), Some("done"), Some("action")]
+        [Some("get"), Some("put"), Some("done"), Some("action")]
     );
     assert!(matches!(arguments.last(), Some(CallArg {
         value: Expr::Closure(parameters, _), ..
@@ -827,8 +827,8 @@ fn rejects_visibility_where_it_is_not_supported_yet() {
         .message
         .contains("`extend` declarations cannot have visibility"));
 
-    let trait_member = parse("let protocol = trait { pub let f = (value: i32): i32 }\n").unwrap_err();
-    assert!(trait_member.message.contains("trait members"));
+    let trait_member = parse("let protocol = trait { pub f: (value: i32): i32 }\n").unwrap_err();
+    assert!(trait_member.message.contains("visibility on trait members"));
 
     let extend_member = parse("extend(thing) { pub(package) let answer = 42 }\n").unwrap_err();
     assert!(extend_member.message.contains("extend members"));
@@ -1238,7 +1238,7 @@ fn preserves_generic_traits_and_trait_member_defaults() {
     let program = parse(
         "let convert = <t: type> trait {\n\
              convert: <u: type>(self: Borrow<self>)(value: u): t = value\n\
-             output: <v: type>: type = pair<t, v>\n\
+             output: <v: type>: type\n\
              }\n",
     )
     .unwrap();
@@ -1270,16 +1270,7 @@ fn preserves_generic_traits_and_trait_member_defaults() {
     };
     assert_eq!(name, "output");
     assert_eq!(compile_groups[0][0].name, "v");
-    assert_eq!(
-        default,
-        &Some(Type::Named(
-            "pair".into(),
-            vec![
-                Type::Named("t".into(), Vec::new()),
-                Type::Named("v".into(), Vec::new()),
-            ],
-        ))
-    );
+    assert_eq!(default, &None);
 }
 
 #[test]
@@ -1306,6 +1297,39 @@ fn preserves_region_and_access_generic_associated_type_groups() {
 fn rejects_let_on_associated_types() {
     let error = parse("let broken = trait { let item: type }\n").unwrap_err();
     assert!(error.message.contains("trait members omit `let`"));
+}
+
+#[test]
+fn rejects_unsupported_associated_defaults() {
+    let ty = parse("let broken = trait { Item: type = i32 }\n").unwrap_err();
+    assert!(ty.message.contains("default associated types"), "{ty:?}");
+
+    let parameters =
+        parse("let broken = trait { Args: <T: type>: parameters = T }\n").unwrap_err();
+    assert!(
+        parameters
+            .message
+            .contains("default associated parameter schemas"),
+        "{parameters:?}"
+    );
+}
+
+#[test]
+fn trait_members_require_a_terminal_separator() {
+    let error = parse("let broken = trait {\nfirst:\n(): i32 second: (): i32\n}\n")
+        .unwrap_err();
+    assert!(
+        error.message.contains("expected a newline or `;`"),
+        "{error:?}"
+    );
+}
+
+#[test]
+fn requires_remains_available_as_a_trait_member_name() {
+    parse(
+        "let protocol = trait {\nfirst: (): i32\nrequires: (): i32\n}\n",
+    )
+    .expect("contextual `requires` should remain a valid member name");
 }
 
 #[test]
@@ -2212,16 +2236,17 @@ fn named_callable_declarations_require_fat_arrows() {
         assert!(error.message.contains("expected `=>`"), "{error:?}");
     }
 
-    let trait_default =
-        parse("let read = trait { read: (self: Borrow<self>)(): i32 42 }\n").unwrap_err();
-    assert!(
-        trait_default
-            .message
-            .contains("expected a newline or `;` after trait member"),
-        "{trait_default:?}"
-    );
-
     parse("let answer = 42\nlet read = { (): i32 => 42 }\n").unwrap();
+}
+
+#[test]
+fn trait_defaults_require_equals() {
+    let error = parse("let read = trait { read: (self: Borrow<self>)(): i32 42 }\n")
+        .unwrap_err();
+    assert!(
+        error.message.contains("expected a newline or `;` after trait member"),
+        "{error:?}"
+    );
 }
 
 #[test]
@@ -2253,6 +2278,17 @@ fn rejects_legacy_trait_callable_and_effect_operation_syntax() {
             .contains("expected `:` after effect operation name"),
         "{effect_operation:?}"
     );
+
+    for source in [
+        "let state = effect { get: (): i32 = 1 }\n",
+        "let state = effect {\nget: (): i32\n= 1\n}\n",
+    ] {
+        let body = parse(source).unwrap_err();
+        assert!(
+            body.message.contains("effect operations cannot have bodies"),
+            "{body:?}"
+        );
+    }
 }
 
 #[test]

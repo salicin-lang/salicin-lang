@@ -677,7 +677,7 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(
         error.diagnostics().iter().any(|diagnostic| {
-            diagnostic.contains("trait requirements are abstract")
+            diagnostic.contains("trait default implementations cannot use `builtin()`")
                 && diagnostic.contains("cannot use `builtin()`")
         }),
         "{:?}",

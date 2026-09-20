@@ -1087,13 +1087,13 @@ impl Analyzer {
                 let method = operator_trait.method();
                 let shape = match operator_trait.lang_item {
                     LangItemKind::Eq => format!(
-                        "let Eq = <Rhs: type> trait {{ let {method} = (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
+                        "let Eq = <Rhs: type> trait {{ {method}: (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
                     ),
                     LangItemKind::PartialOrd => format!(
-                        "let PartialOrd = <Rhs: type> trait {{ let {method} = (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
+                        "let PartialOrd = <Rhs: type> trait {{ {method}: (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
                     ),
                     _ => format!(
-                        "let {trait_name}<Rhs: type> = trait {{ Output: type; let {method}(self)(rhs: Rhs): Output }}"
+                        "let {trait_name} = <Rhs: type> trait {{ Output: type; {method}: (self)(rhs: Rhs): Output }}"
                     ),
                 };
                 self.error(format!(
@@ -1111,7 +1111,7 @@ impl Analyzer {
                 let trait_name = operator.lang_item.source_name();
                 let method = operator.method();
                 self.error(format!(
-                    "`{trait_name}` language trait must have shape `let {trait_name} = trait {{ Output: type; let {method}(self)(): Output }}`"
+                    "`{trait_name}` language trait must have shape `let {trait_name} = trait {{ Output: type; {method}: (self)(): Output }}`"
                 ));
                 valid = false;
             }
@@ -1168,10 +1168,7 @@ impl Analyzer {
             .members
             .iter()
             .filter_map(|member| match member {
-                TraitMember::Function(function) if !is_parameter_schema_function(function) => {
-                    Some(function.name.clone())
-                }
-                TraitMember::Function(_) => None,
+                TraitMember::Function(function) => Some(function.name.clone()),
                 TraitMember::AssociatedType { .. } => None,
             })
             .fold(HashMap::<_, usize>::new(), |mut counts, name| {
@@ -1183,9 +1180,6 @@ impl Analyzer {
             .iter()
             .filter_map(|member| match member {
                 TraitMember::AssociatedType { name, .. } => Some(name.clone()),
-                TraitMember::Function(function) if is_parameter_schema_function(function) => {
-                    Some(function.name.clone())
-                }
                 TraitMember::Function(_) => None,
             })
             .collect::<HashSet<_>>();
@@ -1223,6 +1217,14 @@ impl Analyzer {
                         ));
                         valid = false;
                     }
+                    if !compile_groups.is_empty() {
+                        associated_type_parameters.insert(
+                            name.clone(),
+                            compile_groups.iter().flatten().cloned().collect(),
+                        );
+                        associated_type_parameter_groups
+                            .insert(name.clone(), compile_groups.clone());
+                    }
                     let kind = if associated_kind == AssociatedKind::Parameters {
                         Sort::Parameters
                     } else if compile_groups.is_empty() {
@@ -1246,12 +1248,6 @@ impl Analyzer {
                                 valid = false;
                             }
                         }
-                        associated_type_parameters.insert(
-                            name.clone(),
-                            compile_groups.iter().flatten().cloned().collect(),
-                        );
-                        associated_type_parameter_groups
-                            .insert(name.clone(), compile_groups.clone());
                         Sort::TypeConstructor {
                             parameter_groups: compile_groups
                                 .iter()
@@ -1281,30 +1277,6 @@ impl Analyzer {
                 }
                 TraitMember::Function(function) => {
                     let name = function.name.clone();
-                    if is_parameter_schema_function(&function) {
-                        if !member_names.insert(name.clone()) {
-                            self.error(format!(
-                                "duplicate trait member `{}.{name}`",
-                                definition.name
-                            ));
-                            valid = false;
-                            continue;
-                        }
-                        associated_type_parameters.insert(
-                            name.clone(),
-                            function.compile_groups.iter().flatten().cloned().collect(),
-                        );
-                        associated_type_parameter_groups
-                            .insert(name.clone(), function.compile_groups.clone());
-                        associated_parameter_schemas.insert(name.clone());
-                        associated_parameter_counts.insert(
-                            name.clone(),
-                            function.compile_groups.iter().flatten().count(),
-                        );
-                        associated_type_kinds.insert(name.clone(), Sort::Parameters);
-                        associated_types.push(name);
-                        continue;
-                    }
                     if associated_names.contains(&name) {
                         self.error(format!(
                             "duplicate trait member `{}.{name}`",
@@ -3049,10 +3021,4 @@ impl Analyzer {
             effects: function.effects.clone(),
         })
     }
-}
-
-fn is_parameter_schema_function(function: &Function) -> bool {
-    function.groups.is_empty()
-        && function.return_type == Some(Type::Named("parameters".to_owned(), Vec::new()))
-        && function.body.is_none()
 }

@@ -474,7 +474,7 @@ impl Parser {
         let rhs_signature = self.take(&TokenKind::Equal);
         if rhs_signature && self.callable_declaration_brace_follows() {
             return self
-                .braced_function(name, mutable, false, &[], true, true, false)
+                .braced_function(name, mutable, false, &[], true)
                 .map(Item::Function);
         }
         if rhs_signature && self.runtime_parameter_group_follows() {
@@ -984,9 +984,7 @@ impl Parser {
         mutable: bool,
         allow_receiver: bool,
         outer_effect_parameters: &[String],
-        allow_builtin: bool,
         allow_foreign: bool,
-        require_parameter_group: bool,
     ) -> Result<Function, ParseError> {
         if mutable {
             return Err(self.error_here("`let mut` cannot declare a function"));
@@ -1000,10 +998,6 @@ impl Parser {
         if allow_receiver {
             self.validate_receiver_groups(&name, &groups)?;
         }
-        if require_parameter_group && compile_groups.is_empty() && groups.is_empty() {
-            return Err(self.error_here("trait function members require at least one parameter group"));
-        }
-
         let logical_result = if self.take(&TokenKind::Colon) {
             Some(self.function_result_type()?)
         } else {
@@ -1041,11 +1035,6 @@ impl Parser {
             self.expect(&TokenKind::FatArrow, "`=>` before callable implementation")?;
             self.skip_newlines();
             if self.at_context_ident("builtin") {
-                if !allow_builtin {
-                    return Err(self.error_here(
-                        "trait requirements are abstract and cannot use `builtin()`",
-                    ));
-                }
                 if return_type.is_none() {
                     return Err(self.error_here(
                         "builtin functions require an explicit result type before `=> builtin()`",
@@ -1158,7 +1147,7 @@ impl Parser {
         while !self.at(&TokenKind::RBrace) {
             if self.at(&TokenKind::Let) {
                 return Err(self.error_here(
-                    "effect operations use callable type declarations; write `operation: (parameters): Result`",
+                    "effect operations omit `let`; write `operation: (parameters): Result`",
                 ));
             }
             let operation = self.expect_ident("an effect operation name")?;
@@ -1196,15 +1185,14 @@ impl Parser {
             let failure_error = effects.failure.as_deref().cloned();
             let return_type = Some(Self::apply_failure_effect(logical_result, failure_error));
             self.effect_parameters_in_scope.clear();
+            self.take_newlines_if_followed_by(&[TokenKind::Where, TokenKind::Equal]);
             if self.at(&TokenKind::Where) {
                 return Err(
                     self.error_here("where clauses on effect operations are not supported yet")
                 );
             }
             if self.at(&TokenKind::Equal) {
-                return Err(
-                    self.error_here("effect operations are requirements and cannot have bodies")
-                );
+                return Err(self.error_here("effect operations cannot have bodies; omit `=`"));
             }
             let labels = groups
                 .iter()
@@ -1559,7 +1547,7 @@ impl Parser {
         let rhs_signature = self.take(&TokenKind::Equal);
         if rhs_signature && self.callable_declaration_brace_follows() {
             return self
-                .braced_function(name, false, true, &[], true, false, false)
+                .braced_function(name, false, true, &[], false)
                 .map(ExtendMember::Function);
         }
         if rhs_signature && self.runtime_parameter_group_follows() {
@@ -3256,11 +3244,11 @@ impl Parser {
             if self.at(&TokenKind::Eof) {
                 return Err(self.error_here("expected `}` before end of trait declaration"));
             }
-            let member_line = self.current().line;
             members.push(self.trait_member(&member_effect_parameters)?);
             if !self.at(&TokenKind::RBrace)
                 && !self.at_separator()
-                && member_line == self.current().line
+                && !matches!(self.previous().kind, TokenKind::Newline | TokenKind::Semicolon)
+                && self.previous().end_line == self.current().line
             {
                 return Err(self.error_here("expected a newline or `;` after trait member"));
             }
@@ -3294,7 +3282,9 @@ impl Parser {
         {
             return self.trait_colon_member(outer_effect_parameters);
         }
-        Err(self.error_here("expected a trait member declaration `name: signature`"))
+        Err(self.error_here(
+            "expected a trait member declaration `name: signature` or `name: type`",
+        ))
     }
 
     fn trait_colon_member(
@@ -3334,21 +3324,20 @@ impl Parser {
         };
         if let Some(kind) = associated_kind {
             self.take_newlines_if_followed_by(&[TokenKind::Equal]);
-            if kind == AssociatedKind::Parameters && self.at(&TokenKind::Equal) {
-                return Err(self
-                    .error_here("default associated parameter schemas are not supported yet"));
+            if self.at(&TokenKind::Equal) {
+                let message = if kind == AssociatedKind::Parameters {
+                    "default associated parameter schemas are not supported yet"
+                } else {
+                    "default associated types are not supported yet"
+                };
+                return Err(self.error_here(message));
             }
-            let default = if self.take(&TokenKind::Equal) {
-                Some(self.type_expr()?)
-            } else {
-                None
-            };
             self.effect_parameters_in_scope.clear();
             return Ok(TraitMember::AssociatedType {
                 name,
                 compile_groups,
                 kind,
-                default,
+                default: None,
             });
         }
         self.validate_receiver_groups(&name, &groups)?;
@@ -3368,13 +3357,21 @@ impl Parser {
             effects.failure.as_deref().cloned(),
         ));
         self.effect_parameters_in_scope.clear();
-        self.take_newlines_if_followed_by(&[
-            TokenKind::Equal,
-            TokenKind::FatArrow,
-            TokenKind::Ident("requires".to_owned()),
-        ]);
+        self.take_newlines_if_followed_by(&[TokenKind::Equal, TokenKind::FatArrow]);
+        if self.at(&TokenKind::Newline) {
+            let mut offset = 1;
+            while self.at_offset(offset, &TokenKind::Newline) {
+                offset += 1;
+            }
+            if self.tokens.get(self.index + offset).is_some_and(
+                |token| matches!(&token.kind, TokenKind::Ident(name) if name == "requires"),
+            ) && self.at_offset(offset + 1, &TokenKind::LParen)
+            {
+                self.skip_newlines();
+            }
+        }
         let mut where_predicates = Vec::new();
-        if self.at_context_ident("requires") {
+        if self.at_context_ident("requires") && self.at_offset(1, &TokenKind::LParen) {
             self.advance();
             where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
             self.take_newlines_if_followed_by(&[TokenKind::Equal, TokenKind::FatArrow]);
@@ -3386,9 +3383,7 @@ impl Parser {
         }
         let body = if self.take(&TokenKind::Equal) {
             if self.at_context_ident("builtin") {
-                return Err(self.error_here(
-                    "trait requirements are abstract and cannot use `builtin()`",
-                ));
+                return Err(self.error_here("trait default implementations cannot use `builtin()`"));
             }
             Some(self.callable_body()?)
         } else {

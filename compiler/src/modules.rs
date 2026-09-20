@@ -2711,22 +2711,39 @@ fn validate_item_api(
                     TraitMember::AssociatedType {
                         name,
                         compile_groups,
-                        default: Some(default),
+                        default,
                         ..
                     } => {
                         let bound_types =
                             compile_parameter_names(compile_groups, &trait_bound_types);
-                        validate_exposed_type(
-                            default,
-                            boundary,
-                            source_path,
-                            &bound_types,
-                            &format!("associated type `{}.{name}` default", definition.name),
-                            nominal_boundaries,
-                            diagnostics,
-                        );
+                        for parameter in compile_groups.iter().flatten() {
+                            if let Sort::Named(sort) = &parameter.kind {
+                                validate_exposed_type(
+                                    &Type::Named(sort.clone(), Vec::new()),
+                                    boundary,
+                                    source_path,
+                                    &trait_bound_types,
+                                    &format!(
+                                        "associated declaration `{}.{name}` parameter `{}` sort",
+                                        definition.name, parameter.name
+                                    ),
+                                    nominal_boundaries,
+                                    diagnostics,
+                                );
+                            }
+                        }
+                        if let Some(default) = default {
+                            validate_exposed_type(
+                                default,
+                                boundary,
+                                source_path,
+                                &bound_types,
+                                &format!("associated type `{}.{name}` default", definition.name),
+                                nominal_boundaries,
+                                diagnostics,
+                            );
+                        }
                     }
-                    TraitMember::AssociatedType { default: None, .. } => {}
                 }
             }
         }
@@ -3357,6 +3374,7 @@ impl Resolver {
                     default,
                     ..
                 } => {
+                    self.rewrite_compile_parameter_types(compile_groups, context, &trait_types);
                     let type_scope = compile_parameter_names(compile_groups, &trait_types);
                     if let Some(default) = default {
                         self.rewrite_type(default, context, &type_scope);
