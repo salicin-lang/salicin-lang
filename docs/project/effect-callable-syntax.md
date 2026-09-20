@@ -15,26 +15,27 @@ The row belongs to the complete callable, including every runtime parameter
 group. `with<>(A): B` is equivalent to the pure callable `(A): B`.
 A callable type always ends in a colon followed by its result type.
 
-An effectful declaration places all signature groups after `=`:
+An effectful declaration places all signature groups inside the callable
+literal's outer braces:
 
 ```salicin
-let read = with<io>(path: str): String => ...
+let read = { with<io>(path: str): String => ... }
 
-let apply = <e: effects> with<e>
+let apply = { <e: effects> with<e>
   (action: with<e>(i32): i32)
-  (value: i32): i32 => {
+  (value: i32): i32 =>
   action(value)
 }
 ```
 
-The final colon introduces the declaration result. A pure declaration uses the
-same RHS signature structure:
+The final colon introduces the declaration result. A pure callable literal uses
+the same brace-first signature structure:
 
 ```salicin
-let identity = (value: i32): i32 => value
+let identity = { (value: i32): i32 => value }
 ```
 
-`let f = (...): with<e>(R)` is not an effect annotation: it attempts to use
+`let f = { (...): with<e>(R) => ... }` is not an effect annotation: it attempts to use
 `with` as a non-callable result and is rejected. This keeps the result position
 available for future task or computation types.
 
@@ -42,6 +43,10 @@ available for future task or computation types.
 
 The Edition 2026 grammar, library sources, documentation, and fixtures use only
 the prefix effect form and colon-delimited callable results.
+
+Callable values also use the edition's brace-first form. Outer braces delimit
+the complete callable literal, while its type remains `with<e>(T): R` without
+braces.
 
 The surface rewrite does not change the semantic representation:
 `Type::Function` continues to carry one normalized row. It therefore does not

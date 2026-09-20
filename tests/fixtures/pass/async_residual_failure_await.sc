@@ -11,9 +11,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll = <r: region>
+  let poll = { <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<i32> => {
+    (): Poll<i32> =>
     if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
@@ -23,7 +23,7 @@ extend(step, Future<()>) {
   }
 }
 
-let make_step = with<throwing<bool>>(fail: bool): step => {
+let make_step = { with<throwing<bool>>(fail: bool): step =>
   if(fail) {
     throw(true)
   } else: {
@@ -31,7 +31,7 @@ let make_step = with<throwing<bool>>(fail: bool): step => {
   }
 }
 
-let run = (fail: bool): i32 => {
+let run = { (fail: bool): i32 =>
   let result: Result<bool><i32> = try {
     let mut future = async {
       let value = await(make_step(fail))
@@ -54,7 +54,7 @@ let run = (fail: bool): i32 => {
   }
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let success = run(false)
   let failure = run(true)
   if(success == 42 && failure == 42) {

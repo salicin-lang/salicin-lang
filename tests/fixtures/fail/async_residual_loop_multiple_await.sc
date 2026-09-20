@@ -2,7 +2,7 @@ let Future = core.async.Future
 let Poll = core.async.Poll
 
 let ask = effect {
-  let ask = (): bool
+  ask (): bool
 }
 
 let step = struct {
@@ -12,21 +12,19 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = bool;
 
-  let poll = <r: region>
+  let poll = { <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<bool> => {
+    (): Poll<bool> =>
     Poll<bool>.Ready(self.done)
   }
 }
 
-let make_step = with<ask>(): step => {
+let make_step = { with<ask>(): step =>
   step{ done: ask.ask() }
 }
 
-let main = (): i32 => {
-  ask.handle{
-    ask: (resume) => { resume(false) },
-    action: {
+let main = { (): i32 =>
+  ask.handle(do {
       let mut future = async {
         loop {
           let first = await(make_step())
@@ -40,6 +38,7 @@ let main = (): i32 => {
       }
       match(future.poll()) { Ready(value) => value, Pending => 0,
       }
-    },
+    }) {
+    ask(resume) => do { resume(false) },
   }
 }

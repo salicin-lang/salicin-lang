@@ -1,5 +1,5 @@
 let ask = effect {
-  let value = (): i32
+  value (): i32
 }
 
 let resource = struct {
@@ -8,91 +8,86 @@ let resource = struct {
 }
 
 extend(resource, Droppable) {
-  let drop = (self: Borrow<mut><self>)(): () => {
+  let drop = { (self: Borrow<mut><self>)(): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let consume = (move resource: resource): i32 => {
+let consume = { (move resource: resource): i32 =>
   resource.bias
 }
 
-let apply = with<ask>(move action: with<ask>(): i32): i32 => {
+let apply = { with<ask>(move action: with<ask>(): i32): i32 =>
   action() + 1
 }
 
-let apply_input = with<ask>(seed: i32, move action: with<ask>(i32): i32): i32 => {
+let apply_input = { with<ask>(seed: i32, move action: with<ask>(i32): i32): i32 =>
   action(seed) + 1
 }
 
-let run = (move action: with<ask>(): i32): i32 => {
-  ask.handle {
-    value: (resume) => { resume(10) },
-    action: {
+let run = { (move action: with<ask>(): i32): i32 =>
+  ask.handle(do {
       apply(action)
-    },
+    }) {
+    value(resume) => do { resume(10) },
   }
 }
 
-let outer = (move action: with<ask>(): i32, abandon: bool): i32 => {
-  ask.handle {
-    value: (resume) => {
+let outer = { (move action: with<ask>(): i32, abandon: bool): i32 =>
+  ask.handle(do {
+      run(action)
+    }) {
+    value(resume) => do {
       if(abandon) { 40 } else: { resume(20) }
     },
-    action: {
-      run(action)
-    },
   }
 }
 
-let discard = (move action: with<ask>(): i32): i32 => {
-  ask.handle {
-    value: (resume) => { resume(0) },
-    action: {
+let discard = { (move action: with<ask>(): i32): i32 =>
+  ask.handle(do {
       42
-    },
+    }) {
+    value(resume) => do { resume(0) },
   }
 }
 
-let run_input = (move action: with<ask>(i32): i32): i32 => {
-  ask.handle {
-    value: (resume) => { resume(10) },
-    action: {
+let run_input = { (move action: with<ask>(i32): i32): i32 =>
+  ask.handle(do {
       apply_input(11, action)
-    },
+    }) {
+    value(resume) => do { resume(10) },
   }
 }
 
-let outer_input = (move action: with<ask>(i32): i32): i32 => {
-  ask.handle {
-    value: (resume) => { resume(20) },
-    action: {
+let outer_input = { (move action: with<ask>(i32): i32): i32 =>
+  ask.handle(do {
       run_input(action)
-    },
+    }) {
+    value(resume) => do { resume(20) },
   }
 }
 
-let execute = (drops: Ptr<mut><i32>, abandon: bool): i32 => {
+let execute = { (drops: Ptr<mut><i32>, abandon: bool): i32 =>
   let resource = resource { bias: 21, drops: drops }
-  let mut action: with<ask>(): i32  = () => {
+  let mut action: with<ask>(): i32  = { () =>
     ask.value() + consume(resource)
   }
   outer(action, abandon)
 }
 
-let execute_discard = (drops: Ptr<mut><i32>): i32 => {
+let execute_discard = { (drops: Ptr<mut><i32>): i32 =>
   let resource = resource { bias: 21, drops: drops }
-  let action: with<ask>(): i32  = () => {
+  let action: with<ask>(): i32  = { () =>
     ask.value() + consume(resource)
   }
   discard(action)
 }
 
-let execute_mut = (abandon: bool): i32 => {
+let execute_mut = { (abandon: bool): i32 =>
   let mut order = 1
-  let mut action: with<ask>(): i32  = () => {
+  let mut action: with<ask>(): i32  = { () =>
     order = order + 1
     let value = ask.value()
     order = order + 1
@@ -101,15 +96,15 @@ let execute_mut = (abandon: bool): i32 => {
   outer(action, abandon) + order
 }
 
-let execute_input = (): i32 => {
+let execute_input = { (): i32 =>
   let base = 10
-  let action: with<ask>(i32): i32  = (input: i32) => {
+  let action: with<ask>(i32): i32  = { (input: i32) =>
     ask.value() + input + base
   }
   outer_input(action)
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

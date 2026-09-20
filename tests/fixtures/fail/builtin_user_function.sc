@@ -1,3 +1,3 @@
-let fake = (): i32 builtin()
+let fake = { (): i32 => builtin() }
 
-let main = (): i32 => { 0 }
+let main = { (): i32 => 0 }

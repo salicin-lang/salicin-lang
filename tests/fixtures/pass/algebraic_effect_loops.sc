@@ -1,12 +1,10 @@
 let tick = effect {
-  let tick = (): i32
+  tick (): i32
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut count = 0
-  tick.handle {
-    tick: (resume) => { resume(1) },
-    action: {
+  tick.handle(do {
       while(count + tick.tick() <= 2) {
         count += 1
         if(count == 1) { continue() }
@@ -16,7 +14,8 @@ let main = (): i32 => {
         if(count == 3) { break(count) }
       }
       36 + count + stopped
-    },
+    }) {
+    tick(resume) => do { resume(1) },
   }
 }
 

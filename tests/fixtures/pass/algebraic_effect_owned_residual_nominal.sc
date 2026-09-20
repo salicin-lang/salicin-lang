@@ -1,9 +1,9 @@
 let audit = effect {
-  let adjust = (): i32
+  adjust (): i32
 }
 
 let step = effect {
-  let delta = (): i32
+  delta (): i32
 }
 
 let state = struct {
@@ -12,69 +12,65 @@ let state = struct {
 }
 
 extend(state, Droppable) {
-  let drop = (self: Borrow<mut><self>)(): () => {
+  let drop = { (self: Borrow<mut><self>)(): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let update = with<audit, step>(state: Borrow<mut><state>): i32 => {
+let update = { with<audit, step>(state: Borrow<mut><state>): i32 =>
   let adjustment = audit.adjust()
   let delta = step.delta()
   state.value = state.value + adjustment + delta
   state.value
 }
 
-let audit_outside = (
+let audit_outside = { (
   drops: Ptr<mut><i32>,
   abandon_audit: bool,
   abandon_step: bool,
-): i32 => {
+): i32 =>
   let mut state = state { value: 20, drops: drops }
-  audit.handle {
-    adjust: (resume) => {
-      if(abandon_audit) { 40 } else: { resume(1) }
-    },
-    action: {
-      step.handle {
-        delta: (resume) => {
+  audit.handle(do {
+      step.handle(do {
+          let value = update(state)
+          value + state.value
+        }) {
+        delta(resume) => do {
           if(abandon_step) { 40 } else: { resume(1) }
         },
-        action: {
-          let value = update(state)
-          value + state.value
-        },
       }
+    }) {
+    adjust(resume) => do {
+      if(abandon_audit) { 40 } else: { resume(1) }
     },
   }
 }
 
-let step_outside = (
+let step_outside = { (
   drops: Ptr<mut><i32>,
   abandon_audit: bool,
   abandon_step: bool,
-): i32 => {
+): i32 =>
   let mut state = state { value: 20, drops: drops }
-  step.handle {
-    delta: (resume) => {
-      if(abandon_step) { 40 } else: { resume(1) }
-    },
-    action: {
-      audit.handle {
-        adjust: (resume) => {
-          if(abandon_audit) { 40 } else: { resume(1) }
-        },
-        action: {
+  step.handle(do {
+      audit.handle(do {
           let value = update(state)
           value + state.value
+        }) {
+        adjust(resume) => do {
+          if(abandon_audit) { 40 } else: { resume(1) }
         },
       }
+    }) {
+    delta(resume) => do {
+      if(abandon_step) { 40 } else: { resume(1) }
     },
   }
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

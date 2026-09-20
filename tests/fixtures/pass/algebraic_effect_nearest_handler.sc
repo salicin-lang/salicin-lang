@@ -1,19 +1,15 @@
 let read = effect {
-  let read = (): i32
+  read (): i32
 }
 
-let main = (): i32 => {
-  read.handle {
-    read: (resume) => { resume(40) },
-    action: {
-      let inner = read.handle {
-        read: (resume) => { resume(2) },
-        action: {
-          read.read()
-        },
+let main = { (): i32 =>
+  read.handle(do {
+      let inner: i32 = read.handle(read.read()) {
+        read(resume) => do { resume(2) },
       }
       inner + read.read()
-    },
+    }) {
+    read(resume) => do { resume(40) },
   }
 }
 

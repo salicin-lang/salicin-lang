@@ -1,40 +1,39 @@
 let abort = effect {
-  let choose = (): bool
-  let stop = (): i32
+  choose (): bool
+  stop (): i32
 }
 
 let resource = struct { counter: Ptr<mut><i32> }
 
 extend(resource, Droppable) {
-  let drop = (self: Borrow<mut><self>)(): () => {
+  let drop = { (self: Borrow<mut><self>)(): () =>
     unsafe {
       *self.counter = *self.counter + 1
     }
   }
 }
 
-let consume = (move resource: resource): i32 => { 0 }
+let consume = { (move resource: resource): i32 => 0 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let counter = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *counter = 0 }
-  let result = abort.handle {
-    choose: (resume) => { resume(false) },
-    stop: (resume) => { 39 },
-    action: {
+  let result = abort.handle(do {
       let left_resource = resource { counter: counter }
       let middle_resource = resource { counter: counter }
       let right_resource = resource { counter: counter }
-      let left: with<abort>(): i32  = () => { abort.stop() + consume(left_resource) }
-      let middle: with<abort>(): i32  = () => { abort.stop() + consume(middle_resource) }
-      let right: with<abort>(): i32  = () => { abort.stop() + consume(right_resource) }
+      let left: with<abort>(): i32  = { () => abort.stop() + consume(left_resource) }
+      let middle: with<abort>(): i32  = { () => abort.stop() + consume(middle_resource) }
+      let right: with<abort>(): i32  = { () => abort.stop() + consume(right_resource) }
       let first: with<abort>(): i32  = if(true) { left } else: { middle }
       let second: with<abort>(): i32  = if(false) { middle } else: { right }
       let combined: with<abort>(): i32  = if(abort.choose()) { first } else: { second }
       combined()
-    },
+    }) {
+    choose(resume) => do { resume(false) },
+    stop(resume) => do { 39 },
   }
   let drops = unsafe { *counter }
   unsafe {

@@ -1,6 +1,6 @@
 let Vec = alloc.Vec
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let values = Vec.new<T: i32>()
   values[0]
 }

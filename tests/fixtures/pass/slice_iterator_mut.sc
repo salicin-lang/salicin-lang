@@ -1,10 +1,10 @@
 let Slice = core.memory.Slice
 
-let write = (target: Borrow<mut><i32>)(value: i32): () => {
+let write = { (target: Borrow<mut><i32>)(value: i32): () =>
   target = value
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut values: Array<i32><3> = [9, 10, 20]
   do {
     let slice: Borrow<mut><Slice<i32>> = borrow<mut>(values)

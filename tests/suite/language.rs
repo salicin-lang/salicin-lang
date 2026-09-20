@@ -742,17 +742,17 @@ fn compile_time_argument_diagnostics_name_binders_sorts_and_groups() {
 fn qualified_generic_calls_require_angle_compile_groups() {
     let prefix = r#"let cell = struct {}
 extend(cell) {
-  let identity = <T: type>(self: Borrow<self>)(move value: T): T => { value }
+  let identity = { <T: type>(self: Borrow<self>)(move value: T): T => value }
 }
 "#;
 
     check_source(&format!(
-        "{prefix}let main = (): i32 => {{ cell {{}}.identity<i32>(42) }}\n"
+        "{prefix}let main = {{ (): i32 => cell {{}}.identity<i32>(42) }}\n"
     ))
     .expect("qualified generic calls accept angle compile groups");
 
     let diagnostics = check_source(&format!(
-        "{prefix}let main = (): i32 => {{ cell {{}}.identity(i32)(42) }}\n"
+        "{prefix}let main = {{ (): i32 => cell {{}}.identity(i32)(42) }}\n"
     ))
     .expect_err("qualified generic calls reject parenthesized compile groups");
     assert!(

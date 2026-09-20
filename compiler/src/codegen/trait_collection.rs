@@ -286,10 +286,24 @@ impl Analyzer {
                         && function.return_type.is_none()
                         && function.effects == FunctionEffects::default()
                         && function.where_predicates.is_empty()
-                        && matches!(
-                            function.body.as_ref(),
-                            Some(Expr::Name(name)) if name == &function.compile_groups[0][0].name
-                        );
+                        && match function.body.as_ref() {
+                            Some(Expr::Name(name)) => {
+                                name == &function.compile_groups[0][0].name
+                            }
+                            Some(Expr::Block(statements, Some(tail))) if statements.is_empty() => {
+                                match tail.as_ref() {
+                                    Expr::Name(name) => {
+                                        name == &function.compile_groups[0][0].name
+                                    }
+                                    Expr::Located { value, .. } => matches!(
+                                        value.as_ref(),
+                                        Expr::Name(name) if name == &function.compile_groups[0][0].name
+                                    ),
+                                    _ => false,
+                                }
+                            }
+                            _ => false,
+                        };
                     if transparent_modifier {
                         self.collection
                             .transparent_parameter_modifiers
@@ -1154,7 +1168,10 @@ impl Analyzer {
             .members
             .iter()
             .filter_map(|member| match member {
-                TraitMember::Function(function) => Some(function.name.clone()),
+                TraitMember::Function(function) if !is_parameter_schema_function(function) => {
+                    Some(function.name.clone())
+                }
+                TraitMember::Function(_) => None,
                 TraitMember::AssociatedType { .. } => None,
             })
             .fold(HashMap::<_, usize>::new(), |mut counts, name| {
@@ -1166,6 +1183,9 @@ impl Analyzer {
             .iter()
             .filter_map(|member| match member {
                 TraitMember::AssociatedType { name, .. } => Some(name.clone()),
+                TraitMember::Function(function) if is_parameter_schema_function(function) => {
+                    Some(function.name.clone())
+                }
                 TraitMember::Function(_) => None,
             })
             .collect::<HashSet<_>>();
@@ -1261,6 +1281,30 @@ impl Analyzer {
                 }
                 TraitMember::Function(function) => {
                     let name = function.name.clone();
+                    if is_parameter_schema_function(&function) {
+                        if !member_names.insert(name.clone()) {
+                            self.error(format!(
+                                "duplicate trait member `{}.{name}`",
+                                definition.name
+                            ));
+                            valid = false;
+                            continue;
+                        }
+                        associated_type_parameters.insert(
+                            name.clone(),
+                            function.compile_groups.iter().flatten().cloned().collect(),
+                        );
+                        associated_type_parameter_groups
+                            .insert(name.clone(), function.compile_groups.clone());
+                        associated_parameter_schemas.insert(name.clone());
+                        associated_parameter_counts.insert(
+                            name.clone(),
+                            function.compile_groups.iter().flatten().count(),
+                        );
+                        associated_type_kinds.insert(name.clone(), Sort::Parameters);
+                        associated_types.push(name);
+                        continue;
+                    }
                     if associated_names.contains(&name) {
                         self.error(format!(
                             "duplicate trait member `{}.{name}`",
@@ -3005,4 +3049,10 @@ impl Analyzer {
             effects: function.effects.clone(),
         })
     }
+}
+
+fn is_parameter_schema_function(function: &Function) -> bool {
+    function.groups.is_empty()
+        && function.return_type == Some(Type::Named("parameters".to_owned(), Vec::new()))
+        && function.body.is_none()
 }

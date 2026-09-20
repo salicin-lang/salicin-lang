@@ -2,7 +2,7 @@ let Future = core.async.Future
 let Poll = core.async.Poll
 
 let ask = effect {
-  let ask = (): i32
+  ask (): i32
 }
 
 let resource = struct {
@@ -10,7 +10,7 @@ let resource = struct {
 }
 
 extend(resource, Droppable) {
-  let drop = (self: Borrow<mut><self>)(): () => {
+  let drop = { (self: Borrow<mut><self>)(): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -26,9 +26,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll = <r: region>
+  let poll = { <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<i32> => {
+    (): Poll<i32> =>
     if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
@@ -38,18 +38,16 @@ extend(step, Future<()>) {
   }
 }
 
-let request = with<ask>(): i32 => {
+let request = { with<ask>(): i32 =>
   ask.ask()
 }
 
-let make_step = with<ask>(drops: Ptr<mut><i32>): step => {
+let make_step = { with<ask>(drops: Ptr<mut><i32>): step =>
   step { polls: 0, value: request(), resource: resource { drops: drops } }
 }
 
-let run = (drops: Ptr<mut><i32>): i32 => {
-  ask.handle {
-    ask: (resume) => { resume(40) },
-    action: {
+let run = { (drops: Ptr<mut><i32>): i32 =>
+  ask.handle(do {
       let mut future = async {
         await(make_step(drops))
       }
@@ -61,25 +59,25 @@ let run = (drops: Ptr<mut><i32>): i32 => {
           }
         }, Ready(_) => 0,
       }
-    },
+    }) {
+    ask(resume) => do { resume(40) },
   }
 }
 
-let cancel = (drops: Ptr<mut><i32>): () => {
-  ask.handle {
-    ask: (resume) => { resume(2) },
-    action: {
+let cancel = { (drops: Ptr<mut><i32>): () =>
+  ask.handle(do {
       let mut cancelled = async {
         await(make_step(drops))
       }
       let pending = cancelled.poll()
       match(pending) { Pending => (), Ready(_) => (),
       }
-    },
+    }) {
+    ask(resume) => do { resume(2) },
   }
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

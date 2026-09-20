@@ -14,7 +14,7 @@ let pair = <t: type> struct(c) {
   right: t,
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   if(size_of<timespec> == 16 &&
     align_of<timespec> == 8 &&
     size_of<header> == 32 &&

@@ -1,5 +1,5 @@
 let ask = effect {
-  let value = (): i32
+  value (): i32
 }
 
 let state = struct {
@@ -9,30 +9,29 @@ let state = struct {
 }
 
 extend(state, Droppable) {
-  let drop = (self: Borrow<mut><self>)(): () => {
+  let drop = { (self: Borrow<mut><self>)(): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let run = (
+let run = { (
   left: Borrow<i32>,
   right: Borrow<mut><i32>,
   abandon: bool,
-) {move action: with<ask>(): i32}: i32 => {
-  ask.handle {
-    value: (resume) => {
-      if(abandon) { 40 } else: { resume(2) }
-    },
-    action: {
+) {move action: with<ask>(): i32}: i32 =>
+  ask.handle(do {
       right = right + action()
       left + right
+    }) {
+    value(resume) => do {
+      if(abandon) { 40 } else: { resume(2) }
     },
   }
 }
 
-let execute = (drops: Ptr<mut><i32>, abandon: bool): i32 => {
+let execute = { (drops: Ptr<mut><i32>, abandon: bool): i32 =>
   let mut state = state { left: 10, right: 20, drops: drops }
   let mut order = 1
   let result = run(state.left, state.right, abandon) {
@@ -42,7 +41,7 @@ let execute = (drops: Ptr<mut><i32>, abandon: bool): i32 => {
   result + state.left + state.right + order
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

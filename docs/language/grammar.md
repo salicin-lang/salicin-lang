@@ -39,7 +39,7 @@ The lexer emits `NEWLINE` except:
 
 - inside unmatched `(...)` or `[...]`;
 - after a token that necessarily continues an expression, including an infix or prefix operator,
-  comma, `.`, `?.`, `=`, `=>`, `->`, or `:`.
+  comma, `.`, `?.`, `=`, `=>`, or `:`.
 
 Braces do not suppress newlines.
 
@@ -59,13 +59,13 @@ item = [ visibility ], ( let_decl | extend_decl )
 visibility = "pub", [ "(", "package", ")" ] ;
 
 test_registration =
-    contextual("test"), "(", STRING, ")", closure_body ;
+    contextual("test"), "(", STRING, ")", zero_parameter_callable ;
 ```
 
 A test registration cannot have an attribute or visibility. Its string must be
 non-empty, and the Brace group is the test body. `test` remains an ordinary
 identifier outside this top-level form. The edition-owned
-`pub let test = <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () builtin()`
+`pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`
 declaration validates the static name and body contract.
 
 ### 2.0.1 Declaration and guard forms
@@ -96,16 +96,25 @@ let_decl = "let", [ contextual("mut") ], IDENT,
            | "=", declaration_rhs ) ;
 
 declaration_rhs =
+    callable_literal
+  | { compile_parameter_group }, initializer
+  | expression ;
+
+callable_literal =
+    "{", separators,
+    callable_signature,
+    [ "=>", callable_body ],
+    separators, "}" ;
+
+callable_signature =
     { compile_parameter_group },
     [ with_clause ],
     { runtime_parameter_group },
     [ "...", type_expr ],
     [ ":", declaration_annotation ],
-    [ where_clause ],
-    [ callable_implementation | initializer ] ;
+    [ where_clause ] ;
 
-callable_implementation =
-    "=>", expression ;
+callable_body = block_contents ;
 
 declaration_annotation =
     type_expr
@@ -116,7 +125,6 @@ declaration_annotation =
 initializer =
     builtin_initializer
   | foreign_initializer
-  | expression
   | effect_decl
   | sort_decl
   | struct_decl
@@ -145,10 +153,11 @@ struct and the same-named Brace constructor.
 package. It may define a compiler-owned function, type, type constructor, or
 extension method whose exact declaration is validated by the edition
 contract. It is not an expression initializer available to user packages.
-After any callable signature groups and result annotation, an implementation
-must begin with `=>`; a following expression without that separator is not a
-callable implementation. A declaration with no implementation remains a
-bodyless callable contract.
+Every callable value has one outer brace pair. After its signature groups and
+result annotation, an implementation must begin with `=>`; the remainder of
+the outer braces is its body. A callable literal with no `=>` is a bodyless
+contract and is valid only where an abstract callable requirement is allowed.
+The removed bare form `let name = (parameters): Result => body` is not grammar.
 
 ### 2.2 Compile-Time Parameters
 
@@ -236,7 +245,7 @@ effect_decl =
     { effect_operation, separators }, "}" ;
 
 effect_operation =
-    "let", IDENT, "=",
+    IDENT,
     [ with_clause ],
     runtime_parameter_group, { runtime_parameter_group },
     ":", type_expr ;
@@ -276,14 +285,16 @@ trait_decl =
 self_parameter = contextual("self"), ":", compile_parameter_sort ;
 
 trait_member =
-    "let", IDENT, "=",
+    "let", IDENT, "=", callable_literal
+  | "let", IDENT, "=",
     { compile_parameter_group },
-    [ with_clause ],
-    { runtime_parameter_group },
-    [ "...", type_expr ],
-    ":", ( type_expr | contextual("type") | contextual("parameters") ),
-    [ constraint_guard ], [ callable_implementation ] ;
+    ":", ( contextual("type") | contextual("parameters") ) ;
 ```
+
+Effect operations use enum-like constructor syntax: they omit `let` and `=`,
+require an explicit runtime group, and have no implementation body. Their
+constructor-style names are used by qualified operation calls and handler
+arms. `Return` is reserved for handler completion.
 
 An associated type or associated constructor has no runtime parameter groups. Its compile-time
 groups appear before `: type`.
@@ -302,11 +313,8 @@ extend_decl =
     "}" ;
 
 extend_member =
-    "let", IDENT, "=",
-    { compile_parameter_group },
-    [ with_clause ],
-    { runtime_parameter_group }, [ ":", type_expr ],
-    [ constraint_guard ], [ callable_implementation ] ;
+    "let", IDENT, "=", callable_literal
+  | "let", IDENT, "=", expression ;
 
 constraint_guard =
     contextual("requires"), constraint_arguments ;
@@ -352,7 +360,7 @@ its compile-time parameters. A function applies the same compiler-owned
 `requires` guard to its body:
 
 ```sc fragment
-let duplicate = <T: type>(value: T): (T, T) requires(T is Copyable) => {
+let duplicate = { <T: type>(value: T): (T, T) requires(T is Copyable) =>
   (value, value)
 }
 ```
@@ -366,10 +374,10 @@ constraint arguments directly, for example `trait<requires: self is Movable> {}`
 
 ```ebnf
 foreign_function =
-    "let", IDENT, "=",
+    "let", IDENT, "=", "{",
     runtime_parameter_group,
     ":", type_expr,
-    foreign_initializer ;
+    "=>", foreign_initializer, "}" ;
 ```
 
 A foreign declaration has exactly one runtime parameter group, no
@@ -382,24 +390,24 @@ declarations and `@` attributes are not grammar productions.
 
 ```ebnf
 builtin_definition =
-    "let", IDENT, "=",
+    "let", IDENT, "=", "{",
     { declaration_group },
     ":", declaration_annotation,
-    builtin_initializer ;
+    "=>", builtin_initializer, "}" ;
 ```
 
-The core-private bootstrap has the exact shape
-`let builtin = () builtin()`. It is the sole compiler definition that omits a
-result annotation; validation assigns its uninhabited bootstrap result.
+The core-private bootstrap is the sole compiler definition that may omit a
+result annotation; like every callable value, its signature and initializer
+remain inside outer braces.
 Every other marker must match a known
 compiler-owned edition contract and is removed before code generation.
 Trait requirements, effect operations, and user opaque types remain
 bodyless declarations rather than builtin definitions.
 
 The root `core` module also contains the public overloads
-`pub let foreign = <abi: abi>: never builtin()` and
-`pub let foreign = <abi: abi, symbol: String>: never builtin()`, plus
-`pub let test = <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () builtin()`
+`pub let foreign = { <abi: abi>: never => builtin() }` and
+`pub let foreign = { <abi: abi, symbol: String>: never => builtin() }`, plus
+`pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`
 and the generic `requires(condition, body)` contract. They authorize the
 `foreign(c, ...)` initializer, top-level test registration, and function-body
 guard respectively;
@@ -472,10 +480,12 @@ edition's validated `Array` type form; other constructor arguments remain type e
 ordinary pure functions.
 
 `with<E>(a): b` applies one normalized effect row to the complete multi-group
-callable `(a): b`. Declarations place every compile-time group, optional
-effect row, runtime group, and result annotation after `=`. The final `:`
-introduces both a declaration's result and a callable type's result. `=>`
-separates a callable signature from its implementation expression.
+callable `(a): b`. Callable declarations place every compile-time group,
+optional effect row, runtime group, result annotation, and implementation
+inside their outer braces. The final `:` introduces both a declaration's
+result and a callable type's result. `=>` separates a callable signature from
+the body that occupies the remainder of the outer braces. Callable types stay
+unbraced `(T): R`.
 Canonical presentation separates an adjacent compile-time group and effect
 prefix with whitespace: `<T: type> with<e>`, not `<T: type>with<e>`.
 
@@ -513,7 +523,8 @@ prefix_op = "-" | "!" | contextual("move") | contextual("borrow") ;
 
 ```ebnf
 postfix_suffix =
-    argument_group
+    handler_suffix
+  | argument_group
   | ".", IDENT
   | "?.", IDENT
   | brace_application ;
@@ -525,6 +536,17 @@ argument = [ IDENT, ":" ], expression ;
 
 brace_application =
     [ horizontal_space ], "{", brace_group_contents, "}" ;
+
+handler_suffix =
+    ".", contextual("handle"),
+    "(", expression, ")", horizontal_space,
+    "{", separators,
+    handler_arm, { ",", separators, handler_arm },
+    [ "," ], separators, "}" ;
+
+handler_arm =
+    IDENT, "(", [ pattern, { ",", pattern }, [ "," ] ], ")",
+    "=>", expression ;
 ```
 
 Parenthesis, square, and angle postfix openers must be byte-adjacent to their
@@ -536,10 +558,16 @@ compile-time group, including struct-constructor and effect arguments; `()`,
 comparison (comparison operators require surrounding whitespace), while
 `a<b>` is an angle call. A postfix square group is the uniform surface form
 for calls and retains bounds-checked indexing/place behavior when its callee
-is indexable. Tight and spaced brace groups are the same Brace `DelimitedCall`.
+is indexable. Tight and spaced ordinary brace groups are the same Brace `DelimitedCall`.
 The declaration schema resolves their contents as ordinary/labeled arguments or
-as a callable parameter body. Struct construction and effect handlers use the
-same production. Standalone brace expressions remain closures.
+as a callable parameter body. Struct construction uses this production.
+Standalone brace expressions remain closures.
+
+The handler suffix is distinct. It requires exactly one unlabeled
+parenthesized action and whitespace before the arm group:
+`.handle(action) { Operation(...) => expression, Return(value) => expression }`.
+The action is delayed by handler semantics. Handler arms are not labeled call
+arguments; `action:` and `done:` are not productions.
 
 ```ebnf
 delimited_group(item) =
@@ -564,7 +592,7 @@ primary =
   | path
   | tuple_expression
   | array_expression
-  | closure_expression
+  | callable_expression
   | match_expression
   | if_expression
   | while_expression
@@ -584,15 +612,25 @@ tuple_expression =
 array_expression =
     "[", [ expression, { ",", expression }, [ "," ] ], "]" ;
 
-closure_expression =
-    closure_body
-  | closure_parameters,
-    { runtime_parameter_group },
-    [ ":", type_expr ],
-    "=>", expression ;
+callable_expression =
+    zero_parameter_callable
+  | parameterized_callable
+  | pattern_callable ;
 
-closure_parameters =
-    "(", [ runtime_parameter, { ",", runtime_parameter }, [ "," ] ], ")" ;
+zero_parameter_callable =
+    "{", block_contents, "}" ;
+
+parameterized_callable = callable_literal ;
+
+pattern_callable =
+    "{", separators,
+    pattern_callable_arm,
+    { ",", separators, pattern_callable_arm },
+    [ "," ], separators, "}" ;
+
+pattern_callable_arm =
+    pattern, [ contextual("if"), expression ], "=>", expression ;
+
 ```
 
 Control operations are contextual and recognized by their dedicated validated
@@ -603,7 +641,7 @@ post-test `do` loop, and `return`, `break`, and `await` require parentheses.
 
 ```ebnf
 closure_body =
-    "{", block_contents, "}" ;
+    zero_parameter_callable ;
 
 block_contents =
     separators,
@@ -646,17 +684,19 @@ break_expression = contextual("break"), "(", [ expression ], ")" ;
 await_expression = contextual("await"), "(", expression, ")" ;
 ```
 
-An ordinary brace expression is a closure, not a generic eagerly evaluated
-block. Function declarations and dedicated control forms consume such closures
-and invoke them at the point required by their contracts. `match(value) { ... }`
+An ordinary `{ expression }` is a zero-parameter closure, not a generic eagerly
+evaluated block. A parameterized callable also requires outer braces around its
+complete signature and body. Function declarations bind those callable
+literals; dedicated control forms consume zero-parameter closures and invoke
+them at the point required by their contracts. `match(value) { ... }`
 maps directly to a match expression whose comma-separated arms are stored as
 match arms. Its brace is not a tight Brace `DelimitedCall`, and parsing does
 not create a closure or other call intermediate.
 
-A single pattern closure remains a closure expression with the surface form
-`{ pattern [if expression] -> expression }`. The former consecutive form
-`callee { P -> ... } { Q -> ... }` is not grammar; multiple cases use the one
-direct match expression `match(value) { P => ..., Q => ... }`.
+A pattern callable has one or more comma-separated arms in one outer brace pair:
+`{ Pattern [if expression] => expression, ... }`. Calling it tries arms in
+source order. The former `->` arm and consecutive
+`callee { P -> ... } { Q -> ... }` forms are not grammar.
 
 `c` selects the C data representation and may appear at most once. It is
 orthogonal to named options such as `derive: Copyable`; for example,

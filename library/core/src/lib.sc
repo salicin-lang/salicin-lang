@@ -1,21 +1,21 @@
 // Private bootstrap marker for declarations whose definitions are supplied by
 // the compiler. Semantic validation gives each use its declaration annotation.
-let builtin = () builtin()
+let builtin = { (): never => builtin() }
 
 // Public syntax contracts. Their leading groups are erased metadata.
 pub let abi = core.foreign.abi
 pub let foreign = core.foreign.foreign
 // Test names are consumed by the `test("...") { ... }` syntax. Each
 // compiler-owned registration returns unit and may throw an owned message.
-pub let test = <name: String>{move body: with<core.error.throwing<core.string.String>>() :()}: () builtin()
+pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>() :()}: () => builtin() }
 
 // Function-definition guard. The parser supplies the normalized compile-time
 // boolean and delays the guarded body as a parameterless closure.
-pub let requires = <
-  condition: bool,
-e: effects,
-Result: type,
->with<e>{move body: with<e>() :Result}: Result builtin()
+pub let requires = { <
+    condition: bool,
+  e: effects,
+  Result: type,
+  >with<e>{move body: with<e>() :Result}: Result => builtin() }
 
 pub let never = core.never.never
 pub let Movable = core.marker.Movable

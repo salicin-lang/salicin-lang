@@ -8,7 +8,7 @@ use std::error::Error;
 use std::fmt;
 use std::sync::OnceLock;
 
-use crate::ast::{ExtendMember, GroupDelimiter, Item, Program, TraitMember, Visibility};
+use crate::ast::{ExtendMember, GroupDelimiter, Item, Program, TraitMember, Type, Visibility};
 use crate::manifest::Edition;
 use crate::modules::{self, PackageId, SourceUnit};
 use crate::parser;
@@ -162,9 +162,19 @@ pub(crate) fn naming_diagnostics(program: &Program, layer: &str) -> Vec<String> 
                             check(name, "associated type", StandardNameStyle::PascalCase);
                             check_compile_parameters(compile_groups, &mut check);
                         }
-                        TraitMember::Function(function) => {
-                            check_function(function, &mut check)
+                        TraitMember::Function(function)
+                            if function.groups.is_empty()
+                                && function.return_type
+                                    == Some(Type::Named("parameters".to_owned(), Vec::new())) =>
+                        {
+                            check(
+                                &function.name,
+                                "associated parameter schema",
+                                StandardNameStyle::PascalCase,
+                            );
+                            check_compile_parameters(&function.compile_groups, &mut check);
                         }
+                        TraitMember::Function(function) => check_function(function, &mut check),
                     }
                 }
             }
@@ -651,7 +661,7 @@ mod tests {
         let valid = parser::parse(
             "pub let Option = <T: type> enum { Some(T), None }\n\
              pub let Copyable = trait {}\n\
-             pub let suspension = effect { let suspend = (): () }\n",
+             pub let suspension = effect { suspend(): () }\n",
         )
         .unwrap();
         assert!(naming_diagnostics(&valid, "test").is_empty());
@@ -665,7 +675,7 @@ mod tests {
                 "pub let Iterator = trait { let item: type }\n",
                 "associated type",
             ),
-            ("pub let Service = (): () => {}\n", "snake_case"),
+            ("pub let Service = { (): () => }\n", "snake_case"),
         ] {
             let program = parser::parse(source).unwrap();
             let diagnostics = naming_diagnostics(&program, "test");

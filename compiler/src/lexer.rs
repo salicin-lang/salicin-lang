@@ -685,7 +685,7 @@ mod tests {
 
     #[test]
     fn recognizes_extend_as_a_keyword() {
-        let tokens = lex("extend(a) { let identity = <t: type>(value: t): t => { value } }").unwrap();
+        let tokens = lex("extend(a) { let identity = { <t: type>(value: t): t =>  value } }").unwrap();
         assert!(tokens.iter().any(|token| token.kind == TokenKind::Extend));
         assert!(tokens
             .iter()

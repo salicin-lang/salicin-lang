@@ -472,6 +472,16 @@ impl Parser {
         let name = self.declaration_name()?;
 
         let rhs_signature = self.take(&TokenKind::Equal);
+        if rhs_signature && self.callable_declaration_brace_follows() {
+            return self
+                .braced_function(name, mutable, false, &[], true, true, false)
+                .map(Item::Function);
+        }
+        if rhs_signature && self.runtime_parameter_group_follows() {
+            return Err(self.error_here(
+                "named callable declarations use an outer callable brace: `let name = { (parameters): Result => body }`",
+            ));
+        }
         if !rhs_signature
             && (self.current_group_delimiter().is_some() || self.at_context_ident("with"))
         {
@@ -480,6 +490,27 @@ impl Parser {
 
         let (compile_groups, groups, mut effects, has_callable_boundary, mut has_effect_clause) =
             self.declaration_groups(false, &[])?;
+
+        if rhs_signature
+            && !compile_groups.is_empty()
+            && groups.is_empty()
+            && self.at(&TokenKind::FatArrow)
+        {
+            return Err(self.error_here(
+                "named callable declarations use an outer callable brace after `=`",
+            ));
+        }
+        if rhs_signature && !groups.is_empty() {
+            let brace_constructor = !has_callable_boundary
+                && !has_effect_clause
+                && effects.group_delimiters == [GroupDelimiter::Brace]
+                && (self.at_separator() || self.at(&TokenKind::Eof) || self.at(&TokenKind::RBrace));
+            if !brace_constructor {
+                return Err(self.error_here(
+                    "named callable declarations use an outer callable brace: `let name = { (parameters): Result => body }`",
+                ));
+            }
+        }
 
         if mutable && (!compile_groups.is_empty() || !groups.is_empty()) {
             return Err(self.error_here("`let mut` cannot declare a function"));
@@ -908,6 +939,173 @@ impl Parser {
         }
     }
 
+    fn callable_declaration_brace_follows(&self) -> bool {
+        if !self.at(&TokenKind::LBrace) {
+            return false;
+        }
+        let mut index = self.index + 1;
+        while matches!(
+            self.tokens.get(index).map(|token| &token.kind),
+            Some(TokenKind::Newline | TokenKind::Semicolon)
+        ) {
+            index += 1;
+        }
+        match self.tokens.get(index).map(|token| &token.kind) {
+            Some(TokenKind::Less | TokenKind::Ellipsis) => true,
+            Some(TokenKind::Ident(name)) if name == "with" => true,
+            Some(TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace) => {
+                let Some(end) = self.group_end(index) else {
+                    return false;
+                };
+                if end == index + 1 {
+                    return true;
+                }
+                let mut nested = 0usize;
+                for token in &self.tokens[index + 1..end] {
+                    match token.kind {
+                        TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace => nested += 1,
+                        TokenKind::RParen | TokenKind::RBracket | TokenKind::RBrace => {
+                            nested = nested.saturating_sub(1)
+                        }
+                        TokenKind::Colon if nested == 0 => return true,
+                        TokenKind::Ident(ref name) if nested == 0 && name == "self" => return true,
+                        _ => {}
+                    }
+                }
+                false
+            }
+            _ => false,
+        }
+    }
+
+    fn braced_function(
+        &mut self,
+        name: String,
+        mutable: bool,
+        allow_receiver: bool,
+        outer_effect_parameters: &[String],
+        allow_builtin: bool,
+        allow_foreign: bool,
+        require_parameter_group: bool,
+    ) -> Result<Function, ParseError> {
+        if mutable {
+            return Err(self.error_here("`let mut` cannot declare a function"));
+        }
+        let open = self.current().clone();
+        let body_start_byte = self.body_start_byte(self.index + 1);
+        self.expect(&TokenKind::LBrace, "outer callable `{`")?;
+        self.skip_separators();
+        let (compile_groups, groups, mut effects, has_callable_boundary, mut has_effect_clause) =
+            self.declaration_groups(allow_receiver, outer_effect_parameters)?;
+        if allow_receiver {
+            self.validate_receiver_groups(&name, &groups)?;
+        }
+        if require_parameter_group && compile_groups.is_empty() && groups.is_empty() {
+            return Err(self.error_here("trait function members require at least one parameter group"));
+        }
+
+        let logical_result = if self.take(&TokenKind::Colon) {
+            Some(self.function_result_type()?)
+        } else {
+            None
+        };
+        if !has_callable_boundary {
+            let (mut declared, _, declared_clause) = self.function_effect_clause()?;
+            declared.compile_group_delimiters = effects.compile_group_delimiters;
+            declared.group_delimiters = effects.group_delimiters;
+            effects = declared;
+            has_effect_clause = declared_clause;
+        }
+        let return_type = logical_result.map(|result| {
+            Self::apply_failure_effect(result, effects.failure.as_deref().cloned())
+        });
+        self.effect_parameters_in_scope.clear();
+        self.take_newlines_if_followed_by(&[
+            TokenKind::FatArrow,
+            TokenKind::Ident("requires".to_owned()),
+            TokenKind::RBrace,
+        ]);
+
+        let mut where_predicates = Vec::new();
+        if self.at_context_ident("requires") {
+            self.advance();
+            where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
+            self.take_newlines_if_followed_by(&[TokenKind::FatArrow, TokenKind::RBrace]);
+        }
+
+        let mut builtin = false;
+        let mut foreign = None;
+        let body = if self.take(&TokenKind::RBrace) {
+            None
+        } else {
+            self.expect(&TokenKind::FatArrow, "`=>` before callable implementation")?;
+            self.skip_newlines();
+            if self.at_context_ident("builtin") {
+                if !allow_builtin {
+                    return Err(self.error_here(
+                        "trait requirements are abstract and cannot use `builtin()`",
+                    ));
+                }
+                if return_type.is_none() {
+                    return Err(self.error_here(
+                        "builtin functions require an explicit result type before `=> builtin()`",
+                    ));
+                }
+                self.consume_builtin_initializer()?;
+                builtin = true;
+                self.skip_separators();
+                self.expect(&TokenKind::RBrace, "`}` after builtin callable")?;
+                None
+            } else if self.at_context_ident("foreign") {
+                if !allow_foreign {
+                    return Err(self.error_here("foreign declarations are only allowed at top level"));
+                }
+                if !compile_groups.is_empty() || groups.len() != 1 || return_type.is_none() {
+                    return Err(self.error_here(
+                        "foreign functions require one runtime group, no compile groups, and an explicit result type",
+                    ));
+                }
+                if has_effect_clause || !where_predicates.is_empty() {
+                    return Err(self.error_here(
+                        "foreign functions cannot declare effects or requirements",
+                    ));
+                }
+                foreign = Some(self.foreign_initializer(&name)?);
+                self.skip_separators();
+                self.expect(&TokenKind::RBrace, "`}` after foreign callable")?;
+                effects = FunctionEffects {
+                    unsafety: true,
+                    compile_group_delimiters: effects.compile_group_delimiters,
+                    group_delimiters: effects.group_delimiters,
+                    ..FunctionEffects::default()
+                };
+                None
+            } else {
+                Some(self.block_contents()?)
+            }
+        };
+        let close = self.previous().clone();
+        self.layout.blocks.push(SourceBracedRegion {
+            open_byte: open.start_byte,
+            close_byte: close.start_byte,
+            body_start_byte,
+            open_line: open.line,
+            close_line: close.line,
+        });
+
+        Ok(Function {
+            name,
+            foreign,
+            builtin,
+            compile_groups,
+            groups,
+            return_type,
+            effects,
+            where_predicates,
+            body,
+        })
+    }
+
     fn foreign_initializer(
         &mut self,
         declaration_name: &str,
@@ -958,17 +1156,17 @@ impl Parser {
         self.skip_separators();
         let mut operations = Vec::new();
         while !self.at(&TokenKind::RBrace) {
-            self.expect(&TokenKind::Let, "`let` in effect body")?;
-            if self.take(&TokenKind::Mut) {
-                return Err(self.error_here("effect operations cannot use `let mut`"));
+            if self.at(&TokenKind::Let) {
+                return Err(self.error_here(
+                    "effect operations omit `let` and `=`; write `Operation(parameters): Result`",
+                ));
             }
             let operation = self.expect_ident("an effect operation name")?;
-            if operation == "handle" || operation == "done" {
+            if matches!(operation.as_str(), "Return" | "handle" | "done" | "action") {
                 return Err(self.error_here(format!(
                     "effect operation name `{operation}` is reserved by handler lowering"
                 )));
             }
-            self.expect(&TokenKind::Equal, "`=` before an effect operation signature")?;
             let (
                 operation_compile_groups,
                 groups,
@@ -1358,6 +1556,16 @@ impl Parser {
         }
         let name = self.expect_ident("an extend member name")?;
         let rhs_signature = self.take(&TokenKind::Equal);
+        if rhs_signature && self.callable_declaration_brace_follows() {
+            return self
+                .braced_function(name, false, true, &[], true, false, false)
+                .map(ExtendMember::Function);
+        }
+        if rhs_signature && self.runtime_parameter_group_follows() {
+            return Err(self.error_here(
+                "method declarations use an outer callable brace after `=`",
+            ));
+        }
         if !rhs_signature
             && (self.current_group_delimiter().is_some() || self.at_context_ident("with"))
         {
@@ -1366,6 +1574,11 @@ impl Parser {
 
         let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
             self.declaration_groups(true, &[])?;
+        if rhs_signature && !groups.is_empty() {
+            return Err(self.error_here(
+                "method declarations use an outer callable brace after `=`",
+            ));
+        }
         self.validate_receiver_groups(&name, &groups)?;
 
         let logical_result = if self.take(&TokenKind::Colon) {
@@ -3076,6 +3289,24 @@ impl Parser {
         }
         let name = self.expect_ident("a trait member name")?;
         let rhs_signature = self.take(&TokenKind::Equal);
+        if rhs_signature && self.callable_declaration_brace_follows() {
+            return self
+                .braced_function(
+                    name,
+                    false,
+                    true,
+                    outer_effect_parameters,
+                    false,
+                    false,
+                    true,
+                )
+                .map(TraitMember::Function);
+        }
+        if rhs_signature && self.runtime_parameter_group_follows() {
+            return Err(self.error_here(
+                "trait callable requirements and defaults use an outer callable brace after `=`",
+            ));
+        }
         if !rhs_signature
             && (self.current_group_delimiter().is_some() || self.at_context_ident("with"))
         {
@@ -3083,6 +3314,11 @@ impl Parser {
         }
         let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
             self.declaration_groups(true, outer_effect_parameters)?;
+        if rhs_signature && !groups.is_empty() {
+            return Err(self.error_here(
+                "trait callable requirements and defaults use an outer callable brace after `=`",
+            ));
+        }
         self.validate_receiver_groups(&name, &groups)?;
 
         let logical_result = if self.take(&TokenKind::Colon) {
@@ -4485,7 +4721,28 @@ impl Parser {
         let mut expression = self.primary(allow_brace_group)?;
 
         loop {
-            if let Some(delimiter) = self.call_delimiter_follows(allow_brace_group) {
+            if self.at(&TokenKind::LBrace)
+                && matches!(
+                    &expression,
+                    Expr::Call(callee, _)
+                        if matches!(callee.as_ref(), Expr::Member(_, member) if member == "handle")
+                )
+            {
+                expression = self.effect_handler_expression(expression)?;
+            } else if self.at(&TokenKind::LBrace)
+                && matches!(&expression, Expr::Member(_, member) if member == "handle")
+            {
+                return Err(self.error_here(
+                    "old labeled handler syntax was removed; write `.handle(action) { Operation(...) => body, Return(value) => value }`",
+                ));
+            } else if matches!(&expression, Expr::Member(_, member) if member == "handle")
+                && self.current_group_delimiter().is_some()
+                && self.current_group_delimiter() != Some(GroupDelimiter::Parenthesis)
+            {
+                return Err(self.error_here(
+                    "`.handle` requires exactly one unlabeled parenthesized action",
+                ));
+            } else if let Some(delimiter) = self.call_delimiter_follows(allow_brace_group) {
                 if delimiter == GroupDelimiter::Brace {
                     self.layout.brace_groups.push(self.current().start_byte);
                 }
@@ -4546,6 +4803,83 @@ impl Parser {
         Ok(expression)
     }
 
+    fn effect_handler_expression(&mut self, expression: Expr) -> Result<Expr, ParseError> {
+        let Expr::Call(callee, action_arguments) = expression else {
+            unreachable!("handler call shape was checked")
+        };
+        let Expr::Member(effect, member) = *callee else {
+            unreachable!("handler member shape was checked")
+        };
+        debug_assert_eq!(member, "handle");
+        let [CallArg {
+            label: None,
+            value: action,
+        }] = action_arguments.as_slice()
+        else {
+            return Err(self.error_here(
+                "`.handle` requires exactly one unlabeled parenthesized action",
+            ));
+        };
+        if self.previous().end_byte == self.current().start_byte {
+            return Err(self.error_here(
+                "handler arms are a spaced trailing group: `.handle(action) { ... }`",
+            ));
+        }
+
+        let open = self.current().clone();
+        let body_start_byte = self.body_start_byte(self.index + 1);
+        self.layout.brace_groups.push(open.start_byte);
+        self.expect(&TokenKind::LBrace, "`{` before handler arms")?;
+        self.skip_separators();
+        let mut arguments = Vec::new();
+        while !self.at(&TokenKind::RBrace) {
+            let operation = self.expect_ident("an effect operation name or `Return`")?;
+            let parameters = self.parameter_group()?;
+            self.expect(&TokenKind::FatArrow, "`=>` after handler arm")?;
+            let body = if self.at(&TokenKind::Do) && self.at_offset(1, &TokenKind::LBrace) {
+                self.advance();
+                self.block()?
+            } else {
+                self.expression(true)?
+            };
+            arguments.push(CallArg {
+                label: Some(if operation == "Return" {
+                    "done".to_owned()
+                } else {
+                    operation
+                }),
+                value: Expr::Closure(parameters, Box::new(body)),
+            });
+            self.skip_newlines();
+            if self.take(&TokenKind::Comma) {
+                self.skip_separators();
+                if self.at(&TokenKind::RBrace) {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        self.expect(&TokenKind::RBrace, "`}` after handler arms")?;
+        let close = self.previous().clone();
+        self.layout.closures.push(SourceBracedRegion {
+            open_byte: open.start_byte,
+            close_byte: close.start_byte,
+            body_start_byte,
+            open_line: open.line,
+            close_line: close.line,
+        });
+        arguments.push(CallArg {
+            label: Some("action".to_owned()),
+            value: Expr::Closure(Vec::new(), Box::new(action.clone())),
+        });
+        Ok(Expr::DelimitedCall {
+            callee: Box::new(Expr::Member(effect, "handle".to_owned())),
+            delimiter: GroupDelimiter::Brace,
+            arguments,
+        })
+    }
+
     fn explicit_call_delimiter_follows(&self) -> Option<GroupDelimiter> {
         let delimiter = self.current_group_delimiter()?;
         (self.previous().kind != TokenKind::Newline
@@ -4592,7 +4926,7 @@ impl Parser {
                     closers.pop();
                 }
                 TokenKind::RBrace if closers.is_empty() => return false,
-                TokenKind::Arrow if closers.is_empty() => return true,
+                TokenKind::Arrow | TokenKind::FatArrow if closers.is_empty() => return true,
                 _ => {}
             }
             index += 1;
@@ -4689,6 +5023,7 @@ impl Parser {
                     closers.pop();
                 }
                 TokenKind::RBrace if !nested => break,
+                TokenKind::FatArrow if !nested => return false,
                 TokenKind::Comma if !nested => return true,
                 TokenKind::Ident(_) if !nested && at_group_start => {
                     if matches!(
@@ -4879,7 +5214,10 @@ impl Parser {
                     && (self.runtime_parameter_group_follows()
                         || self.anonymous_untyped_parameter_group_follows())
                 {
-                    return self.anonymous_function_expression();
+                    return Err(self.error_at(
+                        &token,
+                        "anonymous parameterized callables require outer braces: `{ (parameters) => body }`",
+                    ));
                 }
                 self.advance();
                 if self.take(&TokenKind::RParen) {
@@ -5444,8 +5782,6 @@ impl Parser {
             || self.anonymous_untyped_parameter_group_follows()
         {
             let callable = self.anonymous_function_expression()?;
-            self.skip_separators();
-            self.expect(&TokenKind::RBrace, "`}` after callable block")?;
             return Ok(callable);
         }
 
@@ -5455,29 +5791,42 @@ impl Parser {
             );
         }
 
-        if !self.at(&TokenKind::LParen) {
-            let pattern_start = self.index;
-            if let Ok(pattern) = self.pattern() {
-                let guard = if self.take(&TokenKind::If) {
-                    Some(Box::new(self.expression(true)?))
-                } else {
-                    None
-                };
-                if self.take(&TokenKind::FatArrow) {
-                    return Err(self.error_here(
-                        "multi-arm closures are only valid in `match(value) { ... }`",
-                    ));
-                }
-                if self.take(&TokenKind::Arrow) {
-                    return Ok(Expr::PatternClosure {
-                        pattern,
-                        guard,
-                        body: Box::new(self.block_contents()?),
-                    });
-                }
+        let pattern_start = self.index;
+        if let Ok(pattern) = self.pattern() {
+            let guard = if self.take(&TokenKind::If) {
+                Some(Box::new(self.expression(true)?))
+            } else {
+                None
+            };
+            if self.take(&TokenKind::FatArrow) {
+                let id = self.next_control_binding;
+                self.next_control_binding += 1;
+                let input = format!("$match$callable$input${id}");
+                let arms = self.match_arms(Some((pattern, guard)))?;
+                return Ok(Expr::Closure(
+                    vec![Param {
+                        mode: PassMode::Inferred,
+                        access: None,
+                        modifiers: Vec::new(),
+                        region: None,
+                        name: input.clone(),
+                        ty: Type::Named("$context$infer".into(), Vec::new()),
+                    }],
+                    Box::new(Expr::Match {
+                        scrutinee: Box::new(Expr::Name(input)),
+                        arms,
+                    }),
+                ));
             }
-            self.index = pattern_start;
+            if self.take(&TokenKind::Arrow) {
+                return Ok(Expr::PatternClosure {
+                    pattern,
+                    guard,
+                    body: Box::new(self.block_contents()?),
+                });
+            }
         }
+        self.index = pattern_start;
 
         if self.closure_parameter_arrow_follows() {
             return Err(self.error_here(
@@ -5500,7 +5849,7 @@ impl Parser {
             self.function_result_type()?;
         }
         self.expect(&TokenKind::FatArrow, "`=>` before callable implementation")?;
-        let mut expression = self.callable_body()?;
+        let mut expression = self.block_contents()?;
         for parameters in groups.into_iter().rev() {
             expression = Expr::Closure(parameters, Box::new(expression));
         }

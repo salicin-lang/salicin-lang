@@ -1,4 +1,4 @@
-let main = (): i32 => {
+let main = { (): i32 =>
   let pointer: Ptr<mut><Array<i32><2>> = unsafe {
     raw_alloc(size: 8, align: 64)
   }

@@ -3,14 +3,14 @@ let bundle = struct { left: resource, right: resource }
 let choice = enum { Some(bundle, resource), None }
 
 extend(resource, Droppable) {
-  let drop = (self: Borrow<mut><self>)(): () => {
+  let drop = { (self: Borrow<mut><self>)(): () =>
     let trapped = 1 / self.value
   }
 }
 
-let consume = (move value: resource): () => { () }
+let consume = { (move value: resource): () => () }
 
-let main = (): i32 => { match(choice.Some(
+let main = { (): i32 => match(choice.Some(
       bundle { left: resource { value: 1 }, right: resource { value: 0 } },
       resource { value: 1 }
   )) {

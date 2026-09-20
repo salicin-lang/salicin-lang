@@ -17,7 +17,7 @@ The completed surface has these properties:
 
 ```salicin
 let runtime_text: String = "hello"
-let register = <name: String>: () => {}
+let register = { <name: String>: () => () }
 
 let value_type: type = type_of<runtime_text>
 let string_sort = sort_of<String>
@@ -75,9 +75,9 @@ The universe former has an edition-pinned bootstrap declaration:
 
 ```salicin
 /// Constructs the universe at positive level `level`.
-pub let sort = <
+pub let sort = { <
   level: usize,
->: sort<level + 1> builtin()
+>: sort<level + 1> => builtin() }
 ```
 
 The compiler necessarily recognizes enough syntax to parse this bootstrap,
@@ -195,11 +195,11 @@ definition:
 
 ```salicin
 /// Returns the inferred immediate sort of `value`.
-pub let sort_of = <
+pub let sort_of = { <
   level: usize,
   classifier: sort<level>,
   value: classifier,
->: sort<level> => {
+>: sort<level> =>
   classifier
 }
 ```
@@ -218,11 +218,11 @@ Its source declaration therefore describes the expression as a lazy callable:
 
 ```salicin
 /// Returns the inferred type of `expression` without executing it.
-pub let type_of = <
+pub let type_of = { <
   e: effects,
   T: type,
 > with<e>
-  (move expression: with<e>(): T): type builtin()
+  (move expression: with<e>(): T): type => builtin() }
 ```
 
 The parser rewrites:
@@ -262,7 +262,7 @@ pub let String: type = builtin()
 extend(String, core.marker.Movable) {}
 
 extend(String, core.marker.Droppable) {
-  let drop = (self: Borrow<mut><self>)(): () builtin()
+  let drop = { (self: Borrow<mut><self>)(): () => builtin() }
 }
 ```
 
@@ -315,53 +315,53 @@ exact signatures form the contract.
 
 ```salicin
 // Creates the empty inline string.
-let string_new = (): String builtin()
+let string_new = { (): String => builtin() }
 
 // Creates an empty string with space for at least `capacity` UTF-8 bytes.
-let string_with_capacity = (capacity: u64): String builtin()
+let string_with_capacity = { (capacity: u64): String => builtin() }
 
-let string_len_bytes = (value: Borrow<String>): u64 builtin()
-let string_capacity = (value: Borrow<String>): u64 builtin()
+let string_len_bytes = { (value: Borrow<String>): u64 => builtin() }
+let string_capacity = { (value: Borrow<String>): u64 => builtin() }
 
 // The source wrapper performs the bounds check.
-let string_byte_at_unchecked = (
+let string_byte_at_unchecked = { (
   value: Borrow<String>,
   index: u64,
-): u8 builtin()
+): u8 => builtin() }
 
 // Returns a shared byte view tied to the source borrow.
-let string_as_bytes = <
+let string_as_bytes = { <
   r: region,
 >
-  (value: Borrow<r><String>): Borrow<r><Slice<u8>> builtin()
+  (value: Borrow<r><String>): Borrow<r><Slice<u8>> => builtin() }
 
-let string_reserve = (
+let string_reserve = { (
   value: Borrow<mut><String>,
   additional: u64,
-): () builtin()
+): () => builtin() }
 
 // Callers preserve the UTF-8 invariant.
-let string_push_byte_unchecked = with<core.unsafe.unsafety>(
+let string_push_byte_unchecked = { with<core.unsafe.unsafety>(
   value: Borrow<mut><String>,
   byte: u8,
-): () builtin()
+): () => builtin() }
 
 // `new_length` has already been checked as a UTF-8 boundary.
-let string_truncate_unchecked = with<core.unsafe.unsafety>(
+let string_truncate_unchecked = { with<core.unsafe.unsafety>(
   value: Borrow<mut><String>,
   new_length: u64,
-): () builtin()
+): () => builtin() }
 
 // Transfers ownership between the opaque string and allocation adapters.
-pub let string_from_raw_parts = with<core.unsafe.unsafety>(
+pub let string_from_raw_parts = { with<core.unsafe.unsafety>(
   pointer: Ptr<mut><u8>,
   length: u64,
   capacity: u64,
-): String builtin()
+): String => builtin() }
 
-pub let string_into_raw_parts = with<core.unsafe.unsafety>(
+pub let string_into_raw_parts = { with<core.unsafe.unsafety>(
   move value: String,
-): (Ptr<mut><u8>, u64, u64) builtin()
+): (Ptr<mut><u8>, u64, u64) => builtin() }
 ```
 
 The raw-parts operations always return heap-owned storage. Converting an
@@ -383,39 +383,39 @@ Public methods are ordinary source wrappers wherever possible:
 
 ```salicin
 extend(String) {
-  let new = (): String => {
+  let new = { (): String =>
     string_new()
   }
 
-  let with_capacity = (capacity: u64): String => {
+  let with_capacity = { (capacity: u64): String =>
     string_with_capacity(capacity)
   }
 
-  let len_bytes = (self: Borrow<self>)(): u64 => {
+  let len_bytes = { (self: Borrow<self>)(): u64 =>
     string_len_bytes(self)
   }
 
-  let capacity = (self: Borrow<self>)(): u64 => {
+  let capacity = { (self: Borrow<self>)(): u64 =>
     string_capacity(self)
   }
 
-  let is_empty = (self: Borrow<self>)(): bool => {
+  let is_empty = { (self: Borrow<self>)(): bool =>
     self.len_bytes() == 0
   }
 
-  let as_bytes = <r: region>
-    (self: Borrow<r><self>)(): Borrow<r><Slice<u8>> => {
+  let as_bytes = { <r: region>
+    (self: Borrow<r><self>)(): Borrow<r><Slice<u8>> =>
     string_as_bytes(self)
   }
 
-  let byte_at = (self: Borrow<self>)(index: u64): u8 => {
+  let byte_at = { (self: Borrow<self>)(index: u64): u8 =>
     if(index >= self.len_bytes()) {
       unsafe { raw_trap() }
     }
     string_byte_at_unchecked(self, index)
   }
 
-  let reserve = (self: Borrow<mut><self>)(additional: u64): () => {
+  let reserve = { (self: Borrow<mut><self>)(additional: u64): () =>
     string_reserve(self, additional)
   }
 }
@@ -436,10 +436,10 @@ compile-time parameters are available, `core/string.sc` declares:
 
 ```salicin
 /// Materializes compiler-validated UTF-8 literal bytes as `String`.
-let string_literal = <
+let string_literal = { <
   n: usize,
   bytes: Array<u8><n>,
->: String builtin()
+>: String => builtin() }
 ```
 
 The lexer decodes escapes and validates source UTF-8, then expression
@@ -511,16 +511,16 @@ pub let FromUtf8Error = struct {
 }
 
 /// Validates and consumes `bytes`, transferring its allocation on success.
-pub let string_from_utf8 = (
+pub let string_from_utf8 = { (
   move bytes: Vec<u8>,
-): Result<FromUtf8Error><String> => {
+): Result<FromUtf8Error><String> =>
   // UTF-8 validation remains ordinary Salicin source.
   // On success, take the vector raw parts and call the validated core
   // `string_from_raw_parts` contract.
 }
 
 /// Consumes a string and returns owned bytes.
-pub let string_into_bytes = (move value: String): Vec<u8> => {
+pub let string_into_bytes = { (move value: String): Vec<u8> =>
   // Call `string_into_raw_parts`, then construct `Vec<u8>`.
 }
 ```
@@ -542,7 +542,7 @@ The source-backed syntax contract changes from the removed string sort to the
 ordinary type:
 
 ```salicin
-pub let test = <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () builtin()
+pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }
 ```
 
 The top-level `test("name") { ... }` syntax supplies `name` as compiler

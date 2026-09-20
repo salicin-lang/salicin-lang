@@ -1,10 +1,10 @@
-let c_memset = (
+let c_memset = { (
   destination: Ptr<mut><u8>,
   value: i32,
   count: usize,
-): Ptr<mut><u8> foreign(c, "memset")
+): Ptr<mut><u8> => foreign(c, "memset") }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut byte: u8 = 0
   do {
     let pointer = ptr<mut>(borrow<mut>(byte))

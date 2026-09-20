@@ -5,4 +5,4 @@ let Result = <E: type><t: type> enum {
   Err(e),
 }
 
-let main = (): i32 => { 42 }
+let main = { (): i32 => 42 }

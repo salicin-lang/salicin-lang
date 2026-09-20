@@ -7,7 +7,7 @@ pub let Inventory = struct {
 
 /// Consumes a collection and summarizes all entries through their trait API.
 pub let Summarize = trait {
-  let summarize = (move self)(): Summary
+  let summarize = { (move self)(): Summary }
 }
 
 pub let Summary = struct {
@@ -17,17 +17,17 @@ pub let Summary = struct {
 }
 
 extend(Inventory) {
-  let new = (): Inventory => {
+  let new = { (): Inventory =>
     Inventory { products: Vec<model.Product>.new() }
   }
 
-  let push = (self: Borrow<mut><self>)(move product: model.Product): () => {
+  let push = { (self: Borrow<mut><self>)(move product: model.Product): () =>
     self.products.push(product)
   }
 }
 
 extend(Inventory, Summarize) {
-  let summarize = (move self)(): Summary => {
+  let summarize = { (move self)(): Summary =>
     let mut owner = self
     let products = owner.products.take()
     let mut count: u64 = 0

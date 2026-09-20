@@ -1,6 +1,6 @@
-let observe = (value: Borrow<()>): () => { value }
+let observe = { (value: Borrow<()>): () => value }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let unit = ()
   observe(unit)
   42

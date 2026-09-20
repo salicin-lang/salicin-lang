@@ -3,7 +3,7 @@ let maybe = <t: type> enum {
   None,
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let some = maybe.Some(42)
   let none: maybe<i32> = maybe.None
   let from_some = match(some) { Some(value) => value, None => 0,

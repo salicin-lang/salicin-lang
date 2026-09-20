@@ -24,10 +24,11 @@ the contract requires it. Conditions are eager where their source order requires
 Conceptually, `if` has this shape:
 
 ```sc fragment
-let if = <e: effects, T: type> with<e>
+let if = { <e: effects, T: type> with<e>
   (condition: bool)
   {move then: with<e>(): T}
   {move else: with<e>(): T}: T
+}
 ```
 
 The ordinary surface form:
@@ -51,7 +52,7 @@ must therefore preserve these properties:
 `while(condition) { ... }` evaluates its condition before each iteration.
 
 When a `for` iterable itself ends in a Brace pattern body, parenthesize that
-application to separate it from the loop body: `for (make { x -> x }) { (item) => ... }`.
+application to separate it from the loop body: `for (make { x => x }) { item => ... }`.
 `do { ... } while: { condition }` evaluates its condition after each iteration.
 These and `if(condition) { ... } else: { ... }` are the sole spellings; the
 language has no unlabeled-condition or named-closure aliases. `loop` has the
@@ -93,10 +94,9 @@ A match case maps a successful pattern and guard to an arm result. It consists o
 - an optional guard;
 - a body.
 
-A single pattern closure may still be written as
-`{ pattern [if guard] -> expression }` and passed as one closure argument. Its
-call returns `core.control.Attempt<Input><Output>`, preserving the input in
-`Miss` when the pattern or guard fails.
+A pattern callable is written as
+`{ Pattern [if guard] => expression, ... }` and passed as one callable
+argument. Its arms are attempted in source order.
 
 Failure to match is not an error result and does not consume the scrutinee. The next case receives
 the same logical input state. A successful pattern establishes its bindings before the guard. A
@@ -121,10 +121,9 @@ This syntax maps directly to match semantics. The brace contains
 comma-separated match arms; it is not a tight brace call, a closure-valued
 intermediate, or a sequence of postfix match cases.
 
-The old consecutive pattern-closure form
-`callee { P -> ... } { Q -> ... }` has been removed. The replacement for
-ordered alternatives is one multi-arm
-`match(value) { P => ..., Q => ... }` expression.
+The old `->` arm and consecutive pattern-callable form have been removed. The
+replacement is one multi-arm callable `{ P => ..., Q => ... }`, or a direct
+`match(value) { P => ..., Q => ... }` expression when matching immediately.
 
 Lowering must preserve:
 
@@ -145,7 +144,7 @@ Compiler-generated internal match names must never appear in user diagnostics.
 ```sc fragment
 let Iterator = trait {
   let Item = <r: region>: type
-  let next = <r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>>
+  let next = { <r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>> }
 }
 ```
 

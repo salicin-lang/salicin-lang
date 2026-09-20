@@ -1,7 +1,7 @@
 let Option = core.Option
 let Result = core.Result
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let option_number = Option<i32>.Some(20)
   let option_flag = Option<bool>.Some(true)
   let result_ok = Result<bool><i32>.Ok(7)

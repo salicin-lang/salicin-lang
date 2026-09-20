@@ -9,9 +9,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll = <r: region>
+  let poll = { <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<i32> => {
+    (): Poll<i32> =>
     if(self.polled) {
       Poll<i32>.Ready(self.value)
     } else: {
@@ -21,7 +21,7 @@ extend(step, Future<()>) {
   }
 }
 
-let step = (value: i32): step => {
+let step = { (value: i32): step =>
   step { polled: false, value: value }
 }
 
@@ -33,9 +33,9 @@ let condition = struct {
 extend(condition, Future<()>) {
   let Output = bool;
 
-  let poll = <r: region>
+  let poll = { <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<bool> => {
+    (): Poll<bool> =>
     if(self.polled) {
       Poll<bool>.Ready(self.value)
     } else: {
@@ -45,11 +45,11 @@ extend(condition, Future<()>) {
   }
 }
 
-let condition = (value: bool): condition => {
+let condition = { (value: bool): condition =>
   condition { polled: false, value: value }
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut value_loop = async {
     loop {
       break(await(step(40)))

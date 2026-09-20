@@ -11,66 +11,66 @@ pub let Movable = trait {}
         copy_declaration,
         r#"
 pub let Droppable = trait {
-  let drop = (self: Borrow<mut><self>)(): ()
+  let drop = { (self: Borrow<mut><self>)(): () }
 }
 pub let Add = <Rhs: type> trait {
   let Output: type
-  let add = (self)(rhs: Rhs): Output
+  let add = { (self)(rhs: Rhs): Output }
 }
 pub let Sub = <Rhs: type> trait {
   let Output: type
-  let sub = (self)(rhs: Rhs): Output
+  let sub = { (self)(rhs: Rhs): Output }
 }
 pub let Mul = <Rhs: type> trait {
   let Output: type
-  let mul = (self)(rhs: Rhs): Output
+  let mul = { (self)(rhs: Rhs): Output }
 }
 pub let Div = <Rhs: type> trait {
   let Output: type
-  let div = (self)(rhs: Rhs): Output
+  let div = { (self)(rhs: Rhs): Output }
 }
 pub let Rem = <Rhs: type> trait {
   let Output: type
-  let rem = (self)(rhs: Rhs): Output
+  let rem = { (self)(rhs: Rhs): Output }
 }
 pub let Eq = <Rhs: type> trait {
-  let eq = (self: Borrow<self>)(rhs: Borrow<Rhs>): bool
+  let eq = { (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }
 }
 pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }
 pub let PartialOrd = <Rhs: type> trait {
-  let partial_cmp = (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering
+  let partial_cmp = { (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }
 }
 pub let Neg = trait {
   let Output: type
-  let neg = (self)(): Output
+  let neg = { (self)(): Output }
 }
 pub let Not = trait {
   let Output: type
-  let not = (self)(): Output
+  let not = { (self)(): Output }
 }
 pub let BitAnd = <Rhs: type> trait {
   let Output: type
-  let bit_and = (self)(rhs: Rhs): Output
+  let bit_and = { (self)(rhs: Rhs): Output }
 }
 pub let BitOr = <Rhs: type> trait {
   let Output: type
-  let bit_or = (self)(rhs: Rhs): Output
+  let bit_or = { (self)(rhs: Rhs): Output }
 }
 pub let BitXor = <Rhs: type> trait {
   let Output: type
-  let bit_xor = (self)(rhs: Rhs): Output
+  let bit_xor = { (self)(rhs: Rhs): Output }
 }
 pub let Shl = <Rhs: type> trait {
   let Output: type
-  let shl = (self)(rhs: Rhs): Output
+  let shl = { (self)(rhs: Rhs): Output }
 }
 pub let Shr = <Rhs: type> trait {
   let Output: type
-  let shr = (self)(rhs: Rhs): Output
+  let shr = { (self)(rhs: Rhs): Output }
 }
 pub let Index = <Key: type> trait {
   let Output: type
-  let index = <a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output>
+  let index = { <a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output> }
 }
 pub let str: type = builtin()
 "#,
@@ -508,8 +508,8 @@ fn canonical_type_application_check_rejects_mixed_builtin_families() {
 #[test]
 fn core_bundle_rejects_legacy_parenthesized_compile_groups() {
     let malformed = EDITION_2026_BORROW.replace(
-        "pub let borrow = <a: access = shared>",
-        "pub let borrow = (a: access = shared)",
+        "pub let borrow = { <a: access = shared>",
+        "pub let borrow = { (a: access = shared)",
     );
     assert_ne!(malformed, EDITION_2026_BORROW);
 
@@ -526,7 +526,7 @@ fn core_bundle_rejects_legacy_parenthesized_compile_groups() {
 
 #[test]
 fn builtin_markers_are_explicit_and_bounded_core_contracts() {
-    let missing_bootstrap = EDITION_2026_LIB.replace("let builtin = () builtin()\n", "");
+    let missing_bootstrap = EDITION_2026_LIB.replace("let builtin = { (): never => builtin() }\n", "");
     let modules = edition_2026_test_modules(&[("lib", &missing_bootstrap)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error
@@ -537,11 +537,11 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
     for (name, declaration) in [
         (
             "test",
-            "pub let test = <name: String>{move body: with<core.error.throwing<core.string.String>>() :()}: () builtin()\n",
+            "pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>() :()}: () => builtin() }\n",
         ),
         (
             "requires",
-            "pub let requires = <\n  condition: bool,\ne: effects,\nResult: type,\n>with<e>{move body: with<e>() :Result}: Result builtin()\n",
+            "pub let requires = { <\n    condition: bool,\n  e: effects,\n  Result: type,\n  >with<e>{move body: with<e>() :Result}: Result => builtin() }\n",
         ),
     ] {
         let missing = EDITION_2026_LIB.replace(declaration, "");
@@ -570,24 +570,24 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
             "foreign",
             "foreign",
             EDITION_2026_FOREIGN.replace(
-                "pub let foreign = <abi: abi>: never builtin()",
-                "pub let foreign = (): never builtin()",
+                "pub let foreign = { <abi: abi>: never => builtin() }",
+                "pub let foreign = { (): never => builtin() }",
             ),
         ),
         (
             "foreign",
             "foreign",
             EDITION_2026_FOREIGN.replace(
-                "pub let foreign = <abi: abi>: never builtin()",
-                "pub let foreign = <abi: abi>: () builtin()",
+                "pub let foreign = { <abi: abi>: never => builtin() }",
+                "pub let foreign = { <abi: abi>: () => builtin() }",
             ),
         ),
         (
             "foreign",
             "foreign",
             EDITION_2026_FOREIGN.replace(
-                "pub let foreign = <abi: abi, symbol: String>: never builtin()",
-                "pub let foreign = <abi: abi, symbol: usize>: never builtin()",
+                "pub let foreign = { <abi: abi, symbol: String>: never => builtin() }",
+                "pub let foreign = { <abi: abi, symbol: usize>: never => builtin() }",
             ),
         ),
         (
@@ -647,7 +647,9 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
         diagnostic.contains("compiler-owned lang item `i32`") && diagnostic.contains("= builtin()")
     }));
 
-    let unknown = format!("{EDITION_2026_PRIMITIVES}\npub let mystery = (): i32 builtin()\n");
+    let unknown = format!(
+        "{EDITION_2026_PRIMITIVES}\npub let mystery = {{ (): i32 => builtin() }}\n"
+    );
     let modules = edition_2026_test_modules(&[("primitives", &unknown)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error.diagnostics().iter().any(|diagnostic| {
@@ -655,8 +657,8 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
     }));
 
     let malformed_defer = EDITION_2026_CONTROL.replace(
-        "with<e>{move action: with<e>() :()}: () builtin()",
-        "with<e>{move action: with<e>() :bool}: () builtin()",
+        "with<e>{move action: with<e>() :()}: () => builtin()",
+        "with<e>{move action: with<e>() :bool}: () => builtin()",
     );
     assert_ne!(malformed_defer, EDITION_2026_CONTROL);
     let modules = edition_2026_test_modules(&[("control", &malformed_defer)]);
@@ -667,8 +669,8 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
     }));
 
     let abstract_builtin = EDITION_2026_MARKER.replace(
-        "let drop = (self: Borrow<mut><self>)\n    (): ()",
-        "let drop = (self: Borrow<mut><self>)\n    (): () builtin()",
+        "let drop = { (self: Borrow<mut><self>)\n      (): () }",
+        "let drop = { (self: Borrow<mut><self>)\n      (): () => builtin() }",
     );
     assert_ne!(abstract_builtin, EDITION_2026_MARKER);
     let modules = edition_2026_test_modules(&[("marker", &abstract_builtin)]);
@@ -688,7 +690,7 @@ fn constraint_query_contracts_are_explicit_and_bounded() {
     for malformed in [
         EDITION_2026_SORTS.replace("pub let constraint: sort<2>", "pub let constraint: sort<1>"),
         EDITION_2026_SORTS.replace("right: constraint", "right: type"),
-        EDITION_2026_SORTS.replace(">: bool builtin()", ">: usize builtin()"),
+        EDITION_2026_SORTS.replace(">: bool => builtin()", ">: usize => builtin()"),
     ] {
         let modules = edition_2026_test_modules(&[("sorts", &malformed)]);
         let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -805,22 +807,22 @@ fn pointer_and_layout_lang_items_require_memory_contracts() {
         (
             "ptr",
             EDITION_2026_MEMORY.replace(
-                "(value: Borrow<a><T>): Ptr<a><T>",
-                "(value: Borrow<T>): Ptr<a><T>",
+                "(value: Borrow<a><T>): Ptr<a><T> => builtin()",
+                "(value: Borrow<T>): Ptr<a><T> => builtin()",
             ),
         ),
         (
             "size_of",
             EDITION_2026_MEMORY.replace(
-                "pub let size_of = <T: type>: u64",
-                "pub let size_of = <T: type>: i32",
+                "pub let size_of = { <T: type>: u64 => builtin() }",
+                "pub let size_of = { <T: type>: i32 => builtin() }",
             ),
         ),
         (
             "align_of",
             EDITION_2026_MEMORY.replace(
-                "pub let align_of = <T: type>: u64",
-                "pub let align_of = <T: type>(value: T): u64",
+                "pub let align_of = { <T: type>: u64 => builtin() }",
+                "pub let align_of = { <T: type>(value: T): u64 => builtin() }",
             ),
         ),
     ] {
@@ -851,15 +853,15 @@ fn rejects_malformed_control_contracts() {
             (
                 "loop_exit",
                 EDITION_2026_CONTROL.replace(
-                    "let exit = (move value: T): never",
-                    "let exit = (value: T): never",
+                    "exit(move value: T): never",
+                    "exit(value: T): never",
                 ),
             ),
             (
                 "continue",
                 EDITION_2026_CONTROL.replace(
-                    "pub let continue = with<iteration_skip>(): never",
-                    "pub let continue = with<iteration_skip>(): ()",
+                    "pub let continue = { with<iteration_skip>(): never =>",
+                    "pub let continue = { with<iteration_skip>(): () =>",
                 ),
             ),
             (
@@ -911,8 +913,8 @@ fn rejects_malformed_control_contracts() {
         }
 
     let malformed = EDITION_2026_UNSAFE.replace(
-            "pub let unsafe = <e: effects, T: type>with<e>{move action: with<core.unsafe.unsafety, e>() :T}: T",
-            "pub let unsafe = <e: effects, T: type>with<e>{move action: with<e>() :T}: T",
+            "pub let unsafe = { <e: effects, T: type>with<e>{move action: with<core.unsafe.unsafety, e>() :T}: T",
+            "pub let unsafe = { <e: effects, T: type>with<e>{move action: with<e>() :T}: T",
         );
     let modules = edition_2026_test_modules(&[("unsafe", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -922,8 +924,8 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `unsafe`")));
 
     let bodyless = EDITION_2026_UNSAFE.replace(
-        " => {\n  core.unsafe.unsafety.handle {\n    action: {\n      action()\n    },\n  }\n}",
-        "",
+        ": T =>\n    core.unsafe.unsafety.handle(action()) {\n  }",
+        ": T",
     );
     let modules = edition_2026_test_modules(&[("unsafe", &bodyless)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -978,8 +980,8 @@ fn rejects_malformed_control_contracts() {
 
     let malformed = EDITION_2026_EFFECT
         .replace(
-            "let Clauses = <Value: type, Answer: type>: parameters",
-            "let Clauses = <Value: type, Answer: type>: type",
+            "let Clauses = { <Value: type, Answer: type>: parameters }",
+            "let Clauses = { <Value: type, Answer: type>: type }",
         )
         .replace(
             "...Clauses<Value, Answer>",
@@ -993,8 +995,8 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `Handle`")));
 
     let malformed = EDITION_2026_ERROR.replace(
-            "pub let throw = <Error: type>with<core.error.throwing<Error>>(move error: Error): never",
-            "pub let throw = <Error: type>(move error: Error): never",
+            "pub let throw = { <Error: type>with<core.error.throwing<Error>>(move error: Error): never",
+            "pub let throw = { <Error: type>(move error: Error): never",
         );
     let modules = edition_2026_test_modules(&[("error", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -1009,7 +1011,7 @@ fn privileged_runtime_group_delimiters_are_validated() {
     let cases = [
         ("control", "do", EDITION_2026_CONTROL.replace("{move action: with<e>() :T}", "(move action: with<e>(): T)")),
         ("control", "post-test do", EDITION_2026_CONTROL.replace("{move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>() :bool}", "(move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(): bool)")),
-        ("control", "defer", EDITION_2026_CONTROL.replace("{move action: with<e>() :()}: () builtin()", "(move action: with<e>(): ()): () builtin()")),
+        ("control", "defer", EDITION_2026_CONTROL.replace("{move action: with<e>() :()}: () => builtin()", "(move action: with<e>(): ()): () => builtin()")),
         ("error", "try", EDITION_2026_ERROR.replace("{move action: with<core.error.throwing<Error>, f>() :T}", "(move action: with<core.error.throwing<Error>, f>(): T)")),
         ("unsafe", "unsafe", EDITION_2026_UNSAFE.replace("{move action: with<core.unsafe.unsafety, e>() :T}", "(move action: with<core.unsafe.unsafety, e>(): T)")),
         ("control", "loop", EDITION_2026_CONTROL.replace("{move body: with<core.control.loop_exit<T>, core.control.iteration_skip, e>() :()}", "(move body: with<core.control.loop_exit<T>, core.control.iteration_skip, e>(): ())")),
@@ -1041,7 +1043,7 @@ fn rejects_malformed_async_contracts() {
     for (name, malformed) in [
         (
             "suspension",
-            EDITION_2026_ASYNC.replace("let suspend = (): ()", "let suspend = (): i32"),
+            EDITION_2026_ASYNC.replace("suspend(): ()", "suspend(): i32"),
         ),
         ("Poll", EDITION_2026_ASYNC.replace("  Pending,\n", "")),
         (
@@ -1054,8 +1056,8 @@ fn rejects_malformed_async_contracts() {
         (
             "Executor",
             EDITION_2026_ASYNC.replace(
-                "let run = <e: effects, F: type, T: type>",
-                "let run = <F: type, T: type>",
+                "let run = { <e: effects, F: type, T: type>",
+                "let run = { <F: type, T: type>",
             ),
         ),
         (
@@ -1089,8 +1091,8 @@ fn rejects_malformed_async_contracts() {
 #[test]
 fn rejects_malformed_iteration_contracts() {
     let malformed = EDITION_2026_ITER.replace(
-        "let next = <r: region>(self: Borrow<mut><r><self>)\n    (): core.Option<Item<r>>",
-        "let next = <r: region>(self: Borrow<r><self>)\n    (): core.Option<Item<r>>",
+        "let next = { <r: region>(self: Borrow<mut><r><self>)\n      (): core.Option<Item<r>> }",
+        "let next = { <r: region>(self: Borrow<r><self>)\n      (): core.Option<Item<r>> }",
     );
     let modules = edition_2026_test_modules(&[("iter", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -1103,8 +1105,8 @@ fn rejects_malformed_iteration_contracts() {
 #[test]
 fn rejects_malformed_assignment_operator_contracts() {
     let malformed = EDITION_2026_OPS_ASSIGN.replace(
-        "let add_assign = (self: Borrow<mut><self>)\n    (rhs: Rhs): ()",
-        "let add_assign = (self: Borrow<self>)\n    (rhs: Rhs): ()",
+        "let add_assign = { (self: Borrow<mut><self>)\n      (rhs: Rhs): () }",
+        "let add_assign = { (self: Borrow<self>)\n      (rhs: Rhs): () }",
     );
     let modules = edition_2026_test_modules(&[("ops/assign", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -1118,8 +1120,8 @@ fn rejects_malformed_assignment_operator_contracts() {
 fn rejects_malformed_index_contracts() {
     for malformed in [
             "pub let Index = trait {}",
-            "pub let Index = <Key: type> trait { let Output: type; let index = (self)(key: Key): Output }",
-            "pub let Index = <Key: type> trait { let Output: type; let index = <a: access>(self: Borrow<self>)(key: Key): Borrow<a><Output> }",
+            "pub let Index = <Key: type> trait { let Output: type; let index = { (self)(key: Key): Output } }",
+            "pub let Index = <Key: type> trait { let Output: type; let index = { <a: access>(self: Borrow<self>)(key: Key): Borrow<a><Output> } }",
         ] {
             let modules = edition_2026_test_modules(&[("ops/index", malformed)]);
             let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -1146,8 +1148,8 @@ fn rejects_malformed_flow_operator_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `Chain`")));
 
     let malformed = EDITION_2026_FLOW.replace(
-        "let coalesce = <e: effects>with<e>(self)(fallback: with<e>() :Item): Item",
-        "let coalesce = (move self)\n    (move fallback: (): Item): Item",
+        "let coalesce = { <e: effects>with<e>(self)(fallback: with<e>() :Item): Item }",
+        "let coalesce = { (move self)\n    (move fallback: (): Item): Item }",
     );
     let modules = edition_2026_test_modules(&[("flow", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -1156,8 +1158,10 @@ fn rejects_malformed_flow_operator_contracts() {
         .iter()
         .any(|diagnostic| diagnostic.contains("lang item `Coalesce`")));
 
-    let malformed =
-        EDITION_2026_FLOW.replace("let unwrap = (move self): Output", "let unwrap = (self): Output");
+    let malformed = EDITION_2026_FLOW.replace(
+        "let unwrap = { (move self): Output }",
+        "let unwrap = { (self): Output }",
+    );
     let modules = edition_2026_test_modules(&[("flow", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error
@@ -1166,8 +1170,8 @@ fn rejects_malformed_flow_operator_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `Unwrap`")));
 
     let malformed = EDITION_2026_FLOW.replace(
-        "let raise = with<core.error.throwing<Error>>(move self): Output",
-        "let raise = (move self): Output",
+        "let raise = { with<core.error.throwing<Error>>(move self): Output }",
+        "let raise = { (move self): Output }",
     );
     let modules = edition_2026_test_modules(&[("flow", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -1182,70 +1186,70 @@ fn lang_item_identities_follow_validated_declarations_not_source_order() {
     let source = r#"
 pub let Rem = <Rhs: type> trait {
   let Output: type
-  let rem = (self)(rhs: Rhs): Output
+  let rem = { (self)(rhs: Rhs): Output }
 }
 pub let Movable = trait {}
 pub let Copyable = trait<requires: self is Movable> {}
 pub let Droppable = trait {
-  let drop = (self: Borrow<mut><self>)(): ()
+  let drop = { (self: Borrow<mut><self>)(): () }
 }
 pub let Add = <Rhs: type> trait {
   let Output: type
-  let add = (self)(rhs: Rhs): Output
+  let add = { (self)(rhs: Rhs): Output }
 }
 pub let never = enum {}
 pub let Option = <T: type> enum { Some(T), None }
 pub let Result = <Error: type><T: type> enum { Ok(T), Err(Error) }
 pub let Div = <Rhs: type> trait {
   let Output: type
-  let div = (self)(rhs: Rhs): Output
+  let div = { (self)(rhs: Rhs): Output }
 }
 pub let Sub = <Rhs: type> trait {
   let Output: type
-  let sub = (self)(rhs: Rhs): Output
+  let sub = { (self)(rhs: Rhs): Output }
 }
 pub let Mul = <Rhs: type> trait {
   let Output: type
-  let mul = (self)(rhs: Rhs): Output
+  let mul = { (self)(rhs: Rhs): Output }
 }
 pub let Eq = <Rhs: type> trait {
-  let eq = (self: Borrow<self>)(rhs: Borrow<Rhs>): bool
+  let eq = { (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }
 }
 pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }
 pub let PartialOrd = <Rhs: type> trait {
-  let partial_cmp = (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering
+  let partial_cmp = { (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }
 }
 pub let Neg = trait {
   let Output: type
-  let neg = (self)(): Output
+  let neg = { (self)(): Output }
 }
 pub let Not = trait {
   let Output: type
-  let not = (self)(): Output
+  let not = { (self)(): Output }
 }
 pub let BitAnd = <Rhs: type> trait {
   let Output: type
-  let bit_and = (self)(rhs: Rhs): Output
+  let bit_and = { (self)(rhs: Rhs): Output }
 }
 pub let BitOr = <Rhs: type> trait {
   let Output: type
-  let bit_or = (self)(rhs: Rhs): Output
+  let bit_or = { (self)(rhs: Rhs): Output }
 }
 pub let BitXor = <Rhs: type> trait {
   let Output: type
-  let bit_xor = (self)(rhs: Rhs): Output
+  let bit_xor = { (self)(rhs: Rhs): Output }
 }
 pub let Shl = <Rhs: type> trait {
   let Output: type
-  let shl = (self)(rhs: Rhs): Output
+  let shl = { (self)(rhs: Rhs): Output }
 }
 pub let Shr = <Rhs: type> trait {
   let Output: type
-  let shr = (self)(rhs: Rhs): Output
+  let shr = { (self)(rhs: Rhs): Output }
 }
 pub let Index = <Key: type> trait {
   let Output: type
-  let index = <a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output>
+  let index = { <a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output> }
 }
 pub let str: type = builtin()
 "#;
@@ -1292,62 +1296,62 @@ pub let never = enum { Reachable }
 pub let Movable = trait {}
 pub let Copyable = <T: type> trait {}
 pub let Add = <Rhs: type> trait {
-  let add = (self)(rhs: Rhs): rhs
+  let add = { (self)(rhs: Rhs): rhs }
 }
 pub let Extra = enum {}
 pub let Sub = <Rhs: type> trait {
   let Output: type
-  let sub = (self)(rhs: Rhs): Output
+  let sub = { (self)(rhs: Rhs): Output }
 }
 pub let Mul = <Rhs: type> trait {
   let Output: type
-  let mul = (self)(rhs: Rhs): Output
+  let mul = { (self)(rhs: Rhs): Output }
 }
 pub let Div = <Rhs: type> trait {
   let Output: type
-  let div = (self)(rhs: Rhs): Output
+  let div = { (self)(rhs: Rhs): Output }
 }
 pub let Rem = <Rhs: type> trait {
   let Output: type
-  let rem = (self)(rhs: Rhs): Output
+  let rem = { (self)(rhs: Rhs): Output }
 }
 pub let Eq = <Rhs: type> trait {
-  let eq = (self: Borrow<self>)(rhs: Borrow<Rhs>): bool
+  let eq = { (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }
 }
 pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }
 pub let PartialOrd = <Rhs: type> trait {
-  let partial_cmp = (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering
+  let partial_cmp = { (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }
 }
 pub let Neg = trait {
   let Output: type
-  let neg = (self)(): Output
+  let neg = { (self)(): Output }
 }
 pub let Not = trait {
   let Output: type
-  let not = (self)(): Output
+  let not = { (self)(): Output }
 }
 pub let BitAnd = <Rhs: type> trait {
   let Output: type
-  let bit_and = (self)(rhs: Rhs): Output
+  let bit_and = { (self)(rhs: Rhs): Output }
 }
 pub let BitOr = <Rhs: type> trait {
   let Output: type
-  let bit_or = (self)(rhs: Rhs): Output
+  let bit_or = { (self)(rhs: Rhs): Output }
 }
 pub let BitXor = <Rhs: type> trait {
   let Output: type
-  let bit_xor = (self)(rhs: Rhs): Output
+  let bit_xor = { (self)(rhs: Rhs): Output }
 }
 pub let Shl = <Rhs: type> trait {
   let Output: type
-  let shl = (self)(rhs: Rhs): Output
+  let shl = { (self)(rhs: Rhs): Output }
 }
 pub let Shr = <Rhs: type> trait {
   let Output: type
-  let shr = (self)(rhs: Rhs): Output
+  let shr = { (self)(rhs: Rhs): Output }
 }
 pub let Droppable = trait {
-  let drop = (self: Borrow<mut><self>)(): ()
+  let drop = { (self: Borrow<mut><self>)(): () }
 }
 pub let str: type = builtin()
 "#;
@@ -1379,58 +1383,58 @@ pub let Option = <T: type> enum { Some(T), None }
 pub let never = enum {}
 pub let Add = <Rhs: type> trait {
   let Output: type
-  let add = (self)(rhs: Rhs): Output
+  let add = { (self)(rhs: Rhs): Output }
 }
 pub let Sub = <Rhs: type> trait {
   let Output: type
-  let sub = (self)(rhs: Rhs): Output
+  let sub = { (self)(rhs: Rhs): Output }
 }
 pub let Mul = <Rhs: type> trait {
   let Output: type
-  let mul = (self)(rhs: Rhs): Output
+  let mul = { (self)(rhs: Rhs): Output }
 }
 pub let Div = <Rhs: type> trait {
   let Output: type
-  let div = (self)(rhs: Rhs): Output
+  let div = { (self)(rhs: Rhs): Output }
 }
 pub let Rem = <Rhs: type> trait {
   let Output: type
-  let rem = (self)(rhs: Rhs): Output
+  let rem = { (self)(rhs: Rhs): Output }
 }
 pub let Eq = <Rhs: type> trait {
-  let eq = (self: Borrow<self>)(rhs: Borrow<Rhs>): bool
+  let eq = { (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }
 }
 pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }
 pub let PartialOrd = <Rhs: type> trait {
-  let partial_cmp = (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering
+  let partial_cmp = { (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }
 }
 pub let Neg = trait {
   let Output: type
-  let neg = (self)(): Output
+  let neg = { (self)(): Output }
 }
 pub let Not = trait {
   let Output: type
-  let not = (self)(): Output
+  let not = { (self)(): Output }
 }
 pub let BitAnd = <Rhs: type> trait {
   let Output: type
-  let bit_and = (self)(rhs: Rhs): Output
+  let bit_and = { (self)(rhs: Rhs): Output }
 }
 pub let BitOr = <Rhs: type> trait {
   let Output: type
-  let bit_or = (self)(rhs: Rhs): Output
+  let bit_or = { (self)(rhs: Rhs): Output }
 }
 pub let BitXor = <Rhs: type> trait {
   let Output: type
-  let bit_xor = (self)(rhs: Rhs): Output
+  let bit_xor = { (self)(rhs: Rhs): Output }
 }
 pub let Shl = <Rhs: type> trait {
   let Output: type
-  let shl = (self)(rhs: Rhs): Output
+  let shl = { (self)(rhs: Rhs): Output }
 }
 pub let Shr = <Rhs: type> trait {
   let Output: type
-  let shr = (self)(rhs: Rhs): Output
+  let shr = { (self)(rhs: Rhs): Output }
 }
 pub let str: type = builtin()
 "#;
@@ -1454,7 +1458,7 @@ fn rejects_copy_compile_parameters_associated_types_and_methods() {
     let malformed_declarations = [
         "pub let Copyable = <T: type> trait {}",
         "pub let Copyable = trait { let Item: type }",
-        "pub let Copyable = trait { let clone = (self: Borrow<self>)(): self }",
+        "pub let Copyable = trait { let clone = { (self: Borrow<self>)(): self } }",
     ];
 
     for declaration in malformed_declarations {
@@ -1498,17 +1502,17 @@ fn rejects_malformed_move_traits_and_copy_without_move_supertrait() {
 #[test]
 fn rejects_malformed_drop_traits() {
     let malformed_declarations = [
-        "pub let Droppable = <T: type> trait { let drop = (self: Borrow<mut><self>)(): () }",
+        "pub let Droppable = <T: type> trait { let drop = { (self: Borrow<mut><self>)(): () } }",
         "pub let Droppable = trait {}",
-        "pub let Droppable = trait { let drop = (self: Borrow<self>)(): () }",
-        "pub let Droppable = trait { let drop = (self: Borrow<mut><self>)(): i32 }",
+        "pub let Droppable = trait { let drop = { (self: Borrow<self>)(): () } }",
+        "pub let Droppable = trait { let drop = { (self: Borrow<mut><self>)(): i32 } }",
     ];
 
     for declaration in malformed_declarations {
         let source =
             core_source_with_copy("pub let Copyable = trait<requires: self is Movable> {}")
                 .replacen(
-                    "pub let Droppable = trait {\n  let drop = (self: Borrow<mut><self>)(): ()\n}",
+                    "pub let Droppable = trait {\n  let drop = { (self: Borrow<mut><self>)(): () }\n}",
                     declaration,
                     1,
                 );
@@ -1530,65 +1534,65 @@ pub let never = enum {}
 pub let Movable = trait {}
 pub let Copyable = trait<requires: self is Movable> {}
 pub let Droppable = trait {
-  let drop = (self: Borrow<mut><self>)(): ()
+  let drop = { (self: Borrow<mut><self>)(): () }
 }
 pub let Add = <Rhs: type> trait {
   let Output: type
-  let add = (self)(rhs: Rhs): Output
+  let add = { (self)(rhs: Rhs): Output }
 }
 pub let Sub = trait {
   let Output: type
-  let sub = (self)(rhs: Rhs): Output
+  let sub = { (self)(rhs: Rhs): Output }
 }
 pub let Mul = <Rhs: type> trait {
-  let mul = (self)(rhs: Rhs): rhs
+  let mul = { (self)(rhs: Rhs): rhs }
 }
 pub let Div = <Rhs: type> trait {
   let Output: type
-  let Divide = (self)(rhs: Rhs): Output
+  let Divide = { (self)(rhs: Rhs): Output }
 }
 pub let Rem = <Rhs: type> trait {
   let Output: type
-  let rem = (self)(rhs: Rhs): Output => { rhs }
+  let rem = { (self)(rhs: Rhs): Output => rhs }
 }
 pub let Eq = <Rhs: type> trait {
-  let eq = (move self)(rhs: Rhs): bool
+  let eq = { (move self)(rhs: Rhs): bool }
 }
 pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }
 pub let PartialOrd = <Rhs: type> trait {
-  let partial_cmp = (move self)(rhs: Rhs): PartialOrdering
+  let partial_cmp = { (move self)(rhs: Rhs): PartialOrdering }
 }
 pub let Neg = trait {
   let Output: type
-  let neg = (self)(): Output
+  let neg = { (self)(): Output }
 }
 pub let Not = trait {
   let Output: type
-  let not = (self)(): Output
+  let not = { (self)(): Output }
 }
 pub let BitAnd = <Rhs: type> trait {
   let Output: type
-  let bit_and = (self)(rhs: Rhs): Output
+  let bit_and = { (self)(rhs: Rhs): Output }
 }
 pub let BitOr = <Rhs: type> trait {
   let Output: type
-  let bit_or = (self)(rhs: Rhs): Output
+  let bit_or = { (self)(rhs: Rhs): Output }
 }
 pub let BitXor = <Rhs: type> trait {
   let Output: type
-  let bit_xor = (self)(rhs: Rhs): Output
+  let bit_xor = { (self)(rhs: Rhs): Output }
 }
 pub let Shl = <Rhs: type> trait {
   let Output: type
-  let shl = (self)(rhs: Rhs): Output
+  let shl = { (self)(rhs: Rhs): Output }
 }
 pub let Shr = <Rhs: type> trait {
   let Output: type
-  let shr = (self)(rhs: Rhs): Output
+  let shr = { (self)(rhs: Rhs): Output }
 }
 pub let Index = <Key: type> trait {
   let Output: type
-  let index = <a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output>
+  let index = { <a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output> }
 }
 pub let str: type = builtin()
 "#;
@@ -1635,13 +1639,13 @@ fn rejects_malformed_partial_ordering() {
 fn rejects_malformed_unary_operator_traits() {
     for (original, malformed, expected) in [
             (
-                "pub let Neg = trait {\n  let Output: type\n  let neg = (self)(): Output\n}",
-                "pub let Neg = <Rhs: type> trait { let neg = (self)(): i32 }",
+                "pub let Neg = trait {\n  let Output: type\n  let neg = { (self)(): Output }\n}",
+                "pub let Neg = <Rhs: type> trait { let neg = { (self)(): i32 } }",
                 "lang item `Neg` must have shape `pub let Neg = trait { let Output: type; let neg = (self)(): Output }`",
             ),
             (
-                "pub let Not = trait {\n  let Output: type\n  let not = (self)(): Output\n}",
-                "pub let Not = trait { let Output: type; let not = (self: Borrow<self>)(): Output }",
+                "pub let Not = trait {\n  let Output: type\n  let not = { (self)(): Output }\n}",
+                "pub let Not = trait { let Output: type; let not = { (self: Borrow<self>)(): Output } }",
                 "lang item `Not` must have shape `pub let Not = trait { let Output: type; let not = (self)(): Output }`",
             ),
         ] {
@@ -1660,13 +1664,13 @@ fn rejects_malformed_unary_operator_traits() {
 fn rejects_malformed_bitwise_operator_traits() {
     for (original, malformed, expected) in [
             (
-                "pub let BitAnd = <Rhs: type> trait {\n  let Output: type\n  let bit_and = (self)(rhs: Rhs): Output\n}",
-                "pub let BitAnd = trait { let bit_and = (self: Borrow<self>)(move rhs: i32): i32 }",
+                "pub let BitAnd = <Rhs: type> trait {\n  let Output: type\n  let bit_and = { (self)(rhs: Rhs): Output }\n}",
+                "pub let BitAnd = trait { let bit_and = { (self: Borrow<self>)(move rhs: i32): i32 } }",
                  "lang item `BitAnd` must have shape `pub let BitAnd = <Rhs: type> trait { let Output: type; let bit_and = (self)(rhs: Rhs): Output }`",
             ),
             (
-                "pub let Shr = <Rhs: type> trait {\n  let Output: type\n  let shr = (self)(rhs: Rhs): Output\n}",
-                "pub let Shr = <Rhs: type> trait { let Output: type; let shift = (move self)(rhs: Rhs): Output }",
+                "pub let Shr = <Rhs: type> trait {\n  let Output: type\n  let shr = { (self)(rhs: Rhs): Output }\n}",
+                "pub let Shr = <Rhs: type> trait { let Output: type; let shift = { (move self)(rhs: Rhs): Output } }",
                  "lang item `Shr` must have shape `pub let Shr = <Rhs: type> trait { let Output: type; let shr = (self)(rhs: Rhs): Output }`",
             ),
         ] {

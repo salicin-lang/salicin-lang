@@ -1,1 +1,1 @@
-let main = (: i32 = 0
+let main = { (value: i32: i32 => 0 }

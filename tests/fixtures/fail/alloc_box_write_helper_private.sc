@@ -1,3 +1,3 @@
 let removed = alloc.boxed.box_write
 
-let main = (): i32 => { 0 }
+let main = { (): i32 => 0 }

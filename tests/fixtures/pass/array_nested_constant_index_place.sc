@@ -1,6 +1,6 @@
 let pair = struct { values: Array<i32><2> }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut pair = pair { values: [0, 2] }
   pair.values[0] = 40
   pair.values[0] + pair.values[1]

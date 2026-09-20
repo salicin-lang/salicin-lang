@@ -1,6 +1,6 @@
 let Vec = alloc.Vec
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut values: Vec<i32> = Vec<i32>.new()
   values.remove(0)
 }

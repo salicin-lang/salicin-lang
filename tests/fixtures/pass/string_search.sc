@@ -1,9 +1,9 @@
-let option_is = (value: core.Option<u64>, expected: u64): bool => {
+let option_is = { (value: core.Option<u64>, expected: u64): bool =>
   match(value) { Some(value) => value == expected, None => false,
   }
 }
 
-let borrowed_checks = (): bool => {
+let borrowed_checks = { (): bool =>
   let text: String = "A柳B🙂"
   let prefix: String = "A柳"
   let suffix: String = "B🙂"
@@ -24,7 +24,7 @@ let borrowed_checks = (): bool => {
     option_is(view.find(empty_view), 0)
 }
 
-let owning_checks = (): bool => {
+let owning_checks = { (): bool =>
   let text: String = "A柳B🙂"
   let prefix: String = "A"
   let suffix: String = "🙂"
@@ -47,7 +47,7 @@ let owning_checks = (): bool => {
     option_is(text.find(needle_view), 4)
 }
 
-let ordering_checks = (): bool => {
+let ordering_checks = { (): bool =>
   let ascii: String = "A"
   let latin: String = "é"
   let cjk: String = "柳"
@@ -64,7 +64,7 @@ let ordering_checks = (): bool => {
     cjk_view < emoji_view
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   if(borrowed_checks() &&
     owning_checks() &&
     ordering_checks() ) {

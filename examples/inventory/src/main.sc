@@ -1,20 +1,20 @@
-let fail = with<std.io.io>(message: core.string.String)(code: i32): i32 => {
-  let view = message.as_str()
+let fail = { with<std.io.io>(message: core.string.String)(code: i32): i32 =>
+    let view = message.as_str()
   match(std.io.eprintln(view)) { Ok(_) => code, Err(_) => code,
   }
 }
 
-let take_number = (
-  arguments: Borrow<mut><alloc.Vec<core.string.String>>,
-): core.Option<i64> => {
-  let text = arguments.remove(1)
+let take_number = { (
+    arguments: Borrow<mut><alloc.Vec<core.string.String>>,
+  ): core.Option<i64> =>
+    let text = arguments.remove(1)
   let view = text.as_str()
   match(parser.decimal(view)) { Ok(value) => core.Option.Some(value), Err(_) => core.Option.None,
   }
 }
 
-let main = with<std.io.io>(): i32 => {
-  let mut arguments = match(std.io.arguments()) { Ok(value) => value, Err(_) => return(fail("arguments are not valid UTF-8")(2)),
+let main = { with<std.io.io>(): i32 =>
+    let mut arguments = match(std.io.arguments()) { Ok(value) => value, Err(_) => return(fail("arguments are not valid UTF-8")(2)),
   }
   if(arguments.len() != 8) {
     return(fail("usage: inventory OUTPUT NAME UNITS PRICE NAME UNITS PRICE")(2))

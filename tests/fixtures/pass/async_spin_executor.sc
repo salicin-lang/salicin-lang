@@ -10,9 +10,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll = <r: region>
+  let poll = { <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<i32> => {
+    (): Poll<i32> =>
     if(self.polled) {
       Poll<i32>.Ready(41)
     } else: {
@@ -22,7 +22,7 @@ extend(step, Future<()>) {
   }
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut executor = Spin {}
   let pending = step { polled: false }
   let ready = async { 1 }

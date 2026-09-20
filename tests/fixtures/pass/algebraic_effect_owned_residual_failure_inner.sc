@@ -2,7 +2,7 @@ let Result = core.Result
 let throwing = core.error.throwing
 
 let step = effect {
-  let delta = (): i32
+  delta (): i32
 }
 
 let state = struct {
@@ -11,38 +11,37 @@ let state = struct {
 }
 
 extend(state, Droppable) {
-  let drop = (self: Borrow<mut><self>)(): () => {
+  let drop = { (self: Borrow<mut><self>)(): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let accept = with<throwing<bool>>(fail: bool): i32 => {
+let accept = { with<throwing<bool>>(fail: bool): i32 =>
   if(fail) { throw(true) } else: { 0 }
 }
 
-let update = with<step, throwing<bool>>(state: Borrow<mut><state>, fail: bool): i32 => {
+let update = { with<step, throwing<bool>>(state: Borrow<mut><state>, fail: bool): i32 =>
   let accepted = accept(fail)
   let delta = step.delta()
   state.value = state.value + delta
   state.value + accepted
 }
 
-let run = (drops: Ptr<mut><i32>, fail: bool, abandon: bool): i32 => {
+let run = { (drops: Ptr<mut><i32>, fail: bool, abandon: bool): i32 =>
   let mut state = state { value: 20, drops: drops }
-  step.handle {
-    delta: (resume) => {
-      if(abandon) { 40 } else: { resume(1) }
-    },
-    action: {
+  step.handle(do {
       let result: Result<bool><i32> = try { update(state, fail) }
       result ?? 5
+    }) {
+    delta(resume) => do {
+      if(abandon) { 40 } else: { resume(1) }
     },
   }
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

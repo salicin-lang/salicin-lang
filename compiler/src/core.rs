@@ -107,26 +107,26 @@ pub(crate) fn incremental_sources(
 
 #[cfg(test)]
 const TEST_ASSIGNMENT_OPS: &str = r#"
-pub let AddAssign = <Rhs: type> trait { let add_assign = (self: Borrow<mut><self>)
-  (rhs: Rhs): () }
-pub let SubAssign = <Rhs: type> trait { let sub_assign = (self: Borrow<mut><self>)
-  (rhs: Rhs): () }
-pub let MulAssign = <Rhs: type> trait { let mul_assign = (self: Borrow<mut><self>)
-  (rhs: Rhs): () }
-pub let DivAssign = <Rhs: type> trait { let div_assign = (self: Borrow<mut><self>)
-  (rhs: Rhs): () }
-pub let RemAssign = <Rhs: type> trait { let rem_assign = (self: Borrow<mut><self>)
-  (rhs: Rhs): () }
-pub let BitAndAssign = <Rhs: type> trait { let bit_and_assign = (self: Borrow<mut><self>)
-  (rhs: Rhs): () }
-pub let BitOrAssign = <Rhs: type> trait { let bit_or_assign = (self: Borrow<mut><self>)
-  (rhs: Rhs): () }
-pub let BitXorAssign = <Rhs: type> trait { let bit_xor_assign = (self: Borrow<mut><self>)
-  (rhs: Rhs): () }
-pub let ShlAssign = <Rhs: type> trait { let shl_assign = (self: Borrow<mut><self>)
-  (rhs: Rhs): () }
-pub let ShrAssign = <Rhs: type> trait { let shr_assign = (self: Borrow<mut><self>)
-  (rhs: Rhs): () }
+pub let AddAssign = <Rhs: type> trait { let add_assign = { (self: Borrow<mut><self>)
+  (rhs: Rhs): () } }
+pub let SubAssign = <Rhs: type> trait { let sub_assign = { (self: Borrow<mut><self>)
+  (rhs: Rhs): () } }
+pub let MulAssign = <Rhs: type> trait { let mul_assign = { (self: Borrow<mut><self>)
+  (rhs: Rhs): () } }
+pub let DivAssign = <Rhs: type> trait { let div_assign = { (self: Borrow<mut><self>)
+  (rhs: Rhs): () } }
+pub let RemAssign = <Rhs: type> trait { let rem_assign = { (self: Borrow<mut><self>)
+  (rhs: Rhs): () } }
+pub let BitAndAssign = <Rhs: type> trait { let bit_and_assign = { (self: Borrow<mut><self>)
+  (rhs: Rhs): () } }
+pub let BitOrAssign = <Rhs: type> trait { let bit_or_assign = { (self: Borrow<mut><self>)
+  (rhs: Rhs): () } }
+pub let BitXorAssign = <Rhs: type> trait { let bit_xor_assign = { (self: Borrow<mut><self>)
+  (rhs: Rhs): () } }
+pub let ShlAssign = <Rhs: type> trait { let shl_assign = { (self: Borrow<mut><self>)
+  (rhs: Rhs): () } }
+pub let ShrAssign = <Rhs: type> trait { let shr_assign = { (self: Borrow<mut><self>)
+  (rhs: Rhs): () } }
 "#;
 
 #[cfg(test)]
@@ -135,25 +135,25 @@ pub let Chain = trait {
   let Item: type
   let Rebind = <Value: type>: type
 
-  let chain = <e: effects, U: type>with<e>
+  let chain = { <e: effects, U: type>with<e>
     (self)
-    (transform: with<e>(Item): U): Rebind<U>
+    (transform: with<e>(Item): U): Rebind<U> }
 }
 pub let Coalesce = trait {
   let Item: type
 
-  let coalesce = <e: effects>with<e>
+  let coalesce = { <e: effects>with<e>
     (self)
-    (fallback: with<e>(): Item): Item
+    (fallback: with<e>(): Item): Item }
 }
 pub let Unwrap = trait {
   let Output: type
-  let unwrap = (move self): Output
+  let unwrap = { (move self): Output }
 }
 pub let Raise = trait {
   let Output: type
   let Error: type
-  let raise = with<throwing<Error>>(move self): Output
+  let raise = { with<throwing<Error>>(move self): Output }
 }
 "#;
 
@@ -1256,7 +1256,7 @@ impl CoreBundle {
         // Most contract tests isolate one prelude/operator declaration. Keep
         // independently tested capability modules present in those fixtures.
         let source = format!(
-            "{source}\n{TEST_ASSIGNMENT_OPS}\n{TEST_CHAIN_OPS}\n{EDITION_2026_EFFECT}\n{EDITION_2026_ERROR}\n{EDITION_2026_UNSAFE}\n{EDITION_2026_ASYNC}\n{EDITION_2026_PRIMITIVES}\n{EDITION_2026_SORTS}\n{EDITION_2026_FOREIGN}\n{EDITION_2026_PASSING}\n{EDITION_2026_BORROW}\n{EDITION_2026_CONTROL}\n{EDITION_2026_ITER}\n{EDITION_2026_MEMORY}\nlet builtin = () builtin()\npub let test = <name: String>{{move body: with<core.error.throwing<core.string.String>>(): ()}}: () builtin()\npub let requires = <condition: bool, e: effects, Result: type>with<e>{{move body: with<e>(): Result}}: Result builtin()"
+            "{source}\n{TEST_ASSIGNMENT_OPS}\n{TEST_CHAIN_OPS}\n{EDITION_2026_EFFECT}\n{EDITION_2026_ERROR}\n{EDITION_2026_UNSAFE}\n{EDITION_2026_ASYNC}\n{EDITION_2026_PRIMITIVES}\n{EDITION_2026_SORTS}\n{EDITION_2026_FOREIGN}\n{EDITION_2026_PASSING}\n{EDITION_2026_BORROW}\n{EDITION_2026_CONTROL}\n{EDITION_2026_ITER}\n{EDITION_2026_MEMORY}\nlet builtin = {{ (): never => builtin() }}\npub let test = {{ <name: String>{{move body: with<core.error.throwing<core.string.String>>(): ()}}: () => builtin() }}\npub let requires = {{ <condition: bool, e: effects, Result: type>with<e>{{move body: with<e>(): Result}}: Result => builtin() }}"
         );
         let mut program = parser::parse(&source).map_err(|error| {
             CoreBundleError::new(
@@ -3919,23 +3919,28 @@ fn validate_handle(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         && definition.where_predicates.is_empty()
         && matches!(
             definition.members.as_slice(),
-            [TraitMember::AssociatedType {
-                name,
-                compile_groups,
-                kind,
-                default,
-            }, TraitMember::Function(function)] if name == "Clauses"
-                && compile_groups == &vec![vec![type_parameter("Value"), type_parameter("Answer")]]
-                && *kind == AssociatedKind::Parameters
-                && default.is_none()
+            [TraitMember::Function(clauses), TraitMember::Function(function)]
+                if valid_handle_clauses(clauses)
                 && valid_handle_method(function)
         );
     if !valid {
         diagnostics.push(
-            "lang item `Handle` must have shape `pub let Handle = trait<self: effect> { let Clauses = <Value: type, Answer: type>: parameters; let handle = <Value: type, Answer: type, rest: effects>with<rest> ...Clauses<Value, Answer>{move action: with<self, rest>(): Value}: Answer }`"
+            "lang item `Handle` must have shape `pub let Handle = trait<self: effect> { let Clauses = { <Value: type, Answer: type>: parameters }; let handle = { <Value: type, Answer: type, rest: effects>with<rest> ...Clauses<Value, Answer>{move action: with<self, rest>(): Value}: Answer } }`"
                 .to_owned(),
         );
     }
+}
+
+fn valid_handle_clauses(function: &Function) -> bool {
+    function.name == "Clauses"
+        && function.compile_groups
+            == vec![vec![type_parameter("Value"), type_parameter("Answer")]]
+        && function.groups.is_empty()
+        && function.return_type == Some(named_type("parameters"))
+        && function.where_predicates.is_empty()
+        && function.body.is_none()
+        && !function.builtin
+        && function.foreign.is_none()
 }
 
 fn valid_handle_method(function: &Function) -> bool {

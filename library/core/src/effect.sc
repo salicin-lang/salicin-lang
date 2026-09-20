@@ -9,8 +9,8 @@ pub let EffectCallable = <Input: type, Output: type, Answer: type>: type builtin
 /// operation clauses and `Handle` member are synthesized from that operation set.
 pub let Handle = trait<self: effect> {
   /// Clause parameter schema synthesized from the operations of `Self`.
-  let Clauses = <Value: type, Answer: type>: parameters
+  let Clauses = { <Value: type, Answer: type>: parameters }
   /// Handles `Self` around `action`, leaving `Rest` as the residual effect row.
-  let handle = <Value: type, Answer: type, rest: effects>with<rest>
-    ...Clauses<Value, Answer>{move action: with<self, rest>() :Value}: Answer
+  let handle = { <Value: type, Answer: type, rest: effects>with<rest>
+      ...Clauses<Value, Answer>{move action: with<self, rest>() :Value}: Answer }
 }

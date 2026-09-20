@@ -1,14 +1,13 @@
 let stop = effect {
-  let stop = (): bool
+  stop (): bool
 }
 
-let main = (): i32 => {
-  stop.handle {
-    stop: (resume) => { 1 },
-    action: {
+let main = { (): i32 =>
+  stop.handle(do {
       let skipped = false && stop.stop()
       if(skipped) { 0 } else: { 42 }
-    },
+    }) {
+    stop(resume) => do { 1 },
   }
 }
 

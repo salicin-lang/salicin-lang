@@ -1,11 +1,11 @@
 let Result = core.Result
 let throwing = core.error.throwing
 
-let fail = with<throwing<()>>(): i32 => {
+let fail = { with<throwing<()>>(): i32 =>
   throw(())
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let result: Result<()><i32> = try { fail() }
   result ?? 42
 }

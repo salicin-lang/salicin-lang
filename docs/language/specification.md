@@ -92,7 +92,7 @@ traits, or modules according to their annotation and initializer.
 Ordinary user declarations may use any casing permitted by the identifier
 grammar. Public declarations in the embedded standard library follow the
 official API style and validation rule: types and type parameters, type forms,
-traits, enum variants, and associated types use ASCII `PascalCase`; functions,
+traits, enum variants, effect operations, and associated types use ASCII `PascalCase`; functions,
 methods, values, fields, modules, effects, and sorts use ASCII `snake_case`.
 The primitive types `bool`, the integer families, `str`, and `never`, and the
 primitive values `true` and `false`, remain lowercase. Runtime `String` values
@@ -102,7 +102,7 @@ metadata such as test names and foreign symbols.
 ```sc fragment
 let Scalar = i32
 let Point = struct { x: i32, y: i32 }
-let add = (x: i32)(y: i32): i32 => x + y
+let add = { (x: i32)(y: i32): i32 => x + y }
 ```
 
 Named functions have a callable overload namespace distinct from nominal type names. This permits
@@ -140,7 +140,7 @@ test("arithmetic") {
 test target during compilation; it is not an ordinary runtime call and does
 not introduce a user binding. The form is authorized by the private edition
 contract
-`pub let test = <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () builtin()`.
+`pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`.
 The name must be a non-empty
 string literal and is used in diagnostics. Registrations are private to their
 source package and cannot have visibility or attributes.
@@ -186,7 +186,7 @@ let optimization = sort<1> {
 
 let empty = sort<1> {}
 
-let select = <mode: optimization>(value: i32): i32 => value
+let select = { <mode: optimization>(value: i32): i32 => value }
 let answer = select<optimization.release>(42)
 ```
 
@@ -220,7 +220,7 @@ complete initializer `builtin()`. The bootstrap declaration is private and
 has the unique exact shape:
 
 ```sc fragment
-let builtin = () builtin()
+let builtin = { () => builtin() }
 ```
 
 This unique self-recursive spelling bootstraps the compiler-definition marker;
@@ -232,8 +232,8 @@ Compiler-owned types and type constructors use the same form:
 
 ```sc fragment
 pub let i32: type = builtin()
-pub let Array = <T: type><l: usize>: type builtin()
-pub let size_of = <T: type>: u64 builtin()
+pub let Array = { <T: type><l: usize>: type => builtin() }
+pub let size_of = { <T: type>: u64 => builtin() }
 ```
 
 `builtin()` is private to `core`. User functions, types, extension methods,
@@ -245,10 +245,10 @@ implementations.
 The same root module publicly declares the other syntax-owned contracts:
 
 ```sc fragment
-pub let foreign = <abi: abi>: never builtin()
-pub let foreign = <abi: abi, symbol: String>: never builtin()
-pub let test = <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () builtin()
-pub let requires = <condition: bool, e: effects, Result: type> with<e>{move body: with<e>(): Result}: Result builtin()
+pub let foreign = { <abi: abi>: never => builtin() }
+pub let foreign = { <abi: abi, symbol: String>: never => builtin() }
+pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }
+pub let requires = { <condition: bool, e: effects, Result: type> with<e>{move body: with<e>(): Result}: Result => builtin() }
 ```
 
 `foreign(c, ...)` passes the finite `abi.c` value (using the contextual short spelling `c`) as
@@ -285,8 +285,8 @@ Arrays, borrows, raw pointers, tuples, function types, structs, and enums are ty
 Compile-time parameters occur in their own parameter groups:
 
 ```sc fragment
-let identity = <T: type>(value: T): T => value
-let first = <T: type, l: usize>(values: Array<T><l>): T => values[0]
+let identity = { <T: type>(value: T): T => value }
+let first = { <T: type, l: usize>(values: Array<T><l>): T => values[0] }
 ```
 
 Supported compile-time parameter binders include:
@@ -312,7 +312,7 @@ underconstrained inference are distinct errors.
 Each angle-bracketed compile-time group is a distinct constructor layer:
 
 ```sc fragment
-pub let Array = <T: type><l: usize>: type => core.memory.Array<T><l>
+pub let Array = { <T: type><l: usize>: type => core.memory.Array<T><l> }
 let Result = <Error: type><Value: type> enum {
   Ok(Value)
   Err(Error)
@@ -325,8 +325,8 @@ A type alias is transparent and preserves the identity of its target:
 
 ```sc fragment
 let Scalar = i32
-let Family = <T: type>: type => core.Option<T>
-let Constructor = <T: type>: type => core.Option
+let Family = { <T: type>: type => core.Option<T> }
+let Constructor = { <T: type>: type => core.Option }
 ```
 
 Alias expansion must terminate. Cyclic aliases and arity or sort mismatches are rejected.
@@ -348,7 +348,7 @@ fixed 16,384-step and 128-active-call limits; an equal repeated call is an
 immediate cycle error.
 
 ```sc fragment
-let next = <value: usize>: usize => value + 1
+let next = { <value: usize>: usize => value + 1 }
 
 let Buffer = <Element: type><length: usize> struct {
   values: Array<Element><next<length>>
@@ -410,14 +410,14 @@ implementation whose associated `Output` matches the expected type:
 ```sc fragment
 pub let ArrayLiteral = <Element: type> trait {
   let Output: type
-  let from_array_literal = <length: usize>
-    (move values: Array<Element><length>): Output
+  let from_array_literal = { <length: usize>
+    (move values: Array<Element><length>): Output }
 }
 
 pub let StringLiteral = trait {
   let Output: type
-  let from_string_literal = <length: usize>
-    (move utf8: Array<u8><length>): Output
+  let from_string_literal = { <length: usize>
+    (move utf8: Array<u8><length>): Output }
 }
 ```
 
@@ -430,32 +430,34 @@ literal length as a compile-time argument.
 
 ## 5. Functions and Application
 
-A function declaration may contain multiple compile-time and runtime parameter
-groups. One delimiter-aware application model serves functions, methods,
+A callable literal may contain multiple compile-time and runtime parameter
+groups. A named function is a `let` binding whose value is such a literal.
+One delimiter-aware application model serves functions, methods,
 constructors, effects, and other callable or compile-time entities. Angle
 brackets exclusively declare and supply compile-time groups. Parentheses,
 square brackets, and braces declare and supply runtime groups, and application
 must preserve the runtime delimiter identity at that group position:
 
 ```sc fragment
-let map =
+let map = {
   <T: type, U: type>
   (value: T)
   {transform: (T): U}
   : U
   => transform(value)
+}
 ```
 
 Application consumes one group at a time:
 
 ```sc fragment
-let add = (x: i32)(y: i32): i32 => x + y
+let add = { (x: i32)(y: i32): i32 => x + y }
 let add_two = add(2)
 let answer = add_two(40)
 ```
 
 ```sc fragment
-let select = <T: type>[left: T]{right: T}(fallback: T): T => left
+let select = { <T: type>[left: T]{right: T}(fallback: T): T => left }
 let answer = select<i32>[40]{2}(0)
 ```
 
@@ -487,7 +489,7 @@ Runtime parameters may be labeled. Positional arguments must precede labeled arg
 parameter is supplied exactly once.
 
 ```sc fragment
-let clamp = (value: i32, min lower: i32, max upper: i32): i32 => ...
+let clamp = { (value: i32, min lower: i32, max upper: i32): i32 => ... }
 let bounded = clamp(42, min: 0, max: 100)
 ```
 
@@ -510,28 +512,29 @@ if(condition) {
 A function type records each runtime group's delimiter, its result, and effect row:
 
 ```sc fragment
-let apply = <T: type, U: type>(value: T)(function: (T): U): U =>
+let apply = { <T: type, U: type>(value: T)(function: (T): U): U =>
   function(value)
+}
 ```
 
-Functions and closures use the same `groups: result => implementation` expression. `let` merely
-binds a name to that callable value. A bare brace expression is the zero-parameter form, and a
+Every callable value has outer braces. Named functions bind callable literals
+of the form `{ groups: result => implementation }`; callable types remain
+unbraced `(T): R`. The form `{ expression }` is the zero-parameter closure, and a
 Brace call may directly contain a parameterized callable whose input types are supplied by the
 declared callable parameter:
 
 ```sc fragment
-let increment = (value: i32): i32 => value + 1
+let increment = { (value: i32): i32 => value + 1 }
 map(items) {
   (item) => item.name
 }
 ```
 
-A single refutable-pattern closure remains available as
-`{ Pattern [if guard] -> expression }`. Calling it produces
-`core.control.Attempt<Input><Output>`: a successful pattern produces `Hit`,
-while a failed pattern or guard produces `Miss` with the input. Consecutive
-pattern-partial calls such as `callee { P -> ... } { Q -> ... }` are removed;
-they do not form a multi-case call.
+A pattern callable uses one outer brace pair and one or more comma-separated
+arms: `{ Pattern [if guard] => expression, ... }`. Calling it tries arms in
+source order. A successful arm produces its expression result; failure moves
+to the next arm, and exhausting a non-exhaustive callable is rejected. The
+removed `->` spelling and consecutive pattern-partial calls are not syntax.
 
 Closures capture referenced outer bindings. Shared captures can be copied when their complete
 environment is copyable. Mutable and owning captures obey the same exclusivity and move rules as
@@ -547,9 +550,9 @@ Every runtime parameter has a passing mode:
 - `borrow<mut>` creates an exclusive loan.
 
 ```sc fragment
-let consume = <T: type>(move value: T): () => ...
-let inspect = <T: type>(value: Borrow<T>): () => ...
-let update = <T: type>(value: Borrow<mut><T>): () => ...
+let consume = { <T: type>(move value: T): () => ... }
+let inspect = { <T: type>(value: Borrow<T>): () => ... }
+let update = { <T: type>(value: Borrow<mut><T>): () => ... }
 ```
 
 An omitted mode uses the type's default: `Copyable` values are copied and resource values are moved.
@@ -578,7 +581,7 @@ initialization cleanup.
 An `a: access` parameter selects shared or mutable borrowing without defining two APIs:
 
 ```sc fragment
-let view = <a: access><T: type>(value: Borrow<a><T>): Borrow<a><T> => {
+let view = { <a: access><T: type>(value: Borrow<a><T>): Borrow<a><T> =>
   value
 }
 ```
@@ -670,7 +673,7 @@ A trait declares associated types and required or default methods:
 ```sc fragment
 let Iterator = trait {
   let Item = <r: region>: type
-  let next = <r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>>
+  let next = { <r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>> }
 }
 ```
 
@@ -678,7 +681,7 @@ An `extend` block adds inherent members or implements a trait:
 
 ```sc fragment
 extend(Point) {
-  let translated = (self: Borrow<self>)(dx: i32, dy: i32): Point => {
+  let translated = { (self: Borrow<self>)(dx: i32, dy: i32): Point =>
     Point{x: self.x + dx, y: self.y + dy}
   }
 }
@@ -703,14 +706,14 @@ implements its relation to `constraint`:
 pub let constraint: sort<2>
 
 pub let Is = <right: sort<2>> trait<self: sort<2>> {
-  let is = <left: self, right: right>: bool
+  let is = { <left: self, right: right>: bool }
 }
 
 extend(type, Is<constraint>) {
-  let is = <
+  let is = { <
     Left: type,
     right: constraint,
-  >: bool builtin()
+  >: bool => builtin() }
 }
 ```
 
@@ -725,7 +728,7 @@ extend(Cell<T>, Copyable)
 A function applies the compiler-owned `requires` guard to its body:
 
 ```sc fragment
-let duplicate = <T: type>(value: T): (T, T) requires(T is Copyable) => {
+let duplicate = { <T: type>(value: T): (T, T) requires(T is Copyable) =>
   (value, value)
 }
 ```
@@ -736,8 +739,8 @@ under the query's proof. A false concrete query rejects the instantiation.
 Associated type equalities are written as separate projection constraints:
 
 ```sc fragment
-let produce = <T: type>(value: T): i32
-requires(T is Produce && T.Item == i32) => {
+let produce = { <T: type>(value: T): i32
+requires(T is Produce && T.Item == i32) =>
   value.produce()
 }
 ```
@@ -753,8 +756,8 @@ Projection constraints can equate a generic associated constructor with a
 type expression by declaring alpha-renamable binders on the projection:
 
 ```sc fragment
-let borrow_item = <T: type>(value: T): ()
-requires(T is Iterator && T.Item<r: region> == Borrow<r><i32>) => ...
+let borrow_item = { <T: type>(value: T): ()
+requires(T is Iterator && T.Item<r: region> == Borrow<r><i32>) => ... }
 ```
 
 The binder groups and sorts must exactly match the associated declaration. The right side may use
@@ -772,8 +775,9 @@ in section 11.
 
 ## 9. Closures and Control Flow
 
-An ordinary brace expression creates a closure; braces are not generic eager blocks. When that
-closure is invoked, its body evaluates statements in order and returns its final expression. An
+An ordinary `{ expression }` creates a zero-parameter closure; braces are not
+generic eager blocks. Parameterized and pattern callables use their own
+brace-delimited forms. When a closure is invoked, its body evaluates statements in order and returns its final expression. An
 explicit semicolon turns the preceding expression into `()`.
 
 `if`, `match`, loops, and exits are expression forms supplied through validated control contracts.
@@ -790,14 +794,14 @@ let absolute = if(value < 0) {
 The principal source contracts in `core.control` are:
 
 ```sc fragment
-pub let if = <e: effects, T: type> with<e>
+pub let if = { <e: effects, T: type> with<e>
   (condition: bool)
   (move then: with<e>(): T)
-  (move else: with<e>(): T): T
+  (move else: with<e>(): T): T }
 
-pub let while = <e: effects> with<e>
+pub let while = { <e: effects> with<e>
   (move condition: with<e>(): bool)
-  (move do: with<e>(): ()): ()
+  (move do: with<e>(): ()): () }
 ```
 
 Dedicated control forms consume their branch, condition, and body closures and invoke them
@@ -835,22 +839,26 @@ An effect declares operations:
 
 ```sc fragment
 let counter = effect {
-  let next = (): i32
+  Next(): i32
 }
 ```
 
+Effect operations are enum-like constructors: they omit `let` and `=`, use
+constructor-style names, and have no bodies. Calling `counter.Next()` performs
+the operation rather than constructing data.
+
 `with<E>` prefixes an effectful callable signature or callable type. In a
-declaration, all signature groups follow `=` and the final colon introduces
-the result:
+declaration, the outer braces contain all signature groups and the final colon
+introduces the result:
 
 ```sc fragment
-let read = with<counter>(): i32 => {
-  counter.next()
+let read = { with<counter>(): i32 =>
+  counter.Next()
 }
 
-let apply = <e: effects> with<e>
+let apply = { <e: effects> with<e>
   (action: with<e>(i32): i32)
-  (value: i32): i32 => {
+  (value: i32): i32 =>
   action(value)
 }
 ```
@@ -860,28 +868,31 @@ The corresponding function value type is `with<counter>(): i32`.
 always covers the complete multi-group invocation. `with<E>` cannot wrap an
 ordinary result type.
 
-An operation transfers control to the nearest matching handler. A resumable clause receives a
+An operation transfers control to the nearest matching handler. A resumable arm receives a
 single-use continuation. Resuming supplies the operation result and eventually returns the
 handler's answer type. Abandoning the continuation cleans its captured state exactly once.
 
-A source handler invocation is one adjacent Brace `DelimitedCall` whose
-arguments are semantically interpreted as handler clauses:
+A source handler first receives exactly one unlabeled action expression in
+parentheses, then a spaced brace group of pattern-like arms:
 
 ```sc fragment
-counter.handle{
-  next: (resume) => resume(41),
-  action: { read() },
+counter.handle(read()) {
+  Next(resume) => resume(41),
+  Return(value) => value,
 }
 ```
 
-This is ordinary call syntax, not parser-special named trailing groups. Clause
-labels and separating commas are required, and `action` is the final argument.
+The action expression is delayed by the handler and evaluated under it. Each
+resumable operation arm receives the operation payload followed by its
+single-use continuation; an abortive operation arm has no continuation.
+`Return(value)` handles normal action completion and may transform the answer
+type. There are no `action:` or `done:` labeled fields.
 
-`throwing<Error>` is the standard abortive error effect. `throw(error)` invokes its `raise`
+`throwing<Error>` is the standard abortive error effect. `throw(error)` invokes its `Raise`
 operation. `try { ... }` handles that effect and materializes `core.Result<Error><Value>`.
 
 ```sc fragment
-let parse = with<throwing<parse_error>>(): i32 => ...
+let parse = { with<throwing<parse_error>>(): i32 => ... }
 
 let result = try {
   parse()
@@ -904,7 +915,7 @@ materializes private nominal state containing a state word and captured fields. 
 structurally `Movable`; relocation transfers its initialized captures, and cancellation drops them
 exactly once. `core.async.async` is the intrinsic that materializes this
 anonymous state. `core.async.await` is a source polling loop: `Pending`
-performs `suspension.suspend()`, while `Ready(value)` returns the value.
+performs `suspension.Suspend()`, while `Ready(value)` returns the value.
 Syntax-directed lowering may specialize `await` into the generated state
 machine without changing its source contract.
 A compiler-generated future implements `Future<()>` with associated `Output == T`. Polling a body with
@@ -983,7 +994,7 @@ Postfix `value!` invokes the validated source trait `core.flow.Raise`:
 pub let Raise = trait {
   let Output: type
   let Error: type
-  let raise = with<core.error.throwing<Error>>(move self): Output
+  let raise = { with<core.error.throwing<Error>>(move self): Output }
 }
 ```
 
@@ -993,7 +1004,7 @@ the separately validated `core.flow.Unwrap` contract:
 ```sc fragment
 pub let Unwrap = trait {
   let Output: type
-  let unwrap = (move self): Output
+  let unwrap = { (move self): Output }
 }
 ```
 
@@ -1035,7 +1046,7 @@ network access.
 The executable entry point is:
 
 ```sc fragment
-let main = (): i32 => 0
+let main = { (): i32 => 0 }
 ```
 
 It may instead accept the standard argument representation defined by the target library contract.
@@ -1076,17 +1087,17 @@ target mapping and cross-language evidence are specified by the
 [C interoperability contract](../project/c-interoperability.md).
 
 ```sc fragment
-let read = (
+let read = { (
   fd: i32,
   buffer: Ptr<mut><u8>,
   count: usize,
-): isize foreign(c)
+): isize => foreign(c) }
 
-let c_read = (
+let c_read = { (
   fd: i32,
   buffer: Ptr<mut><u8>,
   count: usize,
-): isize foreign(c, "read")
+): isize => foreign(c, "read") }
 ```
 
 Each foreign declaration has exactly one runtime parameter group, an

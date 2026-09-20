@@ -1,19 +1,18 @@
 let ask = effect {
-  let value = (): i32
+  value (): i32
 }
 
-let run = (move action: with<ask>(i32): i32)(input: i32): i32 => {
-  ask.handle {
-    value: (resume) => { resume(10) },
-    action: {
+let run = { (move action: with<ask>(i32): i32)(input: i32): i32 =>
+  ask.handle(do {
       action(input)
-    },
+    }) {
+    value(resume) => do { resume(10) },
   }
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut total = 0
-  let mut action: with<ask>(i32): i32  = (input: i32) => {
+  let mut action: with<ask>(i32): i32  = { (input: i32) =>
     total = total + input
     ask.value() + total
   }

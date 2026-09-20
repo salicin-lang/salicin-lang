@@ -1,9 +1,9 @@
 let unsafety = core.unsafe.unsafety
 
-let dangerous = with<unsafety>(): i32 => { 40 }
+let dangerous = { with<unsafety>(): i32 => 40 }
 
-let main = (): i32 => {
-  let action: with<unsafety>(i32)(i32): i32 = (left: i32)(right: i32) => { dangerous() + left + right
+let main = { (): i32 =>
+  let action: with<unsafety>(i32)(i32): i32 = { (left: i32)(right: i32) => dangerous() + left + right
   }
   let pending = action(1)
   unsafe {

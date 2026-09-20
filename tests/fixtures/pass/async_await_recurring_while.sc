@@ -9,9 +9,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = ();
 
-  let poll = <r: region>
+  let poll = { <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<()> => {
+    (): Poll<()> =>
     unsafe {
       *self.polls = *self.polls + 1
       *self.remaining = *self.remaining - 1
@@ -20,7 +20,7 @@ extend(step, Future<()>) {
   }
 }
 
-let step = (remaining: Ptr<mut><i32>, polls: Ptr<mut><i32>): step => {
+let step = { (remaining: Ptr<mut><i32>, polls: Ptr<mut><i32>): step =>
   step { remaining: remaining, polls: polls }
 }
 
@@ -32,9 +32,9 @@ let pending_step = struct {
 extend(pending_step, Future<()>) {
   let Output = ();
 
-  let poll = <r: region>
+  let poll = { <r: region>
     (self: Borrow<mut><r><self>)
-    (): Poll<()> => {
+    (): Poll<()> =>
     if(self.polled) {
       unsafe {
         *self.remaining = *self.remaining - 1
@@ -47,11 +47,11 @@ extend(pending_step, Future<()>) {
   }
 }
 
-let pending_step = (remaining: Ptr<mut><i32>): pending_step => {
+let pending_step = { (remaining: Ptr<mut><i32>): pending_step =>
   pending_step { polled: false, remaining: remaining }
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut polls = 0
   let polls_ptr = ptr<mut>(borrow<mut>(polls))
 

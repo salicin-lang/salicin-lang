@@ -1,28 +1,28 @@
 let ask = effect {
-  let value = (): i32
+  value (): i32
 }
 
-let left = with<ask>(): i32 => {
+let left = { with<ask>(): i32 =>
   ask.value()
 }
 
-let right = with<ask>(): i32 => {
+let right = { with<ask>(): i32 =>
   ask.value() + 1
 }
 
-let fallback = with<ask>(): i32 => {
+let fallback = { with<ask>(): i32 =>
   ask.value()
 }
 
-let invoke = with<ask>(action: with<ask>(): i32): i32 => {
+let invoke = { with<ask>(action: with<ask>(): i32): i32 =>
   action()
 }
 
-let finish = with<ask>(value: i32): i32 => {
+let finish = { with<ask>(value: i32): i32 =>
   value + 1
 }
 
-let select = with<ask>(mode: i32): i32 => {
+let select = { with<ask>(mode: i32): i32 =>
   let action: with<ask>(): i32  = if(mode == 0) { left } else: {
     if(mode == 1) { right } else: { fallback }
   }
@@ -31,12 +31,11 @@ let select = with<ask>(mode: i32): i32 => {
   direct + higher + 1
 }
 
-let main = (): i32 => {
-  ask.handle {
-    value: (resume) => { resume(20) },
-    action: {
+let main = { (): i32 =>
+  ask.handle(do {
       select(2)
-    },
+    }) {
+    value(resume) => do { resume(20) },
   }
 }
 

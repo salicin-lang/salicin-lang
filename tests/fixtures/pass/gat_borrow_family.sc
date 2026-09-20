@@ -3,8 +3,8 @@ let view = <t: type><a: access><r: region>: type Borrow<a><r><t>;
 let lend = trait {
   let Item = <a: access><r: region>: type
 
-  let view = <a: access, r: region>
-    (self: Borrow<a><r><self>)(): Item<a><r>
+  let view = { <a: access, r: region>
+    (self: Borrow<a><r><self>)(): Item<a><r> }
   }
 
 let cell = struct { value: i32 }
@@ -12,15 +12,15 @@ let cell = struct { value: i32 }
 extend(cell, lend) {
   let Item = view<i32>;
 
-  let view = <a: access, r: region>
-    (self: Borrow<a><r><self>)(): Borrow<a><r><i32> => {
+  let view = { <a: access, r: region>
+    (self: Borrow<a><r><self>)(): Borrow<a><r><i32> =>
     borrow<a>(self.value)
   }
 }
 
-let read = (value: Borrow<i32>): i32 => { value }
+let read = { (value: Borrow<i32>): i32 => value }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut cell = cell { value: 40 }
   let before = do {
     let value = cell.view<shared>()

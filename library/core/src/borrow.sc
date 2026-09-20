@@ -18,7 +18,7 @@ pub let Borrow = <a: access = shared>
   <T: type>: type builtin()
 
 /// Creates or reborrows a Borrow of an addressable pointee.
-pub let borrow = <a: access = shared>
-  <r: region>
-  <T: type>
-  (value: T): Borrow<a><r><T> builtin()
+pub let borrow = { <a: access = shared>
+    <r: region>
+    <T: type>
+    (value: T): Borrow<a><r><T> => builtin() }

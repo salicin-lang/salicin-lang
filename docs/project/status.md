@@ -177,8 +177,8 @@ Implemented lexical and declaration features include:
 - UTF-8 source and NFC-normalized Unicode XID identifiers;
 - logical newlines, semicolons, line comments, and nested block comments;
 - uniform `let` declarations and mutable local value bindings;
-- prefix effect callable types `with<E>(A): B` and unified RHS declaration
-  signatures for pure and effectful functions;
+- prefix effect callable types `with<E>(A): B`, brace-delimited callable
+  literals, and named functions that bind those literals;
 - the compiler-validated `std.io.io` authority identity, accepted only at the
   native `main` boundary, plus source-defined `IoErrorKind` and `IoError`;
 - private, package, and public visibility;
@@ -196,7 +196,7 @@ Implemented lexical and declaration features include:
 - explicit erased inputs for those syntax declarations:
   the one- and two-argument `foreign` overloads select the finite
   `abi.c` value, while
-  `pub let test = <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () builtin()`
+  `pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`
   receives the UTF-8 name and unit-returning throwing body;
   `core.requires` receives a compile-time boolean and delayed function body.
   Trait and extension requirements remain labeled boolean header parameters,
@@ -204,7 +204,7 @@ Implemented lexical and declaration features include:
   four surface forms idempotently, and missing or malformed edition contracts
   fail core-bundle validation.
 
-Types, type parameters, type forms, traits, enum variants, and associated types
+Types, type parameters, type forms, traits, enum variants, effect operations, and associated types
 use `PascalCase`; functions, methods, values, fields, modules, effects, and
 sorts use `snake_case`. This is the embedded-library naming gate, not a
 restriction on ordinary user declarations.
@@ -382,7 +382,7 @@ Implemented data and control features include:
   cleanup, completed-state repoll traps, and one tail-position child suspension;
 - a direct intrinsic `core.async.async` entry point for anonymous future state
   and a source-defined `core.async.await` over the ordinary
-  `poll`/`suspension.suspend` protocol;
+  `poll`/`suspension.Suspend` protocol;
 - the explicit allocation-free `std.async.spin` executor for one owned future;
 - handler specialization for non-suspending futures with a custom residual
   effect, including standard `throwing<Error>`, and by-value `Copyable`, move-only,
@@ -578,7 +578,8 @@ in `std.async`. Freestanding data types, operator/iteration/control
 protocols, cold futures, and the executor protocol remain in `core`.
 
 Public embedded-library declarations use category-aware ASCII names and
-semantic vocabulary: types, type parameters, type forms, traits, variants, and associated types
+semantic vocabulary: types, type parameters, type forms, traits, variants,
+effect operations, and associated types
 use `PascalCase`; functions, methods, values, fields, modules, effects, and
 sorts use `snake_case`. Category suffixes such as `_type`, `_trait`, and
 `_effect` are rejected. The standard effect identities are `throwing`, `suspension`,

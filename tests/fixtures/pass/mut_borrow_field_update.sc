@@ -1,10 +1,10 @@
 let counter = struct { value: i32 }
 
-let increment = (counter: Borrow<mut><counter>)(amount: i32): () => {
+let increment = { (counter: Borrow<mut><counter>)(amount: i32): () =>
   counter.value = counter.value + amount
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut counter = counter { value: 40 }
   increment(counter)(2)
   counter.value

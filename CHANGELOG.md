@@ -6,6 +6,14 @@ subset.
 
 ## Unreleased
 
+- **Breaking:** Callable values now require outer braces. Named functions bind
+  callable literals such as `let add = { (x: i32): i32 => x + 1 }`, while
+  callable types remain `(T): R`; `{ expression }` is the zero-parameter
+  closure and `{ Pattern => expression, ... }` is the multi-arm pattern
+  callable. Effect operations now use enum-like `Operation(...): Result`
+  declarations. Handlers use
+  `.handle(action) { Operation(...) => ..., Return(...) => ... }`; the former
+  `action:` and `done:` fields are removed.
 - **Breaking:** Removed the `comptime` keyword. Angle brackets now exclusively
   declare and supply compile-time groups; `()`, `[]`, and `{}` exclusively
   declare and supply runtime groups, and mixed-stage groups are invalid.
@@ -13,7 +21,7 @@ subset.
   `core.passing` contract retains only the `copy` and `move` runtime parameter
   modifiers.
 - **Breaking:** Migrated source naming to semantic categories. Types and type
-  parameters, type forms, traits, enum variants, and associated types now use `PascalCase`;
+  parameters, type forms, traits, enum variants, effect operations, and associated types now use `PascalCase`;
   functions, methods, values, fields, modules, effects, and sorts use
   `snake_case`. Primitive `bool`, integer, `str`, and `never` types and
   `true`/`false` remain lowercase. Standard APIs now use names such as
@@ -474,9 +482,9 @@ subset.
 - Made `with<E>(F)` the canonical effect-row constructor for callable type
   `F`, applying one normalized row to the complete multi-group callable and
   rejecting non-callable operands.
-- Added the effectful declaration boundary syntax
-  `let f<comptime e: effects>: with<e>(value: i32): i32`, while preserving the
-  compact `let f(value: i32): i32` spelling for pure functions.
+- Added an effectful declaration boundary that has since converged on the
+  brace-first forms `let f = { <e: effects> with<e>(value: i32): i32 => ... }`
+  and `let f = { (value: i32): i32 => ... }`.
 - Migrated core, alloc, std, examples, fixtures, formatter coverage, grammar,
   specification, and effect documentation to prefix syntax. Edition 2026
   retains postfix parsing only as a transitional, non-canonical migration
@@ -845,13 +853,13 @@ subset.
   `defer` under the edition lang-item registry instead of special-name
   exceptions. Added canonical private declarations for `foreign(c, ...)` and
   `test("name") { ... }`, and changed the unique compiler-definition bootstrap
-  to the self-recursive `let builtin() = builtin()` contract.
+  to the self-recursive brace-first `builtin` contract.
 - Replaced derived primitive intrinsics with ordinary core source definitions:
   boolean negation and equality, signed integer negation, and every integer
   compound-assignment implementation now build on source control flow,
   primitive operations, and ordinary assignment.
 - Moved `core.async.await` to a source definition expressed as `Future.poll`,
-  `Async.suspend`, and a loop. `core.async.async` remains the direct intrinsic
+  `Async.Suspend`, and a loop. `core.async.async` remains the direct intrinsic
   that materializes anonymous future state.
 
 ## 0.208.0 - 2026-07-26
@@ -1039,7 +1047,7 @@ subset.
 
 - Added the core-private complete `builtin()` initializer for every
   compiler-owned function, type, type constructor, and intrinsic extension
-  method. The unique private `let builtin(): Never = builtin()` bootstrap is
+  method. The unique private brace-first `builtin` bootstrap is
   validated separately; unknown or malformed core markers and every user
   marker are rejected. Trait requirements, effect operations, and user opaque
   types remain genuinely bodyless, and intrinsic selection no longer infers
@@ -1312,10 +1320,10 @@ subset.
   control call before effect, throws, ownership, and cleanup analysis. `if` now forms a boolean
   case pair over the same path, and `core.control.if` has an ordinary source body implemented with
   `match`.
-- Added first-class, contextually typed pattern partial functions. Applying
-  `{ Pattern [if guard] -> body }` now returns `core.control.Attempt(Input)(Output)`, preserves the
-  original non-`Copy` input on `Miss`, delays payload moves until `Hit`, and carries closure
-  captures and latent effects through storage and calls.
+- Added first-class, contextually typed pattern callables. The current form
+  `{ Pattern [if guard] => body, ... }` preserves source arm order, delays
+  payload moves until an arm is selected, and carries captures and latent
+  effects through storage and calls.
 - Added multi-stage partial application for curried capturing closures. Partial environments combine
   original closure captures with applied arguments, preserve remaining parameter labels and modes,
   defer effect checks until the final call, retain `FnMut`/`FnOnce` behavior, and transfer or drop
@@ -1323,7 +1331,7 @@ subset.
 - Inventoried every retained source-level algebraic-handler rejection by stable ID, implementation
   location, diagnostic fragment, negative fixture, and implementation-status boundary. Added
   coverage for continuation and callable escape, alias binding, finite-target assignment, and
-  overload selection; operation effect errors now report source names such as `State(i32).get`
+  overload selection; operation effect errors now report source names such as `State(i32).Get`
   instead of generated `$effect$operation$...` symbols.
 - Extended the built-in `Ptr(A)(T)` family through ordinary source declarations. A generic
   `extend(Ptr(A)(T))` supplies `offset` to both access modes, while
@@ -1408,7 +1416,7 @@ subset.
   and `Result` implement `Unwrap`, `Result` implements `Raise`, and user containers may implement
   either protocol.
 - Routed effectful trait-method calls discovered after concrete receiver and generic-implementation
-  selection back through handler lowering, so `Raise.raise` keeps its direct
+  selection back through handler lowering, so `Raise.Raise` keeps its direct
   `Output with(Throws(Error))` contract instead of exposing an intermediate `Result`.
 - Added the compile-time `parameters` domain and complete parameter-group expansion with `...`.
   `core.effect.Handle` now declares `Clauses(Value, Answer): parameters`, so every
@@ -1419,8 +1427,7 @@ subset.
 - Refactored the compiler backend into a `codegen/` module directory, splitting out cleanup-plan
   construction, LLVM emission, and codegen regression tests while preserving behavior.
 - Normalized standard-library, documentation, fixture, and diagnostic snippets to write generic
-  type declarations without a space before compile-time parameter groups, such as
-  `let Box(T: type)`.
+  type declarations without a space before compile-time parameter groups.
 
 ## 0.186.0 - 2026-07-23
 
@@ -1461,7 +1468,8 @@ subset.
 - Added `struct(derive: Copy) { ... }`, lowering supported derives through ordinary source-backed
   trait implementations.
 - Allowed an ordinary function and a type to share the same top-level name, so libraries can offer
-  explicit same-name constructor functions such as `let Pair(left: i32, right: i32): Pair = { ... }`.
+  explicit same-name constructor functions such as
+  `let Pair = { (left: i32, right: i32): Pair => ... }`.
 - Fixed generic struct literal type-head inference for unit type arguments such as `Box(()) { ... }`.
 - Updated core/alloc libraries, fixtures, and documentation for braced struct literals while keeping
   standard effects and protocols outside the prelude.
@@ -1558,7 +1566,7 @@ subset.
 
 - Routed standard `throw` lowering through the validated `core.error.throw` declaration by
   substituting its `Error` parameter and reading its declared `Throws(Error)` effect before invoking
-  `Throws.raise`.
+  `Throws.Raise`.
 - Covered the source-backed `core.error.throw` function template in core lang-item registration
   tests, so its declared effect row remains visible to semantic lowering.
 
@@ -1660,8 +1668,8 @@ subset.
 ## 0.162.0 - 2026-07-22
 
 - Allowed contextual `try { ... }` expressions with an expected `Result(T, E)` to handle the ordinary
-  standard `Throws(E)` custom effect by generating a normal `Throws(E).handle` with `done -> Ok` and
-  `raise -> Err` clauses.
+  standard `Throws(E)` custom effect by generating a normal `Throws(E).handle` with `Return -> Ok` and
+  `Raise -> Err` arms.
 - Preserved the existing dedicated lowercase `throws(E)` Result ABI path when the body calls
   functions with `with(throws(E))`, so current propagation behavior stays stable while ordinary
   `Throws` handling moves onto the algebraic-effect path.
@@ -1671,9 +1679,9 @@ subset.
 ## 0.161.0 - 2026-07-22
 
 - Allowed `throw error` to target the ordinary standard `Throws(Error)` effect when no dedicated
-  `with(throws(Error))` ABI boundary is active, desugaring it through `Throws(Error).raise(error)`.
-- Reused algebraic handler source transformation for `throw` inside `Throws(Error).handle { ... }`,
-  so handler clauses see the same abort operation as an explicit `Throws.raise` call.
+  `with(throws(Error))` ABI boundary is active, desugaring it through `Throws(Error).Raise(error)`.
+- Reused algebraic handler source transformation for `throw` inside a `Throws(Error).handle(action) { ... }` handler,
+  so handler arms see the same abort operation as an explicit `Throws.Raise` call.
 - Added source-backed active effect metadata so closure and handler lowering can preserve the exact
   standard effect instance needed for ordinary `Throws` sugar, while rejecting ambiguous multiple
   `Throws(Error)` rows instead of guessing.
@@ -1682,10 +1690,10 @@ subset.
 
 - Treated `Never`-returning algebraic effect operations as abort operations: their handler clauses
   omit `resume`, discard the suspended continuation, and directly produce the handler answer.
-- Allowed `Throws(Error).raise` to be invoked and handled through the same operation/handler path as
+- Allowed `Throws(Error).Raise` to be invoked and handled through the same operation/handler path as
   user-defined standard effects, covering both direct and cross-function handler lowering.
 - Documented the remaining special boundary: `throw`/`try` still use the current compiler ABI while
-  `Throws.raise` now exposes the ordinary source-level abort-operation shape.
+  `Throws.Raise` now exposes the ordinary source-level abort-operation shape.
 
 ## 0.159.0 - 2026-07-22
 
@@ -1697,15 +1705,17 @@ subset.
 - Added conservative type probing for constructor trait associated function calls when compile-time
   arguments are explicit, without adding side effects to the probe phase.
 - Rewrote `core.effects` declarations to use complete effect block syntax: `Unsafe` is an explicit
-  empty effect, `Throws(Error)` declares `raise(move error: Error): Never`, and `Async` declares a
-  minimal `suspend(): ()` operation.
+  empty effect, `Throws(Error)` declares `Raise(move error: Error): Never`, and `Async` declares a
+  minimal `Suspend(): ()` operation.
 - Updated the core lang-item validator so `Throws` is checked by its ordinary operation shape rather
   than by marker-effect special casing.
 
 ## 0.158.0 - 2026-07-22
 
 - Registered constructor trait implementation methods as ordinary generic function templates, so
-  implementations such as `extend(Carrier, Functor) { let map(E, A, B)... }` are shape-checked and
+  implementations such as
+  `extend(Carrier, Functor) { let map = { <E: effects, A: type, B: type>... } }`
+  are shape-checked and
   their bodies are validated by the existing generic template pipeline.
 - Added constructor-kind substitution for applied type constructors, allowing trait signatures using
   `F(A)` to normalize to implementation signatures such as `Carrier(A)`.
@@ -2139,7 +2149,7 @@ subset.
 
 - Composed lexically nested handlers of different user-defined effects by carrying the outer
   selective-CPS transformation through the inner handler's action boundary.
-- Transformed outer-effect operations in inner operation and `done` clauses while respecting the
+- Transformed outer-effect operations in inner operation and `Return` arms while respecting the
   inner clause's own `resume` binding.
 - Traversed compiler-generated frame and continuation closures when a nested handler handles a
   second effect, preserving both effects across specialized named calls.
@@ -2205,7 +2215,7 @@ subset.
 
 - Extended selective CPS traversal through ordinary call and operation arguments while preserving
   left-to-right evaluation, so handled operations can feed other calls and operations.
-- Added native coverage for `done:` answer-type transformation and nearest matching nested handlers.
+- Added native coverage for `Return(value)` answer-type transformation and nearest matching nested handlers.
 - Preserved one-shot resumption across nested argument continuations and exact effect-instance
   selection without treating closure construction as effect execution.
 
@@ -2222,8 +2232,9 @@ subset.
 
 ## 0.111.0 - 2026-07-22
 
-- Added the derived `Effect(...).handle(clauses...) { action }` member for lexically visible
-  operations, using labeled contextual closures and exact instantiated effect identities.
+- Added the derived handler member for lexically visible operations, now written
+  `Effect(...).handle(action) { Operation(...) => ..., Return(...) => ... }`,
+  with exact instantiated effect identities.
 - Implemented selective one-shot continuation transformation: a clause may resume once or omit
   `resume` to abandon the suspended remainder, while duplicate use and escape are diagnosed.
 - Added the edition-validated `core.control.Continuation(Input, Output)` contract outside the

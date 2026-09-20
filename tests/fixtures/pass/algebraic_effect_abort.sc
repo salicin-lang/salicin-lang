@@ -1,16 +1,15 @@
 let abort = effect {
-  let stop = (): i32
+  stop (): i32
 }
 
-let main = (): i32 => {
+let main = { (): i32 =>
   let mut reached = 0
-  let result = abort.handle {
-    stop: (resume) => { 42 },
-    action: {
+  let result = abort.handle(do {
       let value = abort.stop()
       reached = 1;
       value
-    },
+    }) {
+    stop(resume) => do { 42 },
   }
   result + reached
 }
