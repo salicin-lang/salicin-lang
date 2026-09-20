@@ -550,6 +550,18 @@ mod tests {
     }
 
     #[test]
+    fn preserves_named_pattern_callables_idempotently() {
+        let source = "let select = {\ntrue => 42,\nfalse => 0,\n}\n";
+        let expected = "let select = {\n  true => 42,\n  false => 0,\n}\n";
+        let formatted = format_source(source).expect("format named pattern callable");
+        assert_eq!(formatted, expected);
+        assert_eq!(
+            format_source(&formatted).expect("format output again"),
+            formatted
+        );
+    }
+
+    #[test]
     fn rejects_invalid_source_without_rewriting_it() {
         let error = format_source("let main( = {\n").expect_err("invalid source must fail");
         assert!(error.contains("signature groups must follow `=`"));

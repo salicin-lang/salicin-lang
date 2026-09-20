@@ -700,7 +700,11 @@ not create a closure or other call intermediate.
 
 A pattern callable has one or more comma-separated arms in one outer brace pair:
 `{ Pattern [if expression] => expression, ... }`. Calling it tries arms in
-source order. The former `->` arm and consecutive
+source order. At the top level, an immutable binding of this form declares a
+named function. Boolean literal patterns determine a `bool` input directly;
+other inputs currently require a callable annotation, for example
+`let select: (Option<i32>): i32 = { Some(value) => value, None => 0 }`.
+The former `->` arm and consecutive
 `callee { P -> ... } { Q -> ... }` forms are not grammar.
 
 `c` selects the C data representation and may appear at most once. It is

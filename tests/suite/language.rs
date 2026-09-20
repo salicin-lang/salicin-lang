@@ -1,6 +1,17 @@
 use crate::support::*;
 
 #[test]
+fn named_pattern_callables_run_with_expected_result() {
+    let ir = compile_source(
+        "let select = { true => 42, false => 0 }\n\
+         let main = { (): i32 => select(true) }\n",
+    )
+    .expect("compile named pattern callable");
+    let output = link_and_run_ir(&ir, "named pattern callable");
+    assert_eq!(output.status.code(), Some(42), "{}", output_text(&output));
+}
+
+#[test]
 fn named_arguments_select_function_overloads_in_resolved_sources() {
     let fixtures = [
         "function_overload_named.sc",

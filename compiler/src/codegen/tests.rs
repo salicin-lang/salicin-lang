@@ -164,6 +164,21 @@ fn lowers_inferred_rhs_callable_bodies_with_typed_locals() {
 }
 
 #[test]
+fn lowers_named_pattern_callables() {
+    compile_text(
+        "let select = { true => 42, false => 0 }\n\
+         let main = { (): i32 => select(true) }\n",
+    )
+    .expect("a named pattern callable must lower as a direct function");
+
+    compile_text(
+        "let select: (bool): i32 = { true => 42, false => 0 }\n\
+         let main = { (): i32 => select(true) }\n",
+    )
+    .expect("an annotated named pattern callable must lower as a direct function");
+}
+
+#[test]
 fn validates_delimiters_for_direct_indirect_and_partial_calls() {
     compile_text(
         "let add = { [left: i32](right: i32): i32 =>  left + right }\n\

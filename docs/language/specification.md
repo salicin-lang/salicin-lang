@@ -534,7 +534,13 @@ A pattern callable uses one outer brace pair and one or more comma-separated
 arms: `{ Pattern [if guard] => expression, ... }`. Calling it tries arms in
 source order. A successful arm produces its expression result; failure moves
 to the next arm, and exhausting a non-exhaustive callable is rejected. The
-removed `->` spelling and consecutive pattern-partial calls are not syntax.
+top-level form `let name = { arms }` declares a named function rather than a
+function-valued global. A Boolean literal arm determines a `bool` input. Other
+inputs currently require a whole-callable annotation, such as
+`let select: (Option<i32>): i32 = { Some(value) => value, None => 0 }`; the
+annotation supplies the input, result, delimiters, and effects while the arms
+supply the implementation. The removed `->` spelling and consecutive
+pattern-partial calls are not syntax.
 
 Closures capture referenced outer bindings. Shared captures can be copied when their complete
 environment is copyable. Mutable and owning captures obey the same exclusivity and move rules as

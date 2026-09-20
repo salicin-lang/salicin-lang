@@ -2,8 +2,98 @@ use std::collections::{HashMap, HashSet};
 
 use crate::ast::{
     AssociatedTypeBinding, Binding, CompileParam, Expr, ExtendMember, Function, FunctionEffects,
-    Item, Sort, StaticFragmentKind, Stmt, TraitMember, Type, USizeConst, VariantFields,
+    GroupDelimiter, Item, Pattern, Sort, StaticFragmentKind, Stmt, TraitMember, Type, USizeConst,
+    VariantFields,
 };
+
+pub(crate) fn promote_top_level_pattern_callables(items: &mut [Item]) -> Result<(), String> {
+    for item in items {
+        let Item::Global(binding) = item else {
+            continue;
+        };
+        let Expr::Closure(parameters, body) = &binding.value else {
+            continue;
+        };
+        let [parameter] = parameters.as_slice() else {
+            continue;
+        };
+        if parameter.ty != Type::Named("$context$infer".to_owned(), Vec::new()) {
+            continue;
+        }
+        let Expr::Match { scrutinee, arms } = body.as_ref() else {
+            continue;
+        };
+        if !matches!(scrutinee.as_ref(), Expr::Name(name) if name == &parameter.name) {
+            continue;
+        }
+
+        if binding.mutable {
+            return Err("`let mut` cannot declare a function".to_owned());
+        }
+
+        let (input_type, return_type, effects) = match &binding.annotation {
+            Some(Type::Function {
+                groups,
+                effects,
+                result,
+            }) => {
+                let [group] = groups.as_slice() else {
+                    return Err(format!(
+                        "callable annotation for `{}` must contain exactly one runtime group with one input",
+                        binding.name
+                    ));
+                };
+                let [input] = group.as_slice() else {
+                    return Err(format!(
+                        "callable annotation for `{}` must contain exactly one runtime group with one input",
+                        binding.name
+                    ));
+                };
+                (input.clone(), Some(result.as_ref().clone()), effects.clone())
+            }
+            Some(_) => {
+                return Err(format!(
+                    "top-level pattern callable `{}` requires a callable type annotation",
+                    binding.name
+                ));
+            }
+            None => {
+                if !arms
+                    .iter()
+                    .any(|arm| matches!(arm.pattern, Pattern::Bool(_)))
+                {
+                    return Err(format!(
+                        "top-level pattern callable `{}` requires a callable type annotation because its input type cannot be inferred",
+                        binding.name
+                    ));
+                }
+                (
+                    Type::Bool,
+                    None,
+                    FunctionEffects {
+                        group_delimiters: vec![GroupDelimiter::Parenthesis],
+                        ..FunctionEffects::default()
+                    },
+                )
+            }
+        };
+
+        let mut parameter = parameter.clone();
+        parameter.ty = input_type;
+        *item = Item::Function(Function {
+            name: binding.name.clone(),
+            foreign: None,
+            builtin: false,
+            compile_groups: Vec::new(),
+            groups: vec![vec![parameter]],
+            return_type,
+            effects,
+            where_predicates: Vec::new(),
+            body: Some(body.as_ref().clone()),
+        });
+    }
+    Ok(())
+}
 
 pub(crate) fn infer_extend_parameters(items: &mut [Item]) -> Result<(), String> {
     let mut constructors = HashMap::<String, Vec<CompileParam>>::new();

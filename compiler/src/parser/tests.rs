@@ -66,7 +66,7 @@ fn parses_only_braced_anonymous_and_pattern_callables() {
          let increment = { (x: i32): i32 => x + 1 }\n\
          increment(1)\n\
          }\n\
-         let select = { Some(x) if x > 0 => x, None => 0, Some(_) => -1 }\n",
+         let select: (Option<i32>): i32 = { Some(x) if x > 0 => x, None => 0, Some(_) => -1 }\n",
     )
     .expect("anonymous callable forms must parse inside braces");
     let Item::Function(main) = &program.items[0] else {
@@ -80,17 +80,46 @@ fn parses_only_braced_anonymous_and_pattern_callables() {
     };
     assert!(matches!(increment.value, Expr::Closure(ref parameters, ref body)
         if parameters.len() == 1 && matches!(body.as_ref(), Expr::Block(_, Some(_)))));
-    let Item::Global(select) = &program.items[1] else {
-        panic!("expected pattern callable global");
+    let Item::Function(select) = &program.items[1] else {
+        panic!("expected named pattern callable");
     };
-    assert!(matches!(select.value, Expr::Closure(ref parameters, ref body)
-        if parameters.len() == 1
-            && parameters[0].name.starts_with("$match$callable$input$")
-            && matches!(body.as_ref(), Expr::Match { arms, .. } if arms.len() == 3)));
+    assert!(select.groups[0][0]
+        .name
+        .starts_with("$match$callable$input$"));
+    assert!(matches!(select.body, Some(Expr::Match { ref arms, .. }) if arms.len() == 3));
 
     let error = parse("let main = { (): i32 => let old = (x) => x\n0 }\n")
         .expect_err("bare callable literals are removed");
     assert!(error.message.contains("outer braces"), "{error:?}");
+}
+
+#[test]
+fn promotes_boolean_pattern_callables_and_preserves_ordinary_closure_globals() {
+    let program = parse(
+        "let select = { true => 1, false => 0 }\n\
+         let value = { 42 }\n",
+    )
+    .expect("an unambiguous pattern callable must become a named function");
+
+    let Item::Function(select) = &program.items[0] else {
+        panic!("expected named pattern callable");
+    };
+    assert_eq!(select.groups.len(), 1);
+    assert_eq!(select.groups[0].len(), 1);
+    assert_eq!(select.groups[0][0].ty, Type::Bool);
+    assert!(select.return_type.is_none());
+    assert!(matches!(select.body, Some(Expr::Match { ref arms, .. }) if arms.len() == 2));
+    assert!(matches!(program.items[1], Item::Global(_)));
+}
+
+#[test]
+fn requires_annotations_for_ambiguous_top_level_pattern_callables() {
+    let error = parse("let select = { Some(x) => x, None => 0 }\n")
+        .expect_err("constructor patterns cannot determine their generic input type");
+    assert!(
+        error.message.contains("requires a callable type annotation"),
+        "{error:?}"
+    );
 }
 
 #[test]

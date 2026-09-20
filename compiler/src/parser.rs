@@ -13,7 +13,9 @@ use crate::lexer::{lex, LexError, Token, TokenKind};
 
 mod post_parse;
 
-pub(crate) use post_parse::{infer_extend_parameters, normalize_and_validate_scopes};
+pub(crate) use post_parse::{
+    infer_extend_parameters, normalize_and_validate_scopes, promote_top_level_pattern_callables,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseError {
@@ -202,6 +204,9 @@ impl Parser {
             self.skip_separators();
         }
 
+        if let Err(message) = promote_top_level_pattern_callables(&mut items) {
+            return Err(self.error_here(message));
+        }
         if let Err(message) = infer_extend_parameters(&mut items) {
             return Err(self.error_here(message));
         }
