@@ -77,11 +77,7 @@ pub(crate) fn naming_diagnostics(program: &Program, layer: &str) -> Vec<String> 
                 check(&definition.name, "value", StandardNameStyle::SnakeCase)
             }
             Item::Struct(definition) => {
-                check(
-                    &definition.name,
-                    "struct",
-                    StandardNameStyle::PascalCase,
-                );
+                check(&definition.name, "struct", StandardNameStyle::PascalCase);
                 check_compile_parameters(&definition.compile_groups, &mut check);
             }
             Item::Enum(definition) => {
@@ -110,9 +106,7 @@ pub(crate) fn naming_diagnostics(program: &Program, layer: &str) -> Vec<String> 
                     check_function(operation, &mut check);
                 }
             }
-            Item::Sort(definition) => {
-                check(&definition.name, "sort", StandardNameStyle::SnakeCase)
-            }
+            Item::Sort(definition) => check(&definition.name, "sort", StandardNameStyle::SnakeCase),
             Item::TypeForm(definition) => {
                 let style = if matches!(
                     definition.name.as_str(),
@@ -146,11 +140,7 @@ pub(crate) fn naming_diagnostics(program: &Program, layer: &str) -> Vec<String> 
                 check_compile_parameters(&definition.compile_groups, &mut check);
             }
             Item::Trait(definition) => {
-                check(
-                    &definition.name,
-                    "trait",
-                    StandardNameStyle::PascalCase,
-                );
+                check(&definition.name, "trait", StandardNameStyle::PascalCase);
                 check_compile_parameters(&definition.compile_groups, &mut check);
                 for member in &definition.members {
                     match member {
@@ -177,13 +167,11 @@ pub(crate) fn naming_diagnostics(program: &Program, layer: &str) -> Vec<String> 
                 for member in &definition.members {
                     match member {
                         ExtendMember::Const(definition) => check(
-                                &definition.name,
-                                "associated type",
-                                StandardNameStyle::PascalCase,
+                            &definition.name,
+                            "associated type",
+                            StandardNameStyle::PascalCase,
                         ),
-                        ExtendMember::Function(function) => {
-                            check_function(function, &mut check)
-                        }
+                        ExtendMember::Function(function) => check_function(function, &mut check),
                     }
                 }
             }
@@ -196,11 +184,7 @@ fn check_function(
     function: &crate::ast::Function,
     check: &mut impl FnMut(&str, &str, StandardNameStyle),
 ) {
-    check(
-        &function.name,
-        "function",
-        StandardNameStyle::SnakeCase,
-    );
+    check(&function.name, "function", StandardNameStyle::SnakeCase);
     check_compile_parameters(&function.compile_groups, check);
 }
 
@@ -261,11 +245,7 @@ enum StandardNameStyle {
     Primitive,
 }
 
-fn validate_standard_name(
-    name: &str,
-    category: &str,
-    style: StandardNameStyle,
-) -> Option<String> {
+fn validate_standard_name(name: &str, category: &str, style: StandardNameStyle) -> Option<String> {
     if matches!(style, StandardNameStyle::Primitive) {
         return None;
     }

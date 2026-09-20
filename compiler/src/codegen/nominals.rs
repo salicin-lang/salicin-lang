@@ -418,15 +418,14 @@ impl Analyzer {
                 self.error(format!("unknown generic nominal type `{name}`"));
                 return None;
             };
-        let (compile_parameters, inferred, consumed_groups) =
-            self.seed_type_argument_inference(
-                name,
-                &compile_groups,
-                groups,
-                Some(groups.len()),
-                context,
-                true,
-            )?;
+        let (compile_parameters, inferred, consumed_groups) = self.seed_type_argument_inference(
+            name,
+            &compile_groups,
+            groups,
+            Some(groups.len()),
+            context,
+            true,
+        )?;
         if consumed_groups != groups.len() {
             self.error(format!("invalid type argument group in `{name}`"));
             return None;

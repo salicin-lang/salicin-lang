@@ -84,20 +84,22 @@ impl Analyzer {
                 } else if let Some(global) = self.lowering.hir_globals.get(name) {
                     TypeProbe::Known(global.ty.clone())
                 } else if let Some(signature) = self.lowering.signatures.get(name) {
-                    signature.function_ty().map_or(TypeProbe::Unsupported, |mut ty| {
-                        if let Ty::Function(function_ty) = &mut ty {
-                            if let Some(function) = self
-                                .collection
-                                .functions
-                                .get(name)
-                                .or_else(|| self.collection.function_templates.get(name))
-                            {
-                                function_ty.group_delimiters =
-                                    function.effects.group_delimiters.clone();
+                    signature
+                        .function_ty()
+                        .map_or(TypeProbe::Unsupported, |mut ty| {
+                            if let Ty::Function(function_ty) = &mut ty {
+                                if let Some(function) = self
+                                    .collection
+                                    .functions
+                                    .get(name)
+                                    .or_else(|| self.collection.function_templates.get(name))
+                                {
+                                    function_ty.group_delimiters =
+                                        function.effects.group_delimiters.clone();
+                                }
                             }
-                        }
-                        TypeProbe::Known(ty)
-                    })
+                            TypeProbe::Known(ty)
+                        })
                 } else {
                     TypeProbe::Unsupported
                 }
@@ -301,13 +303,12 @@ impl Analyzer {
                 callee,
                 delimiter: crate::ast::GroupDelimiter::Brace,
                 arguments,
-            } if arguments.iter().all(|argument| argument.label.is_some())
-                && {
-                    matches!(super::lower::flatten_call(callee).root_ignoring_groups(), Expr::Name(name)
+            } if arguments.iter().all(|argument| argument.label.is_some()) && {
+                matches!(super::lower::flatten_call(callee).root_ignoring_groups(), Expr::Name(name)
                         if !context.shadows_top_level_name(name)
                             && (self.collection.struct_layouts.contains_key(name)
                                 || self.collection.struct_templates.contains_key(name)))
-                } =>
+            } =>
             {
                 self.probe_struct_construction_ty(callee, arguments, hint, context)
             }

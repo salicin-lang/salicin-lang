@@ -391,11 +391,7 @@ impl Lexer {
             )
         });
 
-        let delimiter_baseline = self
-            .brace_delimiter_baselines
-            .last()
-            .copied()
-            .unwrap_or(0);
+        let delimiter_baseline = self.brace_delimiter_baselines.last().copied().unwrap_or(0);
         if self.delimiter_depth == delimiter_baseline && !continued {
             tokens.push(Token {
                 kind: TokenKind::Newline,
@@ -639,12 +635,7 @@ mod tests {
             .map(|token| token.kind.clone())
             .collect::<Vec<_>>();
         assert!(kinds.windows(3).any(|window| {
-            window
-                == [
-                    TokenKind::Integer(1),
-                    TokenKind::Newline,
-                    TokenKind::Star,
-                ]
+            window == [TokenKind::Integer(1), TokenKind::Newline, TokenKind::Star]
         }));
     }
 
@@ -685,7 +676,8 @@ mod tests {
 
     #[test]
     fn recognizes_extend_as_a_keyword() {
-        let tokens = lex("extend(a) { let identity = { <t: type>(value: t): t =>  value } }").unwrap();
+        let tokens =
+            lex("extend(a) { let identity = { <t: type>(value: t): t =>  value } }").unwrap();
         assert!(tokens.iter().any(|token| token.kind == TokenKind::Extend));
         assert!(tokens
             .iter()

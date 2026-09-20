@@ -1219,8 +1219,7 @@ impl Analyzer {
                         )
                 },
                 |count| source_index < count,
-            )
-            {
+            ) {
                 Some(compile_index)
             } else {
                 None
@@ -1326,22 +1325,24 @@ impl Analyzer {
                                 Type::Named(name.clone(), Vec::new())
                             }
                             Expr::Call(callee, arguments)
-                            | Expr::DelimitedCall { callee, arguments, .. }
-                                if matches!(
-                                    callee.as_ref(),
-                                    Expr::Name(name)
-                                        if name == self.lang_item_name(LangItemKind::UnsafeEffect)
-                                            && arguments.is_empty()
-                                ) =>
+                            | Expr::DelimitedCall {
+                                callee, arguments, ..
+                            } if matches!(
+                                callee.as_ref(),
+                                Expr::Name(name)
+                                    if name == self.lang_item_name(LangItemKind::UnsafeEffect)
+                                        && arguments.is_empty()
+                            ) =>
                             {
                                 effect_row_source(true, None, &[])
                             }
                             Expr::Call(callee, arguments)
-                            | Expr::DelimitedCall { callee, arguments, .. }
-                                if matches!(
-                                    callee.as_ref(),
-                                    Expr::Name(name) if self.collection.effects.contains(name)
-                                ) =>
+                            | Expr::DelimitedCall {
+                                callee, arguments, ..
+                            } if matches!(
+                                callee.as_ref(),
+                                Expr::Name(name) if self.collection.effects.contains(name)
+                            ) =>
                             {
                                 let Expr::Name(name) = callee.as_ref() else {
                                     unreachable!()
@@ -1372,12 +1373,11 @@ impl Analyzer {
                                 }
                             }
                             Expr::Call(callee, arguments)
-                            | Expr::DelimitedCall { callee, arguments, .. }
-                                if matches!(callee.as_ref(), Expr::Name(name) if effect_row_from_marker(name).is_some())
-                                    && arguments.len() <= 1
-                                    && arguments
-                                        .iter()
-                                        .all(|argument| argument.label.is_none()) =>
+                            | Expr::DelimitedCall {
+                                callee, arguments, ..
+                            } if matches!(callee.as_ref(), Expr::Name(name) if effect_row_from_marker(name).is_some())
+                                && arguments.len() <= 1
+                                && arguments.iter().all(|argument| argument.label.is_none()) =>
                             {
                                 let Expr::Name(marker) = callee.as_ref() else {
                                     unreachable!()
@@ -1595,7 +1595,8 @@ impl Analyzer {
                         origin: "default pure effect".to_owned(),
                     });
             } else if let (Sort::Named(compile_type), Some(CompileParamDefault::Name(member))) =
-                (&parameter.kind, &parameter.default) {
+                (&parameter.kind, &parameter.default)
+            {
                 if self
                     .collection
                     .closed_type_values
@@ -1713,7 +1714,8 @@ impl Analyzer {
                         origin: "default pure effect".to_owned(),
                     });
             } else if let (Sort::Named(compile_type), Some(CompileParamDefault::Name(member))) =
-                (&parameter.kind, &parameter.default) {
+                (&parameter.kind, &parameter.default)
+            {
                 if self
                     .collection
                     .closed_type_values

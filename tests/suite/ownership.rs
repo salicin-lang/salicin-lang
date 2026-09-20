@@ -886,7 +886,7 @@ edition = "2026"
     );
     project.write(
         "src/api.sc",
-         "pub(package) let cell = <t: type> struct { value: t }\n\
+        "pub(package) let cell = <t: type> struct { value: t }\n\
              extend(cell<t>) {\n\
              let new = { (move value: t): cell<t> => cell{ value: value } }\n\
              let take = { (move self)(): t => self.value }\n\

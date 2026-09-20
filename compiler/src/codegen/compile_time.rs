@@ -366,10 +366,9 @@ pub(super) fn render_static_expression(expression: &StaticExpr) -> String {
             function,
             groups,
             group_delimiters,
-        } => {
-            groups.iter().zip(group_delimiters).fold(
-                function.clone(),
-                |rendered, (group, delimiter)| {
+        } => groups.iter().zip(group_delimiters).fold(
+            function.clone(),
+            |rendered, (group, delimiter)| {
                 let arguments = group
                     .iter()
                     .map(|argument| {
@@ -381,14 +380,13 @@ pub(super) fn render_static_expression(expression: &StaticExpr) -> String {
                     })
                     .collect::<Vec<_>>()
                     .join(", ");
-                    format!(
-                        "{rendered}{}{arguments}{}",
-                        delimiter.opening(),
-                        delimiter.closing()
-                    )
-                },
-            )
-        }
+                format!(
+                    "{rendered}{}{arguments}{}",
+                    delimiter.opening(),
+                    delimiter.closing()
+                )
+            },
+        ),
     }
 }
 

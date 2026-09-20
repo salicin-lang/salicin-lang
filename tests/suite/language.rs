@@ -187,7 +187,10 @@ fn m1_inherent_member_errors_report_their_cause() {
             "qualified_method_borrowed_partial.sc",
             "partial application",
         ),
-        ("self_expression_outside_extend.sc", "module `self` cannot be used"),
+        (
+            "self_expression_outside_extend.sc",
+            "module `self` cannot be used",
+        ),
     ] {
         let output = salic()
             .arg("check")
@@ -767,11 +770,9 @@ extend(cell) {
     ))
     .expect_err("qualified generic calls reject parenthesized compile groups");
     assert!(
-        diagnostics
-            .iter()
-            .any(|diagnostic| diagnostic.contains(
-                "call to `cell::method::identity` supplies more argument groups than the declaration"
-            )),
+        diagnostics.iter().any(|diagnostic| diagnostic.contains(
+            "call to `cell::method::identity` supplies more argument groups than the declaration"
+        )),
         "{diagnostics:#?}"
     );
 }

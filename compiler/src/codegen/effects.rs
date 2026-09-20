@@ -355,8 +355,7 @@ impl Analyzer {
                 }
                 (name.clone(), sources)
             }
-            Expr::Call(callee, _) | Expr::DelimitedCall { callee, .. }
-                if matches!(callee.unlocated(), Expr::Name(name) if self.collection.effect_defs.contains_key(name)) =>
+            Expr::Call(callee, _) | Expr::DelimitedCall { callee, .. } if matches!(callee.unlocated(), Expr::Name(name) if self.collection.effect_defs.contains_key(name)) =>
             {
                 let Expr::Name(name) = callee.unlocated() else {
                     unreachable!()
@@ -448,7 +447,9 @@ impl Analyzer {
             .filter(|argument| argument.label.as_deref() == Some("action"))
             .count();
         if action_count != 1 || action.label.as_deref() != Some("action") {
-            self.error("an effect handler requires exactly one `action` argument, in final position");
+            self.error(
+                "an effect handler requires exactly one `action` argument, in final position",
+            );
             return error_expr();
         }
         if arguments

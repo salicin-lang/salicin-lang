@@ -823,7 +823,8 @@ pub(super) fn expression_handles_effect(expression: &Expr, identity: &str) -> bo
         callee,
         delimiter: GroupDelimiter::Brace,
         arguments,
-    } = expression {
+    } = expression
+    {
         if matches!(arguments.last(), Some(CallArg { label: Some(label), value: Expr::Closure(parameters, _) })
                 if label == "action" && parameters.is_empty())
             && matches!(callee.unlocated(), Expr::Member(effect, member)
@@ -847,7 +848,8 @@ pub(super) fn inject_handler_action_binding(
         callee,
         delimiter: GroupDelimiter::Brace,
         arguments,
-    } = expression {
+    } = expression
+    {
         let is_handler = matches!(callee.unlocated(), Expr::Member(effect, member)
             if member == "handle"
                 && source_type_expression_name(effect).is_some_and(|effect| effect == identity));
@@ -1253,8 +1255,7 @@ impl Analyzer {
         delimiters: &[GroupDelimiter],
     ) -> Option<Expr> {
         let function = self.collection.functions.get(name)?.clone();
-        if groups.len() != function.groups.len()
-            || delimiters != function.effects.group_delimiters
+        if groups.len() != function.groups.len() || delimiters != function.effects.group_delimiters
         {
             return None;
         }
@@ -2151,11 +2152,7 @@ impl Analyzer {
                         }],
                     );
                     for group in flattened.groups {
-                        call = apply_call_group(
-                            call,
-                            group.delimiter,
-                            group.arguments.to_vec(),
-                        );
+                        call = apply_call_group(call, group.delimiter, group.arguments.to_vec());
                     }
                     return self.transform_handler_expr(call, handler, resume, continuation);
                 }
@@ -2168,11 +2165,7 @@ impl Analyzer {
                 .collect::<Vec<_>>();
             if let Expr::Name(name) = flattened.root {
                 if let Some(materialized) =
-                    self.materialize_direct_handler_action(
-                        name,
-                        &direct_groups,
-                        &direct_delimiters,
-                    )
+                    self.materialize_direct_handler_action(name, &direct_groups, &direct_delimiters)
                 {
                     return self.transform_handler_expr(
                         materialized,
@@ -3376,10 +3369,13 @@ impl Analyzer {
         else {
             return None;
         };
-        let Some((CallArg {
-            label: Some(action_label),
-            value: Expr::Closure(action_parameters, action_body),
-        }, clause_arguments)) = arguments.split_last()
+        let Some((
+            CallArg {
+                label: Some(action_label),
+                value: Expr::Closure(action_parameters, action_body),
+            },
+            clause_arguments,
+        )) = arguments.split_last()
         else {
             return None;
         };
@@ -3569,13 +3565,11 @@ impl Analyzer {
         };
         let callable = handler.dynamic_callables.borrow().get(name).cloned()?;
         if flattened.groups.len() != callable.group_shapes.len()
-            || flattened
-                .groups
-                .iter()
-                .zip(&callable.group_shapes)
-                .any(|(group, (delimiter, length))| {
+            || flattened.groups.iter().zip(&callable.group_shapes).any(
+                |(group, (delimiter, length))| {
                     group.delimiter != *delimiter || group.arguments.len() != *length
-                })
+                },
+            )
         {
             self.error(format!(
                 "dynamic effectful callable `{name}` must be fully applied under its handler"
@@ -3601,11 +3595,7 @@ impl Analyzer {
                 let mut call = Expr::Name(callee.clone());
                 for (delimiter, length) in &group_shapes {
                     let end = offset + length;
-                    call = apply_call_group(
-                        call,
-                        *delimiter,
-                        arguments[offset..end].to_vec(),
-                    );
+                    call = apply_call_group(call, *delimiter, arguments[offset..end].to_vec());
                     offset = end;
                 }
                 analyzer
@@ -3681,13 +3671,11 @@ impl Analyzer {
         };
         let closure = handler.resumable_closures.borrow().get(name).cloned()?;
         if flattened.groups.len() != closure.group_shapes.len()
-            || flattened
-                .groups
-                .iter()
-                .zip(&closure.group_shapes)
-                .any(|(group, (delimiter, length))| {
+            || flattened.groups.iter().zip(&closure.group_shapes).any(
+                |(group, (delimiter, length))| {
                     group.delimiter != *delimiter || group.arguments.len() != *length
-                })
+                },
+            )
         {
             self.error(format!(
                 "resumable closure `{name}` must be fully applied before it can run under a handler"
@@ -3713,11 +3701,7 @@ impl Analyzer {
                 let mut call = Expr::Name(callee.clone());
                 for (delimiter, length) in &group_shapes {
                     let end = offset + length;
-                    call = apply_call_group(
-                        call,
-                        *delimiter,
-                        arguments[offset..end].to_vec(),
-                    );
+                    call = apply_call_group(call, *delimiter, arguments[offset..end].to_vec());
                     offset = end;
                 }
                 analyzer
@@ -3793,8 +3777,7 @@ impl Analyzer {
             ),
         };
         let mut call = Expr::Name(name.clone());
-        for (index, (group, (delimiter, _))) in
-            groups.iter().zip(&closure.group_shapes).enumerate()
+        for (index, (group, (delimiter, _))) in groups.iter().zip(&closure.group_shapes).enumerate()
         {
             let mut arguments = group.to_vec();
             if index + 1 == groups.len() {
@@ -4133,7 +4116,9 @@ impl Analyzer {
             .iter()
             .any(|delimiter| *delimiter != GroupDelimiter::Angle)
         {
-            self.error(format!("compile-time arguments to `{source_name}` use `<...>`"));
+            self.error(format!(
+                "compile-time arguments to `{source_name}` use `<...>`"
+            ));
             return Some(Err(()));
         }
         let actual_runtime_delimiters = &actual_delimiters[runtime_group_start..];
@@ -4143,7 +4128,9 @@ impl Analyzer {
                 .zip(&function.effects.group_delimiters)
                 .all(|(actual, expected)| actual == expected)
         {
-            self.error(format!("call to `{source_name}` uses the wrong argument-group delimiter"));
+            self.error(format!(
+                "call to `{source_name}` uses the wrong argument-group delimiter"
+            ));
             return Some(Err(()));
         }
         groups = groups[runtime_group_start..].to_vec();
@@ -4199,19 +4186,11 @@ impl Analyzer {
                 let mut offset = 0;
                 let mut call = Expr::Name(callee.clone());
                 for group in &compile_prefix {
-                    call = apply_call_group(
-                        call,
-                        group.delimiter,
-                        group.arguments.clone(),
-                    );
+                    call = apply_call_group(call, group.delimiter, group.arguments.clone());
                 }
                 for (delimiter, length) in &group_shapes {
                     let end = offset + length;
-                    call = apply_call_group(
-                        call,
-                        *delimiter,
-                        arguments[offset..end].to_vec(),
-                    );
+                    call = apply_call_group(call, *delimiter, arguments[offset..end].to_vec());
                     offset = end;
                 }
                 analyzer
@@ -4391,10 +4370,7 @@ impl Analyzer {
                         .is_some_and(|ty| !matches!(ty, Type::Function { .. }))
                     {
                         let source_name = name.rsplit('$').next().unwrap_or(name);
-                        let canonical = if self
-                            .collection
-                            .struct_layouts
-                            .contains_key(source_name)
+                        let canonical = if self.collection.struct_layouts.contains_key(source_name)
                             || self.collection.struct_templates.contains_key(source_name)
                         {
                             Some(source_name.to_owned())

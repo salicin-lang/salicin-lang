@@ -1249,7 +1249,8 @@ fn build_semantic_index(
         }
     }
 
-    for (item_index, (item, origin)) in program.items.iter().zip(&program.item_origins).enumerate() {
+    for (item_index, (item, origin)) in program.items.iter().zip(&program.item_origins).enumerate()
+    {
         let Some(location) = origin.source.as_deref() else {
             continue;
         };
@@ -2732,7 +2733,11 @@ mod tests {
         let stale_worker = std::thread::spawn(move || stale_snapshot.analyze());
 
         session
-            .change_document("part.sc", 2, "pub(package) let answer = { (): i32 =>  42 }\n")
+            .change_document(
+                "part.sc",
+                2,
+                "pub(package) let answer = { (): i32 =>  42 }\n",
+            )
             .expect("newer overlay");
         let stale_result = stale_worker.join().expect("stale analysis completes");
         assert!(stale_result
@@ -2805,7 +2810,10 @@ mod tests {
         session.close_document("main.sc").expect("close document");
         let closed = session.snapshot();
         assert_eq!(closed.documents[0].version, None);
-        assert_eq!(closed.documents[0].source, "let main = { (): i32 =>  41 + 1 }\n");
+        assert_eq!(
+            closed.documents[0].source,
+            "let main = { (): i32 =>  41 + 1 }\n"
+        );
         assert!(closed.analyze().analysis.diagnostics.is_empty());
     }
 

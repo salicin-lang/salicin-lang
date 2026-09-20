@@ -303,7 +303,10 @@ fn cache_reuses_byte_identical_ir_across_checkout_relocation_and_command_targets
             "src/lib.sc",
             "pub let answer = { (): i32 => shared.answer() }\n",
         );
-        project.write("src/shared.sc", "pub(package) let answer = { (): i32 => 42 }\n");
+        project.write(
+            "src/shared.sc",
+            "pub(package) let answer = { (): i32 => 42 }\n",
+        );
     }
     let first = TestDirectory::new();
     let relocated = TestDirectory::new();
@@ -553,7 +556,10 @@ fn formatter_is_idempotent_checks_without_writing_and_formats_packages() {
          [dependencies]\n\
          dep = { path = \"../dep\" }\n",
     );
-    let main = workspace.write("app/src/main.sc", "let main = { (): i32 =>\ndep.answer()\n}\n");
+    let main = workspace.write(
+        "app/src/main.sc",
+        "let main = { (): i32 =>\ndep.answer()\n}\n",
+    );
     let module = workspace.write(
         "app/src/local.sc",
         "pub(package) let value = { (): i32 =>\n1\n}\n",
@@ -1130,7 +1136,6 @@ fn explicit_calls_preserve_groups_and_precedence() {
             output_text(&output)
         );
     }
-
 }
 
 #[test]

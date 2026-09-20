@@ -663,8 +663,7 @@ impl Analyzer {
             } if matches!(arguments.as_slice(), [CallArg { label: None, .. }])
                 && matches!(
                     self.probe_expr_ty(callee, None, context),
-                    TypeProbe::Known(Ty::Array(_, _))
-                        | TypeProbe::KnownSource(Ty::Array(_, _), _)
+                    TypeProbe::Known(Ty::Array(_, _)) | TypeProbe::KnownSource(Ty::Array(_, _), _)
                 ) =>
             {
                 let index = Expr::Index {
@@ -693,10 +692,13 @@ impl Analyzer {
                         let accepts_brace = |function: &crate::ast::Function| {
                             function.body.is_some()
                                 && function.effects.group_delimiters.first()
-                                == Some(&crate::ast::GroupDelimiter::Brace)
+                                    == Some(&crate::ast::GroupDelimiter::Brace)
                         };
-                        let top_level = self.collection.function_overloads.get(name).is_some_and(
-                                |overloads| {
+                        let top_level =
+                            self.collection
+                                .function_overloads
+                                .get(name)
+                                .is_some_and(|overloads| {
                                     overloads.iter().any(|overload| {
                                         self.collection
                                             .functions
@@ -829,9 +831,9 @@ impl Analyzer {
                                     let (declared_result, mut effects) = match annotation.as_ref() {
                                         Some(Ty::Function(function)) => (
                                             Some((*function.result).clone()),
-                                             ClosureEffectContext {
-                                                 group_delimiters: function.group_delimiters.clone(),
-                                                 unsafe_depth: usize::from(function.unsafety),
+                                            ClosureEffectContext {
+                                                group_delimiters: function.group_delimiters.clone(),
+                                                unsafe_depth: usize::from(function.unsafety),
                                                 failure_error: function
                                                     .failure_error
                                                     .as_deref()

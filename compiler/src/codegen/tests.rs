@@ -2553,9 +2553,10 @@ let main = { (): i32 =>
 
 #[test]
 fn coalesce_does_not_guess_an_unconstrained_result_error_type() {
-    let errors =
-        compile_resolved_text("use core.result.Result\nlet main = { (): i32 =>  Result.Ok(40) ?? 2 }\n")
-            .unwrap_err();
+    let errors = compile_resolved_text(
+        "use core.result.Result\nlet main = { (): i32 =>  Result.Ok(40) ?? 2 }\n",
+    )
+    .unwrap_err();
     assert!(errors.iter().any(|diagnostic| {
         diagnostic
             .message
@@ -2572,9 +2573,10 @@ fn coalesce_reports_non_containers_mismatched_fallbacks_and_moves() {
     assert!(non_container.iter().any(|diagnostic| diagnostic.message
         == "operator `??` requires `Option<T>` or `Result<E><T>` on the left, found `i32`"));
 
-    let mismatch =
-        compile_resolved_text("use core.option.Option\nlet main = { (): i32 =>  Option<i32>.None ?? true }\n")
-            .unwrap_err();
+    let mismatch = compile_resolved_text(
+        "use core.option.Option\nlet main = { (): i32 =>  Option<i32>.None ?? true }\n",
+    )
+    .unwrap_err();
     assert!(mismatch
         .iter()
         .any(|diagnostic| diagnostic.message.contains("type mismatch")));
@@ -2727,8 +2729,9 @@ fn allows_user_redefinitions_of_unimported_core_nominal_names() {
     assert!(analyzer.collection.struct_defs.contains_key("add"));
     assert!(analyzer.collection.traits["core::ops::arith::Add"].valid);
 
-    let errors = compile_text("let invalid = { (value: void): () =>  () }\nlet main = { (): i32 =>  42 }\n")
-        .expect_err("`void` must not resolve as a unit alias");
+    let errors =
+        compile_text("let invalid = { (value: void): () =>  () }\nlet main = { (): i32 =>  42 }\n")
+            .expect_err("`void` must not resolve as a unit alias");
     assert!(errors
         .iter()
         .any(|diagnostic| diagnostic.message.contains("unknown type `void`")));
@@ -6110,8 +6113,7 @@ let main = { (): i32 =>  0 }
     .expect_err("an operation cannot run in a row that omits its effect");
     assert!(
         missing.iter().any(|error| {
-            error.message.contains("requires custom effect")
-                && error.message.contains("state<i32>")
+            error.message.contains("requires custom effect") && error.message.contains("state<i32>")
         }),
         "{missing:?}"
     );
@@ -6161,7 +6163,9 @@ let main = { (): i32 =>
     )
     .expect_err("handler lowering must reject a changed effectful call delimiter");
     assert!(diagnostics.iter().any(|diagnostic| {
-        diagnostic.message.contains("wrong argument-group delimiter")
+        diagnostic
+            .message
+            .contains("wrong argument-group delimiter")
             || (diagnostic.message.contains("argument group 1")
                 && diagnostic.message.contains("uses `(`")
                 && diagnostic.message.contains("uses `["))
@@ -6955,8 +6959,9 @@ fn entry_point_accepts_only_the_validated_standard_io_authority() {
             .contains("requires custom effect `std::io::io`")
     }));
 
-    let errors = compile_resolved_text("let io = effect {}\nlet main = { with<io>(): i32 =>  42 }\n")
-        .unwrap_err();
+    let errors =
+        compile_resolved_text("let io = effect {}\nlet main = { with<io>(): i32 =>  42 }\n")
+            .unwrap_err();
     assert!(errors.iter().any(|error| {
         error
             .message
@@ -7610,9 +7615,13 @@ fn positional_enum_variants_reject_brace_groups() {
              let main = { (): i32 =>  let value = Value.Number { 42 }; 0 }\n",
     )
     .expect_err("a positional enum variant must reject a Brace group");
-    assert!(diagnostics.iter().any(|diagnostic| {
-        diagnostic.message.contains("Value.Number") && diagnostic.message.contains("must use `(`")
-    }), "{diagnostics:?}");
+    assert!(
+        diagnostics.iter().any(|diagnostic| {
+            diagnostic.message.contains("Value.Number")
+                && diagnostic.message.contains("must use `(`")
+        }),
+        "{diagnostics:?}"
+    );
 }
 
 #[test]
@@ -7634,12 +7643,20 @@ fn named_constructor_reports_the_actual_missing_field() {
              let main = { (): i32 =>  Pair { right: 2 }.right }\n",
     )
     .expect_err("a labeled subset must report its omitted field");
-    assert!(diagnostics.iter().any(|diagnostic| {
-        diagnostic.message.contains("missing argument for parameter `left`")
-    }), "{diagnostics:?}");
-    assert!(!diagnostics.iter().any(|diagnostic| {
-        diagnostic.message.contains("missing field `right`")
-    }), "{diagnostics:?}");
+    assert!(
+        diagnostics.iter().any(|diagnostic| {
+            diagnostic
+                .message
+                .contains("missing argument for parameter `left`")
+        }),
+        "{diagnostics:?}"
+    );
+    assert!(
+        !diagnostics
+            .iter()
+            .any(|diagnostic| { diagnostic.message.contains("missing field `right`") }),
+        "{diagnostics:?}"
+    );
 }
 
 #[test]
@@ -7749,8 +7766,9 @@ let main = {{ (): i32 => {call} }}
     .expect("labeled do-while overload must lower");
 
     for if_expression in ["if(false) { 0 } else: { if(true) { 42 } else: { 0 } }"] {
-        let program = crate::parser::parse(&format!("let main = {{ (): i32 => {if_expression} }}\n"))
-            .expect("canonical if source must parse");
+        let program =
+            crate::parser::parse(&format!("let main = {{ (): i32 => {if_expression} }}\n"))
+                .expect("canonical if source must parse");
         compile(&program).expect("canonical if must lower");
     }
 }
@@ -7790,10 +7808,7 @@ fn algebraic_handlers_require_one_labeled_brace_group_with_action_last() {
             "let ask = effect {{ value: (): i32 }}\nlet main = {{ (): i32 => {call} }}\n"
         ))
         .expect_err("invalid handler argument shape must be rejected");
-        assert!(
-            error.message.contains(expected),
-            "{error:?}"
-        );
+        assert!(error.message.contains(expected), "{error:?}");
     }
 }
 
@@ -11302,7 +11317,10 @@ let main = { (): i32 =>
 
 #[test]
 fn cleanup_plan_makes_uninhabited_parameter_entries_unreachable() {
-    let plan = cleanup_plan_text("let absurd = { (move value: never): i32 =>  value }\n", "absurd");
+    let plan = cleanup_plan_text(
+        "let absurd = { (move value: never): i32 =>  value }\n",
+        "absurd",
+    );
     let function_entry = plan
         .blocks
         .iter()

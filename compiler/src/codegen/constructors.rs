@@ -59,13 +59,9 @@ impl Analyzer {
             return self.lower_struct_constructor(name, &[fields], context);
         }
         if self.collection.struct_templates.contains_key(name) {
-            let Some(canonical) = self.resolve_inferred_generic_struct_instance(
-                name,
-                &groups,
-                fields,
-                expected,
-                context,
-            ) else {
+            let Some(canonical) = self
+                .resolve_inferred_generic_struct_instance(name, &groups, fields, expected, context)
+            else {
                 return error_expr();
             };
             return self.lower_struct_constructor(&canonical, &[fields], context);
@@ -222,13 +218,9 @@ impl Analyzer {
                 }
             }
         }
-        let Some(arguments) = self.elaborate_runtime_group(
-            constructor,
-            1,
-            delimiter,
-            arguments,
-            &parameters,
-        ) else {
+        let Some(arguments) =
+            self.elaborate_runtime_group(constructor, 1, delimiter, arguments, &parameters)
+        else {
             return Vec::new();
         };
         arguments
@@ -247,10 +239,7 @@ impl Analyzer {
                         ),
                     _ => self.lower_expr(&argument.value, Some(&field.ty), context),
                 };
-                (
-                    index,
-                    value,
-                )
+                (index, value)
             })
             .collect()
     }

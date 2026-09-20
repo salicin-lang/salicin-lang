@@ -5,8 +5,8 @@ use crate::ast::{
     CallArg, CompileParam, CompileParamDefault, EffectDef, EnumDef, Expr, ExtendDef, ExtendMember,
     Field, ForeignAbi, ForeignFunction, Function, FunctionEffects, GroupDelimiter, Item, MatchArm,
     Param, PassMode, Pattern, PatternField, PatternFields, Program, Sort, SortDef, StaticCallArg,
-    StaticExpr, Stmt, StructDef, StructRepresentation, TraitDef, TraitMember, Type, TypeAliasDef, TypeArg,
-    TypeFormDef, USizeConst, UnaryOp, UseDecl, VariantDef, VariantFields, Visibility,
+    StaticExpr, Stmt, StructDef, StructRepresentation, TraitDef, TraitMember, Type, TypeAliasDef,
+    TypeArg, TypeFormDef, USizeConst, UnaryOp, UseDecl, VariantDef, VariantFields, Visibility,
     WherePredicate,
 };
 use crate::lexer::{lex, LexError, Token, TokenKind};
@@ -501,9 +501,8 @@ impl Parser {
             && groups.is_empty()
             && self.at(&TokenKind::FatArrow)
         {
-            return Err(self.error_here(
-                "named callable declarations use an outer callable brace after `=`",
-            ));
+            return Err(self
+                .error_here("named callable declarations use an outer callable brace after `=`"));
         }
         if rhs_signature && !groups.is_empty() {
             let brace_constructor = !has_callable_boundary
@@ -635,7 +634,10 @@ impl Parser {
 
         if rhs_signature && self.at(&TokenKind::Newline) {
             let mut next = self.index;
-            while matches!(self.tokens.get(next).map(|token| &token.kind), Some(TokenKind::Newline)) {
+            while matches!(
+                self.tokens.get(next).map(|token| &token.kind),
+                Some(TokenKind::Newline)
+            ) {
                 next += 1;
             }
             let continues = match self.tokens.get(next).map(|token| &token.kind) {
@@ -1015,9 +1017,8 @@ impl Parser {
             effects = declared;
             has_effect_clause = declared_clause;
         }
-        let return_type = logical_result.map(|result| {
-            Self::apply_failure_effect(result, effects.failure.as_deref().cloned())
-        });
+        let return_type = logical_result
+            .map(|result| Self::apply_failure_effect(result, effects.failure.as_deref().cloned()));
         self.effect_parameters_in_scope.clear();
         self.take_newlines_if_followed_by(&[
             TokenKind::FatArrow,
@@ -1052,7 +1053,9 @@ impl Parser {
                 None
             } else if self.at_context_ident("foreign") {
                 if !allow_foreign {
-                    return Err(self.error_here("foreign declarations are only allowed at top level"));
+                    return Err(
+                        self.error_here("foreign declarations are only allowed at top level")
+                    );
                 }
                 if !compile_groups.is_empty() || groups.len() != 1 || return_type.is_none() {
                     return Err(self.error_here(
@@ -1060,9 +1063,9 @@ impl Parser {
                     ));
                 }
                 if has_effect_clause || !where_predicates.is_empty() {
-                    return Err(self.error_here(
-                        "foreign functions cannot declare effects or requirements",
-                    ));
+                    return Err(
+                        self.error_here("foreign functions cannot declare effects or requirements")
+                    );
                 }
                 foreign = Some(self.foreign_initializer(&name)?);
                 self.skip_separators();
@@ -1556,9 +1559,9 @@ impl Parser {
                 .map(ExtendMember::Function);
         }
         if rhs_signature && self.runtime_parameter_group_follows() {
-            return Err(self.error_here(
-                "method declarations use an outer callable brace after `=`",
-            ));
+            return Err(
+                self.error_here("method declarations use an outer callable brace after `=`")
+            );
         }
         if !rhs_signature
             && (self.current_group_delimiter().is_some() || self.at_context_ident("with"))
@@ -1569,9 +1572,9 @@ impl Parser {
         let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
             self.declaration_groups(true, &[])?;
         if rhs_signature && !groups.is_empty() {
-            return Err(self.error_here(
-                "method declarations use an outer callable brace after `=`",
-            ));
+            return Err(
+                self.error_here("method declarations use an outer callable brace after `=`")
+            );
         }
         self.validate_receiver_groups(&name, &groups)?;
 
@@ -1922,7 +1925,10 @@ impl Parser {
             );
             compile_groups.push(params);
             self.take_newlines_if_followed_by(&[
-                TokenKind::LParen, TokenKind::LBracket, TokenKind::Less, TokenKind::LBrace,
+                TokenKind::LParen,
+                TokenKind::LBracket,
+                TokenKind::Less,
+                TokenKind::LBrace,
                 TokenKind::Colon,
                 TokenKind::Equal,
             ]);
@@ -1946,7 +1952,10 @@ impl Parser {
                 )?,
             );
             self.take_newlines_if_followed_by(&[
-                TokenKind::LParen, TokenKind::LBracket, TokenKind::Less, TokenKind::LBrace,
+                TokenKind::LParen,
+                TokenKind::LBracket,
+                TokenKind::Less,
+                TokenKind::LBrace,
                 TokenKind::Ellipsis,
                 TokenKind::Colon,
                 TokenKind::Equal,
@@ -1963,9 +1972,8 @@ impl Parser {
                 .push(self.previous().start_byte);
             let schema = self.repeated_parameter_group_schema()?;
             let Type::Named(pack, arguments) = &schema else {
-                return Err(self.error_here(
-                    "a repeated runtime parameter group requires a parameter schema",
-                ));
+                return Err(self
+                    .error_here("a repeated runtime parameter group requires a parameter schema"));
             };
             if arguments.is_empty()
                 && !compile_groups.iter().flatten().any(|parameter| {
@@ -2031,13 +2039,7 @@ impl Parser {
         }
 
         if prefix_has_effect_clause {
-            return Ok((
-                compile_groups,
-                runtime_groups,
-                prefix_effects,
-                true,
-                true,
-            ));
+            return Ok((compile_groups, runtime_groups, prefix_effects, true, true));
         }
 
         let callable_boundary = self.at(&TokenKind::Colon)
@@ -2068,7 +2070,13 @@ impl Parser {
             TokenKind::Ident("with".to_owned()),
         ]);
         let (mut effects, _failure_error, has_effect_clause) = self.function_effect_clause()?;
-        self.take_newlines_if_followed_by(&[TokenKind::LParen, TokenKind::LBracket, TokenKind::Less, TokenKind::LBrace, TokenKind::Ellipsis]);
+        self.take_newlines_if_followed_by(&[
+            TokenKind::LParen,
+            TokenKind::LBracket,
+            TokenKind::Less,
+            TokenKind::LBrace,
+            TokenKind::Ellipsis,
+        ]);
         let modifier_parameters = compile_groups
             .iter()
             .flatten()
@@ -2087,7 +2095,10 @@ impl Parser {
                 true,
             )?);
             self.take_newlines_if_followed_by(&[
-                TokenKind::LParen, TokenKind::LBracket, TokenKind::Less, TokenKind::LBrace,
+                TokenKind::LParen,
+                TokenKind::LBracket,
+                TokenKind::Less,
+                TokenKind::LBrace,
                 TokenKind::Ellipsis,
                 TokenKind::Colon,
                 TokenKind::Equal,
@@ -2176,8 +2187,8 @@ impl Parser {
         let Some(initial_delimiter) = self.current_runtime_group_delimiter() else {
             return false;
         };
-        let terminal_brace_schema = initial_delimiter == GroupDelimiter::Brace
-            && self.brace_group_is_argument_list();
+        let terminal_brace_schema =
+            initial_delimiter == GroupDelimiter::Brace && self.brace_group_is_argument_list();
         let mut group_start = self.index;
         loop {
             let Some(group_end) = self.group_end(group_start) else {
@@ -2206,13 +2217,13 @@ impl Parser {
             match self.tokens.get(next).map(|token| &token.kind) {
                 Some(
                     TokenKind::LBrace
-                        | TokenKind::Less
-                        | TokenKind::Colon
-                        | TokenKind::FatArrow
-                        | TokenKind::Ellipsis
-                        | TokenKind::Struct
-                        | TokenKind::Enum
-                        | TokenKind::Trait,
+                    | TokenKind::Less
+                    | TokenKind::Colon
+                    | TokenKind::FatArrow
+                    | TokenKind::Ellipsis
+                    | TokenKind::Struct
+                    | TokenKind::Enum
+                    | TokenKind::Trait,
                 ) => return true,
                 Some(TokenKind::LParen | TokenKind::LBracket) => group_start = next,
                 Some(TokenKind::Where) => return true,
@@ -2673,9 +2684,9 @@ impl Parser {
             ) || !self.at_offset(1, &TokenKind::Colon)
                 || !self.compile_parameter_sort_starts_at(2)
             {
-                return Err(self.error_here(
-                    "compile-time parameter groups require `name: sort` binders",
-                ));
+                return Err(
+                    self.error_here("compile-time parameter groups require `name: sort` binders")
+                );
             }
             let name_token = self.current().clone();
             let (name, region_name) = match self.current().kind.clone() {
@@ -3203,7 +3214,8 @@ impl Parser {
     ) -> Result<TraitDef, ParseError> {
         self.expect(&TokenKind::Trait, "`trait`")?;
         let self_parameter =
-            if self.group_starts_with_compile_parameter() && !self.requires_compile_group_follows() {
+            if self.group_starts_with_compile_parameter() && !self.requires_compile_group_follows()
+            {
                 let group = self.compile_parameter_group()?;
                 let [parameter] = group.as_slice() else {
                     return Err(self
@@ -3219,9 +3231,7 @@ impl Parser {
         let where_predicates = if self.requires_compile_group_follows() {
             self.requires_compile_argument_group()?
         } else if self.at(&TokenKind::LParen) {
-            return Err(self.error_here(
-                "declaration requirements use `<requires: predicate>`",
-            ));
+            return Err(self.error_here("declaration requirements use `<requires: predicate>`"));
         } else {
             if self.at(&TokenKind::Less) {
                 return Err(self.error_here(
@@ -3252,7 +3262,10 @@ impl Parser {
             members.push(self.trait_member(&member_effect_parameters)?);
             if !self.at(&TokenKind::RBrace)
                 && !self.at_separator()
-                && !matches!(self.previous().kind, TokenKind::Newline | TokenKind::Semicolon)
+                && !matches!(
+                    self.previous().kind,
+                    TokenKind::Newline | TokenKind::Semicolon
+                )
                 && self.previous().end_line == self.current().line
             {
                 return Err(self.error_here("expected a newline or `;` after trait member"));
@@ -3278,18 +3291,16 @@ impl Parser {
             return Err(self.error_here("visibility on trait members is not supported yet"));
         }
         if self.at(&TokenKind::Let) {
-            return Err(self.error_here(
-                "trait members omit `let`; write `name: signature` or `name: type`",
-            ));
+            return Err(self
+                .error_here("trait members omit `let`; write `name: signature` or `name: type`"));
         }
         if matches!(self.current().kind, TokenKind::Ident(_))
             && self.at_offset(1, &TokenKind::Colon)
         {
             return self.trait_colon_member(outer_effect_parameters);
         }
-        Err(self.error_here(
-            "expected a trait member declaration `name: signature` or `name: type`",
-        ))
+        Err(self
+            .error_here("expected a trait member declaration `name: signature` or `name: type`"))
     }
 
     fn trait_colon_member(
@@ -3748,9 +3759,9 @@ impl Parser {
                 result,
             } = operand
             else {
-                return Err(self.error_here(
-                    "`with<E>` must prefix a callable type ending in `: Result`",
-                ));
+                return Err(
+                    self.error_here("`with<E>` must prefix a callable type ending in `: Result`")
+                );
             };
             if inner.group_delimiters.first() != Some(&GroupDelimiter::Parenthesis) {
                 return Err(self.error_here(
@@ -3786,8 +3797,7 @@ impl Parser {
             path.push(segment);
         }
         let name = path.join(".");
-        if name.split('.').next_back() == Some("Array")
-            && self.type_argument_delimiter().is_some()
+        if name.split('.').next_back() == Some("Array") && self.type_argument_delimiter().is_some()
         {
             let first = self.type_argument_delimiter().unwrap();
             let first_close = Self::group_close(first);
@@ -3800,7 +3810,10 @@ impl Parser {
             }
             let element = self.type_expr()?;
             self.take(&TokenKind::Comma);
-            self.expect_group_close(&first_close, "after the array element type; write the length in a second group")?;
+            self.expect_group_close(
+                &first_close,
+                "after the array element type; write the length in a second group",
+            )?;
             let Some(second) = self.type_argument_delimiter() else {
                 return Err(self.error_here("expected the array length in a second argument group"));
             };
@@ -4113,7 +4126,10 @@ impl Parser {
         Ok(pointee)
     }
 
-    fn function_type_or_unit(&mut self, first_delimiter: GroupDelimiter) -> Result<Type, ParseError> {
+    fn function_type_or_unit(
+        &mut self,
+        first_delimiter: GroupDelimiter,
+    ) -> Result<Type, ParseError> {
         let mut groups = Vec::new();
         let mut group_delimiters = vec![first_delimiter];
         let mut group = Vec::new();
@@ -4620,7 +4636,10 @@ impl Parser {
             }
             let arguments = self.call_argument_group(GroupDelimiter::Parenthesis)?;
             let [CallArg { label: None, value }] = arguments.as_slice() else {
-                return Err(self.error_at(&await_token, "`await` requires exactly one unlabeled operand"));
+                return Err(self.error_at(
+                    &await_token,
+                    "`await` requires exactly one unlabeled operand",
+                ));
             };
             Ok(Expr::Await(Box::new(value.clone())))
         } else if self.take(&TokenKind::Minus) {
@@ -4706,18 +4725,15 @@ impl Parser {
                 && self.current_group_delimiter().is_some()
                 && self.current_group_delimiter() != Some(GroupDelimiter::Parenthesis)
             {
-                return Err(self.error_here(
-                    "`.handle` requires exactly one unlabeled parenthesized action",
-                ));
+                return Err(self
+                    .error_here("`.handle` requires exactly one unlabeled parenthesized action"));
             } else if let Some(delimiter) = self.call_delimiter_follows(allow_brace_group) {
                 if delimiter == GroupDelimiter::Brace {
                     self.layout.brace_groups.push(self.current().start_byte);
                 }
                 let arguments = self.call_argument_group(delimiter)?;
                 expression = match (delimiter, arguments.as_slice()) {
-                    (GroupDelimiter::Parenthesis, _) => {
-                        Expr::Call(Box::new(expression), arguments)
-                    }
+                    (GroupDelimiter::Parenthesis, _) => Expr::Call(Box::new(expression), arguments),
                     (GroupDelimiter::Square, [CallArg { label: None, value }]) => Expr::Index {
                         base: Box::new(expression),
                         index: Box::new(value.clone()),
@@ -4783,9 +4799,9 @@ impl Parser {
             value: action,
         }] = action_arguments.as_slice()
         else {
-            return Err(self.error_here(
-                "`.handle` requires exactly one unlabeled parenthesized action",
-            ));
+            return Err(
+                self.error_here("`.handle` requires exactly one unlabeled parenthesized action")
+            );
         };
         if self.previous().end_byte == self.current().start_byte {
             return Err(self.error_here(
@@ -4877,8 +4893,7 @@ impl Parser {
                 TokenKind::LBrace => closers.push(TokenKind::RBrace),
                 TokenKind::Less
                     if self.tokens.get(index - 1).is_some_and(|previous| {
-                        previous.kind != TokenKind::Newline
-                            && previous.end_byte == token.start_byte
+                        previous.kind != TokenKind::Newline && previous.end_byte == token.start_byte
                     }) =>
                 {
                     closers.push(TokenKind::Greater);
@@ -4973,8 +4988,7 @@ impl Parser {
                 }
                 TokenKind::Less
                     if self.tokens.get(index - 1).is_some_and(|previous| {
-                        previous.kind != TokenKind::Newline
-                            && previous.end_byte == token.start_byte
+                        previous.kind != TokenKind::Newline && previous.end_byte == token.start_byte
                     }) =>
                 {
                     at_group_start &= nested;
@@ -5298,7 +5312,9 @@ impl Parser {
             return Err(self.error_at(&start, "`match` requires exactly one unlabeled input"));
         };
         if self.previous().end_byte == self.current().start_byte {
-            return Err(self.error_here("match arms are a spaced trailing group: `match(value) { ... }`"));
+            return Err(
+                self.error_here("match arms are a spaced trailing group: `match(value) { ... }`")
+            );
         }
         let open = self.current().clone();
         let body_start_byte = self.body_start_byte(self.index + 1);
@@ -5329,8 +5345,14 @@ impl Parser {
             return Err(self.error_here("`if` requires `if(condition) { ... }`"));
         }
         let arguments = self.call_argument_group(GroupDelimiter::Parenthesis)?;
-        let [CallArg { label: None, value: condition }] = arguments.as_slice() else {
-            return Err(self.error_here("`if` condition group requires exactly one unlabeled value"));
+        let [CallArg {
+            label: None,
+            value: condition,
+        }] = arguments.as_slice()
+        else {
+            return Err(
+                self.error_here("`if` condition group requires exactly one unlabeled value")
+            );
         };
         if !self.at(&TokenKind::LBrace) {
             return Err(self.error_here("`if(condition)` requires one unlabeled `{ ... }` branch"));
@@ -5373,9 +5395,7 @@ impl Parser {
         let before_newlines = self.index;
         while self.take(&TokenKind::Newline) {}
         if self.at(&TokenKind::LBrace) {
-            return Err(self.error_here(
-                "the second `if` branch is labeled `else: { ... }`",
-            ));
+            return Err(self.error_here("the second `if` branch is labeled `else: { ... }`"));
         }
         if self.trailing_label_at(self.index).as_deref() == Some("else") {
             self.advance();
@@ -5409,8 +5429,14 @@ impl Parser {
             return Err(self.error_here("`while` requires `while(condition) { ... }`"));
         }
         let arguments = self.call_argument_group(GroupDelimiter::Parenthesis)?;
-        let [CallArg { label: None, value: condition }] = arguments.as_slice() else {
-            return Err(self.error_here("`while` condition group requires exactly one unlabeled value"));
+        let [CallArg {
+            label: None,
+            value: condition,
+        }] = arguments.as_slice()
+        else {
+            return Err(
+                self.error_here("`while` condition group requires exactly one unlabeled value")
+            );
         };
         if !self.at(&TokenKind::LBrace) {
             return Err(self.error_here("`while(condition)` requires a `{ ... }` body"));
@@ -5435,9 +5461,9 @@ impl Parser {
         while self.take(&TokenKind::Newline) {}
         if self.trailing_label_at(self.index).as_deref() == Some("while") {
             if !self.named_brace_attachment_follows() {
-                return Err(self.error_here(
-                    "a post-test loop uses `do { ... } while: { condition }`",
-                ));
+                return Err(
+                    self.error_here("a post-test loop uses `do { ... } while: { condition }`")
+                );
             }
             self.advance();
             self.expect(&TokenKind::Colon, "`:` after `while`")?;

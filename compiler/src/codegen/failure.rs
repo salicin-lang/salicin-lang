@@ -466,9 +466,7 @@ impl Analyzer {
                 self.expression_uses_standard_failure_identity(value, identity, context)
             }
             Expr::Throw(_) => true,
-            Expr::Try(_)
-            | Expr::Closure(_, _)
-            | Expr::PatternClosure { .. } => false,
+            Expr::Try(_) | Expr::Closure(_, _) | Expr::PatternClosure { .. } => false,
             Expr::Async { body } => {
                 self.expression_uses_standard_failure_identity(body, identity, context)
             }
@@ -622,10 +620,13 @@ impl Analyzer {
         else {
             return false;
         };
-        let Some((CallArg {
-            label: Some(action_label),
-            value: Expr::Closure(action_parameters, action_body),
-        }, clause_arguments)) = arguments.split_last()
+        let Some((
+            CallArg {
+                label: Some(action_label),
+                value: Expr::Closure(action_parameters, action_body),
+            },
+            clause_arguments,
+        )) = arguments.split_last()
         else {
             return false;
         };
@@ -1472,10 +1473,13 @@ impl Analyzer {
         else {
             return;
         };
-        let Some((CallArg {
-            label: Some(action_label),
-            value: Expr::Closure(action_parameters, action_body),
-        }, clause_arguments)) = arguments.split_last()
+        let Some((
+            CallArg {
+                label: Some(action_label),
+                value: Expr::Closure(action_parameters, action_body),
+            },
+            clause_arguments,
+        )) = arguments.split_last()
         else {
             return;
         };

@@ -526,7 +526,8 @@ fn core_bundle_rejects_legacy_parenthesized_compile_groups() {
 
 #[test]
 fn builtin_markers_are_explicit_and_bounded_core_contracts() {
-    let missing_bootstrap = EDITION_2026_LIB.replace("let builtin = { (): never => builtin() }\n", "");
+    let missing_bootstrap =
+        EDITION_2026_LIB.replace("let builtin = { (): never => builtin() }\n", "");
     let modules = edition_2026_test_modules(&[("lib", &missing_bootstrap)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error
@@ -622,11 +623,14 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
             EDITION_2026_LIB.replace("move body: with<e>() :Result", "move body: Result"),
         ),
     ] {
-        assert_ne!(malformed, match module {
-            "foreign" => EDITION_2026_FOREIGN,
-            "lib" => EDITION_2026_LIB,
-            _ => unreachable!(),
-        });
+        assert_ne!(
+            malformed,
+            match module {
+                "foreign" => EDITION_2026_FOREIGN,
+                "lib" => EDITION_2026_LIB,
+                _ => unreachable!(),
+            }
+        );
         let modules = edition_2026_test_modules(&[(module, &malformed)]);
         let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
         assert!(
@@ -647,9 +651,8 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
         diagnostic.contains("compiler-owned lang item `i32`") && diagnostic.contains("= builtin()")
     }));
 
-    let unknown = format!(
-        "{EDITION_2026_PRIMITIVES}\npub let mystery = {{ (): i32 => builtin() }}\n"
-    );
+    let unknown =
+        format!("{EDITION_2026_PRIMITIVES}\npub let mystery = {{ (): i32 => builtin() }}\n");
     let modules = edition_2026_test_modules(&[("primitives", &unknown)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error.diagnostics().iter().any(|diagnostic| {
@@ -664,7 +667,7 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
     let modules = edition_2026_test_modules(&[("control", &malformed_defer)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error.diagnostics().iter().any(|diagnostic| {
-            diagnostic.contains("compiler-owned support function `defer`")
+        diagnostic.contains("compiler-owned support function `defer`")
             && diagnostic.contains("builtin()")
     }));
 
@@ -843,8 +846,12 @@ fn pointer_and_layout_lang_items_require_memory_contracts() {
 fn borrow_lang_items_require_the_borrow_module() {
     let modules = edition_2026_test_modules(&[("borrow", "")]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
-    assert!(error.diagnostics().contains(&"missing lang item `Borrow`".to_owned()));
-    assert!(error.diagnostics().contains(&"missing lang item `borrow`".to_owned()));
+    assert!(error
+        .diagnostics()
+        .contains(&"missing lang item `Borrow`".to_owned()));
+    assert!(error
+        .diagnostics()
+        .contains(&"missing lang item `borrow`".to_owned()));
 }
 
 #[test]
@@ -935,9 +942,9 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `unsafe`")));
 
     let malformed = EDITION_2026_EFFECT.replace(
-            "pub let EffectCallable = <Input: type, Output: type, Answer: type>: type builtin()",
-            "pub let EffectCallable = <Input: type, Output: type>: type builtin()",
-        );
+        "pub let EffectCallable = <Input: type, Output: type, Answer: type>: type builtin()",
+        "pub let EffectCallable = <Input: type, Output: type>: type builtin()",
+    );
     let modules = edition_2026_test_modules(&[("effect", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error
@@ -946,26 +953,26 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `EffectCallable`")));
 
     for (source_declaration, malformed_declaration, name) in [
-            (
-                "pub let Continuation = <Input: type, Output: type>: type builtin()",
-                "pub let Continuation = <Input: type, Output: type> struct {}",
-                "Continuation",
-            ),
-            (
-                "pub let EffectCallable = <Input: type, Output: type, Answer: type>: type builtin()",
-                "pub let EffectCallable = <Input: type, Output: type, Answer: type> struct {}",
-                "EffectCallable",
-            ),
-        ] {
-            let malformed = EDITION_2026_EFFECT.replace(source_declaration, malformed_declaration);
-            let modules = edition_2026_test_modules(&[("effect", &malformed)]);
-            let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
-            assert!(error.diagnostics().iter().any(|diagnostic| {
-                diagnostic.contains(&format!(
-                    "lang item `{name}` must be type form, found struct"
-                ))
-            }));
-        }
+        (
+            "pub let Continuation = <Input: type, Output: type>: type builtin()",
+            "pub let Continuation = <Input: type, Output: type> struct {}",
+            "Continuation",
+        ),
+        (
+            "pub let EffectCallable = <Input: type, Output: type, Answer: type>: type builtin()",
+            "pub let EffectCallable = <Input: type, Output: type, Answer: type> struct {}",
+            "EffectCallable",
+        ),
+    ] {
+        let malformed = EDITION_2026_EFFECT.replace(source_declaration, malformed_declaration);
+        let modules = edition_2026_test_modules(&[("effect", &malformed)]);
+        let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
+        assert!(error.diagnostics().iter().any(|diagnostic| {
+            diagnostic.contains(&format!(
+                "lang item `{name}` must be type form, found struct"
+            ))
+        }));
+    }
 
     let malformed = EDITION_2026_EFFECT.replace(
         "pub let Handle = trait<self: effect>",
@@ -995,9 +1002,9 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `Handle`")));
 
     let malformed = EDITION_2026_ERROR.replace(
-            "pub let throw = { <Error: type>with<core.error.throwing<Error>>(move error: Error): never",
-            "pub let throw = { <Error: type>(move error: Error): never",
-        );
+        "pub let throw = { <Error: type>with<core.error.throwing<Error>>(move error: Error): never",
+        "pub let throw = { <Error: type>(move error: Error): never",
+    );
     let modules = edition_2026_test_modules(&[("error", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error
@@ -1138,8 +1145,7 @@ fn rejects_malformed_index_contracts() {
 
 #[test]
 fn rejects_malformed_flow_operator_contracts() {
-    let malformed =
-        EDITION_2026_FLOW.replace("Rebind: <Value: type>: type", "Rebind: type");
+    let malformed = EDITION_2026_FLOW.replace("Rebind: <Value: type>: type", "Rebind: type");
     let modules = edition_2026_test_modules(&[("flow", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error
@@ -1158,10 +1164,8 @@ fn rejects_malformed_flow_operator_contracts() {
         .iter()
         .any(|diagnostic| diagnostic.contains("lang item `Coalesce`")));
 
-    let malformed = EDITION_2026_FLOW.replace(
-        "unwrap: (move self): Output",
-        "unwrap: (self): Output",
-    );
+    let malformed =
+        EDITION_2026_FLOW.replace("unwrap: (move self): Output", "unwrap: (self): Output");
     let modules = edition_2026_test_modules(&[("flow", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error

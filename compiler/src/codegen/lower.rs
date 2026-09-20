@@ -307,27 +307,27 @@ impl<'a> FlattenedCall<'a> {
 pub(super) fn flatten_call(expression: &Expr) -> FlattenedCall<'_> {
     fn visit<'a>(expression: &'a Expr, groups: &mut Vec<FlattenedCallGroup<'a>>) -> &'a Expr {
         match expression.unlocated() {
-        Expr::Call(callee, arguments) => {
-            let root = visit(callee, groups);
-            groups.push(FlattenedCallGroup {
-                delimiter: crate::ast::GroupDelimiter::Parenthesis,
+            Expr::Call(callee, arguments) => {
+                let root = visit(callee, groups);
+                groups.push(FlattenedCallGroup {
+                    delimiter: crate::ast::GroupDelimiter::Parenthesis,
+                    arguments,
+                });
+                root
+            }
+            Expr::DelimitedCall {
+                callee,
+                delimiter,
                 arguments,
-            });
-            root
-        }
-        Expr::DelimitedCall {
-            callee,
-            delimiter,
-            arguments,
-        } => {
-            let root = visit(callee, groups);
-            groups.push(FlattenedCallGroup {
-                delimiter: *delimiter,
-                arguments,
-            });
-            root
-        }
-        expression => expression,
+            } => {
+                let root = visit(callee, groups);
+                groups.push(FlattenedCallGroup {
+                    delimiter: *delimiter,
+                    arguments,
+                });
+                root
+            }
+            expression => expression,
         }
     }
 

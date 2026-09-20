@@ -49,7 +49,11 @@ pub(crate) fn promote_top_level_pattern_callables(items: &mut [Item]) -> Result<
                         binding.name
                     ));
                 };
-                (input.clone(), Some(result.as_ref().clone()), effects.clone())
+                (
+                    input.clone(),
+                    Some(result.as_ref().clone()),
+                    effects.clone(),
+                )
             }
             Some(_) => {
                 return Err(format!(

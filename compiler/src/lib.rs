@@ -459,8 +459,8 @@ mod tests {
             .ir
             .contains("define i32 @main(i32 %argc, ptr %argv)"));
 
-        let no_tests =
-            compile_test_source("let helper = { (): bool =>  true }\n").expect_err("tests are required");
+        let no_tests = compile_test_source("let helper = { (): bool =>  true }\n")
+            .expect_err("tests are required");
         assert!(no_tests
             .iter()
             .any(|diagnostic| diagnostic.contains("contains no test declarations")));

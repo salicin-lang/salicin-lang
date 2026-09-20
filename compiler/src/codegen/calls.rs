@@ -113,12 +113,7 @@ impl Analyzer {
             .map(|group| group.delimiter)
             .collect::<Vec<_>>();
         if let Expr::Name(name) = root {
-            if !self.explicit_compile_delimiters_match(
-                name,
-                &groups,
-                &actual_delimiters,
-                context,
-            ) {
+            if !self.explicit_compile_delimiters_match(name, &groups, &actual_delimiters, context) {
                 return error_expr();
             }
             let local_expected = context.lookup(name).and_then(|local| {
@@ -138,9 +133,9 @@ impl Analyzer {
                                 &function.effects.group_delimiters,
                                 group_count,
                             )
-                                .into_iter()
-                                .skip(partial.consumed_groups)
-                                .collect::<Vec<_>>()
+                            .into_iter()
+                            .skip(partial.consumed_groups)
+                            .collect::<Vec<_>>()
                         })
                 } else {
                     match &local.ty {
@@ -168,10 +163,7 @@ impl Analyzer {
                         .get(name)
                         .map_or(function.groups.len(), |signature| signature.groups.len())
                         .max(usize::from(name.starts_with("$trait$impl$")));
-                    normalized_group_delimiters(
-                        &function.effects.group_delimiters,
-                        group_count,
-                    )
+                    normalized_group_delimiters(&function.effects.group_delimiters, group_count)
                 });
             let compile_capacity = self.named_compile_group_capacity(name).unwrap_or(0);
             let compile_prefix = actual_delimiters
@@ -1037,14 +1029,13 @@ impl Analyzer {
                             .iter()
                             .position(|variant| variant.name == *variant_name)
                         {
-                            return self
-                                .lower_enum_constructor(
-                                    enum_name,
-                                    variant,
-                                    &groups,
-                                    Some(&actual_delimiters),
-                                    context,
-                                );
+                            return self.lower_enum_constructor(
+                                enum_name,
+                                variant,
+                                &groups,
+                                Some(&actual_delimiters),
+                                context,
+                            );
                         }
                         if self
                             .collection
@@ -1158,19 +1149,15 @@ impl Analyzer {
                     .get(name)
                     .map_or(function.groups.len(), |signature| signature.groups.len())
                     .max(usize::from(name.starts_with("$trait$impl$")));
-                normalized_group_delimiters(
-                    &function.effects.group_delimiters,
-                    group_count,
-                )
+                normalized_group_delimiters(&function.effects.group_delimiters, group_count)
             });
         let explicit = actual
             .iter()
             .take_while(|delimiter| **delimiter == GroupDelimiter::Angle)
             .count()
             .min(self.named_compile_group_capacity(name).unwrap_or(0));
-        expected.is_none_or(|expected| {
-            self.call_delimiters_match(name, &actual[explicit..], &expected)
-        })
+        expected
+            .is_none_or(|expected| self.call_delimiters_match(name, &actual[explicit..], &expected))
     }
 
     pub(super) fn method_call_delimiters_match(
@@ -1194,10 +1181,11 @@ impl Analyzer {
             .get(name)
             .map_or(function.groups.len(), |signature| signature.groups.len())
             .max(usize::from(name.starts_with("$trait$impl$")));
-        let mut runtime = normalized_group_delimiters(&function.effects.group_delimiters, group_count)
-            .into_iter()
-            .skip(1)
-            .collect::<Vec<_>>();
+        let mut runtime =
+            normalized_group_delimiters(&function.effects.group_delimiters, group_count)
+                .into_iter()
+                .skip(1)
+                .collect::<Vec<_>>();
         if runtime.is_empty() {
             runtime.push(GroupDelimiter::Parenthesis);
         }

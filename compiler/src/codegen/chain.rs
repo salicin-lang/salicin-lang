@@ -562,9 +562,9 @@ impl Analyzer {
                 }
                 TypeProbe::Defaultable(_) | TypeProbe::Unsupported => None,
             };
-            if let Some(plan) = base_ty
-                .and_then(|ty| self.custom_chain_plan_for_ty(ty, member, arguments, &context.origin))
-            {
+            if let Some(plan) = base_ty.and_then(|ty| {
+                self.custom_chain_plan_for_ty(ty, member, arguments, &context.origin)
+            }) {
                 return self.lower_custom_chain_call(base, member, groups, plan, expected, context);
             }
         }
@@ -641,11 +641,7 @@ impl Analyzer {
         );
         if let Some(groups) = groups {
             for group in groups {
-                access = apply_call_group(
-                    access,
-                    group.delimiter,
-                    group.arguments.clone(),
-                );
+                access = apply_call_group(access, group.delimiter, group.arguments.clone());
             }
         }
         let wrap = |variant: &str, value: Option<Expr>| {
@@ -713,11 +709,7 @@ impl Analyzer {
         );
         if let Some(groups) = groups {
             for group in groups {
-                access = apply_call_group(
-                    access,
-                    group.delimiter,
-                    group.arguments.clone(),
-                );
+                access = apply_call_group(access, group.delimiter, group.arguments.clone());
             }
         }
         let transform = Expr::Closure(

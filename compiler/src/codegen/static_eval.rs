@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::ast::{
-    BinaryOp, CallArg, Expr, Function, GroupDelimiter, PassMode, Pattern, PatternFields, StaticExpr,
-    Stmt, Type, UnaryOp,
+    BinaryOp, CallArg, Expr, Function, GroupDelimiter, PassMode, Pattern, PatternFields,
+    StaticExpr, Stmt, Type, UnaryOp,
 };
 use crate::core::LangItemKind;
 
@@ -506,13 +506,13 @@ impl Analyzer {
                 callee: constructor,
                 delimiter: crate::ast::GroupDelimiter::Brace,
                 arguments: fields,
-            } if fields.iter().all(|field| field.label.is_some())
-                && {
-                    matches!(flatten_call(constructor).root_ignoring_groups(), Expr::Name(name)
+            } if fields.iter().all(|field| field.label.is_some()) && {
+                matches!(flatten_call(constructor).root_ignoring_groups(), Expr::Name(name)
                         if !locals.contains_key(name)
                             && (self.collection.struct_layouts.contains_key(name)
                                 || self.collection.struct_templates.contains_key(name)))
-                } => {
+            } =>
+            {
                 let name = self.static_struct_constructor_name(constructor, expected)?;
                 let ty = Ty::Struct(name.clone());
                 self.validate_static_value_type(&ty)?;
@@ -661,7 +661,10 @@ impl Analyzer {
                 )?;
                 Self::evaluate_static_binary(left, *operator, right)?
             }
-            Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+            Expr::Call(callee, arguments)
+            | Expr::DelimitedCall {
+                callee, arguments, ..
+            } => {
                 if let Some((name, variant)) = self.static_enum_variant(callee, expected, locals)? {
                     self.evaluate_static_enum_constructor(
                         &name,
@@ -1137,11 +1140,7 @@ impl Analyzer {
                     .effects
                     .group_delimiters
                     .clone();
-                self.validate_static_runtime_delimiters(
-                    name,
-                    &delimiters,
-                    &runtime_delimiters,
-                )?;
+                self.validate_static_runtime_delimiters(name, &delimiters, &runtime_delimiters)?;
                 return self.evaluate_inferred_static_function_call(
                     name,
                     &groups,
@@ -1155,12 +1154,7 @@ impl Analyzer {
         let (function_name, runtime_start, receiver) = match root.unlocated() {
             Expr::Name(name) => {
                 let (function, runtime_start) =
-                    self.resolve_static_named_function(
-                        name,
-                        &groups,
-                        explicit_compile_groups,
-                        0,
-                    )?;
+                    self.resolve_static_named_function(name, &groups, explicit_compile_groups, 0)?;
                 (function, runtime_start, None)
             }
             Expr::Member(base, member) => {
@@ -1234,13 +1228,12 @@ impl Analyzer {
                             }
                         }
                     };
-                    let (function, runtime_start) =
-                        self.resolve_static_named_function(
-                            &function,
-                            &groups,
-                            explicit_compile_groups,
-                            0,
-                        )?;
+                    let (function, runtime_start) = self.resolve_static_named_function(
+                        &function,
+                        &groups,
+                        explicit_compile_groups,
+                        0,
+                    )?;
                     (function, runtime_start, None)
                 } else {
                     let receiver =
@@ -1323,13 +1316,12 @@ impl Analyzer {
                             }
                         }
                     };
-                    let (function, runtime_start) =
-                        self.resolve_static_named_function(
-                            &function,
-                            &groups,
-                            explicit_compile_groups,
-                            1,
-                        )?;
+                    let (function, runtime_start) = self.resolve_static_named_function(
+                        &function,
+                        &groups,
+                        explicit_compile_groups,
+                        1,
+                    )?;
                     (function, runtime_start, Some(receiver))
                 }
             }
@@ -2039,16 +2031,17 @@ impl Analyzer {
                 callee,
                 delimiter: crate::ast::GroupDelimiter::Brace,
                 arguments,
-            } if arguments.iter().all(|argument| argument.label.is_some())
-                && {
-                    matches!(flatten_call(callee).root_ignoring_groups(), Expr::Name(name)
+            } if arguments.iter().all(|argument| argument.label.is_some()) && {
+                matches!(flatten_call(callee).root_ignoring_groups(), Expr::Name(name)
                         if !locals.contains_key(name)
                             && (self.collection.struct_layouts.contains_key(name)
                                 || self.collection.struct_templates.contains_key(name)))
-                } => self
-                    .static_struct_constructor_name(callee, None)
+            } =>
+            {
+                self.static_struct_constructor_name(callee, None)
                     .ok()
-                    .map(Ty::Struct),
+                    .map(Ty::Struct)
+            }
             Expr::Call(callee, _) | Expr::DelimitedCall { callee, .. } => {
                 if let Ok(Some((name, _))) = self.static_enum_variant(callee, None, locals) {
                     return Some(Ty::Enum(name));

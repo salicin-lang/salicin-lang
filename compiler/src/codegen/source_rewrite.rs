@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::ast::{
     Binding, CallArg, CompileParam, EnumDef, Expr, ExtendMember, Function, GroupDelimiter, Item,
-    MatchArm, Param, PassMode, Pattern, PatternFields, Program, Sort, Stmt, StructDef, TraitMember, Type,
-    VariantFields,
+    MatchArm, Param, PassMode, Pattern, PatternFields, Program, Sort, Stmt, StructDef, TraitMember,
+    Type, VariantFields,
 };
 
 use super::compile_time::{
@@ -471,7 +471,10 @@ fn normalize_expr_labeled_type_arguments(
                 diagnostics,
             );
         }
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             normalize_expr_labeled_type_arguments(callee, constructor_parameters, diagnostics);
             for argument in arguments {
                 normalize_expr_labeled_type_arguments(
@@ -998,9 +1001,10 @@ fn expression_type_source(expression: &Expr) -> Option<Type> {
             "bool" => Type::Bool,
             _ => Type::Named(name.clone(), Vec::new()),
         }),
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. }
-            if arguments.iter().all(|argument| argument.label.is_none()) =>
-        {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } if arguments.iter().all(|argument| argument.label.is_none()) => {
             let Expr::Name(name) = callee.as_ref() else {
                 return None;
             };
@@ -1037,7 +1041,11 @@ fn expand_expr_aliases(
     aliases: &HashMap<String, crate::ast::TypeAliasDef>,
     diagnostics: &mut Vec<String>,
 ) {
-    if let Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } = expression {
+    if let Expr::Call(callee, arguments)
+    | Expr::DelimitedCall {
+        callee, arguments, ..
+    } = expression
+    {
         if let Expr::Name(name) = callee.as_ref() {
             if let Some(alias) = aliases.get(name) {
                 let expected = alias.compile_groups.iter().flatten().count();
@@ -1106,7 +1114,10 @@ fn expand_expr_aliases(
             expand_expr_aliases(&mut chain.success, aliases, diagnostics);
             expand_expr_aliases(&mut chain.residual, aliases, diagnostics);
         }
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             expand_expr_aliases(callee, aliases, diagnostics);
             for argument in arguments {
                 expand_expr_aliases(&mut argument.value, aliases, diagnostics);
@@ -1763,7 +1774,10 @@ pub(super) fn substitute_self_expression_target(expression: &mut Expr, target: &
             substitute_self_expression_target(&mut chain.success, target);
             substitute_self_expression_target(&mut chain.residual, target);
         }
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             substitute_self_expression_target(callee, target);
             for argument in arguments {
                 substitute_self_expression_target(&mut argument.value, target);
@@ -1862,7 +1876,10 @@ fn substitute_self_pattern_target(pattern: &mut Pattern, target: &str) {
 pub(super) fn rewrite_abstract_self_qualified_methods(expression: &mut Expr) {
     match expression {
         Expr::Located { value, .. } => rewrite_abstract_self_qualified_methods(value),
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             rewrite_abstract_self_qualified_methods(callee);
             for argument in &mut *arguments {
                 rewrite_abstract_self_qualified_methods(&mut argument.value);
@@ -2081,7 +2098,10 @@ pub(super) fn substitute_expr_types(expression: &mut Expr, substitutions: &HashM
                 substitute_expr_types(&mut argument.value, substitutions);
             }
         }
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             substitute_expr_types(callee, substitutions);
             for argument in arguments {
                 substitute_expr_types(&mut argument.value, substitutions);
@@ -2183,7 +2203,10 @@ pub(super) fn substitute_type_expression_parameters(
                 *expression = source_type_expression(replacement);
             }
         }
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             substitute_type_expression_parameters(callee, substitutions);
             for argument in arguments {
                 substitute_type_expression_parameters(&mut argument.value, substitutions);
@@ -2296,21 +2319,19 @@ fn source_static_expression(expression: &crate::ast::StaticExpr) -> Expr {
             groups,
             group_delimiters,
         } => groups.iter().zip(group_delimiters).fold(
-                Expr::Name(function.clone()),
-                |callee, (group, delimiter)| {
-                    Expr::DelimitedCall {
-                        callee: Box::new(callee),
-                        delimiter: *delimiter,
-                        arguments: group
-                            .iter()
-                            .map(|argument| crate::ast::CallArg {
-                                label: argument.label.clone(),
-                                value: source_static_expression(&argument.value),
-                            })
-                            .collect(),
-                    }
-                },
-            ),
+            Expr::Name(function.clone()),
+            |callee, (group, delimiter)| Expr::DelimitedCall {
+                callee: Box::new(callee),
+                delimiter: *delimiter,
+                arguments: group
+                    .iter()
+                    .map(|argument| crate::ast::CallArg {
+                        label: argument.label.clone(),
+                        value: source_static_expression(&argument.value),
+                    })
+                    .collect(),
+            },
+        ),
     }
 }
 
@@ -2616,7 +2637,10 @@ pub(super) fn rewrite_handler_returns(expression: &mut Expr, return_name: &str) 
             rewrite_handler_returns(&mut chain.success, return_name);
             rewrite_handler_returns(&mut chain.residual, return_name);
         }
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             rewrite_handler_returns(callee, return_name);
             for argument in arguments {
                 rewrite_handler_returns(&mut argument.value, return_name);
@@ -2734,7 +2758,10 @@ pub(super) fn rewrite_static_function_values(
             rewrite_static_function_values(&mut chain.success, replacements);
             rewrite_static_function_values(&mut chain.residual, replacements);
         }
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             rewrite_static_function_values(callee, replacements);
             for argument in arguments {
                 rewrite_static_function_values(&mut argument.value, replacements);
@@ -2874,7 +2901,10 @@ pub(super) fn erase_expr_locations(expression: &mut Expr) {
             erase_expr_locations(&mut chain.success);
             erase_expr_locations(&mut chain.residual);
         }
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             erase_expr_locations(callee);
             for argument in arguments {
                 erase_expr_locations(&mut argument.value);
@@ -3000,7 +3030,10 @@ fn visit_expr_mut_ordered(
             visit_expr_mut_ordered(&mut chain.success, visitor, preorder);
             visit_expr_mut_ordered(&mut chain.residual, visitor, preorder);
         }
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             visit_expr_mut_ordered(callee, visitor, preorder);
             for argument in arguments {
                 visit_expr_mut_ordered(&mut argument.value, visitor, preorder);
@@ -3087,16 +3120,11 @@ pub(super) fn normalize_source_call_groups(program: &mut Program) {
             return None;
         };
         if name == "$lang$if" {
-            if flattened
-                .groups
-                .iter()
-                .map(|group| group.delimiter)
-                .ne([
-                    GroupDelimiter::Parenthesis,
-                    GroupDelimiter::Brace,
-                    GroupDelimiter::Brace,
-                ])
-            {
+            if flattened.groups.iter().map(|group| group.delimiter).ne([
+                GroupDelimiter::Parenthesis,
+                GroupDelimiter::Brace,
+                GroupDelimiter::Brace,
+            ]) {
                 return None;
             }
             let [condition_group, then_group, else_group] = groups.as_slice() else {
@@ -3297,7 +3325,10 @@ fn hygienic_rename_expr(
             hygienic_rename_expr(&mut chain.residual, prefix, next, scopes);
             scopes.pop();
         }
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             hygienic_rename_expr(callee, prefix, next, scopes);
             for argument in arguments {
                 hygienic_rename_expr(&mut argument.value, prefix, next, scopes);
@@ -3593,7 +3624,10 @@ fn expression_mentions_any_name(expression: &Expr, names: &HashSet<String>) -> b
                 || expression_mentions_any_name(&chain.success, names)
                 || expression_mentions_any_name(&chain.residual, names)
         }
-        Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+        Expr::Call(callee, arguments)
+        | Expr::DelimitedCall {
+            callee, arguments, ..
+        } => {
             expression_mentions_any_name(callee, names)
                 || arguments
                     .iter()

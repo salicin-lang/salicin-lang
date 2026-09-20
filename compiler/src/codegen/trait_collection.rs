@@ -287,14 +287,10 @@ impl Analyzer {
                         && function.effects == FunctionEffects::default()
                         && function.where_predicates.is_empty()
                         && match function.body.as_ref() {
-                            Some(Expr::Name(name)) => {
-                                name == &function.compile_groups[0][0].name
-                            }
+                            Some(Expr::Name(name)) => name == &function.compile_groups[0][0].name,
                             Some(Expr::Block(statements, Some(tail))) if statements.is_empty() => {
                                 match tail.as_ref() {
-                                    Expr::Name(name) => {
-                                        name == &function.compile_groups[0][0].name
-                                    }
+                                    Expr::Name(name) => name == &function.compile_groups[0][0].name,
                                     Expr::Located { value, .. } => matches!(
                                         value.as_ref(),
                                         Expr::Name(name) if name == &function.compile_groups[0][0].name
@@ -312,8 +308,8 @@ impl Analyzer {
                     }
                     let parameter_modifier_intrinsic = origin.package == PackageId::CORE.0
                         && [LangItemKind::CopyParameters, LangItemKind::MoveParameters]
-                        .into_iter()
-                        .any(|kind| self.is_lang_item_name(&source_name, kind))
+                            .into_iter()
+                            .any(|kind| self.is_lang_item_name(&source_name, kind))
                         && function.compile_groups.as_slice().iter().flatten().count() == 1
                         && function.compile_groups[0][0].kind == Sort::Parameters
                         && function.groups.is_empty()

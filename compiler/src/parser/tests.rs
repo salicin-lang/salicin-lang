@@ -18,7 +18,9 @@ fn parses_brace_first_named_callables_and_bodyless_requirements() {
     let Item::Function(add) = &program.items[0] else {
         panic!("expected add function");
     };
-    assert!(matches!(add.body, Some(Expr::Block(ref statements, Some(_))) if statements.len() == 1));
+    assert!(
+        matches!(add.body, Some(Expr::Block(ref statements, Some(_))) if statements.len() == 1)
+    );
     let Item::Function(id) = &program.items[1] else {
         panic!("expected id function");
     };
@@ -78,8 +80,10 @@ fn parses_only_braced_anonymous_and_pattern_callables() {
     let [Stmt::Let(increment)] = statements.as_slice() else {
         panic!("expected local closure binding");
     };
-    assert!(matches!(increment.value, Expr::Closure(ref parameters, ref body)
-        if parameters.len() == 1 && matches!(body.as_ref(), Expr::Block(_, Some(_)))));
+    assert!(
+        matches!(increment.value, Expr::Closure(ref parameters, ref body)
+        if parameters.len() == 1 && matches!(body.as_ref(), Expr::Block(_, Some(_))))
+    );
     let Item::Function(select) = &program.items[1] else {
         panic!("expected named pattern callable");
     };
@@ -117,17 +121,17 @@ fn requires_annotations_for_ambiguous_top_level_pattern_callables() {
     let error = parse("let select = { Some(x) => x, None => 0 }\n")
         .expect_err("constructor patterns cannot determine their generic input type");
     assert!(
-        error.message.contains("requires a callable type annotation"),
+        error
+            .message
+            .contains("requires a callable type annotation"),
         "{error:?}"
     );
 }
 
 #[test]
 fn brace_calls_treat_pattern_arms_as_one_callable_argument() {
-    let program = parse(
-        "let use = { (): i32 => choose { Some(x) => x, None => 0 } }\n",
-    )
-    .expect("a pattern callable must remain one brace-call argument");
+    let program = parse("let use = { (): i32 => choose { Some(x) => x, None => 0 } }\n")
+        .expect("a pattern callable must remain one brace-call argument");
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -245,7 +249,9 @@ fn prefix_with_requires_a_callable_operand_and_accepts_an_empty_row() {
     assert!(
         error.message.contains("accepts only a callable type")
             || error.message.contains("parameter name")
-            || error.message.contains("effect annotations require a function declaration"),
+            || error
+                .message
+                .contains("effect annotations require a function declaration"),
         "{}",
         error.message
     );
@@ -343,11 +349,8 @@ fn if_call_parts(expression: &Expr) -> (&Expr, &Expr, &Expr) {
         flatten_test_call(expression, &mut groups),
         &Parser::core_if_function()
     );
-    let [
-        (GroupDelimiter::Parenthesis, condition_group),
-        (GroupDelimiter::Brace, then_group),
-        (GroupDelimiter::Brace, else_group),
-    ] = groups.as_slice()
+    let [(GroupDelimiter::Parenthesis, condition_group), (GroupDelimiter::Brace, then_group), (GroupDelimiter::Brace, else_group)] =
+        groups.as_slice()
     else {
         panic!("expected condition, then, and else groups");
     };
@@ -396,7 +399,9 @@ fn rejects_name_side_declaration_signature_groups() {
     }
 
     let error = parse("let protocol = trait { read(self: Borrow<self>)(): i32 }\n").unwrap_err();
-    assert!(error.message.contains("expected a trait member declaration"));
+    assert!(error
+        .message
+        .contains("expected a trait member declaration"));
 }
 
 #[test]
@@ -412,15 +417,7 @@ fn rhs_callable_bodies_follow_fat_arrows() {
     )
     .expect("fat arrows separate callable signatures from their bodies");
 
-    for (index, group_count) in [
-        (0, 1),
-        (1, 1),
-        (2, 2),
-        (3, 1),
-        (4, 1),
-        (5, 1),
-        (6, 1),
-    ] {
+    for (index, group_count) in [(0, 1), (1, 1), (2, 2), (3, 1), (4, 1), (5, 1), (6, 1)] {
         let Item::Function(function) = &program.items[index] else {
             panic!("expected RHS callable declaration");
         };
@@ -475,7 +472,10 @@ fn grouped_global_expressions_remain_values() {
          let closure = { let value: i32 = 42; value }\n",
     )
     .expect("ordinary grouped global expressions must remain values");
-    assert!(matches!(program.items.as_slice(), [Item::Global(_), Item::Global(_)]));
+    assert!(matches!(
+        program.items.as_slice(),
+        [Item::Global(_), Item::Global(_)]
+    ));
 }
 
 #[test]
@@ -502,7 +502,8 @@ fn parses_function_effects_and_rejects_them_on_values() {
     assert!(!error.message.is_empty());
 
     let program =
-        parse("let fallible = { with<throwing<bool>, unsafety>(): i32 =>  throw(true) }\n").unwrap();
+        parse("let fallible = { with<throwing<bool>, unsafety>(): i32 =>  throw(true) }\n")
+            .unwrap();
     let Item::Function(fallible) = &program.items[0] else {
         panic!("expected fallible function");
     };
@@ -829,9 +830,10 @@ fn accepts_root_super_and_contextual_self_in_ordinary_paths() {
 
 #[test]
 fn parses_dotted_type_paths() {
-    let program =
-        parse("let convert = { (value: net.http.point): net.http.result<core.status> =>  value }\n")
-            .unwrap();
+    let program = parse(
+        "let convert = { (value: net.http.point): net.http.result<core.status> =>  value }\n",
+    )
+    .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -948,7 +950,10 @@ fn preserves_all_function_group_delimiters_and_tight_calls() {
             ..
         } if callee.as_ref() == &Expr::Name("combine".into()))));
     assert_eq!(
-        groups.iter().map(|(delimiter, _)| *delimiter).collect::<Vec<_>>(),
+        groups
+            .iter()
+            .map(|(delimiter, _)| *delimiter)
+            .collect::<Vec<_>>(),
         [GroupDelimiter::Brace, GroupDelimiter::Parenthesis]
     );
     let Expr::Call(paren, _) = &binding.value else {
@@ -963,10 +968,10 @@ fn preserves_all_function_group_delimiters_and_tight_calls() {
         panic!("expected brace call");
     };
     assert!(matches!(brace.as_ref(), Expr::Index { base, .. }
-        if matches!(base.as_ref(), Expr::DelimitedCall {
-            delimiter: GroupDelimiter::Angle,
-            ..
-        })));
+    if matches!(base.as_ref(), Expr::DelimitedCall {
+        delimiter: GroupDelimiter::Angle,
+        ..
+    })));
 }
 
 #[test]
@@ -974,11 +979,20 @@ fn distinguishes_tight_angle_calls_from_spaced_comparisons() {
     let program = parse("let less = 1 < 2\nlet call = select<1>\n").unwrap();
     assert!(matches!(
         &program.items[0],
-        Item::Global(Binding { value: Expr::Binary(_, BinaryOp::Lt, _), .. })
+        Item::Global(Binding {
+            value: Expr::Binary(_, BinaryOp::Lt, _),
+            ..
+        })
     ));
     assert!(matches!(
         &program.items[1],
-        Item::Global(Binding { value: Expr::DelimitedCall { delimiter: GroupDelimiter::Angle, .. }, .. })
+        Item::Global(Binding {
+            value: Expr::DelimitedCall {
+                delimiter: GroupDelimiter::Angle,
+                ..
+            },
+            ..
+        })
     ));
     assert!(parse("let invalid = 1>0\n")
         .unwrap_err()
@@ -1059,8 +1073,14 @@ fn effect_operations_retain_declared_runtime_group_delimiters() {
     let Item::Effect(effect) = &program.items[0] else {
         panic!("expected effect");
     };
-    assert_eq!(effect.operations[0].effects.group_delimiters, [GroupDelimiter::Square]);
-    assert_eq!(effect.operations[1].effects.group_delimiters, [GroupDelimiter::Brace]);
+    assert_eq!(
+        effect.operations[0].effects.group_delimiters,
+        [GroupDelimiter::Square]
+    );
+    assert_eq!(
+        effect.operations[1].effects.group_delimiters,
+        [GroupDelimiter::Brace]
+    );
 }
 
 #[test]
@@ -1077,14 +1097,16 @@ fn with_callable_operands_are_parenthesized() {
         "let apply = <t: type>(): with<io>[(t): t]\n",
         "let apply = with<io><t: type>():{(t): t}\n",
     ] {
-        assert!(parse(source).is_err(), "non-parenthesized operand parsed: {source}");
+        assert!(
+            parse(source).is_err(),
+            "non-parenthesized operand parsed: {source}"
+        );
     }
 }
 
 #[test]
 fn preserves_multiple_compile_parameters_in_one_group() {
-    let program =
-        parse("let choose = { <t: type, u: type>(value: t): u =>  value }\n").unwrap();
+    let program = parse("let choose = { <t: type, u: type>(value: t): u =>  value }\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected generic function");
     };
@@ -1305,12 +1327,12 @@ fn preserves_generic_traits_and_trait_member_defaults() {
 #[test]
 fn preserves_region_and_access_generic_associated_type_groups() {
     let program = parse(
-            "let lend = trait {\n\
+        "let lend = trait {\n\
              item: <a: access><r: region>: type\n\
              view: <a: access, r: region>(self: Borrow<a><r><self>)(): item<a><r>\n\
              }\n",
-        )
-        .unwrap();
+    )
+    .unwrap();
     let Item::Trait(definition) = &program.items[0] else {
         panic!("expected trait");
     };
@@ -1333,8 +1355,7 @@ fn rejects_unsupported_associated_defaults() {
     let ty = parse("let broken = trait { Item: type = i32 }\n").unwrap_err();
     assert!(ty.message.contains("default associated types"), "{ty:?}");
 
-    let parameters =
-        parse("let broken = trait { Args: <T: type>: parameters = T }\n").unwrap_err();
+    let parameters = parse("let broken = trait { Args: <T: type>: parameters = T }\n").unwrap_err();
     assert!(
         parameters
             .message
@@ -1345,8 +1366,7 @@ fn rejects_unsupported_associated_defaults() {
 
 #[test]
 fn trait_members_require_a_terminal_separator() {
-    let error = parse("let broken = trait {\nfirst:\n(): i32 second: (): i32\n}\n")
-        .unwrap_err();
+    let error = parse("let broken = trait {\nfirst:\n(): i32 second: (): i32\n}\n").unwrap_err();
     assert!(
         error.message.contains("expected a newline or `;`"),
         "{error:?}"
@@ -1355,10 +1375,8 @@ fn trait_members_require_a_terminal_separator() {
 
 #[test]
 fn requires_remains_available_as_a_trait_member_name() {
-    parse(
-        "let protocol = trait {\nfirst: (): i32\nrequires: (): i32\n}\n",
-    )
-    .expect("contextual `requires` should remain a valid member name");
+    parse("let protocol = trait {\nfirst: (): i32\nrequires: (): i32\n}\n")
+        .expect("contextual `requires` should remain a valid member name");
 }
 
 #[test]
@@ -1556,12 +1574,19 @@ fn tight_and_spaced_braces_are_the_same_delimited_application() {
     let Item::Global(binding) = &program.items[0] else {
         panic!("expected value binding");
     };
-    assert!(matches!(binding.value, Expr::DelimitedCall { delimiter: GroupDelimiter::Brace, .. }));
+    assert!(matches!(
+        binding.value,
+        Expr::DelimitedCall {
+            delimiter: GroupDelimiter::Brace,
+            ..
+        }
+    ));
 }
 
 #[test]
 fn spaced_brace_application_in_for_iterable_stops_before_pattern_body() {
-    let source = "let visit = { (): () => for (counter { current: 0, end: 4 }) { value -> value } }\n";
+    let source =
+        "let visit = { (): () => for (counter { current: 0, end: 4 }) { value -> value } }\n";
     parse(source).expect("the parenthesized Brace application must stop before the `for` body");
 }
 
@@ -1625,7 +1650,9 @@ fn brace_calls_work_in_guards_and_parenthesized_for_iterables() {
 #[test]
 fn directly_ambiguous_for_iterable_brace_bodies_require_parentheses() {
     let error = parse("let value = for make { x => x } { item -> item }\n").unwrap_err();
-    assert!(error.message.contains("parenthesize the iterable application"));
+    assert!(error
+        .message
+        .contains("parenthesize the iterable application"));
 }
 
 #[test]
@@ -1712,19 +1739,19 @@ fn parses_bounded_c_foreign_declarations() {
             "requires one runtime parameter group",
         ),
         (
-        "let identity = { <t: type>(value: t): t => foreign(c) }\n",
+            "let identity = { <t: type>(value: t): t => foreign(c) }\n",
             "no compile groups",
         ),
         (
-        "let abs = { (value: i32) => foreign(c) }\n",
+            "let abs = { (value: i32) => foreign(c) }\n",
             "an explicit result type",
         ),
         (
-        "let abs = { with<unsafety>(value: i32): i32 => foreign(c) }\n",
+            "let abs = { with<unsafety>(value: i32): i32 => foreign(c) }\n",
             "cannot declare effects",
         ),
         (
-        "let abs = { (value: i32): i32 => foreign(c, \"\") }\n",
+            "let abs = { (value: i32): i32 => foreign(c, \"\") }\n",
             "non-empty ASCII linker symbol",
         ),
     ] {
@@ -1969,9 +1996,10 @@ fn parses_do_and_try_as_distinct_immediate_handlers() {
     };
     assert!(matches!(function_tail(other), Expr::DoBlock { .. }));
 
-    let member =
-        parse("let unwrap = { with<throwing<bool>>(value: Result<bool><i32>): i32 =>  value.try }\n")
-            .unwrap();
+    let member = parse(
+        "let unwrap = { with<throwing<bool>>(value: Result<bool><i32>): i32 =>  value.try }\n",
+    )
+    .unwrap();
     let Item::Function(member) = &member.items[0] else {
         panic!("expected function");
     };
@@ -2012,7 +2040,12 @@ fn brace_body_creates_a_brace_call_group() {
     let Item::Global(binding) = &program.items[0] else {
         panic!("expected global");
     };
-    let Expr::DelimitedCall { callee: first_call, delimiter, arguments } = &binding.value else {
+    let Expr::DelimitedCall {
+        callee: first_call,
+        delimiter,
+        arguments,
+    } = &binding.value
+    else {
         panic!("expected brace call group");
     };
     assert_eq!(*delimiter, GroupDelimiter::Brace);
@@ -2026,7 +2059,12 @@ fn brace_body_can_supply_the_first_call_group() {
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
-    let Expr::DelimitedCall { callee, delimiter, arguments } = function_tail(function) else {
+    let Expr::DelimitedCall {
+        callee,
+        delimiter,
+        arguments,
+    } = function_tail(function)
+    else {
         panic!("expected brace call");
     };
     assert_eq!(*delimiter, GroupDelimiter::Brace);
@@ -2043,18 +2081,27 @@ fn multiple_brace_groups_create_successive_delimited_calls() {
     let Item::Global(binding) = &program.items[0] else {
         panic!("expected global");
     };
-    let Expr::DelimitedCall { callee: second_call, delimiter: second_delimiter, arguments: second_group } = &binding.value else {
+    let Expr::DelimitedCall {
+        callee: second_call,
+        delimiter: second_delimiter,
+        arguments: second_group,
+    } = &binding.value
+    else {
         panic!("expected second brace group");
     };
     assert_eq!(*second_delimiter, GroupDelimiter::Brace);
     assert_eq!(second_group.len(), 1);
-    let Expr::DelimitedCall { callee: first_call, delimiter: first_delimiter, arguments: first_group } = second_call.as_ref() else {
+    let Expr::DelimitedCall {
+        callee: first_call,
+        delimiter: first_delimiter,
+        arguments: first_group,
+    } = second_call.as_ref()
+    else {
         panic!("expected first brace group");
     };
     assert_eq!(*first_delimiter, GroupDelimiter::Brace);
     assert_eq!(first_group.len(), 1);
     assert!(matches!(first_call.as_ref(), Expr::Call(_, arguments) if arguments.is_empty()));
-
 }
 
 #[test]
@@ -2079,12 +2126,20 @@ fn handler_member_accepts_one_labeled_brace_call() {
     let Some(Expr::Block(_, Some(value))) = &function.body else {
         panic!("expected function body");
     };
-    let Expr::DelimitedCall { callee, delimiter, arguments } = value.unlocated() else {
+    let Expr::DelimitedCall {
+        callee,
+        delimiter,
+        arguments,
+    } = value.unlocated()
+    else {
         panic!("expected brace-delimited handler call");
     };
     assert_eq!(*delimiter, GroupDelimiter::Brace);
     assert_eq!(
-        arguments.iter().map(|argument| argument.label.as_deref()).collect::<Vec<_>>(),
+        arguments
+            .iter()
+            .map(|argument| argument.label.as_deref())
+            .collect::<Vec<_>>(),
         [Some("value"), Some("done"), Some("action")]
     );
     assert!(matches!(callee.as_ref(), Expr::Member(_, member) if member == "handle"));
@@ -2195,8 +2250,8 @@ fn rejects_pre_arrow_callable_syntax() {
     let named = parse("let f = { (): i32 1 }\n").expect_err("named bodies require `=>`");
     assert!(named.message.contains("expected `=>`"), "{named:?}");
 
-    let closure = parse("let closure = { (x:i32) {x} }\n")
-        .expect_err("parameterized closures require `=>`");
+    let closure =
+        parse("let closure = { (x:i32) {x} }\n").expect_err("parameterized closures require `=>`");
     assert!(closure.message.contains("expected `=>`"), "{closure:?}");
 
     let callable_type = parse("let apply = { (action: (i32) {i32}): i32 }\n")
@@ -2270,10 +2325,11 @@ fn named_callable_declarations_require_fat_arrows() {
 
 #[test]
 fn trait_defaults_require_equals() {
-    let error = parse("let read = trait { read: (self: Borrow<self>)(): i32 42 }\n")
-        .unwrap_err();
+    let error = parse("let read = trait { read: (self: Borrow<self>)(): i32 42 }\n").unwrap_err();
     assert!(
-        error.message.contains("expected a newline or `;` after trait member"),
+        error
+            .message
+            .contains("expected a newline or `;` after trait member"),
         "{error:?}"
     );
 }
@@ -2281,18 +2337,14 @@ fn trait_defaults_require_equals() {
 #[test]
 fn rejects_legacy_trait_callable_and_effect_operation_syntax() {
     let trait_callable =
-        parse("let readable = trait { let read = { (self: Borrow<self>)(): i32 } }\n")
-            .unwrap_err();
+        parse("let readable = trait { let read = { (self: Borrow<self>)(): i32 } }\n").unwrap_err();
     assert!(
-        trait_callable
-            .message
-            .contains("trait members omit `let`"),
+        trait_callable.message.contains("trait members omit `let`"),
         "{trait_callable:?}"
     );
 
     let trait_default =
-        parse("let readable = trait { read: (self: Borrow<self>)(): i32 => 42 }\n")
-            .unwrap_err();
+        parse("let readable = trait { read: (self: Borrow<self>)(): i32 => 42 }\n").unwrap_err();
     assert!(
         trait_default
             .message
@@ -2314,7 +2366,8 @@ fn rejects_legacy_trait_callable_and_effect_operation_syntax() {
     ] {
         let body = parse(source).unwrap_err();
         assert!(
-            body.message.contains("effect operations cannot have bodies"),
+            body.message
+                .contains("effect operations cannot have bodies"),
             "{body:?}"
         );
     }
@@ -2766,9 +2819,9 @@ fn rejects_legacy_mut_borrow_token_sequence() {
 #[test]
 fn parses_region_parameters_and_borrow_regions() {
     let program = parse(
-            "let choose = { <r: region>(value: Borrow<r><i32>): Borrow<r><i32> =>  borrow(value) }\n",
-        )
-        .unwrap();
+        "let choose = { <r: region>(value: Borrow<r><i32>): Borrow<r><i32> =>  borrow(value) }\n",
+    )
+    .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -2889,9 +2942,9 @@ fn parses_string_as_an_ordinary_named_type() {
 #[test]
 fn parses_parameter_modifier_functions_in_prefix_position() {
     let program = parse(
-            "let identity = { <m: <p: parameters>: parameters, t: type>(m value: t): t =>  value }\n",
-        )
-        .unwrap();
+        "let identity = { <m: <p: parameters>: parameters, t: type>(m value: t): t =>  value }\n",
+    )
+    .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -2916,9 +2969,9 @@ fn parses_parameter_prefixes_as_composable_modifiers() {
 #[test]
 fn parses_parameter_modifier_function_kind() {
     let program = parse(
-            "let identity = { <m: <p: parameters>: parameters, t: type>(m value: t): t =>  value }\n",
-        )
-        .unwrap();
+        "let identity = { <m: <p: parameters>: parameters, t: type>(m value: t): t =>  value }\n",
+    )
+    .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -2955,8 +3008,7 @@ fn parses_effect_parameters_in_with_clauses() {
     let error = parse("let bad = { <e: effects>with<e>(value: e): i32 =>  0 }\n").unwrap_err();
     assert!(error.message.contains("cannot be used as a runtime type"));
 
-    let error =
-        parse("let old = { <e: effects>(value: i32): i32(e) =>  value }\n").unwrap_err();
+    let error = parse("let old = { <e: effects>(value: i32): i32(e) =>  value }\n").unwrap_err();
     assert!(!error.message.is_empty());
 }
 
@@ -3037,7 +3089,7 @@ fn parses_trait_self_effect_parameter_in_member_rows() {
 #[test]
 fn parses_compiler_provided_sort_and_control_contract_declarations() {
     let program = parse(
-            "pub let unsafety = effect {}\n\
+        "pub let unsafety = effect {}\n\
              pub let throwing = <error: type> effect { raise: (move error: error): never }\n\
              pub let type: sort<2>\n\
              pub let effect: sort<2>\n\
@@ -3050,8 +3102,8 @@ fn parses_compiler_provided_sort_and_control_contract_declarations() {
              mut\n\
              }\n\
              pub let do = { <e: effects, t: type>with<e>(move action: with<e>(): t): t }\n",
-        )
-        .unwrap();
+    )
+    .unwrap();
     assert!(matches!(
         &program.items[0],
         Item::Effect(effect) if effect.compile_groups.is_empty()
@@ -3356,7 +3408,12 @@ fn parses_function_shaped_handlers_with_contextual_clause_parameters() {
     let Item::Function(main) = &program.items[1] else {
         panic!("expected main function");
     };
-    let Expr::DelimitedCall { delimiter, arguments, .. } = function_tail(main) else {
+    let Expr::DelimitedCall {
+        delimiter,
+        arguments,
+        ..
+    } = function_tail(main)
+    else {
         panic!("expected brace-delimited handler call");
     };
     assert_eq!(*delimiter, GroupDelimiter::Brace);
@@ -3380,19 +3437,16 @@ fn parses_effects_as_part_of_callable_signatures() {
                 && result.as_ref() == &Type::I32
     ));
 
-    let old = parse(
-        "let apply = { <e: effects>(action: (i32) {i32(e}))(value: i32): i32 =>  value }\n",
-    )
-    .unwrap_err();
+    let old =
+        parse("let apply = { <e: effects>(action: (i32) {i32(e}))(value: i32): i32 =>  value }\n")
+            .unwrap_err();
     assert!(!old.message.is_empty());
 }
 
 #[test]
 fn rejects_parameter_modifier_parameters_on_data_declarations() {
-    let error = parse(
-        "let wrapper = <m: <p: parameters>: parameters> struct { value: i32 }\n",
-    )
-    .unwrap_err();
+    let error = parse("let wrapper = <m: <p: parameters>: parameters> struct { value: i32 }\n")
+        .unwrap_err();
     assert!(error
         .message
         .contains("modifier parameters belong to functions"));
@@ -3409,7 +3463,9 @@ fn rejects_undeclared_access_parameters() {
 #[test]
 fn rejects_the_legacy_while_condition_form() {
     let error = parse("let main = { (): () =>  while ready() { work() } }\n").unwrap_err();
-    assert!(error.message.contains("`while` requires `while(condition) { ... }`"));
+    assert!(error
+        .message
+        .contains("`while` requires `while(condition) { ... }`"));
 }
 
 #[test]
@@ -3459,7 +3515,8 @@ fn parses_canonical_while() {
 
 #[test]
 fn parses_do_while_as_the_labeled_do_overload() {
-    let program = parse("let main = { (): () => \n  do { work() } while: { Ready() }\n}\n").unwrap();
+    let program =
+        parse("let main = { (): () => \n  do { work() } while: { Ready() }\n}\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -3476,10 +3533,9 @@ fn parses_do_while_as_the_labeled_do_overload() {
 
 #[test]
 fn parses_canonical_if() {
-    let program = parse(
-        "let main = { (): i32 =>  if(false) { 0 } else: { if(true) { 42 } else: { 0 } } }\n",
-    )
-    .unwrap();
+    let program =
+        parse("let main = { (): i32 =>  if(false) { 0 } else: { if(true) { 42 } else: { 0 } } }\n")
+            .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -3490,9 +3546,12 @@ fn parses_canonical_if() {
 
 #[test]
 fn rejects_removed_while_let_syntax() {
-    let error = parse("let main = { (): () =>  while let some(value) = next() { consume(value) } }\n")
-        .unwrap_err();
-    assert!(error.message.contains("`while` requires `while(condition) { ... }`"));
+    let error =
+        parse("let main = { (): () =>  while let some(value) = next() { consume(value) } }\n")
+            .unwrap_err();
+    assert!(error
+        .message
+        .contains("`while` requires `while(condition) { ... }`"));
 }
 
 #[test]
@@ -3567,7 +3626,8 @@ fn rejects_bare_control_exits() {
 
 #[test]
 fn array_length_must_be_a_restricted_static_expression() {
-    let error = parse("let main = { (values: Array<i32><borrow(value)>): i32 =>  0 }\n").unwrap_err();
+    let error =
+        parse("let main = { (values: Array<i32><borrow(value)>): i32 =>  0 }\n").unwrap_err();
     assert!(
         error.message.contains("invalid compile-time array length"),
         "{}",
@@ -3824,9 +3884,8 @@ fn lowers_compile_time_constraint_guards_to_trait_predicates() {
 
 #[test]
 fn constraint_guards_require_is_evidence_before_projection_equalities() {
-    let error =
-        parse("let read = { <t: type>(value: t): t requires(t.item == i32) =>  value }\n")
-            .expect_err("a projection without trait evidence must fail");
+    let error = parse("let read = { <t: type>(value: t): t requires(t.item == i32) =>  value }\n")
+        .expect_err("a projection without trait evidence must fail");
     assert!(error
         .message
         .contains("must follow an `is` constraint for the same subject"));
@@ -4067,9 +4126,10 @@ fn parses_constructor_compile_parameter_sorts() {
 
 #[test]
 fn parses_labeled_type_arguments_without_reordering() {
-    let program =
-        parse("let consume = { (value: pair<v: bool, k: i32>): Result<e: bool><t: i32> =>  value }\n")
-            .unwrap();
+    let program = parse(
+        "let consume = { (value: pair<v: bool, k: i32>): Result<e: bool><t: i32> =>  value }\n",
+    )
+    .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -4195,8 +4255,9 @@ fn records_local_initializer_and_statement_ranges() {
 
 #[test]
 fn parses_contextual_async_and_await_as_language_expressions() {
-    let program = parse("let make = { (): i32 => \n  let future = async { await(next()) }\n  0\n}\n")
-        .expect("async expressions must parse");
+    let program =
+        parse("let make = { (): i32 => \n  let future = async { await(next()) }\n  0\n}\n")
+            .expect("async expressions must parse");
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };

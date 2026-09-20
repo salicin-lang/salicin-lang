@@ -61,9 +61,8 @@ impl Analyzer {
                     return error_expr();
                 }
                 if self.collection.function_templates.contains_key(&canonical) {
-                    return self.lower_generic_function_call(
-                        &canonical, groups, None, expected, context,
-                    );
+                    return self
+                        .lower_generic_function_call(&canonical, groups, None, expected, context);
                 }
                 return self.lower_named_function_call(&canonical, groups, expected, context);
             }
@@ -95,8 +94,9 @@ impl Analyzer {
                         return error_expr();
                     }
                     if self.collection.function_templates.contains_key(canonical) {
-                        return self
-                            .lower_generic_function_call(canonical, groups, None, expected, context);
+                        return self.lower_generic_function_call(
+                            canonical, groups, None, expected, context,
+                        );
                     }
                     return self.lower_named_function_call(canonical, groups, expected, context);
                 }
@@ -307,8 +307,7 @@ impl Analyzer {
             explicit_compile_group_count,
             expected,
             context,
-        )
-        else {
+        ) else {
             return error_expr();
         };
         self.lower_named_function_call(&canonical, &groups[runtime_start..], expected, context)
@@ -384,7 +383,12 @@ impl Analyzer {
         if !self.is_lang_item_name(name, LangItemKind::If) {
             return None;
         }
-        let expected = &self.collection.functions.get(name)?.effects.group_delimiters;
+        let expected = &self
+            .collection
+            .functions
+            .get(name)?
+            .effects
+            .group_delimiters;
         if flattened
             .groups
             .iter()
@@ -1380,8 +1384,7 @@ impl Analyzer {
                 delimiter,
                 arguments_ast,
                 params,
-            )
-            else {
+            ) else {
                 return error_expr();
             };
             for (parameter_index, (argument, parameter)) in
@@ -2549,11 +2552,7 @@ impl Analyzer {
         parameter_name: &str,
         context: &mut LowerCtx,
     ) -> HirExpr {
-        let expected_parameters = function_ty
-            .groups
-            .first()
-            .map(Vec::as_slice)
-            .unwrap_or(&[]);
+        let expected_parameters = function_ty.groups.first().map(Vec::as_slice).unwrap_or(&[]);
         let mut contextual_params = params.to_vec();
         for (parameter, expected) in contextual_params.iter_mut().zip(expected_parameters) {
             if parameter.ty == Type::Named("$context$infer".to_owned(), Vec::new()) {

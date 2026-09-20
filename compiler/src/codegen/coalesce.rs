@@ -80,7 +80,8 @@ impl Analyzer {
                 TypeProbe::Unsupported => None,
             }
         });
-        let scrutinee = if let (Some(inferred), Some(hint)) = (inferred_left, payload_hint.as_ref()) {
+        let scrutinee = if let (Some(inferred), Some(hint)) = (inferred_left, payload_hint.as_ref())
+        {
             let Some(canonical) = self.resolve_inferred_generic_enum_instance(
                 &inferred.name,
                 &inferred.type_groups,

@@ -1051,22 +1051,24 @@ impl Analyzer {
                         Some(Type::Named(name.clone(), Vec::new()))
                     }
                     Expr::Call(callee, arguments)
-                    | Expr::DelimitedCall { callee, arguments, .. }
-                        if matches!(
-                            callee.as_ref(),
-                            Expr::Name(name)
-                                if name == self.lang_item_name(LangItemKind::UnsafeEffect)
-                                    && arguments.is_empty()
-                        ) =>
+                    | Expr::DelimitedCall {
+                        callee, arguments, ..
+                    } if matches!(
+                        callee.as_ref(),
+                        Expr::Name(name)
+                            if name == self.lang_item_name(LangItemKind::UnsafeEffect)
+                                && arguments.is_empty()
+                    ) =>
                     {
                         Some(effect_row_source(true, None, &[]))
                     }
                     Expr::Call(callee, arguments)
-                    | Expr::DelimitedCall { callee, arguments, .. }
-                        if matches!(
-                            callee.as_ref(),
-                            Expr::Name(name) if self.collection.effects.contains(name)
-                        ) =>
+                    | Expr::DelimitedCall {
+                        callee, arguments, ..
+                    } if matches!(
+                        callee.as_ref(),
+                        Expr::Name(name) if self.collection.effects.contains(name)
+                    ) =>
                     {
                         let Expr::Name(name) = callee.as_ref() else {
                             unreachable!()
@@ -1092,10 +1094,11 @@ impl Analyzer {
                         }
                     }
                     Expr::Call(callee, arguments)
-                    | Expr::DelimitedCall { callee, arguments, .. }
-                        if matches!(callee.as_ref(), Expr::Name(name) if effect_row_from_marker(name).is_some())
-                            && arguments.len() <= 1
-                            && arguments.iter().all(|argument| argument.label.is_none()) =>
+                    | Expr::DelimitedCall {
+                        callee, arguments, ..
+                    } if matches!(callee.as_ref(), Expr::Name(name) if effect_row_from_marker(name).is_some())
+                        && arguments.len() <= 1
+                        && arguments.iter().all(|argument| argument.label.is_none()) =>
                     {
                         let Expr::Name(marker) = callee.as_ref() else {
                             unreachable!()
@@ -1539,14 +1542,13 @@ impl Analyzer {
                 callee,
                 delimiter: crate::ast::GroupDelimiter::Angle,
                 arguments,
-            }
-                if arguments.len() == 1
-                    && arguments[0].label.is_none()
-                    && matches!(
-                        callee.as_ref(),
-                        Expr::Name(name)
-                            if self.collection.transparent_parameter_modifiers.contains(name)
-                    ) =>
+            } if arguments.len() == 1
+                && arguments[0].label.is_none()
+                && matches!(
+                    callee.as_ref(),
+                    Expr::Name(name)
+                        if self.collection.transparent_parameter_modifiers.contains(name)
+                ) =>
             {
                 self.probe_parameter_modifier_source(&arguments[0].value, substitutions)
             }
@@ -1562,7 +1564,10 @@ impl Analyzer {
                     || self.collection.effects.contains(name)
                     || effect_row_from_marker(name).is_some()
             }
-            Expr::Call(callee, arguments) | Expr::DelimitedCall { callee, arguments, .. } => {
+            Expr::Call(callee, arguments)
+            | Expr::DelimitedCall {
+                callee, arguments, ..
+            } => {
                 let Expr::Name(name) = callee.as_ref() else {
                     return false;
                 };
@@ -1591,22 +1596,21 @@ impl Analyzer {
                     return false;
                 }
                 matches!(
-                        name.as_str(),
-                        "i8" | "i16"
-                            | "i32"
-                            | "i64"
-                            | "i128"
-                            | "isize"
-                            | "u8"
-                            | "u16"
-                            | "u32"
-                            | "u64"
-                            | "u128"
-                            | "usize"
-                            | "bool"
-                            | "never"
-                    )
-                    || self.collection.struct_defs.contains_key(name)
+                    name.as_str(),
+                    "i8" | "i16"
+                        | "i32"
+                        | "i64"
+                        | "i128"
+                        | "isize"
+                        | "u8"
+                        | "u16"
+                        | "u32"
+                        | "u64"
+                        | "u128"
+                        | "usize"
+                        | "bool"
+                        | "never"
+                ) || self.collection.struct_defs.contains_key(name)
                     || self.collection.enum_defs.contains_key(name)
                     || self.collection.struct_templates.contains_key(name)
                     || self.collection.enum_templates.contains_key(name)

@@ -97,7 +97,12 @@ fn rejects_duplicate_stable_package_identities() {
         1,
         true,
         &[("dependency", 2)],
-        vec![unit("primary.sc", &[], "let main = { (): i32 =>  0 }\n", true)],
+        vec![unit(
+            "primary.sc",
+            &[],
+            "let main = { (): i32 =>  0 }\n",
+            true,
+        )],
     );
     let mut dependency = package(
         2,
@@ -130,7 +135,12 @@ fn distinct_providers_may_share_a_package_name_and_version() {
         1,
         true,
         &[("dependency", 2)],
-        vec![unit("primary.sc", &[], "let main = { (): i32 =>  0 }\n", true)],
+        vec![unit(
+            "primary.sc",
+            &[],
+            "let main = { (): i32 =>  0 }\n",
+            true,
+        )],
     );
     let mut dependency = package(
         2,
@@ -274,8 +284,18 @@ fn local_parameters_blocks_closures_and_match_bindings_shadow_modules() {
 #[test]
 fn reports_private_sibling_access_but_allows_descendants() {
     let error = resolve_sources(&[
-        unit("src/main.sc", &[], "let main = { (): i32 =>  b.read() }\n", true),
-        unit("src/a.sc", &["a"], "let secret = { (): i32 =>  1 }\n", false),
+        unit(
+            "src/main.sc",
+            &[],
+            "let main = { (): i32 =>  b.read() }\n",
+            true,
+        ),
+        unit(
+            "src/a.sc",
+            &["a"],
+            "let secret = { (): i32 =>  1 }\n",
+            false,
+        ),
         unit(
             "src/a/child.sc",
             &["a", "child"],
@@ -518,10 +538,7 @@ fn rewrites_cross_module_associated_declaration_sorts() {
     let TraitMember::AssociatedType { compile_groups, .. } = &trait_definition.members[0] else {
         panic!("missing associated declaration");
     };
-    assert_eq!(
-        compile_groups[0][0].kind,
-        Sort::Named("api::mode".into())
-    );
+    assert_eq!(compile_groups[0][0].kind, Sort::Named("api::mode".into()));
 
     let errors = resolve_sources(&[
         unit(
@@ -993,7 +1010,12 @@ fn rejects_dependency_aliases_that_conflict_with_file_modules() {
             true,
             &[("dep", 1)],
             vec![
-                unit("app/src/main.sc", &[], "let main = { (): i32 =>  0 }\n", true),
+                unit(
+                    "app/src/main.sc",
+                    &[],
+                    "let main = { (): i32 =>  0 }\n",
+                    true,
+                ),
                 unit(
                     "app/src/dep/internal.sc",
                     &["dep", "internal"],

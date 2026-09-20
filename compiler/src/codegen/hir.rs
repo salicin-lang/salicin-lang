@@ -3,8 +3,7 @@ use std::fmt;
 use std::hash::Hash;
 
 use crate::ast::{
-    BinaryOp, GroupDelimiter, ItemOrigin, PassMode, StructRepresentation, Type, UnaryOp,
-    Visibility,
+    BinaryOp, GroupDelimiter, ItemOrigin, PassMode, StructRepresentation, Type, UnaryOp, Visibility,
 };
 
 use super::ctfe_value::CtfeValue;

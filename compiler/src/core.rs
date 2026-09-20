@@ -2604,17 +2604,18 @@ fn validate_syntax_contract(
                     )
             ) && function.effects.group_delimiters == [GroupDelimiter::Brace]
                 && single_moved_callable(
-                function,
-                "body",
-                Type::Unit,
-                FunctionEffects {
-                    custom: vec![Type::Named(
-                        "core.error.throwing".to_owned(),
-                        vec![Type::Named("core.string.String".to_owned(), Vec::new())],
-                    )],
-                    ..FunctionEffects::default()
-                },
-            ) && function.return_type == Some(Type::Unit)
+                    function,
+                    "body",
+                    Type::Unit,
+                    FunctionEffects {
+                        custom: vec![Type::Named(
+                            "core.error.throwing".to_owned(),
+                            vec![Type::Named("core.string.String".to_owned(), Vec::new())],
+                        )],
+                        ..FunctionEffects::default()
+                    },
+                )
+                && function.return_type == Some(Type::Unit)
         }
         LangItemKind::Requires => {
             function.compile_groups
@@ -3606,8 +3607,7 @@ fn valid_while(function: &Function) -> bool {
             kind: Sort::Effects,
             default: None,
         }]]
-        && function.effects.group_delimiters
-            == [GroupDelimiter::Parenthesis, GroupDelimiter::Brace]
+        && function.effects.group_delimiters == [GroupDelimiter::Parenthesis, GroupDelimiter::Brace]
         && moved_callable_parameter(condition, "condition", Type::Bool, effect_parameter("e"))
         && moved_callable_parameter(body, "do", Type::Unit, effect_parameter("e"))
         && function.return_type == Some(Type::Unit)
@@ -3681,8 +3681,7 @@ fn valid_match(function: &Function) -> bool {
                 default: None,
             },
         ]]
-        && function.effects.group_delimiters
-            == [GroupDelimiter::Parenthesis, GroupDelimiter::Brace]
+        && function.effects.group_delimiters == [GroupDelimiter::Parenthesis, GroupDelimiter::Brace]
         && input.name == "input"
         && input.mode == PassMode::Move
         && input.ty == named_type("Input")
@@ -3739,8 +3738,7 @@ fn valid_for(function: &Function) -> bool {
             type_parameter("Iter"),
             type_parameter("Item"),
         ]]
-        && function.effects.group_delimiters
-            == [GroupDelimiter::Parenthesis, GroupDelimiter::Brace]
+        && function.effects.group_delimiters == [GroupDelimiter::Parenthesis, GroupDelimiter::Brace]
         && iterable.name == "iterable"
         && iterable.mode == PassMode::Move
         && iterable.ty == named_type("Iterable")
@@ -3964,8 +3962,7 @@ fn valid_handle_method(function: &Function) -> bool {
                 compile_effects_parameter("rest"),
             ]]
         && function.return_type == Some(named_type("Answer"))
-        && function.effects.group_delimiters
-            == [GroupDelimiter::Brace, GroupDelimiter::Brace]
+        && function.effects.group_delimiters == [GroupDelimiter::Brace, GroupDelimiter::Brace]
         && function.effects == effect_parameter("rest")
         && function.where_predicates.is_empty()
         && function.body.is_none()
