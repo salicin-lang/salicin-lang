@@ -3172,7 +3172,6 @@ pub(super) fn normalize_source_call_groups(program: &mut Program) {
             &mut |expression| {
                 if let Some(expanded) = expand_control_call(expression) {
                     *expression = expanded;
-                    return;
                 }
             },
             true,

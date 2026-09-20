@@ -1472,7 +1472,7 @@ mod tests {
         let mut line = 0;
         let mut start = 0;
         let mut decoded = Vec::new();
-        for token in data.chunks_exact(5) {
+        for token in data.as_chunks::<5>().0 {
             line += token[0];
             start = if token[0] == 0 {
                 start + token[1]

@@ -7734,27 +7734,25 @@ fn runtime_brace_and_parenthesis_delimiters_reject_mismatch_both_directions() {
 
 #[test]
 fn ordinary_curried_closures_lower_as_successive_calls() {
-    for call in ["choose(0) { true } { 42 }"] {
-        let program = crate::parser::parse(&format!(
-            r#"
+    let call = "choose(0) { true } { 42 }";
+    let program = crate::parser::parse(&format!(
+        r#"
 let choose = {{ (seed: i32){{move condition: (): bool}}
   {{move body: (): i32}}: i32 =>
   if(condition()) {{ body() }} else: {{ seed }}
 }}
 let main = {{ (): i32 => {call} }}
 "#
-        ))
-        .expect("multiple brace group source must parse");
-        compile(&program).expect("multiple brace groups must lower as successive calls");
-    }
+    ))
+    .expect("multiple brace group source must parse");
+    compile(&program).expect("multiple brace groups must lower as successive calls");
 
-    for while_expression in ["while(value < 42) { value += 1 }"] {
-        let program = crate::parser::parse(&format!(
-            "let main = {{ (): i32 => let mut value = 0; {while_expression}; value }}\n"
-        ))
-        .expect("canonical while source must parse");
-        compile(&program).expect("canonical while must lower");
-    }
+    let while_expression = "while(value < 42) { value += 1 }";
+    let program = crate::parser::parse(&format!(
+        "let main = {{ (): i32 => let mut value = 0; {while_expression}; value }}\n"
+    ))
+    .expect("canonical while source must parse");
+    compile(&program).expect("canonical while must lower");
 
     compile_text(
         "let main = { (): i32 => \n\
@@ -7765,12 +7763,10 @@ let main = {{ (): i32 => {call} }}
     )
     .expect("labeled do-while overload must lower");
 
-    for if_expression in ["if(false) { 0 } else: { if(true) { 42 } else: { 0 } }"] {
-        let program =
-            crate::parser::parse(&format!("let main = {{ (): i32 => {if_expression} }}\n"))
-                .expect("canonical if source must parse");
-        compile(&program).expect("canonical if must lower");
-    }
+    let if_expression = "if(false) { 0 } else: { if(true) { 42 } else: { 0 } }";
+    let program = crate::parser::parse(&format!("let main = {{ (): i32 => {if_expression} }}\n"))
+        .expect("canonical if source must parse");
+    compile(&program).expect("canonical if must lower");
 }
 
 #[test]

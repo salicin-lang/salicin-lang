@@ -31,6 +31,7 @@ use super::source_rewrite::{erase_expr_locations, rewrite_static_function_values
 use super::Analyzer;
 
 impl Analyzer {
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn lower_nominal_type_member_call(
         &mut self,
         target: &str,
@@ -410,6 +411,7 @@ impl Analyzer {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn lower_bound_method_call(
         &mut self,
         receiver: &Expr,

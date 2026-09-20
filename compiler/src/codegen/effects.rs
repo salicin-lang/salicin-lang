@@ -797,6 +797,7 @@ impl Analyzer {
         lowered
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn lower_effect_operation_call(
         &mut self,
         definition: &EffectDef,

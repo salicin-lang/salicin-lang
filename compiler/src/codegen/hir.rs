@@ -576,6 +576,7 @@ pub(super) struct HirBinding {
 }
 
 #[derive(Debug, Clone)]
+#[allow(clippy::large_enum_variant)]
 pub(super) enum HirStmt {
     Let(HirBinding),
     Expr(HirExpr),
