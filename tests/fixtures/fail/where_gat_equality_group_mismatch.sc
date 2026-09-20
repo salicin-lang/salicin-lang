@@ -1,5 +1,5 @@
 let lend = trait {
-  let Item = <a: access><r: region>: type
+  Item: <a: access><r: region>: type
 }
 
 let require = { <t: type>(move value: t): ()

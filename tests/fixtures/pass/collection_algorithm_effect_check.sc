@@ -1,7 +1,7 @@
 let Option = core.Option
 let Slice = core.memory.Slice
 let inspect = effect {
-  accepted (value: i32): bool
+  accepted: (value: i32): bool
 }
 
 let read = { (value: Borrow<i32>): i32 => value }

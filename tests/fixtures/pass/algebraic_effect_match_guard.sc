@@ -1,5 +1,5 @@
 let decide = effect {
-  accept (value: i32): bool
+  accept: (value: i32): bool
 }
 
 let event = enum { value { value: i32 }, Empty }

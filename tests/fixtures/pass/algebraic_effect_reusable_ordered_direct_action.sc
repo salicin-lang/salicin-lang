@@ -1,5 +1,5 @@
 let ask = effect {
-  value (): i32
+  value: (): i32
 }
 
 let run = { (seed: i32) {move action: with<ask>(): i32}: i32 =>

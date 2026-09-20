@@ -1,5 +1,5 @@
 let step = effect {
-  next (value: i32): i32
+  next: (value: i32): i32
 }
 
 let combine = { with<step>(left: i32, right: i32): i32 =>

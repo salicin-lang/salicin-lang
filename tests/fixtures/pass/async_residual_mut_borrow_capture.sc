@@ -2,7 +2,7 @@ let Future = core.async.Future
 let Poll = core.async.Poll
 
 let ask = effect {
-  ask (): i32
+  ask: (): i32
 }
 
 let request = { with<ask>(): i32 =>

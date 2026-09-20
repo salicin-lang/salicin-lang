@@ -2,9 +2,9 @@ let Option = core.Option
 let Result = core.Result
 
 let read = effect {
-  option_base (present: bool): Option<adder>;
-  result_base (present: bool): Result<bool><adder>;
-  argument (): i32
+  option_base: (present: bool): Option<adder>;
+  result_base: (present: bool): Result<bool><adder>;
+  argument: (): i32
 }
 
 let adder = struct { base: i32 }

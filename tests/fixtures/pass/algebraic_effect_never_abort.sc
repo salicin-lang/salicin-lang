@@ -1,5 +1,5 @@
 let abort = effect {
-  stop (value: i32): never
+  stop: (value: i32): never
 }
 
 let fail = { with<abort>(): never =>

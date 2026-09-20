@@ -10,8 +10,10 @@ subset.
   callable literals such as `let add = { (x: i32): i32 => x + 1 }`, while
   callable types remain `(T): R`; `{ expression }` is the zero-parameter
   closure and `{ Pattern => expression, ... }` is the multi-arm pattern
-  callable. Effect operations now use enum-like `Operation(...): Result`
-  declarations. Handlers use
+  callable. Trait callable members now use `name: signature` requirements or
+  `name: signature = body` defaults, and effect operations use
+  `Operation: (parameters): Result` declarations. Associated declarations use
+  `Name: type`; concrete extension implementations retain `let`. Handlers use
   `.handle(action) { Operation(...) => ..., Return(...) => ... }`; the former
   `action:` and `done:` fields are removed.
 - **Breaking:** Removed the `comptime` keyword. Angle brackets now exclusively
@@ -1705,8 +1707,8 @@ subset.
 - Added conservative type probing for constructor trait associated function calls when compile-time
   arguments are explicit, without adding side effects to the probe phase.
 - Rewrote `core.effects` declarations to use complete effect block syntax: `Unsafe` is an explicit
-  empty effect, `Throws(Error)` declares `Raise(move error: Error): Never`, and `Async` declares a
-  minimal `Suspend(): ()` operation.
+  empty effect, `Throws(Error)` declares `Raise: (move error: Error): Never`, and `Async` declares a
+  minimal `Suspend: (): ()` operation.
 - Updated the core lang-item validator so `Throws` is checked by its ordinary operation shape rather
   than by marker-effect special casing.
 

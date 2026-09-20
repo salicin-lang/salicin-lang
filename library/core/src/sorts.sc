@@ -28,7 +28,7 @@ pub let constraint: sort<2>
 
 /// Compile-time relation between values classified by sorts.
 pub let Is = <right: sort<2>> trait<self: sort<2>> {
-  let is = { <left: self, right: right>: bool }
+  is: <left: self, right: right>: bool
 }
 
 extend(type, Is<constraint>) {

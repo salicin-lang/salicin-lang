@@ -18,9 +18,9 @@ extend(choice) {
 }
 
 let rebuild = trait {
-  let rebuild = { (move self)(): self }
-  let read = { (self: Borrow<self>)(): i32 }
-  let twice = { (self: Borrow<self>)(): i32 => self.read() + self.read() }
+  rebuild: (move self)(): self;
+  read: (self: Borrow<self>)(): i32;
+  twice: (self: Borrow<self>)(): i32 = self.read() + self.read()
 }
 
 let wrapper = struct { raw: i32 }

@@ -2,9 +2,9 @@ let Option = core.Option
 let Result = core.Result
 
 let query = effect {
-  option (present: bool): Option<bool>;
-  result (present: bool): Result<()><bool>;
-  fallback (): bool
+  option: (present: bool): Option<bool>;
+  result: (present: bool): Result<()><bool>;
+  fallback: (): bool
 }
 
 let program = { with<query>(): i32 =>

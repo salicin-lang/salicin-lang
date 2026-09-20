@@ -1,6 +1,6 @@
 let read = trait {
-  let read = { (self: Borrow<self>)(): i32 }
-  let doubled = { (self: Borrow<self>)(): i32 => self.read() + self.read() }
+  read: (self: Borrow<self>)(): i32;
+  doubled: (self: Borrow<self>)(): i32 = self.read() + self.read()
 }
 
 let number = struct { value: i32 }
@@ -23,9 +23,9 @@ extend(cell<t>, read)<requires: t is read> {
 }
 
 let take = trait {
-  let Item: type
-  let take = { (move self)(): Item }
-  let forward = { (move self)(): Item => self.take() }
+  Item: type
+  take: (move self)(): Item;
+  forward: (move self)(): Item = self.take()
 }
 
 let boxed = struct { value: i32 }

@@ -1,19 +1,19 @@
 /// Protocol for stateful producers of sequential values.
 pub let Iterator = trait {
   /// Element type yielded while the Iterator is borrowed for `R`.
-  let Item = <r: region>: type
+  Item: <r: region>: type
   /// Advances the Iterator and returns the next element, if any.
-  let next = { <r: region>(self: Borrow<mut><r><self>)
-      (): core.Option<Item<r>> }
+  next: <r: region>(self: Borrow<mut><r><self>)
+      (): core.Option<Item<r>>
 }
 
 /// Protocol for values that can be converted into an Iterator.
 pub let IntoIterator = trait {
   /// Iterator type produced from `Self`.
-  let Iter: type
+  Iter: type
   /// Consumes `self` and returns an Iterator over its values.
-  let into_iter = { (move self)
-      (): Iter }
+  into_iter: (move self)
+      (): Iter
 }
 
 let Array = core.memory.Array

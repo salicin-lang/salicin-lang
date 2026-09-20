@@ -1,6 +1,6 @@
 let convert = trait {
-  let Output: type
-  let convert = { (self: Borrow<self>)(): Output }
+  Output: type
+  convert: (self: Borrow<self>)(): Output
 }
 
 let number = struct { value: i32 }

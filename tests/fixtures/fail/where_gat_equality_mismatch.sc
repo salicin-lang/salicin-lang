@@ -1,7 +1,7 @@
 let view = <t: type><r: region>: type Borrow<r><t>
 
 let lend = trait {
-  let Item = <r: region>: type
+  Item: <r: region>: type
 }
 
 let cell = struct { value: i32 }

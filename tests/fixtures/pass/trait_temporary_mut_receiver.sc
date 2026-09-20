@@ -1,5 +1,5 @@
 let reset = trait {
-  let reset = { (self: Borrow<mut><self>)(): i32 }
+  reset: (self: Borrow<mut><self>)(): i32
 }
 
 let counter = struct { value: i32 }

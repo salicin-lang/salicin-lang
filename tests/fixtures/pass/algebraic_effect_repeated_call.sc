@@ -1,5 +1,5 @@
 let read = effect {
-  read (value: i32): i32
+  read: (value: i32): i32
 }
 
 let once = { with<read>(value: i32): i32 =>

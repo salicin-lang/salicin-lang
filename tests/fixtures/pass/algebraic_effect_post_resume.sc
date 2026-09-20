@@ -1,5 +1,5 @@
 let read = effect {
-  read (): i32
+  read: (): i32
 }
 
 let program = { with<read>(): i32 =>

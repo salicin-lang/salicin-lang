@@ -245,7 +245,7 @@ effect_decl =
     { effect_operation, separators }, "}" ;
 
 effect_operation =
-    IDENT,
+    IDENT, ":",
     [ with_clause ],
     runtime_parameter_group, { runtime_parameter_group },
     ":", type_expr ;
@@ -285,14 +285,18 @@ trait_decl =
 self_parameter = contextual("self"), ":", compile_parameter_sort ;
 
 trait_member =
-    "let", IDENT, "=", callable_literal
-  | "let", IDENT, "=",
-    { compile_parameter_group },
-    ":", ( contextual("type") | contextual("parameters") ) ;
+    IDENT, ":", callable_signature, [ "=", callable_body ]
+  | IDENT, ":", ( contextual("type") | contextual("parameters") ), [ "=", type ]
+  | IDENT, ":", compile_parameter_group, { compile_parameter_group },
+    ":", ( contextual("type") | contextual("parameters") ), [ "=", type ] ;
 ```
 
-Effect operations use enum-like constructor syntax: they omit `let` and `=`,
-require an explicit runtime group, and have no implementation body. Their
+Trait callable members use colon-prefixed callable type declarations:
+`name: signature` for an abstract requirement and `name: signature = body`
+for a default implementation. Associated declarations also omit `let`.
+
+Effect operations use colon-prefixed callable type declarations: they omit
+`let` and `=`, require an explicit runtime group, and have no implementation body. Their
 constructor-style names are used by qualified operation calls and handler
 arms. `Return` is reserved for handler completion.
 
@@ -401,8 +405,9 @@ result annotation; like every callable value, its signature and initializer
 remain inside outer braces.
 Every other marker must match a known
 compiler-owned edition contract and is removed before code generation.
-Trait requirements, effect operations, and user opaque types remain
-bodyless declarations rather than builtin definitions.
+Trait callable requirements, effect operations, and user opaque types remain
+bodyless declarations rather than builtin definitions. The callable forms are
+introduced by a colon after the member or operation name.
 
 The root `core` module also contains the public overloads
 `pub let foreign = { <abi: abi>: never => builtin() }` and

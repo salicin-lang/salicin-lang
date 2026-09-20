@@ -1158,7 +1158,7 @@ impl Parser {
         while !self.at(&TokenKind::RBrace) {
             if self.at(&TokenKind::Let) {
                 return Err(self.error_here(
-                    "effect operations omit `let` and `=`; write `Operation(parameters): Result`",
+                    "effect operations use callable type declarations; write `operation: (parameters): Result`",
                 ));
             }
             let operation = self.expect_ident("an effect operation name")?;
@@ -1167,6 +1167,7 @@ impl Parser {
                     "effect operation name `{operation}` is reserved by handler lowering"
                 )));
             }
+            self.expect(&TokenKind::Colon, "`:` after effect operation name")?;
             let (
                 operation_compile_groups,
                 groups,
@@ -3255,10 +3256,11 @@ impl Parser {
             if self.at(&TokenKind::Eof) {
                 return Err(self.error_here("expected `}` before end of trait declaration"));
             }
+            let member_line = self.current().line;
             members.push(self.trait_member(&member_effect_parameters)?);
             if !self.at(&TokenKind::RBrace)
                 && !self.at_separator()
-                && self.previous().end_line == self.current().line
+                && member_line == self.current().line
             {
                 return Err(self.error_here("expected a newline or `;` after trait member"));
             }
@@ -3282,151 +3284,116 @@ impl Parser {
         if self.at(&TokenKind::Pub) {
             return Err(self.error_here("visibility on trait members is not supported yet"));
         }
-        self.expect(&TokenKind::Let, "`let` in trait body")?;
-        if self.take(&TokenKind::Mut) {
-            let mutable = self.previous().clone();
-            return Err(self.error_at(&mutable, "trait members cannot be declared with `let mut`"));
-        }
-        let name = self.expect_ident("a trait member name")?;
-        let rhs_signature = self.take(&TokenKind::Equal);
-        if rhs_signature && self.callable_declaration_brace_follows() {
-            return self
-                .braced_function(
-                    name,
-                    false,
-                    true,
-                    outer_effect_parameters,
-                    false,
-                    false,
-                    true,
-                )
-                .map(TraitMember::Function);
-        }
-        if rhs_signature && self.runtime_parameter_group_follows() {
+        if self.at(&TokenKind::Let) {
             return Err(self.error_here(
-                "trait callable requirements and defaults use an outer callable brace after `=`",
+                "trait members omit `let`; write `name: signature` or `name: type`",
             ));
         }
-        if !rhs_signature
-            && (self.current_group_delimiter().is_some() || self.at_context_ident("with"))
+        if matches!(self.current().kind, TokenKind::Ident(_))
+            && self.at_offset(1, &TokenKind::Colon)
         {
-            return Err(self.error_here("declaration signature groups must follow `=`"));
+            return self.trait_colon_member(outer_effect_parameters);
         }
-        let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
-            self.declaration_groups(true, outer_effect_parameters)?;
-        if rhs_signature && !groups.is_empty() {
-            return Err(self.error_here(
-                "trait callable requirements and defaults use an outer callable brace after `=`",
-            ));
-        }
-        self.validate_receiver_groups(&name, &groups)?;
+        Err(self.error_here("expected a trait member declaration `name: signature`"))
+    }
 
-        let logical_result = if self.take(&TokenKind::Colon) {
-            let associated_kind = if self.take(&TokenKind::Type) {
+    fn trait_colon_member(
+        &mut self,
+        outer_effect_parameters: &[String],
+    ) -> Result<TraitMember, ParseError> {
+        let name = self.expect_ident("a trait member name")?;
+        self.expect(&TokenKind::Colon, "`:` after trait member name")?;
+        let (compile_groups, groups, mut effects, has_callable_boundary, _) =
+            self.declaration_groups(true, outer_effect_parameters)?;
+        let associated_kind = if groups.is_empty() {
+            if compile_groups.is_empty() && self.take(&TokenKind::Type) {
                 Some(AssociatedKind::Type)
-            } else if self.at_context_ident("parameters") {
+            } else if compile_groups.is_empty() && self.at_context_ident("parameters") {
                 self.advance();
                 Some(AssociatedKind::Parameters)
+            } else if self.at(&TokenKind::Colon)
+                && (self.at_offset(1, &TokenKind::Type)
+                    || self.tokens.get(self.index + 1).is_some_and(
+                        |token| matches!(&token.kind, TokenKind::Ident(name) if name == "parameters"),
+                    ))
+            {
+                self.advance();
+                if self.take(&TokenKind::Type) {
+                    Some(AssociatedKind::Type)
+                } else if self.at_context_ident("parameters") {
+                    self.advance();
+                    Some(AssociatedKind::Parameters)
+                } else {
+                    unreachable!("associated result sort was checked before consuming `:`")
+                }
             } else {
                 None
-            };
-            if let Some(kind) = associated_kind {
-                if !groups.is_empty() {
-                    return Err(self.error_here(
-                        "associated declarations cannot have runtime parameter groups",
-                    ));
-                }
-                let rhs_default = rhs_signature
-                    && !self.at_separator()
-                    && !self.at(&TokenKind::RBrace);
-                if kind == AssociatedKind::Parameters
-                    && (self.at(&TokenKind::Equal) || rhs_default)
-                {
-                    return Err(self
-                        .error_here("default associated parameter schemas are not supported yet"));
-                }
-                self.take_newlines_if_followed_by(&[TokenKind::Equal]);
-                let default = if rhs_default || self.take(&TokenKind::Equal) {
-                    Some(self.type_expr()?)
-                } else {
-                    None
-                };
-                return Ok(TraitMember::AssociatedType {
-                    name,
-                    compile_groups,
-                    kind,
-                    default,
-                });
             }
-            Some(self.function_result_type()?)
         } else {
             None
         };
+        if let Some(kind) = associated_kind {
+            self.take_newlines_if_followed_by(&[TokenKind::Equal]);
+            if kind == AssociatedKind::Parameters && self.at(&TokenKind::Equal) {
+                return Err(self
+                    .error_here("default associated parameter schemas are not supported yet"));
+            }
+            let default = if self.take(&TokenKind::Equal) {
+                Some(self.type_expr()?)
+            } else {
+                None
+            };
+            self.effect_parameters_in_scope.clear();
+            return Ok(TraitMember::AssociatedType {
+                name,
+                compile_groups,
+                kind,
+                default,
+            });
+        }
+        self.validate_receiver_groups(&name, &groups)?;
+        if compile_groups.is_empty() && groups.is_empty() {
+            return Err(self.error_here("trait callables require at least one parameter group"));
+        }
+        self.expect(&TokenKind::Colon, "`:` before trait callable result type")?;
+        let logical_result = self.function_result_type()?;
         if !has_callable_boundary {
             let mut declared = self.function_effect_clause()?.0;
             declared.compile_group_delimiters = effects.compile_group_delimiters;
             declared.group_delimiters = effects.group_delimiters;
             effects = declared;
         }
-        let failure_error = effects.failure.as_deref().cloned();
-        let return_type =
-            logical_result.map(|result| Self::apply_failure_effect(result, failure_error));
+        let return_type = Some(Self::apply_failure_effect(
+            logical_result,
+            effects.failure.as_deref().cloned(),
+        ));
         self.effect_parameters_in_scope.clear();
-
-        if compile_groups.is_empty() && groups.is_empty() {
-            return Err(
-                self.error_here("trait function members require at least one parameter group")
-            );
-        }
-
         self.take_newlines_if_followed_by(&[
-            TokenKind::Where,
             TokenKind::Equal,
             TokenKind::FatArrow,
             TokenKind::Ident("requires".to_owned()),
         ]);
-        if self.at(&TokenKind::Where) {
+        let mut where_predicates = Vec::new();
+        if self.at_context_ident("requires") {
+            self.advance();
+            where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
+            self.take_newlines_if_followed_by(&[TokenKind::Equal, TokenKind::FatArrow]);
+        }
+        if self.at(&TokenKind::FatArrow) {
             return Err(self.error_here(
-                "colon-style trait-member predicates were removed; write `= requires(t is trait)`",
+                "trait default implementations use `=`; write `name: signature = body`",
             ));
         }
-        let mut where_predicates = Vec::new();
-        self.take_newlines_if_followed_by(&[TokenKind::Equal]);
-        let body = if rhs_signature && (self.at_separator() || self.at(&TokenKind::RBrace)) {
-            None
-        } else if rhs_signature || self.take(&TokenKind::Equal) {
-            if self.at_context_ident("requires") {
-                self.advance();
-                where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
-                if self.at_separator() || self.at(&TokenKind::RBrace) {
-                    None
-                } else {
-                    if self.at_context_ident("builtin") {
-                        return Err(self.error_here(
-                            "trait requirements are abstract and cannot use `builtin()`",
-                        ));
-                    }
-                    self.expect(
-                        &TokenKind::FatArrow,
-                        "`=>` before trait default implementation",
-                    )?;
-                    Some(self.callable_body()?)
-                }
-            } else {
-                if self.at_context_ident("builtin") {
-                    return Err(self
-                        .error_here("trait requirements are abstract and cannot use `builtin()`"));
-                }
-                self.expect(
-                    &TokenKind::FatArrow,
-                    "`=>` before trait default implementation",
-                )?;
-                Some(self.callable_body()?)
+        let body = if self.take(&TokenKind::Equal) {
+            if self.at_context_ident("builtin") {
+                return Err(self.error_here(
+                    "trait requirements are abstract and cannot use `builtin()`",
+                ));
             }
+            Some(self.callable_body()?)
         } else {
             None
         };
-
         Ok(TraitMember::Function(Function {
             name,
             foreign: None,

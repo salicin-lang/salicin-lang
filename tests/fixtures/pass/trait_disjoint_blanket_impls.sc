@@ -1,5 +1,5 @@
 let convert = <to: type> trait {
-  let convert = { (self: Borrow<self>)(): to }
+  convert: (self: Borrow<self>)(): to
 }
 
 let cell = <t: type> struct { value: t }

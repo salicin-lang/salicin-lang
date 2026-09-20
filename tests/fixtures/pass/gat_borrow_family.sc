@@ -1,10 +1,10 @@
 let view = <t: type><a: access><r: region>: type Borrow<a><r><t>;
 
 let lend = trait {
-  let Item = <a: access><r: region>: type
+  Item: <a: access><r: region>: type
 
-  let view = { <a: access, r: region>
-    (self: Borrow<a><r><self>)(): Item<a><r> }
+  view: <a: access, r: region>
+    (self: Borrow<a><r><self>)(): Item<a><r>
   }
 
 let cell = struct { value: i32 }

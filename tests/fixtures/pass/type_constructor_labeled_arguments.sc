@@ -3,7 +3,7 @@ let pair = <k: type, v: type> struct { key: k, value: v }
 let pair_alias: <key: type, value: type>: type = pair
 
 let holds = <item: type> trait {
-  let get = { (self: Borrow<self>)(): item }
+  get: (self: Borrow<self>)(): item
 }
 
 extend(pair<i32, bool>, holds<item: i32>) {

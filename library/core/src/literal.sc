@@ -4,18 +4,18 @@ let Slice = core.memory.Slice
 /// Constructs a value from the compiler's fixed-size backing Array for an
 /// Array literal. Implementations may preserve the Array or build a user type.
 pub let ArrayLiteral = <Element: type> trait {
-  let Output: type
+  Output: type
 
-  let from_array_literal = { <length: usize>
-      (move values: Array<Element><length>): Output }
+  from_array_literal: <length: usize>
+      (move values: Array<Element><length>): Output
 }
 
 /// Constructs a value from the UTF-8 backing bytes of a String literal.
 pub let StringLiteral = trait {
-  let Output: type
+  Output: type
 
-  let from_string_literal = { <length: usize>
-      (move utf8: Array<u8><length>): Output }
+  from_string_literal: <length: usize>
+      (move utf8: Array<u8><length>): Output
 }
 
 /// The fixed-size Array implementation preserves the compiler backing value.

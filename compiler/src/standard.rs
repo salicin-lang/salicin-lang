@@ -661,7 +661,7 @@ mod tests {
         let valid = parser::parse(
             "pub let Option = <T: type> enum { Some(T), None }\n\
              pub let Copyable = trait {}\n\
-             pub let suspension = effect { suspend(): () }\n",
+             pub let suspension = effect { suspend: (): () }\n",
         )
         .unwrap();
         assert!(naming_diagnostics(&valid, "test").is_empty());
@@ -672,7 +672,7 @@ mod tests {
             ("pub let message_type = struct {}\n", "PascalCase"),
             ("pub let State = enum { ready }\n", "enum variant"),
             (
-                "pub let Iterator = trait { let item: type }\n",
+                "pub let Iterator = trait { item: type }\n",
                 "associated type",
             ),
             ("pub let Service = { (): () => }\n", "snake_case"),

@@ -2,7 +2,7 @@ let Result = core.Result
 let throwing = core.error.throwing
 
 let step = effect {
-  delta (): i32
+  delta: (): i32
 }
 
 let state = struct {

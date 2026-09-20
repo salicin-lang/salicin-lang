@@ -1,6 +1,6 @@
 let state = <s: type> effect {
-  get (): s
-  put (move value: s): ()
+  get: (): s
+  put: (move value: s): ()
 }
 
 let read = { with<state<i32>>(): i32 => state<i32>.get() }

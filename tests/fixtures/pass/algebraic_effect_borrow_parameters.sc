@@ -1,5 +1,5 @@
 let read = effect {
-  read (): i32
+  read: (): i32
 }
 
 let add_read = { with<read>(base: Borrow<i32>): i32 =>

@@ -159,8 +159,8 @@ returns `()`:
 
 ```sc fragment
 pub let AddAssign = <Rhs: type> trait {
-  let add_assign = { (self: Borrow<mut><self>)
-    (rhs: Rhs): () }
+  add_assign: (self: Borrow<mut><self>)
+    (rhs: Rhs): ()
 }
 ```
 
@@ -179,20 +179,20 @@ direct member access.
 
 ```sc fragment
 pub let Chain = trait {
-  let Item: type
-  let Rebind = <Value: type>: type
+  Item: type
+  Rebind: <Value: type>: type
 
-  let chain = { <e: effects, U: type> with<e>
+  chain: <e: effects, U: type> with<e>
     (self)
-    (transform: with<e>(Item): U): Rebind<U> }
+    (transform: with<e>(Item): U): Rebind<U>
 }
 
 pub let Coalesce = trait {
-  let Item: type
+  Item: type
 
-  let coalesce = { <e: effects> with<e>
+  coalesce: <e: effects> with<e>
     (self)
-    (fallback: with<e>(): Item): Item }
+    (fallback: with<e>(): Item): Item
 }
 ```
 
@@ -214,11 +214,11 @@ should alias these identities through `core.effect`:
 pub let unsafety = effect {}
 
 pub let throwing = <Error: type> effect {
-  Raise(move error: Error): never
+  Raise: (move error: Error): never
 }
 
 pub let suspension = effect {
-  Suspend(): ()
+  Suspend: (): ()
 }
 ```
 
@@ -325,10 +325,10 @@ interpret the same effect differently.
 pub let Continuation = <Input: type, Output: type>: type
 pub let EffectCallable = <Input: type, Output: type, Answer: type>: type
 pub let Handle = trait<self: effect> {
-  let Clauses = <Value: type, Answer: type>: parameters
-  let handle = { <Value: type, Answer: type, rest: effects> with<rest>
+  Clauses: <Value: type, Answer: type>: parameters
+  handle: <Value: type, Answer: type, rest: effects> with<rest>
     ...Clauses<Value, Answer>
-    {move action: with<self, rest>(): Value}: Answer }
+    {move action: with<self, rest>(): Value}: Answer
 }
 ```
 
@@ -466,15 +466,15 @@ pub let throw = { <Error: type> with<core.error.throwing<Error>>
 
 ```sc fragment
 pub let Iterator = trait {
-  let Item = <r: region>: type
-  let next = { <r: region>(self: Borrow<mut><r><self>)
-    (): core.Option<Item<r>> }
+  Item: <r: region>: type
+  next: <r: region>(self: Borrow<mut><r><self>)
+    (): core.Option<Item<r>>
 }
 
 pub let IntoIterator = trait {
-  let IntoIter: type
-  let into_iter = { (move self)
-    (): IntoIter }
+  IntoIter: type
+  into_iter: (move self)
+    (): IntoIter
 }
 
 pub let ArrayIntoIter = <T: type>
@@ -514,11 +514,11 @@ magic in advance.
 
 ```sc fragment
 pub let Semigroup = trait {
-  let combine = { (left: self, right: self): self }
+  combine: (left: self, right: self): self
 }
 
 pub let Monoid = trait<requires: self is Semigroup> {
-  let empty = { (): self }
+  empty: (): self
 }
 ```
 
@@ -529,24 +529,24 @@ part of the prelude:
 
 ```sc fragment
 pub let Functor = trait<self: <Value: type>: type> {
-  let map = { <e: effects, A: type, B: type> with<e>
+  map: <e: effects, A: type, B: type> with<e>
     (self: self<A>)
-    (transform: with<e>(A): B): self<B> }
+    (transform: with<e>(A): B): self<B>
 }
 
 pub let Applicative = trait<self: <Value: type>: type><requires: self is Functor> {
-  let pure = { <A: type>
-    (value: A): self<A> }
+  pure: <A: type>
+    (value: A): self<A>
 
-  let apply = { <e: effects, A: type, B: type> with<e>
+  apply: <e: effects, A: type, B: type> with<e>
     (self: self<with<e>(A): B>)
-    (value: self<A>): self<B> }
+    (value: self<A>): self<B>
 }
 
 pub let Monad = trait<self: <Value: type>: type><requires: self is Applicative> {
-  let flat_map = { <e: effects, A: type, B: type> with<e>
+  flat_map: <e: effects, A: type, B: type> with<e>
     (self: self<A>)
-    (next: with<e>(A): self<B>): self<B> }
+    (next: with<e>(A): self<B>): self<B>
 }
 ```
 

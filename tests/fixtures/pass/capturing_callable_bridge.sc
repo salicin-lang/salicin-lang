@@ -1,7 +1,7 @@
 let unsafety = core.unsafe.unsafety
 
 let ask = effect {
-  value (): i32
+  value: (): i32
 }
 
 let resource = struct {

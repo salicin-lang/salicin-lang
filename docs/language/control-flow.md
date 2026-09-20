@@ -143,8 +143,8 @@ Compiler-generated internal match names must never appear in user diagnostics.
 
 ```sc fragment
 let Iterator = trait {
-  let Item = <r: region>: type
-  let next = { <r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>> }
+  Item: <r: region>: type
+  next: <r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>>
 }
 ```
 

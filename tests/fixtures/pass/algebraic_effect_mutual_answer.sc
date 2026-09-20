@@ -1,5 +1,5 @@
 let tick = effect {
-  tick (): bool
+  tick: (): bool
 }
 
 let even = { with<tick>(count: i32): bool =>

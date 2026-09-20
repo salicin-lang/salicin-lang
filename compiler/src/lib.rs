@@ -635,7 +635,7 @@ mod tests {
             ),
             (
                 "handler",
-                "let ask = effect { value(): i32 }\n\
+                "let ask = effect { value: (): i32 }\n\
              let main = { (): i32 =>  ask.value() }\n",
                 2,
                 26,

@@ -1,5 +1,5 @@
 let stop = effect {
-  stop (): bool
+  stop: (): bool
 }
 
 let main = { (): i32 =>

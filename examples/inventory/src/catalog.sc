@@ -7,7 +7,7 @@ pub let Inventory = struct {
 
 /// Consumes a collection and summarizes all entries through their trait API.
 pub let Summarize = trait {
-  let summarize = { (move self)(): Summary }
+  summarize: (move self)(): Summary
 }
 
 pub let Summary = struct {

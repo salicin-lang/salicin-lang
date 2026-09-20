@@ -1,5 +1,5 @@
 let read = effect {
-  read (): i32
+  read: (): i32
 }
 
 let resource = struct { counter: Ptr<mut><i32> }

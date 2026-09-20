@@ -1,5 +1,5 @@
 let probe = effect {
-  read (): bool
+  read: (): bool
 }
 
 let main = { (): i32 =>

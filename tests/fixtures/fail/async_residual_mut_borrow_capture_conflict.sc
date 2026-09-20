@@ -1,5 +1,5 @@
 let ask = effect {
-  ask (): i32
+  ask: (): i32
 }
 
 let program = { (value: Borrow<mut><i32>): i32 =>

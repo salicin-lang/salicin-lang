@@ -10,8 +10,8 @@ fn parses_brace_first_named_callables_and_bodyless_requirements() {
          }\n\
          let id = { <T: type>(value: T): T => value }\n\
          let protocol = trait {\n\
-         let required = { (self)(value: i32): i32 }\n\
-         let defaulted = { (self)(): i32 => 42 }\n\
+         required: (self)(value: i32): i32;\n\
+         defaulted: (self)(): i32 = 42;\n\
          }\n",
     )
     .expect("brace-first declarations, requirements, and defaults must parse");
@@ -33,7 +33,7 @@ fn parses_brace_first_named_callables_and_bodyless_requirements() {
     let TraitMember::Function(defaulted) = &protocol.members[1] else {
         panic!("expected default method");
     };
-    assert!(matches!(defaulted.body, Some(Expr::Block(_, Some(_)))));
+    assert!(defaulted.body.is_some());
 }
 
 #[test]
@@ -115,8 +115,8 @@ fn brace_calls_treat_pattern_arms_as_one_callable_argument() {
 fn parses_enum_like_effects_and_normalizes_enum_like_handlers() {
     let program = parse(
         "let State = <S: type> effect {\n\
-         Get(): S\n\
-         Put(value: S): ()\n\
+         Get: (): S\n\
+         Put: (value: S): ()\n\
          }\n\
          let run = { (state: i32): i32 =>\n\
          State<i32>.handle(State<i32>.Get()) {\n\
@@ -354,7 +354,6 @@ fn rejects_name_side_declaration_signature_groups() {
     for source in [
         "let identity<T: type>(value: T): T { value }\n",
         "let identity(value: i32): i32 { value }\n",
-        "let protocol = trait { let read(self: Borrow<self>)(): i32 }\n",
         "let value = struct {}\nextend(value) { let read(self: Borrow<self>)(): i32 => { 0 } }\n",
     ] {
         let error = parse(source).unwrap_err();
@@ -366,6 +365,9 @@ fn rejects_name_side_declaration_signature_groups() {
             error.message
         );
     }
+
+    let error = parse("let protocol = trait { read(self: Borrow<self>)(): i32 }\n").unwrap_err();
+    assert!(error.message.contains("expected a trait member declaration"));
 }
 
 #[test]
@@ -1023,7 +1025,7 @@ fn rejects_parenthesized_type_trait_effect_associated_and_schema_applications() 
 
 #[test]
 fn effect_operations_retain_declared_runtime_group_delimiters() {
-    let program = parse("let state = effect { get[]: i32; put{value: i32}: () }\n")
+    let program = parse("let state = effect { get: []: i32; put: {value: i32}: () }\n")
         .expect("effect operation delimiters");
     let Item::Effect(effect) = &program.items[0] else {
         panic!("expected effect");
@@ -1167,8 +1169,8 @@ fn parses_empty_structs_as_types_that_can_be_extended() {
 fn parses_trait_method_signatures_and_associated_types() {
     let program = parse(
         "let foo = trait {\n\
-             let f = { (self: Borrow<self>)(x: i32): i32 };\n\
-             let item: type\n\
+             f: (self: Borrow<self>)(x: i32): i32;\n\
+             item: type\n\
              }\n",
     )
     .unwrap();
@@ -1217,11 +1219,26 @@ fn parses_trait_method_signatures_and_associated_types() {
 }
 
 #[test]
+fn parses_colon_trait_and_effect_members_without_semicolons() {
+    parse(
+        "let overdraft = effect {\n\
+         reject: (): never\n\
+         }\n\
+         let Account = trait {\n\
+         credit: (self: Borrow<mut><self>)(amount: i32): ()\n\
+         debit: (self: Borrow<mut><self>)(amount: i32): ()\n\
+         snapshot: (self: Borrow<self>)(): i32\n\
+         }\n",
+    )
+    .expect("trait and effect callable declarations should be newline-delimited");
+}
+
+#[test]
 fn preserves_generic_traits_and_trait_member_defaults() {
     let program = parse(
         "let convert = <t: type> trait {\n\
-             let convert = { <u: type>(self: Borrow<self>)(value: u): t =>  value }\n\
-             let output = <v: type>: type pair<t, v>\n\
+             convert: <u: type>(self: Borrow<self>)(value: u): t = value\n\
+             output: <v: type>: type = pair<t, v>\n\
              }\n",
     )
     .unwrap();
@@ -1240,7 +1257,7 @@ fn preserves_generic_traits_and_trait_member_defaults() {
         function.return_type,
         Some(Type::Named("t".into(), Vec::new()))
     );
-    assert_eq!(function_tail(function), &Expr::Name("value".into()));
+    assert_eq!(function.body, Some(Expr::Name("value".into())));
 
     let TraitMember::AssociatedType {
         name,
@@ -1269,8 +1286,8 @@ fn preserves_generic_traits_and_trait_member_defaults() {
 fn preserves_region_and_access_generic_associated_type_groups() {
     let program = parse(
             "let lend = trait {\n\
-             let item = <a: access><r: region>: type\n\
-             let view = { <a: access, r: region>(self: Borrow<a><r><self>)(): item<a><r> }\n\
+             item: <a: access><r: region>: type\n\
+             view: <a: access, r: region>(self: Borrow<a><r><self>)(): item<a><r>\n\
              }\n",
         )
         .unwrap();
@@ -1286,17 +1303,15 @@ fn preserves_region_and_access_generic_associated_type_groups() {
 }
 
 #[test]
-fn rejects_runtime_parameter_groups_on_associated_types() {
-    let error = parse("let broken = trait { let item = (value: i32): type }\n").unwrap_err();
-    assert!(error
-        .message
-        .contains("outer callable brace"));
+fn rejects_let_on_associated_types() {
+    let error = parse("let broken = trait { let item: type }\n").unwrap_err();
+    assert!(error.message.contains("trait members omit `let`"));
 }
 
 #[test]
 fn parses_parenthesized_associated_constant_values() {
     let program = parse(
-        "let future = trait { let Output: type }\n\
+        "let future = trait { Output: type }\n\
          let step = struct {}\n\
          extend(step, future) { let Output = (); }\n",
     )
@@ -2192,13 +2207,52 @@ fn named_callable_declarations_require_fat_arrows() {
     for source in [
         "let answer = { (): i32 42 }\n",
         "extend(cell) { let read = { (self: Borrow<self>)(): i32 self.value } }\n",
-        "let read = trait { let read = { (self: Borrow<self>)(): i32 42 } }\n",
     ] {
         let error = parse(source).unwrap_err();
         assert!(error.message.contains("expected `=>`"), "{error:?}");
     }
 
+    let trait_default =
+        parse("let read = trait { read: (self: Borrow<self>)(): i32 42 }\n").unwrap_err();
+    assert!(
+        trait_default
+            .message
+            .contains("expected a newline or `;` after trait member"),
+        "{trait_default:?}"
+    );
+
     parse("let answer = 42\nlet read = { (): i32 => 42 }\n").unwrap();
+}
+
+#[test]
+fn rejects_legacy_trait_callable_and_effect_operation_syntax() {
+    let trait_callable =
+        parse("let readable = trait { let read = { (self: Borrow<self>)(): i32 } }\n")
+            .unwrap_err();
+    assert!(
+        trait_callable
+            .message
+            .contains("trait members omit `let`"),
+        "{trait_callable:?}"
+    );
+
+    let trait_default =
+        parse("let readable = trait { read: (self: Borrow<self>)(): i32 => 42 }\n")
+            .unwrap_err();
+    assert!(
+        trait_default
+            .message
+            .contains("trait default implementations use `=`"),
+        "{trait_default:?}"
+    );
+
+    let effect_operation = parse("let state = effect { get(): i32 }\n").unwrap_err();
+    assert!(
+        effect_operation
+            .message
+            .contains("expected `:` after effect operation name"),
+        "{effect_operation:?}"
+    );
 }
 
 #[test]
@@ -2879,8 +2933,8 @@ fn parses_compiler_owned_constraint_fragments_and_rejects_defaults() {
 fn parses_trait_self_effect_parameter_in_member_rows() {
     let program = parse(
             "let Handle = trait<self: effect> {\n\
-             let Clauses = <Value: type, Answer: type>: parameters\n\
-             let handle = { <Value: type, Answer: type, rest: effects>with<rest> ...Clauses<Value, Answer>{move action: with<self, rest>(): Value}: Answer }\n\
+             Clauses: <Value: type, Answer: type>: parameters\n\
+             handle: <Value: type, Answer: type, rest: effects>with<rest> ...Clauses<Value, Answer>{move action: with<self, rest>(): Value}: Answer\n\
              }\n",
         )
         .unwrap();
@@ -2919,7 +2973,7 @@ fn parses_trait_self_effect_parameter_in_member_rows() {
 fn parses_compiler_provided_sort_and_control_contract_declarations() {
     let program = parse(
             "pub let unsafety = effect {}\n\
-             pub let throwing = <error: type> effect { raise(move error: error): never }\n\
+             pub let throwing = <error: type> effect { raise: (move error: error): never }\n\
              pub let type: sort<2>\n\
              pub let effect: sort<2>\n\
              pub let effects: sort<2>\n\
@@ -3172,8 +3226,8 @@ fn parses_nominal_marker_effect_declarations_and_callable_rows() {
 fn parses_parameterized_algebraic_effect_operations() {
     let program = parse(
         "let state = <s: type> effect {\n\
-             get(): s\n\
-             put(move value: s): ()\n\
+             get: (): s\n\
+             put: (move value: s): ()\n\
              }\n\
              let program = { with<state<i32>>(): i32 =>  0 }\n",
     )
@@ -3203,8 +3257,8 @@ fn parses_parameterized_algebraic_effect_operations() {
 fn permits_effect_operation_overloads_only_by_parameter_names() {
     let program = parse(
         "let ask = effect {\n\
-             value(left: i32): i32\n\
-             value(right: i32): i32\n\
+             value: (left: i32): i32\n\
+             value: (right: i32): i32\n\
              }\n",
     )
     .expect("distinct operation labels should form an overload set");
@@ -3215,8 +3269,8 @@ fn permits_effect_operation_overloads_only_by_parameter_names() {
 
     let duplicate = parse(
         "let ask = effect {\n\
-             value(input: i32): i32\n\
-             value(input: i64): i64\n\
+             value: (input: i32): i32\n\
+             value: (input: i64): i64\n\
              }\n",
     )
     .expect_err("types must not participate in operation overload selection");
@@ -3226,7 +3280,7 @@ fn permits_effect_operation_overloads_only_by_parameter_names() {
 #[test]
 fn parses_function_shaped_handlers_with_contextual_clause_parameters() {
     let program = parse(
-        "let state = <s: type> effect { get(): s }\n\
+        "let state = <s: type> effect { get: (): s }\n\
              let main = { (): i32 => \n\
              state<i32>.handle(state<i32>.get()) {\n\
              get(resume) => resume(42)\n\
@@ -3874,12 +3928,12 @@ fn parses_constructor_compile_parameter_sorts() {
     let program = parse(
             "let use = { <f: <element: type>: type>(move value: f<i32>): f<i32> =>  value }\n\
              let curried = { <f: <element: type><length: usize>: type>(): i32 =>  0 }\n\
-             let effects = { <e: <error: type>: effect>with<e<bool>>(move action: with<e<bool>>(): i32): i32 =>  action() }\n\
-             let functor = trait<self: <value: type>: type> {\n\
-             let map = { <e: effects, a: type, b: type>with<e>(move self: self<a>)(move transform: with<e>(a): b): self<b> }\n\
+              let effects = { <e: <error: type>: effect>with<e<bool>>(move action: with<e<bool>>(): i32): i32 =>  action() }\n\
+              let functor = trait<self: <value: type>: type> {\n\
+             map: <e: effects, a: type, b: type>with<e>(move self: self<a>)(move transform: with<e>(a): b): self<b>\n\
              }\n\
              let applicative = trait<self: <value: type>: type><requires: self is functor> {\n\
-             let pure = { <a: type>(move value: a): self<a> }\n}\n",
+             pure: <a: type>(move value: a): self<a>\n}\n",
         )
         .unwrap();
 

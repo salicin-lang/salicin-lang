@@ -1,9 +1,9 @@
 let left_answer = trait {
-  let answer = { (self: Borrow<self>)(): i32 }
+  answer: (self: Borrow<self>)(): i32
 }
 
 let right_answer = trait {
-  let answer = { (self: Borrow<self>)(): i32 }
+  answer: (self: Borrow<self>)(): i32
 }
 
 let number = struct { value: i32 }

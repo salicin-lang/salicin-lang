@@ -1,5 +1,5 @@
 let check = effect {
-  accept (): bool
+  accept: (): bool
 }
 
 let resource = struct { counter: Ptr<mut><i32>, value: i32 }

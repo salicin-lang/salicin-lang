@@ -1,5 +1,5 @@
 let step = effect {
-  tick (): ()
+  tick: (): ()
 }
 
 let pair = struct { left: i32, right: i32 }

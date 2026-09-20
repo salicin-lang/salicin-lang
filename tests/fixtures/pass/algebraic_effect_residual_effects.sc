@@ -4,11 +4,11 @@ let throwing = core.error.throwing
 let unsafety = core.unsafe.unsafety
 
 let supply = effect {
-  seed (): i32
+  seed: (): i32
 }
 
 let ask = effect {
-  value with<supply, throwing<bool>, unsafety>(): i32
+  value: with<supply, throwing<bool>, unsafety>(): i32
 }
 
 let request = { with<ask, supply, throwing<bool>, unsafety>(): i32 =>

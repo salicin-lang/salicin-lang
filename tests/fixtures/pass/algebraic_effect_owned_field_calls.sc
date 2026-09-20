@@ -1,5 +1,5 @@
 let step = effect {
-  delta (): i32
+  delta: (): i32
 }
 
 let counter = struct {

@@ -1,6 +1,6 @@
 let produce = trait {
-  let Item: type
-  let produce = { (self: Borrow<self>)(): Item }
+  Item: type
+  produce: (self: Borrow<self>)(): Item
 }
 
 let value = struct { value: i32 }

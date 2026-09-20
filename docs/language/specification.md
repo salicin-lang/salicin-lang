@@ -409,15 +409,15 @@ implementation whose associated `Output` matches the expected type:
 
 ```sc fragment
 pub let ArrayLiteral = <Element: type> trait {
-  let Output: type
-  let from_array_literal = { <length: usize>
-    (move values: Array<Element><length>): Output }
+  Output: type
+  from_array_literal: <length: usize>
+    (move values: Array<Element><length>): Output
 }
 
 pub let StringLiteral = trait {
-  let Output: type
-  let from_string_literal = { <length: usize>
-    (move utf8: Array<u8><length>): Output }
+  Output: type
+  from_string_literal: <length: usize>
+    (move utf8: Array<u8><length>): Output
 }
 ```
 
@@ -668,12 +668,14 @@ goal); an applicable `extend(T, Iterator)` supplies implementation evidence. Ass
 bindings add projection-equality constraints to the same goal. Trait declarations and evidence are
 erased after static dispatch.
 
-A trait declares associated types and required or default methods:
+A trait declares associated types and colon-prefixed callable type
+declarations. `name: signature` is required; `name: signature = body`
+provides a default implementation:
 
 ```sc fragment
 let Iterator = trait {
-  let Item = <r: region>: type
-  let next = { <r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>> }
+  Item: <r: region>: type
+  next: <r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>>
 }
 ```
 
@@ -706,7 +708,7 @@ implements its relation to `constraint`:
 pub let constraint: sort<2>
 
 pub let Is = <right: sort<2>> trait<self: sort<2>> {
-  let is = { <left: self, right: right>: bool }
+  is: <left: self, right: right>: bool
 }
 
 extend(type, Is<constraint>) {
@@ -839,12 +841,12 @@ An effect declares operations:
 
 ```sc fragment
 let counter = effect {
-  Next(): i32
+  Next: (): i32
 }
 ```
 
-Effect operations are enum-like constructors: they omit `let` and `=`, use
-constructor-style names, and have no bodies. Calling `counter.Next()` performs
+Effect operations are colon-prefixed callable type declarations: they omit
+`let` and `=`, use constructor-style names, and have no bodies. Calling `counter.Next()` performs
 the operation rather than constructing data.
 
 `with<E>` prefixes an effectful callable signature or callable type. In a
@@ -992,9 +994,9 @@ Postfix `value!` invokes the validated source trait `core.flow.Raise`:
 
 ```sc fragment
 pub let Raise = trait {
-  let Output: type
-  let Error: type
-  let raise = { with<core.error.throwing<Error>>(move self): Output }
+  Output: type
+  Error: type
+  raise: with<core.error.throwing<Error>>(move self): Output
 }
 ```
 
@@ -1003,8 +1005,8 @@ the separately validated `core.flow.Unwrap` contract:
 
 ```sc fragment
 pub let Unwrap = trait {
-  let Output: type
-  let unwrap = { (move self): Output }
+  Output: type
+  unwrap: (move self): Output
 }
 ```
 

@@ -12,7 +12,7 @@ let Transaction = enum {
 }
 
 let overdraft = effect {
-  reject(): never
+  reject: (): never
 }
 
 let Ledger = struct {
@@ -21,9 +21,9 @@ let Ledger = struct {
 }
 
 let Account = trait {
-  let credit = { (self: Borrow<mut><self>)(amount: i32): () }
-  let debit = { (self: Borrow<mut><self>)(amount: i32): () }
-  let snapshot = { (self: Borrow<self>)(): i32 }
+  credit: (self: Borrow<mut><self>)(amount: i32): ()
+  debit: (self: Borrow<mut><self>)(amount: i32): ()
+  snapshot: (self: Borrow<self>)(): i32
 }
 
 extend(Ledger, Account) {

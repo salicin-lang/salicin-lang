@@ -702,7 +702,7 @@ fn throwing_test_failures_report_all_messages_and_reject_unhandled_effects() {
 
     let unrelated = temporary.write(
         "unrelated.sc",
-        "let unrelated = effect { escape(): () }\n\
+        "let unrelated = effect { escape: (): () }\n\
              test(\"wrong effect\") {\n\
              unrelated.escape()\n\
              ()\n\

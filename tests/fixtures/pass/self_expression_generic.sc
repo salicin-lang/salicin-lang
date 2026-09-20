@@ -1,5 +1,5 @@
 let rewrap = trait {
-  let rewrap = { (move self)(): self }
+  rewrap: (move self)(): self
 }
 
 let cell = <t: type> struct { value: t }

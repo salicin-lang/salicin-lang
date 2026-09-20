@@ -1,7 +1,7 @@
 /// Typed non-local failure effect.
 pub let throwing = <Error: type> effect {
   /// Raises `error` and does not return normally.
-  raise(move error: Error): never
+  raise: (move error: Error): never
 }
 
 /// Handles `throwing<Error>` from `action` and returns a `Result`.

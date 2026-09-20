@@ -1,18 +1,18 @@
 /// Type constructors whose payload can be transformed.
 pub let Functor = trait<self: <Value: type>: type> {
-  let map = { <e: effects, A: type, B: type>with<e>(self: self<A>)(transform: with<e>(A) :B): self<B> };
+  map: <e: effects, A: type, B: type>with<e>(self: self<A>)(transform: with<e>(A) :B): self<B>;
 }
 
 /// Functors that can inject values and apply wrapped functions.
 pub let Applicative = trait<self: <Value: type>: type><requires: self is Functor> {
-  let pure = { <A: type>(value: A): self<A> };
+  pure: <A: type>(value: A): self<A>;
 
-  let apply = { <e: effects, A: type, B: type>with<e>(self: self<with<e>(A) :B>)(value: self<A>): self<B> };
+  apply: <e: effects, A: type, B: type>with<e>(self: self<with<e>(A) :B>)(value: self<A>): self<B>;
 }
 
 /// Applicatives that can sequence dependent computations.
 pub let Monad = trait<self: <Value: type>: type><requires: self is Applicative> {
-  let flat_map = { <e: effects, A: type, B: type>with<e>(self: self<A>)(next: with<e>(A) :self<B>): self<B> };
+  flat_map: <e: effects, A: type, B: type>with<e>(self: self<A>)(next: with<e>(A) :self<B>): self<B>;
 }
 
 /// Implements `Functor` for `Option`.

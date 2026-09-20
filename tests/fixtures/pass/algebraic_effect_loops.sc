@@ -1,5 +1,5 @@
 let tick = effect {
-  tick (): i32
+  tick: (): i32
 }
 
 let main = { (): i32 =>

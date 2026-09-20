@@ -2084,7 +2084,7 @@ mod tests {
     #[test]
     fn semantic_index_covers_source_identities_references_and_ambiguity() {
         let module = Vec::new();
-        let source = "let Option = core.Option\nlet read = trait {\n  let read = { (self: Borrow<self>)(): i32 }\n}\n\nlet cell = struct { value: i32 }\nlet event = enum { value { value: i32 }, empty }\n\nlet choose = { (value: i32): i32 =>  value }\nlet choose = { (other: u64): u64 =>  other }\n\nextend(cell, read) {\n  let read = { (self: Borrow<self>)(): i32 =>  self.value }\n}\n\nlet answer = { (value: cell): i32 => \n  choose(value: value.read())\n}\n";
+        let source = "let Option = core.Option\nlet read = trait {\n  read: (self: Borrow<self>)(): i32\n}\n\nlet cell = struct { value: i32 }\nlet event = enum { value { value: i32 }, empty }\n\nlet choose = { (value: i32): i32 =>  value }\nlet choose = { (other: u64): u64 =>  other }\n\nextend(cell, read) {\n  let read = { (self: Borrow<self>)(): i32 =>  self.value }\n}\n\nlet answer = { (value: cell): i32 => \n  choose(value: value.read())\n}\n";
         let analysis = analyze_workspace(
             &[EditorSource {
                 path: "src/lib.sc",

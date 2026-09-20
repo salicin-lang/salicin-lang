@@ -1,5 +1,5 @@
 let read = trait {
-  let read = { (self: Borrow<self>)(): i32 }
+  read: (self: Borrow<self>)(): i32
 }
 
 let cell = <t: type> struct { value: t }

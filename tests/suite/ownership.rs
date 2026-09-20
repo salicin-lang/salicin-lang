@@ -919,7 +919,7 @@ edition = "2026"
     project.write(
         "src/api.sc",
         "pub(package) let choose = trait {\n\
-             let choose = { <value_type: type>(self: Borrow<self>)(move value: value_type): value_type }\n\
+             choose: <value_type: type>(self: Borrow<self>)(move value: value_type): value_type\n\
              }\n\
              pub(package) let cell = struct {}\n\
              extend(cell, choose) {\n\

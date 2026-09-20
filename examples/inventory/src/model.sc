@@ -9,7 +9,7 @@ pub let Product = struct {
 
 /// Computes a value without exposing a product's representation.
 pub let Valued = trait {
-  let value = { (self: Borrow<self>)(): i64 }
+  value: (self: Borrow<self>)(): i64
 }
 
 extend(Product) {

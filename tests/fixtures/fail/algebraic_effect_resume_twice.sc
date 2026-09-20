@@ -1,5 +1,5 @@
 let choose = effect {
-  choose (): i32
+  choose: (): i32
 }
 
 let main = { (): i32 =>

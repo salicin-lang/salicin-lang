@@ -1,8 +1,8 @@
 let select = trait {
-  let pick = { (self: Borrow<self>)(left: i32): i32 }
-  let pick = { (self: Borrow<self>)(right: i32): i32 }
-  let make = { (left: i32): i32 }
-  let make = { (right: i32): i32 }
+  pick: (self: Borrow<self>)(left: i32): i32;
+  pick: (self: Borrow<self>)(right: i32): i32;
+  make: (left: i32): i32;
+  make: (right: i32): i32
 }
 
 let counter = struct { value: i32 }

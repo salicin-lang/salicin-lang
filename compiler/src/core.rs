@@ -107,53 +107,53 @@ pub(crate) fn incremental_sources(
 
 #[cfg(test)]
 const TEST_ASSIGNMENT_OPS: &str = r#"
-pub let AddAssign = <Rhs: type> trait { let add_assign = { (self: Borrow<mut><self>)
-  (rhs: Rhs): () } }
-pub let SubAssign = <Rhs: type> trait { let sub_assign = { (self: Borrow<mut><self>)
-  (rhs: Rhs): () } }
-pub let MulAssign = <Rhs: type> trait { let mul_assign = { (self: Borrow<mut><self>)
-  (rhs: Rhs): () } }
-pub let DivAssign = <Rhs: type> trait { let div_assign = { (self: Borrow<mut><self>)
-  (rhs: Rhs): () } }
-pub let RemAssign = <Rhs: type> trait { let rem_assign = { (self: Borrow<mut><self>)
-  (rhs: Rhs): () } }
-pub let BitAndAssign = <Rhs: type> trait { let bit_and_assign = { (self: Borrow<mut><self>)
-  (rhs: Rhs): () } }
-pub let BitOrAssign = <Rhs: type> trait { let bit_or_assign = { (self: Borrow<mut><self>)
-  (rhs: Rhs): () } }
-pub let BitXorAssign = <Rhs: type> trait { let bit_xor_assign = { (self: Borrow<mut><self>)
-  (rhs: Rhs): () } }
-pub let ShlAssign = <Rhs: type> trait { let shl_assign = { (self: Borrow<mut><self>)
-  (rhs: Rhs): () } }
-pub let ShrAssign = <Rhs: type> trait { let shr_assign = { (self: Borrow<mut><self>)
-  (rhs: Rhs): () } }
+pub let AddAssign = <Rhs: type> trait { add_assign: (self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let SubAssign = <Rhs: type> trait { sub_assign: (self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let MulAssign = <Rhs: type> trait { mul_assign: (self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let DivAssign = <Rhs: type> trait { div_assign: (self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let RemAssign = <Rhs: type> trait { rem_assign: (self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let BitAndAssign = <Rhs: type> trait { bit_and_assign: (self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let BitOrAssign = <Rhs: type> trait { bit_or_assign: (self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let BitXorAssign = <Rhs: type> trait { bit_xor_assign: (self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let ShlAssign = <Rhs: type> trait { shl_assign: (self: Borrow<mut><self>)
+  (rhs: Rhs): () }
+pub let ShrAssign = <Rhs: type> trait { shr_assign: (self: Borrow<mut><self>)
+  (rhs: Rhs): () }
 "#;
 
 #[cfg(test)]
 const TEST_CHAIN_OPS: &str = r#"
 pub let Chain = trait {
-  let Item: type
-  let Rebind = <Value: type>: type
+  Item: type
+  Rebind: <Value: type>: type
 
-  let chain = { <e: effects, U: type>with<e>
+  chain: <e: effects, U: type>with<e>
     (self)
-    (transform: with<e>(Item): U): Rebind<U> }
+    (transform: with<e>(Item): U): Rebind<U>
 }
 pub let Coalesce = trait {
-  let Item: type
+  Item: type
 
-  let coalesce = { <e: effects>with<e>
+  coalesce: <e: effects>with<e>
     (self)
-    (fallback: with<e>(): Item): Item }
+    (fallback: with<e>(): Item): Item
 }
 pub let Unwrap = trait {
-  let Output: type
-  let unwrap = { (move self): Output }
+  Output: type
+  unwrap: (move self): Output
 }
 pub let Raise = trait {
-  let Output: type
-  let Error: type
-  let raise = { with<throwing<Error>>(move self): Output }
+  Output: type
+  Error: type
+  raise: with<throwing<Error>>(move self): Output
 }
 "#;
 
@@ -2862,7 +2862,7 @@ fn validate_assignment_operator(
         );
     if !valid {
         diagnostics.push(format!(
-            "lang item `{kind}` must have shape `pub let {kind} = <Rhs: type> trait {{ let {method} = (self: Borrow<mut><self>)(rhs: Rhs): () }}`"
+            "lang item `{kind}` must have shape `pub let {kind} = <Rhs: type> trait {{ {method}: (self: Borrow<mut><self>)(rhs: Rhs): () }}`"
         ));
     }
 }
@@ -2905,7 +2905,7 @@ fn validate_iterator(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Iterator` must declare `Item<r: region>: type` and `next<r: region>(self: Borrow<mut><r><self>)(): Option<Item<r>>`"
+            "lang item `Iterator` must declare `Item<r: region>: type` and `next: <r: region>(self: Borrow<mut><r><self>)(): Option<Item<r>>`"
                 .to_owned(),
         );
     }
@@ -2953,7 +2953,7 @@ fn validate_into_iterator(definition: &TraitDef, diagnostics: &mut Vec<String>) 
         );
     if !valid {
         diagnostics.push(
-            "lang item `IntoIterator` must declare `Iter` and `into_iter(move self)(): Iter`"
+            "lang item `IntoIterator` must declare `Iter` and `into_iter: (move self)(): Iter`"
                 .to_owned(),
         );
     }
@@ -2979,7 +2979,7 @@ fn validate_index(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Index` must have shape `pub let Index = <Key: type> trait { let Output: type; let index = <a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output> }`"
+            "lang item `Index` must have shape `pub let Index = <Key: type> trait { Output: type; index: <a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output> }`"
                 .to_owned(),
         );
     }
@@ -3065,7 +3065,7 @@ fn validate_chain(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Chain` must declare `Item`, `Rebind<Value: type>: type`, and `chain<e: effects, U: type>(self)(transform: (Item): U with<e>): Rebind<U> with<e>`"
+            "lang item `Chain` must declare `Item`, `Rebind<Value: type>: type`, and `chain: <e: effects, U: type>(self)(transform: (Item): U with<e>): Rebind<U> with<e>`"
                 .to_owned(),
         );
     }
@@ -3113,7 +3113,7 @@ fn validate_coalesce(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Coalesce` must declare `Item` and `coalesce = <e: effects>with<e>(self)(fallback: with<e>(): Item): Item`"
+            "lang item `Coalesce` must declare `Item` and `coalesce: <e: effects>with<e>(self)(fallback: with<e>(): Item): Item`"
                 .to_owned(),
         );
     }
@@ -3160,7 +3160,7 @@ fn validate_unwrap(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Unwrap` must declare `Output` and `unwrap(move self): Output`".to_owned(),
+            "lang item `Unwrap` must declare `Output` and `unwrap: (move self): Output`".to_owned(),
         );
     }
 }
@@ -3210,7 +3210,7 @@ fn validate_raise(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Raise` must declare `Output`, `Error`, and `raise(move self): Output with<throwing<Error>>`"
+            "lang item `Raise` must declare `Output`, `Error`, and `raise: with<throwing<Error>>(move self): Output`"
                 .to_owned(),
         );
     }
@@ -3272,9 +3272,9 @@ fn validate_effect(
         let shape = match kind {
             LangItemKind::UnsafeEffect => "pub let unsafety = effect {}",
             LangItemKind::ThrowsEffect => {
-                "pub let throwing = <Error: type> effect { let raise = (move error: Error): never }"
+                "pub let throwing = <Error: type> effect { raise: (move error: Error): never }"
             }
-            LangItemKind::AsyncEffect => "pub let async = effect { let suspend = (): () }",
+            LangItemKind::AsyncEffect => "pub let async = effect { suspend: (): () }",
             _ => unreachable!(),
         };
         diagnostics.push(format!("lang item `{kind}` must have shape `{shape}`"));
@@ -3340,11 +3340,11 @@ fn validate_control_effect(
     if !valid {
         let shape = match kind {
             LangItemKind::BreakEffect => {
-                "pub let break = <T: type> effect { let exit = (move value: T): never }"
+                "pub let break = <T: type> effect { exit: (move value: T): never }"
             }
-            LangItemKind::ContinueEffect => "pub let continue = effect { let next = (): never }",
+            LangItemKind::ContinueEffect => "pub let continue = effect { next: (): never }",
             LangItemKind::ReturnEffect => {
-                "pub let return = <T: type> effect { let exit = (move value: T): never }"
+                "pub let return = <T: type> effect { exit: (move value: T): never }"
             }
             _ => unreachable!(),
         };
@@ -3919,28 +3919,30 @@ fn validate_handle(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         && definition.where_predicates.is_empty()
         && matches!(
             definition.members.as_slice(),
-            [TraitMember::Function(clauses), TraitMember::Function(function)]
+            [clauses @ TraitMember::AssociatedType { .. }, TraitMember::Function(function)]
                 if valid_handle_clauses(clauses)
                 && valid_handle_method(function)
         );
     if !valid {
         diagnostics.push(
-            "lang item `Handle` must have shape `pub let Handle = trait<self: effect> { let Clauses = { <Value: type, Answer: type>: parameters }; let handle = { <Value: type, Answer: type, rest: effects>with<rest> ...Clauses<Value, Answer>{move action: with<self, rest>(): Value}: Answer } }`"
+            "lang item `Handle` must have shape `pub let Handle = trait<self: effect> { Clauses: <Value: type, Answer: type>: parameters; handle: <Value: type, Answer: type, rest: effects>with<rest> ...Clauses<Value, Answer>{move action: with<self, rest>(): Value}: Answer }`"
                 .to_owned(),
         );
     }
 }
 
-fn valid_handle_clauses(function: &Function) -> bool {
-    function.name == "Clauses"
-        && function.compile_groups
-            == vec![vec![type_parameter("Value"), type_parameter("Answer")]]
-        && function.groups.is_empty()
-        && function.return_type == Some(named_type("parameters"))
-        && function.where_predicates.is_empty()
-        && function.body.is_none()
-        && !function.builtin
-        && function.foreign.is_none()
+fn valid_handle_clauses(member: &TraitMember) -> bool {
+    matches!(
+        member,
+        TraitMember::AssociatedType {
+            name,
+            compile_groups,
+            kind: AssociatedKind::Parameters,
+            default: None,
+        } if name == "Clauses"
+            && *compile_groups
+                == vec![vec![type_parameter("Value"), type_parameter("Answer")]]
+    )
 }
 
 fn valid_handle_method(function: &Function) -> bool {
@@ -4146,7 +4148,7 @@ pub(crate) fn copy_trait_has_required_shape(definition: &TraitDef) -> bool {
 fn validate_drop(definition: &TraitDef, diagnostics: &mut Vec<String>) {
     if !drop_trait_has_required_shape(definition) {
         diagnostics.push(
-            "lang item `Droppable` must have shape `pub let Droppable = trait { let drop = (self: Borrow<mut><self>)(): () }`"
+            "lang item `Droppable` must have shape `pub let Droppable = trait { drop: (self: Borrow<mut><self>)(): () }`"
                 .to_owned(),
         );
     }
@@ -4205,7 +4207,7 @@ fn validate_future(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Future` must declare `Output` and `poll<r: region>(self: Borrow<mut><r><self>)(): Poll<Output> with<e>`, with `self: Movable`"
+            "lang item `Future` must declare `Output` and `poll: <r: region>with<e>(self: Borrow<mut><r><self>)(): Poll<Output>`, with `self: Movable`"
                 .to_owned(),
         );
     }
@@ -4276,7 +4278,7 @@ fn validate_executor(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Executor` must declare `run<e: effects, F: type, T: type>` with `F: Future<e, Output = T>`"
+            "lang item `Executor` must declare `run: <e: effects, F: type, T: type>...` with `F: Future<e, Output = T>`"
                 .to_owned(),
         );
     }
@@ -4364,13 +4366,13 @@ fn validate_operator(kind: LangItemKind, definition: &TraitDef, diagnostics: &mu
     if !operator_trait_has_required_shape(kind, definition) {
         let shape = match kind {
             LangItemKind::Eq => format!(
-                "pub let Eq = <Rhs: type> trait {{ let {method} = (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
+                "pub let Eq = <Rhs: type> trait {{ {method}: (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
             ),
             LangItemKind::PartialOrd => format!(
-                "pub let PartialOrd = <Rhs: type> trait {{ let {method} = (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
+                "pub let PartialOrd = <Rhs: type> trait {{ {method}: (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
             ),
             _ => format!(
-                "pub let {kind} = <Rhs: type> trait {{ let Output: type; let {method} = (self)(rhs: Rhs): Output }}"
+                "pub let {kind} = <Rhs: type> trait {{ Output: type; {method}: (self)(rhs: Rhs): Output }}"
             ),
         };
         diagnostics.push(format!("lang item `{kind}` must have shape `{shape}`"));
@@ -4387,7 +4389,7 @@ fn validate_unary_operator(
         .expect("unary operator lang items have a method");
     if !unary_operator_trait_has_required_shape(kind, definition) {
         diagnostics.push(format!(
-            "lang item `{kind}` must have shape `pub let {kind} = trait {{ let Output: type; let {method} = (self)(): Output }}`"
+            "lang item `{kind}` must have shape `pub let {kind} = trait {{ Output: type; {method}: (self)(): Output }}`"
         ));
     }
 }

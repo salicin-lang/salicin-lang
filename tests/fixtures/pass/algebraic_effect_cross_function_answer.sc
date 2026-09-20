@@ -1,5 +1,5 @@
 let decide = effect {
-  choose (): bool
+  choose: (): bool
 }
 
 let choose_value = { with<decide>(): bool =>

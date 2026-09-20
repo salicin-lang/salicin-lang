@@ -1,5 +1,5 @@
 let ask = effect {
-  value (): i32
+  value: (): i32
 }
 
 let apply_twice = { with<ask>(move action: with<ask>(): i32): i32 =>

@@ -1,5 +1,5 @@
 let state = <t: type> effect {
-  read (): t
+  read: (): t
 }
 
 let program = { (): i32 =>

@@ -2,7 +2,7 @@ let pair = struct { left: i32, right: i32 }
 let holder = <t: type> struct { value: t }
 
 let right_view = trait {
-  let view = { <r: region>(self: Borrow<r><self>)(): Borrow<r><i32> }
+  view: <r: region>(self: Borrow<r><self>)(): Borrow<r><i32>
   }
 
 let left = { <r: region>(pair: Borrow<r><pair>): Borrow<r><i32> => borrow(pair.left) }

@@ -1,7 +1,7 @@
 /// Internal suspension effect discharged by compiler-generated futures.
 pub let suspension = effect {
   /// Suspends the current asynchronous computation.
-  suspend(): ()
+  suspend: (): ()
 }
 
 /// Result of polling an asynchronous computation once.
@@ -12,14 +12,14 @@ pub let Poll = <T: type> enum {
 
 /// A cold asynchronous computation with residual effect row `E`.
 pub let Future = <e: effects> trait<requires: self is Movable> {
-  let Output: type
+  Output: type
 
-  let poll = { <r: region>with<e>(self: Borrow<mut><r><self>)(): Poll<Output> }
+  poll: <r: region>with<e>(self: Borrow<mut><r><self>)(): Poll<Output>
 }
 
 /// Explicit executor protocol. Creating a future never selects an executor.
 pub let Executor = trait {
-  let run = { <e: effects, F: type, T: type>with<e>(self: Borrow<mut><self>)(move future: F): T requires(F is Future<e> && F.Output == T) }
+  run: <e: effects, F: type, T: type>with<e>(self: Borrow<mut><self>)(move future: F): T requires(F is Future<e> && F.Output == T)
 }
 
 /// Constructs a cold compiler-generated future without running `action`.

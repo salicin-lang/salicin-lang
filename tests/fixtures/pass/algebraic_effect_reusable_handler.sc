@@ -1,6 +1,6 @@
 let ask = effect {
-  value (): i32
-  stop (): i32
+  value: (): i32
+  stop: (): i32
 }
 
 let run = { (action: with<ask>(i32): i32)(input: i32): i32 =>

@@ -36,16 +36,16 @@ pub let Poll = <T: type> enum {
 }
 
 pub let Future = <e: effects> trait<requires: self is Movable> {
-  let Output: type
-  let poll = { <r: region> with<e>
-    (self: Borrow<mut><r><self>)(): Poll<Output> }
+  Output: type
+  poll: <r: region> with<e>
+    (self: Borrow<mut><r><self>)(): Poll<Output>
 }
 
 pub let Executor = trait {
-  let run = { <e: effects, F: type> with<e>
+  run: <e: effects, F: type> with<e>
     (self: Borrow<mut><self>)
     (move future: F): F.Output
-    requires(F is Future<e>) }
+    requires(F is Future<e>)
 }
 ```
 

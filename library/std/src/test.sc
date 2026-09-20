@@ -69,7 +69,7 @@ pub let assert = { with<core.error.throwing<core.string.String>>(condition: bool
 /// Converts values with the core diagnostic-formatting contract into owned
 /// assertion text without exposing the assertion helpers' writer choice.
 pub let AssertionDebug = trait {
-  let assertion_debug = { (self: Borrow<self>)(): core.string.String }
+  assertion_debug: (self: Borrow<self>)(): core.string.String
 }
 
 extend(bool, AssertionDebug) {

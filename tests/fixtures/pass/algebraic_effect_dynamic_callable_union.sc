@@ -1,6 +1,6 @@
 let ask = effect {
-  choose (): bool
-  value (): i32
+  choose: (): bool
+  value: (): i32
 }
 
 let left = { with<ask>(): i32 => ask.value() + 1 }

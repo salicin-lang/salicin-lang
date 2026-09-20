@@ -1,5 +1,5 @@
 let add_value = trait {
-  let add = { (self: Borrow<self>)(value: i32): i32 }
+  add: (self: Borrow<self>)(value: i32): i32
 }
 
 let number = struct { value: i32 }

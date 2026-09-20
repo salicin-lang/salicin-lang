@@ -1,5 +1,5 @@
 let step = effect {
-  tick (): ()
+  tick: (): ()
 }
 
 let update = { with<step>(left: Borrow<mut><i32>, right: Borrow<mut><i32>): () =>

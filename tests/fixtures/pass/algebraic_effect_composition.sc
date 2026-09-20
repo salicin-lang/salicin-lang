@@ -1,9 +1,9 @@
 let read = effect {
-  read (): i32
+  read: (): i32
 }
 
 let add = effect {
-  add (x: i32): i32
+  add: (x: i32): i32
 }
 
 let program = { with<read, add>(): i32 =>

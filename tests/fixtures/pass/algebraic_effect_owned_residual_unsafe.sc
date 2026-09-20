@@ -1,7 +1,7 @@
 let unsafety = core.unsafe.unsafety
 
 let step = effect {
-  delta (): i32
+  delta: (): i32
 }
 
 let state = struct {

@@ -1,9 +1,9 @@
 let audit = effect {
-  adjust (): i32
+  adjust: (): i32
 }
 
 let step = effect {
-  delta (): i32
+  delta: (): i32
 }
 
 let state = struct {

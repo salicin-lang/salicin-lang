@@ -9,8 +9,8 @@ An effect is a nominal compile-time identity with zero or more operations:
 
 ```sc fragment
 let state = <S: type> effect {
-  Get(): S
-  Put(move value: S): ()
+  Get: (): S
+  Put: (move value: S): ()
 }
 ```
 
@@ -21,8 +21,8 @@ the final group is supplied.
 Effect declaration parameters and effect-identity arguments are compile-time
 groups and therefore use angle brackets exclusively, as in `state<S>`.
 
-Operations use enum-like constructor syntax: they omit `let` and `=`, use
-constructor-style names, and cannot have bodies. They are selected through
+Operations use colon-prefixed callable type declarations: they omit `let` and
+`=`, use constructor-style names, and cannot have bodies. They are selected through
 their effect identity and obey ordinary visibility and overload rules. A
 declaration with the same operation name in another effect is unrelated.
 

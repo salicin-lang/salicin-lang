@@ -1,7 +1,7 @@
 let wrong = <t: type>: type t
 
 let lend = trait {
-  let Item = <a: access>: type
+  Item: <a: access>: type
 }
 
 let cell = struct { value: i32 }

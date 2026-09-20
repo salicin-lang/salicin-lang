@@ -1,5 +1,5 @@
 let ask = effect {
-  value (): i32
+  value: (): i32
 }
 
 let leak = { with<ask>(value: Borrow<mut><i32>): (with<ask>(): i32) =>

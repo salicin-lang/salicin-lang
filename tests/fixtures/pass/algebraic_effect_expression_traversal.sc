@@ -1,5 +1,5 @@
 let read = effect {
-  read (): usize
+  read: (): usize
 }
 
 let main = { (): i32 =>

@@ -1266,7 +1266,7 @@ dep = { path = "../dep" }
 
 pub let number = struct { value: i32 }
 let secret = trait {
-  let reveal = { (self: Borrow<self>)(): i32 }
+  reveal: (self: Borrow<self>)(): i32
 }
 extend(number, secret) {
   let reveal = { (self: Borrow<self>)(): i32 => self.value }
@@ -1399,12 +1399,12 @@ pub let maybe = { (value: i32): Option<i32> => Option<i32>.Some(value) }
 pub let make_option = { (): Option<i32> => Option<i32>.Some(42) }
 
 pub let Add = <Rhs: type> trait {
-  let Output: type
-  let add = { (move self)(move rhs: Rhs): Output }
+  Output: type
+  add: (move self)(move rhs: Rhs): Output
 }
 pub let Sub = <Rhs: type> trait {
-  let Output: type
-  let sub = { (move self)(move rhs: Rhs): Output }
+  Output: type
+  sub: (move self)(move rhs: Rhs): Output
 }
 pub let Number = struct { value: i32 }
 extend(Number, Add<Number>) {
@@ -1909,7 +1909,7 @@ edition = "2026"
         "src/math.sc",
         r#"pub(package) let number = struct { value: i32 }
 let read = trait {
-  let read = { (self: Borrow<self>)(): i32 }
+  read: (self: Borrow<self>)(): i32
 }
 extend(number, read) {
   let read = { (self: Borrow<self>)(): i32 => self.value }

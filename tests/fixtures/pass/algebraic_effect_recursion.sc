@@ -1,5 +1,5 @@
 let read = effect {
-  read (): i32
+  read: (): i32
 }
 
 let sum_reads = { with<read>(count: i32): i32 =>

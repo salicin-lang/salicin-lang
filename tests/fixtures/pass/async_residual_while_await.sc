@@ -2,7 +2,7 @@ let Future = core.async.Future
 let Poll = core.async.Poll
 
 let ask = effect {
-  ask (): bool
+  ask: (): bool
 }
 
 let step = struct {

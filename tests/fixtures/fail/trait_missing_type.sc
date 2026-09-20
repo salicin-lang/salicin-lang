@@ -1,5 +1,5 @@
 let convert = trait {
-  let Output: type
+  Output: type
 }
 
 let number = struct { value: i32 }

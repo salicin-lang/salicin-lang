@@ -2,21 +2,21 @@
 pub let Parse = trait {
   /// Borrowed source type; standard parsing implementations bind this to
   /// `core.string.str`.
-  let Source: type
+  Source: type
   /// Structured error reported for malformed or out-of-range input.
-  let Error: type
+  Error: type
 
   /// Parses the complete borrowed text. Implementations do not allocate or
   /// accept leading or trailing input unless their concrete contract says so.
-  let parse = { <r: region>
-      (value: Borrow<r><Source>): core.Result<Error><self> }
+  parse: <r: region>
+      (value: Borrow<r><Source>): core.Result<Error><self>
 }
 
 /// Effect-polymorphic sink for validated UTF-8 fragments.
 pub let TextWriter = <e: effects> trait {
   /// Writes one Unicode scalar without requiring a temporary allocation.
-  let write_scalar = { with<e>(self: Borrow<mut><self>)(value: core.string.UnicodeScalar): () }
-  let write_ascii = { with<e>(self: Borrow<mut><self>)(value: u8): () }
+  write_scalar: with<e>(self: Borrow<mut><self>)(value: core.string.UnicodeScalar): ();
+  write_ascii: with<e>(self: Borrow<mut><self>)(value: u8): ()
 }
 
 /// Stable categories for strict integer parsing failures.
@@ -474,11 +474,11 @@ extend(i128, Debug) {
 /// Source-backed user-facing formatting.
 pub let Display = trait {
   /// Writes a deterministic Display representation without reflection.
-  let display = { <e: effects, W: type>with<e>(self: Borrow<self>)(writer: Borrow<mut><W>): () requires(W is TextWriter<e>) }
+  display: <e: effects, W: type>with<e>(self: Borrow<self>)(writer: Borrow<mut><W>): () requires(W is TextWriter<e>)
 }
 
 /// Source-backed diagnostic formatting.
 pub let Debug = trait {
   /// Writes a deterministic diagnostic representation without reflection.
-  let debug = { <e: effects, W: type>with<e>(self: Borrow<self>)(writer: Borrow<mut><W>): () requires(W is TextWriter<e>) }
+  debug: <e: effects, W: type>with<e>(self: Borrow<self>)(writer: Borrow<mut><W>): () requires(W is TextWriter<e>)
 }

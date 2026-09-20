@@ -1,5 +1,5 @@
 let stop = effect {
-  stop (): i32
+  stop: (): i32
 }
 
 let program = { with<stop>(): i32 =>

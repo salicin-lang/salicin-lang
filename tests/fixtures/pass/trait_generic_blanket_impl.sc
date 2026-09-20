@@ -1,5 +1,5 @@
 let read = trait {
-  let read = { (self: Borrow<self>)(): i32 }
+  read: (self: Borrow<self>)(): i32
 }
 
 let leaf = struct { value: i32 }
@@ -18,8 +18,8 @@ let read_cell = { <t: type>(cell: Borrow<cell<t>>): i32
 requires(t is read) => cell.read() }
 
 let value = trait {
-  let Item: type
-  let take = { (move self)(): Item }
+  Item: type
+  take: (move self)(): Item
 }
 
 extend(cell<t>, value) {

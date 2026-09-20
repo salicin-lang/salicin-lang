@@ -4,17 +4,17 @@
 // need authority or primitive control-flow lowering.
 /// Dynamically exits the nearest loop whose Result type is `T`.
 pub let loop_exit = <T: type> effect {
-  exit(move value: T): never
+  exit: (move value: T): never
 }
 
 /// Dynamically starts the next iteration of the nearest loop.
 pub let iteration_skip = effect {
-  next(): never
+  next: (): never
 }
 
 /// Dynamically returns from the nearest function boundary returning `T`.
 pub let function_exit = <T: type> effect {
-  exit(move value: T): never
+  exit: (move value: T): never
 }
 
 /// The observable Result of trying one refutable pattern function.

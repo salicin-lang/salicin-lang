@@ -694,7 +694,7 @@ mod tests {
 
     #[test]
     fn recognizes_trait_as_a_keyword() {
-        let tokens = lex("let foo = trait { let item: type }").unwrap();
+        let tokens = lex("let foo = trait { item: type }").unwrap();
         assert!(tokens.iter().any(|token| token.kind == TokenKind::Trait));
         assert!(tokens
             .iter()

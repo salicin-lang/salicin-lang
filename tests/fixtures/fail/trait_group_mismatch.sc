@@ -1,5 +1,5 @@
 let combine = trait {
-  let combine = { (self: Borrow<self>)(left: i32)(right: i32): i32 }
+  combine: (self: Borrow<self>)(left: i32)(right: i32): i32
 }
 
 let number = struct { value: i32 }

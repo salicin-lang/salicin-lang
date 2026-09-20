@@ -306,10 +306,10 @@ fn preserves_self_and_associated_types_inside_traits_and_extensions() {
              pub(package) let output = struct { value: i32 }\n\
              pub(package) let a = struct { value: i32 }\n\
              pub(package) let convert = trait {\n\
-             let output: type\n\
-             let a: type\n\
-             let b: type\n\
-             let convert = { (self: Borrow<self>)(value: self): output }\n\
+             output: type\n\
+             a: type\n\
+             b: type\n\
+             convert: (self: Borrow<self>)(value: self): output\n\
              }\n\
              pub(package) let number = struct { value: i32 }\n\
              extend(number, convert) {\n\
@@ -1399,8 +1399,8 @@ fn validates_trait_signatures_without_treating_bound_types_as_nominals() {
         "src/valid.sc",
         &[],
         "pub let convert = <t: type> trait {\n\
-             let output: type = t\n\
-             let convert = { <u: type>(self: Borrow<self>)(value: t): output }\n\
+             output: type = t\n\
+             convert: <u: type>(self: Borrow<self>)(value: t): output\n\
              }\n",
         true,
     )]);
@@ -1411,8 +1411,8 @@ fn validates_trait_signatures_without_treating_bound_types_as_nominals() {
         &[],
         "let hidden = struct {}\n\
              pub let expose = trait {\n\
-             let output: type = hidden\n\
-             let convert = { (self: Borrow<self>)(value: hidden): hidden }\n\
+             output: type = hidden\n\
+             convert: (self: Borrow<self>)(value: hidden): hidden\n\
              }\n",
         true,
     )])

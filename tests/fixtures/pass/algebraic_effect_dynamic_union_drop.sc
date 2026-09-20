@@ -1,6 +1,6 @@
 let abort = effect {
-  choose (): bool
-  stop (): i32
+  choose: (): bool
+  stop: (): i32
 }
 
 let resource = struct { counter: Ptr<mut><i32> }

@@ -1,5 +1,5 @@
 let ask = effect {
-  value (): i32
+  value: (): i32
 }
 
 let left = { with<ask>(): i32 =>

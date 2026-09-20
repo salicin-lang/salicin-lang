@@ -1,5 +1,5 @@
 let state = <s: type> effect {
-  get (): s
+  get: (): s
 }
 
 let program = { with<state<i32>>(): i32 =>
