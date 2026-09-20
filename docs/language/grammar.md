@@ -424,7 +424,8 @@ guard respectively;
 type_expr = effect_callable_type | function_type | postfix_type ;
 
 effect_callable_type =
-    with_clause, function_type ;
+    with_clause, parenthesized_function_type_group,
+    { function_type_group }, ":", type_expr ;
 
 function_type =
     function_type_group,
@@ -435,7 +436,11 @@ function_type_group =
     runtime_delimited_group(function_type_parameter) ;
 
 function_type_parameter =
-    { parameter_modifier }, [ IDENT, ":" ], type_expr ;
+    [ IDENT, ":" ], type_expr ;
+
+parenthesized_function_type_group =
+    "(", [ function_type_parameter,
+    { ",", function_type_parameter }, [ "," ] ], ")" ;
 
 postfix_type =
     primary_type,
@@ -703,7 +708,9 @@ A pattern callable has one or more comma-separated arms in one outer brace pair:
 source order. At the top level, an immutable binding of this form declares a
 named function. Boolean literal patterns determine a `bool` input directly;
 other inputs currently require a callable annotation, for example
-`let select: (Option<i32>): i32 = { Some(value) => value, None => 0 }`.
+`let select: (core.Option<i32>): i32 = { Some(value) => value, None => 0 }`.
+The annotation may also name a callable type alias. Named pattern callables do
+not participate in overload sets because their input has no source-level label.
 The former `->` arm and consecutive
 `callee { P -> ... } { Q -> ... }` forms are not grammar.
 

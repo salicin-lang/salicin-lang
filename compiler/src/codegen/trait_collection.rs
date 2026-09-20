@@ -116,9 +116,13 @@ impl Analyzer {
             .chain(source_items)
             .collect::<Vec<_>>();
         let mut function_counts = HashMap::<String, usize>::new();
+        let mut pattern_callable_names = HashSet::<String>::new();
         for (item, _, _) in &all_items {
             if let Item::Function(function) = item {
                 *function_counts.entry(function.name.clone()).or_default() += 1;
+                if crate::parser::is_named_pattern_callable(function) {
+                    pattern_callable_names.insert(function.name.clone());
+                }
             }
             if let Item::Sort(definition) = item {
                 if let Some(members) = &definition.members {
@@ -173,6 +177,7 @@ impl Analyzer {
         }
         let mut overload_shapes = HashMap::<String, HashSet<ParameterLabelShape>>::new();
         let mut overload_visibilities = HashMap::<String, Visibility>::new();
+        let mut reported_pattern_callable_overloads = HashSet::new();
         for (item, visibility, origin) in all_items {
             self.current_origin = Some(Box::new(origin.clone()));
             let name = match item {
@@ -261,6 +266,20 @@ impl Analyzer {
                 Item::Function(function) => {
                     let mut function = function.clone();
                     let source_name = function.name.clone();
+                    if function_counts
+                        .get(&source_name)
+                        .copied()
+                        .unwrap_or_default()
+                        > 1
+                        && pattern_callable_names.contains(&source_name)
+                    {
+                        if reported_pattern_callable_overloads.insert(source_name.clone()) {
+                            self.error(format!(
+                                "named pattern callable `{source_name}` cannot be overloaded"
+                            ));
+                        }
+                        continue;
+                    }
                     if function.builtin && origin.package != PackageId::CORE.0 {
                         self.error(format!(
                             "`builtin()` is private to the core package and cannot define `{source_name}`"

@@ -126,6 +126,18 @@ fn requires_annotations_for_ambiguous_top_level_pattern_callables() {
             .contains("requires a callable type annotation"),
         "{error:?}"
     );
+    assert_eq!((error.line, error.column), (1, 1));
+}
+
+#[test]
+fn defers_named_pattern_callable_annotations_until_alias_expansion() {
+    let program = parse(
+        "let Predicate: type = (bool): i32\n\
+         let select: Predicate = { true => 1, false => 0 }\n",
+    )
+    .expect("a named callable annotation must remain available for alias expansion");
+    assert!(matches!(program.items[0], Item::TypeAlias(_)));
+    assert!(matches!(program.items[1], Item::Global(_)));
 }
 
 #[test]

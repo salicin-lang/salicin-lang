@@ -176,6 +176,71 @@ fn lowers_named_pattern_callables() {
          let main = { (): i32 => select(true) }\n",
     )
     .expect("an annotated named pattern callable must lower as a direct function");
+
+    compile_text(
+        "let Predicate: type = (bool): i32\n\
+         let select: Predicate = { true => 42, false => 0 }\n\
+         let main = { (): i32 => select(true) }\n",
+    )
+    .expect("a callable type alias must provide the named pattern callable signature");
+}
+
+#[test]
+fn rejects_named_pattern_callable_overloads_without_module_resolution() {
+    let diagnostics = compile_unresolved_text(
+        "let choose = { true => 1, false => 0 }\n\
+         let choose = { (value: i32): i32 => value }\n",
+    )
+    .expect_err("a generated pattern parameter cannot select an overload");
+    assert!(diagnostics.iter().any(|diagnostic| diagnostic
+        .message
+        .contains("named pattern callable `choose` cannot be overloaded")));
+}
+
+#[test]
+fn promotes_cross_module_callable_alias_annotations() {
+    let program = crate::modules::resolve_sources(&[
+        source_unit(
+            "src/main.sc",
+            &[],
+            "let main = { (): i32 => choices.select(true) }\n",
+            true,
+        ),
+        source_unit(
+            "src/choices.sc",
+            &["choices"],
+            "pub let Predicate: type = (bool): i32\n\
+             pub let select: Predicate = { true => 42, false => 0 }\n",
+            false,
+        ),
+    ])
+    .expect("the callable alias and binding must resolve across modules");
+    compile(&program).expect("the resolved callable alias must promote before item collection");
+}
+
+#[test]
+fn reports_non_callable_pattern_aliases_at_the_binding() {
+    let diagnostics = compile_text(
+        "let Value: type = i32\n\
+         let select: Value = { Some(value) => value, None => 0 }\n",
+    )
+    .expect_err("a non-callable alias cannot annotate a named pattern callable");
+    let diagnostic = diagnostics
+        .iter()
+        .find(|diagnostic| {
+            diagnostic
+                .message
+                .contains("top-level pattern callable `select` requires a callable type annotation")
+        })
+        .expect("the alias expansion error must identify the pattern callable");
+    assert_eq!(
+        diagnostic
+            .origin
+            .as_ref()
+            .and_then(|origin| origin.source.as_ref())
+            .map(|source| (source.line, source.column)),
+        Some((2, 1))
+    );
 }
 
 #[test]

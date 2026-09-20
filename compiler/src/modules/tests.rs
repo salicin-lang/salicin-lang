@@ -610,6 +610,27 @@ fn rejects_duplicate_modules_declarations_and_module_name_conflicts() {
 }
 
 #[test]
+fn rejects_named_pattern_callable_overloads_in_either_declaration_order() {
+    for source in [
+        "let choose = { true => 1, false => 0 }\n\
+         let choose = { (value: i32): i32 => value }\n",
+        "let choose = { (value: i32): i32 => value }\n\
+         let choose = { true => 1, false => 0 }\n",
+        "let Predicate: type = (bool): i32\n\
+         let choose: Predicate = { true => 1, false => 0 }\n\
+         let choose = { (value: i32): i32 => value }\n",
+        "let Predicate: type = (bool): i32\n\
+         let choose = { (value: i32): i32 => value }\n\
+         let choose: Predicate = { true => 1, false => 0 }\n",
+    ] {
+        let diagnostics = resolve_sources(&[unit("root.sc", &[], source, true)])
+            .expect_err("named pattern callables cannot participate in overload sets");
+        assert!(diagnostics.iter().any(|diagnostic| diagnostic
+            .contains("named pattern callable `choose` cannot be overloaded")));
+    }
+}
+
+#[test]
 fn requires_exactly_one_root_source() {
     let no_root = resolve_sources(&[unit("a.sc", &["a"], "let value = 1\n", false)]).unwrap_err();
     assert!(no_root[0].contains("exactly one root source"));

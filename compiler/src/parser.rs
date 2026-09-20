@@ -14,7 +14,8 @@ use crate::lexer::{lex, LexError, Token, TokenKind};
 mod post_parse;
 
 pub(crate) use post_parse::{
-    infer_extend_parameters, normalize_and_validate_scopes, promote_top_level_pattern_callables,
+    infer_extend_parameters, is_named_pattern_callable, is_pattern_callable_binding,
+    normalize_and_validate_scopes, promote_top_level_pattern_callables,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -147,6 +148,7 @@ impl Parser {
         let mut items = Vec::new();
         let mut item_visibilities = Vec::new();
         let mut item_origins = Vec::new();
+        let mut item_starts = Vec::new();
         let mut uses = Vec::new();
         self.skip_separators();
 
@@ -166,6 +168,7 @@ impl Parser {
                 }
                 let start = self.current().clone();
                 items.push(Item::Function(self.test_declaration()?));
+                item_starts.push(start.clone());
                 item_visibilities.push(Visibility::Private);
                 item_origins.push(crate::ast::ItemOrigin {
                     source: Some(Box::new(crate::ast::SourceLocation {
@@ -183,6 +186,7 @@ impl Parser {
                 }
                 let start = self.current().clone();
                 items.push(self.item()?);
+                item_starts.push(start.clone());
                 item_visibilities.push(visibility);
                 item_origins.push(crate::ast::ItemOrigin {
                     source: Some(Box::new(crate::ast::SourceLocation {
@@ -204,8 +208,11 @@ impl Parser {
             self.skip_separators();
         }
 
-        if let Err(message) = promote_top_level_pattern_callables(&mut items) {
-            return Err(self.error_here(message));
+        if let Some(error) = promote_top_level_pattern_callables(&mut items, true)
+            .into_iter()
+            .next()
+        {
+            return Err(self.error_at(&item_starts[error.item_index], error.message));
         }
         if let Err(message) = infer_extend_parameters(&mut items) {
             return Err(self.error_here(message));

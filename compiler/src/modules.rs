@@ -997,6 +997,7 @@ fn collect_symbols(
     let mut module_paths = HashSet::new();
     let mut diagnostics = Vec::new();
     let mut function_overloads = HashMap::<Vec<String>, HashSet<Vec<Vec<String>>>>::new();
+    let mut pattern_callable_names = HashSet::<Vec<String>>::new();
     let mut module_children: BTreeMap<Vec<String>, BTreeSet<String>> = BTreeMap::new();
 
     for unit in parsed {
@@ -1052,6 +1053,10 @@ fn collect_symbols(
             };
 
             let namespace = declaration_namespace(item);
+            let pattern_callable_binding = matches!(
+                item,
+                Item::Global(binding) if parser::is_pattern_callable_binding(binding)
+            );
             if let Some(previous) = symbols.get(&logical_path) {
                 let occupied = symbol_namespaces
                     .get(&logical_path)
@@ -1073,7 +1078,19 @@ fn collect_symbols(
                     ));
                     continue;
                 }
+                if pattern_callable_binding
+                    && (occupied.contains(&DeclarationNamespace::Function)
+                        || occupied.contains(&DeclarationNamespace::Other))
+                {
+                    diagnostics.push(item_resolver_diagnostic(
+                        unit,
+                        origin,
+                        format!("named pattern callable `{name}` cannot be overloaded"),
+                    ));
+                    continue;
+                }
                 if let Item::Function(function) = item {
+                    let pattern_callable = parser::is_named_pattern_callable(function);
                     let shape = function
                         .groups
                         .iter()
@@ -1088,6 +1105,9 @@ fn collect_symbols(
                         && !occupied.contains(&DeclarationNamespace::Other)
                         && !occupied.contains(&DeclarationNamespace::Function)
                     {
+                        if pattern_callable {
+                            pattern_callable_names.insert(logical_path.clone());
+                        }
                         function_overloads
                             .entry(logical_path.clone())
                             .or_default()
@@ -1096,6 +1116,14 @@ fn collect_symbols(
                             .entry(logical_path)
                             .or_default()
                             .insert(DeclarationNamespace::Function);
+                        continue;
+                    }
+                    if pattern_callable || pattern_callable_names.contains(&logical_path) {
+                        diagnostics.push(item_resolver_diagnostic(
+                            unit,
+                            origin,
+                            format!("named pattern callable `{name}` cannot be overloaded"),
+                        ));
                         continue;
                     }
                     let Some(overloads) = function_overloads.get_mut(&logical_path) else {
@@ -1142,6 +1170,9 @@ fn collect_symbols(
                     && !(namespace == DeclarationNamespace::Type
                         && occupied.contains(&DeclarationNamespace::Type))
                 {
+                    if pattern_callable_binding {
+                        pattern_callable_names.insert(logical_path.clone());
+                    }
                     symbol_namespaces
                         .entry(logical_path)
                         .or_default()
@@ -1160,6 +1191,9 @@ fn collect_symbols(
                 }
             } else {
                 if let Item::Function(function) = item {
+                    if parser::is_named_pattern_callable(function) {
+                        pattern_callable_names.insert(logical_path.clone());
+                    }
                     function_overloads.insert(
                         logical_path.clone(),
                         HashSet::from([function
@@ -1173,6 +1207,8 @@ fn collect_symbols(
                             })
                             .collect::<Vec<_>>()]),
                     );
+                } else if pattern_callable_binding {
+                    pattern_callable_names.insert(logical_path.clone());
                 }
                 symbol_namespaces
                     .entry(logical_path.clone())

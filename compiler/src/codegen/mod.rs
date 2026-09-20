@@ -13,6 +13,7 @@ use crate::ast::{
 };
 use crate::core::{CoreBundle, LangItemKind, LangItems};
 use crate::manifest::Edition;
+use crate::parser::promote_top_level_pattern_callables;
 use crate::standard::StdBundle;
 use crate::static_semantics::{Constraint, Goal, GoalResult};
 
@@ -179,6 +180,19 @@ impl Analyzer {
             &mut source_program,
         ]) {
             analyzer.error(diagnostic);
+        }
+        for program in [
+            &mut core_program,
+            &mut alloc_program,
+            &mut std_program,
+            &mut source_program,
+        ] {
+            for error in promote_top_level_pattern_callables(&mut program.items, false) {
+                analyzer.diagnostics.push(Diagnostic::at_origin(
+                    error.message,
+                    program.item_origins.get(error.item_index).cloned(),
+                ));
+            }
         }
         normalize_source_call_groups(&mut core_program);
         normalize_source_call_groups(&mut alloc_program);

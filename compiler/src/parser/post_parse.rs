@@ -6,8 +6,43 @@ use crate::ast::{
     VariantFields,
 };
 
-pub(crate) fn promote_top_level_pattern_callables(items: &mut [Item]) -> Result<(), String> {
-    for item in items {
+pub(crate) struct PatternCallablePromotionError {
+    pub(crate) item_index: usize,
+    pub(crate) message: String,
+}
+
+pub(crate) fn is_named_pattern_callable(function: &Function) -> bool {
+    let [group] = function.groups.as_slice() else {
+        return false;
+    };
+    let [parameter] = group.as_slice() else {
+        return false;
+    };
+    if !parameter.name.starts_with("$match$callable$input$") {
+        return false;
+    }
+    matches!(function.body.as_ref(), Some(Expr::Match { scrutinee, .. })
+        if matches!(scrutinee.as_ref(), Expr::Name(name) if name == &parameter.name))
+}
+
+pub(crate) fn is_pattern_callable_binding(binding: &Binding) -> bool {
+    let Expr::Closure(parameters, body) = &binding.value else {
+        return false;
+    };
+    let [parameter] = parameters.as_slice() else {
+        return false;
+    };
+    parameter.ty == Type::Named("$context$infer".to_owned(), Vec::new())
+        && matches!(body.as_ref(), Expr::Match { scrutinee, .. }
+            if matches!(scrutinee.as_ref(), Expr::Name(name) if name == &parameter.name))
+}
+
+pub(crate) fn promote_top_level_pattern_callables(
+    items: &mut [Item],
+    defer_named_annotations: bool,
+) -> Vec<PatternCallablePromotionError> {
+    let mut errors = Vec::new();
+    for (item_index, item) in items.iter_mut().enumerate() {
         let Item::Global(binding) = item else {
             continue;
         };
@@ -28,7 +63,11 @@ pub(crate) fn promote_top_level_pattern_callables(items: &mut [Item]) -> Result<
         }
 
         if binding.mutable {
-            return Err("`let mut` cannot declare a function".to_owned());
+            errors.push(PatternCallablePromotionError {
+                item_index,
+                message: "`let mut` cannot declare a function".to_owned(),
+            });
+            continue;
         }
 
         let (input_type, return_type, effects) = match &binding.annotation {
@@ -38,16 +77,24 @@ pub(crate) fn promote_top_level_pattern_callables(items: &mut [Item]) -> Result<
                 result,
             }) => {
                 let [group] = groups.as_slice() else {
-                    return Err(format!(
-                        "callable annotation for `{}` must contain exactly one runtime group with one input",
-                        binding.name
-                    ));
+                    errors.push(PatternCallablePromotionError {
+                        item_index,
+                        message: format!(
+                            "callable annotation for `{}` must contain exactly one runtime group with one input",
+                            binding.name
+                        ),
+                    });
+                    continue;
                 };
                 let [input] = group.as_slice() else {
-                    return Err(format!(
-                        "callable annotation for `{}` must contain exactly one runtime group with one input",
-                        binding.name
-                    ));
+                    errors.push(PatternCallablePromotionError {
+                        item_index,
+                        message: format!(
+                            "callable annotation for `{}` must contain exactly one runtime group with one input",
+                            binding.name
+                        ),
+                    });
+                    continue;
                 };
                 (
                     input.clone(),
@@ -55,21 +102,30 @@ pub(crate) fn promote_top_level_pattern_callables(items: &mut [Item]) -> Result<
                     effects.clone(),
                 )
             }
+            Some(Type::Named(_, _) | Type::NamedArgs(_, _)) if defer_named_annotations => continue,
             Some(_) => {
-                return Err(format!(
-                    "top-level pattern callable `{}` requires a callable type annotation",
-                    binding.name
-                ));
+                errors.push(PatternCallablePromotionError {
+                    item_index,
+                    message: format!(
+                        "top-level pattern callable `{}` requires a callable type annotation",
+                        binding.name
+                    ),
+                });
+                continue;
             }
             None => {
                 if !arms
                     .iter()
                     .any(|arm| matches!(arm.pattern, Pattern::Bool(_)))
                 {
-                    return Err(format!(
-                        "top-level pattern callable `{}` requires a callable type annotation because its input type cannot be inferred",
-                        binding.name
-                    ));
+                    errors.push(PatternCallablePromotionError {
+                        item_index,
+                        message: format!(
+                            "top-level pattern callable `{}` requires a callable type annotation because its input type cannot be inferred",
+                            binding.name
+                        ),
+                    });
+                    continue;
                 }
                 (
                     Type::Bool,
@@ -96,7 +152,7 @@ pub(crate) fn promote_top_level_pattern_callables(items: &mut [Item]) -> Result<
             body: Some(body.as_ref().clone()),
         });
     }
-    Ok(())
+    errors
 }
 
 pub(crate) fn infer_extend_parameters(items: &mut [Item]) -> Result<(), String> {

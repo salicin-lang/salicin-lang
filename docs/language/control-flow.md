@@ -86,7 +86,7 @@ to a nested loop does not exit an enclosing lexical scope outside that loop.
 effect checking and handler selection apply to the invocation. Lowering must preserve the action's
 capture ownership and must not expose compiler-generated binding names in diagnostics.
 
-## Pattern Closures and Cases
+## Pattern Callables and Cases
 
 A match case maps a successful pattern and guard to an arm result. It consists of:
 
@@ -95,8 +95,11 @@ A match case maps a successful pattern and guard to an arm result. It consists o
 - a body.
 
 A pattern callable is written as
-`{ Pattern [if guard] => expression, ... }` and passed as one callable
-argument. Its arms are attempted in source order.
+`{ Pattern [if guard] => expression, ... }`. It may be passed as one callable
+argument, or bound at the top level as a named function. Its arms are attempted
+in source order. A Boolean literal arm determines a `bool` input; other named
+forms require a whole-callable annotation or callable type alias. Named pattern
+callables cannot be overloaded because their input has no source-level label.
 
 Failure to match is not an error result and does not consume the scrutinee. The next case receives
 the same logical input state. A successful pattern establishes its bindings before the guard. A

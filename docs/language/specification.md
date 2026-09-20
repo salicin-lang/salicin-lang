@@ -537,9 +537,13 @@ to the next arm, and exhausting a non-exhaustive callable is rejected. The
 top-level form `let name = { arms }` declares a named function rather than a
 function-valued global. A Boolean literal arm determines a `bool` input. Other
 inputs currently require a whole-callable annotation, such as
-`let select: (Option<i32>): i32 = { Some(value) => value, None => 0 }`; the
-annotation supplies the input, result, delimiters, and effects while the arms
-supply the implementation. The removed `->` spelling and consecutive
+`let select: (core.Option<i32>): i32 = { Some(value) => value, None => 0 }`; a
+callable type alias is also accepted. The annotation supplies the input,
+result, delimiters, and effects while the arms supply the implementation.
+Effectful callable types require a parenthesized first runtime group, and
+callable types do not encode parameter passing modifiers. Named pattern
+callables cannot be overloaded because their generated input has no
+source-level argument label. The removed `->` spelling and consecutive
 pattern-partial calls are not syntax.
 
 Closures capture referenced outer bindings. Shared captures can be copied when their complete
