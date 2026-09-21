@@ -13,10 +13,9 @@ let sum_reads = { with<read>
 let main = {
   (): i32 =>
   let value = 14
-  read.handle(do {
-    sum_reads(3)
-  }) {
-    read(resume) => do { resume(value) },
+  read.handle {
+    read: { (resume) => resume(value) },
+    action: { sum_reads(3) },
   }
 }
 

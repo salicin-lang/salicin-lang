@@ -16,9 +16,11 @@ subset.
   callable members now use `name: signature` for requirements or
   `name: signature = body` for defaults, and effect operations use
   `Operation: (parameters): Result` declarations. Associated declarations use
-  `Name: type`; extension implementations retain `let`. Handlers use
-  `.handle(action) { Operation(...) => ..., Return(...) => ... }`; the former
-  `action:` and `done:` fields are removed.
+  `Name: type`; extension implementations retain `let`. Each effect now
+  synthesizes an ordinary `handle` function called with labeled closure
+  arguments: `.handle { operation: { (...) => ... }, done: { (...) => ... },
+  action: { ... } }`. `done` is optional and `action` is final; handler parsing
+  no longer has a dedicated control-flow production.
 - The source formatter now places runtime parameter groups on separate lines
   for multiline named functions and methods while preserving compact
   single-line functions and local closure layout. All repository Salicin

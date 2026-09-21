@@ -52,34 +52,36 @@ let make_step = { with<ask>
 
 let run = {
   (drops: Ptr<mut><i32>): i32 =>
-  ask.handle(do {
-    let mut future = async {
-      await(make_step(drops))
-    }
-    let first = future.poll()
-    let second = future.poll()
-    match(first) {
-      Pending => do {
-        match(second) { Ready(value) => value, Pending => 0,
-        }
-      }, Ready(_) => 0,
-    }
-  }) {
-    ask(resume) => do { resume(40) },
+  ask.handle {
+    ask: { (resume) => resume(40) },
+    action: {
+      let mut future = async {
+        await(make_step(drops))
+      }
+      let first = future.poll()
+      let second = future.poll()
+      match(first) {
+        Pending => do {
+          match(second) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
   }
 }
 
 let cancel = {
   (drops: Ptr<mut><i32>): () =>
-  ask.handle(do {
-    let mut cancelled = async {
-      await(make_step(drops))
-    }
-    let pending = cancelled.poll()
-    match(pending) { Pending => (), Ready(_) => (),
-    }
-  }) {
-    ask(resume) => do { resume(2) },
+  ask.handle {
+    ask: { (resume) => resume(2) },
+    action: {
+      let mut cancelled = async {
+        await(make_step(drops))
+      }
+      let pending = cancelled.poll()
+      match(pending) { Pending => (), Ready(_) => (),
+      }
+    },
   }
 }
 

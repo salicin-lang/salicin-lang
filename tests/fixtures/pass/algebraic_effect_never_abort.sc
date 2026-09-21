@@ -9,10 +9,9 @@ let fail = { with<abort>
 
 let main = {
   (): i32 =>
-  abort.handle(do {
-    fail()
-  }) {
-    stop(value) => do { value },
+  abort.handle {
+    stop: { (value) => value },
+    action: { fail() },
   }
 }
 

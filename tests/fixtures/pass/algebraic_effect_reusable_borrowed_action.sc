@@ -25,13 +25,12 @@ let run = {
     abandon: bool,
   )
   {move action: with<ask>(): i32}: i32 =>
-  ask.handle(do {
-    right = right + action()
-    left + right
-  }) {
-    value(resume) => do {
-      if(abandon) { 40 } else: { resume(2) }
+  ask.handle {
+    value: {
+      (resume) => if(abandon) { 40 } else: { resume(2) }
     },
+    action: { right = right + action()
+      left + right },
   }
 }
 

@@ -9,12 +9,11 @@ let ask = { with<ask>
 
 let main = {
   (): i32 =>
-  ask.handle(do {
-    let action = ask
-    let forwarded = action
-    forwarded()
-  }) {
-    value(resume) => do { resume(42) },
+  ask.handle {
+    value: { (resume) => resume(42) },
+    action: { let action = ask
+      let forwarded = action
+      forwarded() },
   }
 }
 

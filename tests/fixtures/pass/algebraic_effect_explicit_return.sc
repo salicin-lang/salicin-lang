@@ -27,10 +27,9 @@ let main = {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *counter = 0 }
-  let result = read.handle(do {
-    read_early(counter)
-  }) {
-    read(resume) => do { resume(41) },
+  let result = read.handle {
+    read: { (resume) => resume(41) },
+    action: { read_early(counter) },
   }
   let drops = unsafe { *counter }
   unsafe {

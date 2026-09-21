@@ -325,10 +325,9 @@ interpret the same effect differently.
 pub let Continuation = <Input: type, Output: type>: type
 pub let EffectCallable = <Input: type, Output: type, Answer: type>: type
 pub let Handle = trait<self: effect> {
-  Clauses: <Value: type, Answer: type>: parameters
+  Arguments: <Value: type, Answer: type>: parameters
   handle: <Value: type, Answer: type, rest: effects> with<rest>
-    ...Clauses<Value, Answer>
-    {move action: with<self, rest>(): Value}: Answer
+    ...Arguments<Value, Answer>: Answer
 }
 ```
 
@@ -344,15 +343,14 @@ entry. Within an active handler, compatible open runtime action parameters use t
 when crossing named effectful frames or another reusable handler. The source closure may have
 shared, mutable, or moved captures, but the erased owner itself is always one-shot and cannot escape
 with a borrow-capturing environment. `handle` is an effect-kinded lang trait automatically satisfied by every source
-`effect` declaration. Its `Clauses` associated parameter schema describes the
-compiler-derived handler arms used by `.handle`. A source invocation supplies
-one unlabeled action expression followed by a spaced arm group, for example
-`state<i32>.handle(state<i32>.get()) { get(resume) => ..., Return(value) => value }`.
-Operation arms use the operation's `snake_case` name, and `Return` handles normal
-completion. The removed `action:` and `done:` labeled fields are not syntax.
-The generated implementation still has exactly the shape
-declared by the trait. These low-level operations and generated handler
-implementations are not ordinary source-level standard-library functions.
+`effect` declaration. Its `Arguments` associated parameter schema describes the
+compiler-derived labeled closure parameters used by `.handle`. A source invocation is an ordinary
+declaration-directed call, for example
+`state<i32>.handle { get: { (resume) => ... }, done: { (value) => value }, action: { state<i32>.get() } }`.
+Operation labels use the operation's `snake_case` name, `done` optionally
+transforms normal completion, and the final `action` closure supplies the
+handled computation. The generated implementation has exactly the shape
+declared by the trait; no handler-specific parser production is involved.
 
 `core.async` makes the asynchronous model explicit in source. `Future<e>` is a `Movable` trait with an
 associated `Output` and a mutable-borrowing `poll` method returning `Poll`. `Executor.run` is
@@ -395,9 +393,10 @@ pub let do = { <e: effects> with<e>
   {move action: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(): ()}
   {move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(): bool}: () =>
   loop {
-    core.control.iteration_skip.handle(action()) {
-      next() => (),
-      Return(value) => value,
+    core.control.iteration_skip.handle {
+      next: { () => () },
+      done: { (value) => value },
+      action: { action() },
     }
     if(while()) { continue() } else: { break() }
   }
@@ -450,9 +449,10 @@ pub let do = { <e: effects, T: type> with<e>
 
 pub let try = { <f: effects, T: type, E: type> with<f>
   {move action: with<core.error.throwing<E>, f>(): T}: core.Result<E><T> =>
-  core.error.throwing<E>.handle(action()) {
-    raise(error) => core.Result.Err(error),
-    Return(value) => core.Result.Ok(value),
+  core.error.throwing<E>.handle {
+    raise: { (error) => core.Result.Err(error) },
+    done: { (value) => core.Result.Ok(value) },
+    action: { action() },
   }
 }
 

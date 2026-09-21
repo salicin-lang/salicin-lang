@@ -931,7 +931,7 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `unsafe`")));
 
     let bodyless = EDITION_2026_UNSAFE.replace(
-        ": T =>\n  core.unsafe.unsafety.handle(action()) {\n  }",
+        ": T =>\n  core.unsafe.unsafety.handle {\n    action: { action() },\n  }",
         ": T",
     );
     let modules = edition_2026_test_modules(&[("unsafe", &bodyless)]);
@@ -987,12 +987,12 @@ fn rejects_malformed_control_contracts() {
 
     let malformed = EDITION_2026_EFFECT
         .replace(
-            "Clauses: <Value: type, Answer: type>: parameters",
-            "Clauses: <Value: type, Answer: type>: type",
+            "Arguments: <Value: type, Answer: type>: parameters",
+            "Arguments: <Value: type, Answer: type>: type",
         )
         .replace(
-            "...Clauses<Value, Answer>",
-            "(move clauses: Clauses<Value, Answer>)",
+            "...Arguments<Value, Answer>",
+            "(move arguments: Arguments<Value, Answer>)",
         );
     let modules = edition_2026_test_modules(&[("effect", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -1028,7 +1028,7 @@ fn privileged_runtime_group_delimiters_are_validated() {
         ("lib", "test", EDITION_2026_LIB.replace("{move body: with<core.error.throwing<core.string.String>>() :()}", "(move body: with<core.error.throwing<core.string.String>>(): ())")),
         ("lib", "requires", EDITION_2026_LIB.replace("{move body: with<e>() :Result}", "(move body: with<e>(): Result)")),
         ("async", "async", EDITION_2026_ASYNC.replace("{move action: with<core.async.suspension, e>() :T}", "(move action: with<core.async.suspension, e>(): T)")),
-        ("effect", "Handle", EDITION_2026_EFFECT.replace("{move action: with<self, rest>() :Value}", "(move action: with<self, rest>(): Value)")),
+        ("effect", "Handle", EDITION_2026_EFFECT.replace("...Arguments<Value, Answer>", "(move arguments: i32)")),
     ];
 
     for (module, name, malformed) in cases {

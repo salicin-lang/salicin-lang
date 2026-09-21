@@ -4,11 +4,11 @@ let stop = effect {
 
 let main = {
   (): i32 =>
-  stop.handle(do {
-    let skipped = false && stop.stop()
-    if(skipped) { 0 } else: { 42 }
-  }) {
-    stop(resume) => do { 1 },
+  stop.handle {
+    stop: { (resume) => 1 },
+    action: { let skipped = false && stop.stop()
+      if(skipped) { 0 } else: { 42 }
+    },
   }
 }
 

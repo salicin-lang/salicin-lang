@@ -22,9 +22,9 @@ use super::lower::{apply_call_group, flatten_call};
 use super::names::hex_name;
 use super::source_rewrite::{
     append_innermost_closure_parameter, handler_match_commit, hygienic_inline_function,
-    pattern_contains_binding, pattern_for_suspended_guard, rewrite_handler_returns,
-    rewrite_static_function_values, source_type_expression, source_type_expression_name,
-    substitute_type_parameters, visit_expr_mut,
+    pattern_contains_binding, pattern_for_suspended_guard, rewrite_handler_closure_returns,
+    rewrite_handler_returns, rewrite_static_function_values, source_type_expression,
+    source_type_expression_name, substitute_type_parameters, visit_expr_mut,
 };
 use super::Analyzer;
 
@@ -1986,12 +1986,26 @@ impl Analyzer {
                         return Err(());
                     }
                     let identity: SourceContinuation = Rc::new(|_, value| Ok(value));
+                    let return_id = analyzer.lowering.next_closure;
+                    analyzer.lowering.next_closure += 1;
+                    let return_name = format!("$handler$return$clause${return_id}");
+                    let mut clause_body = clause.body.clone();
+                    rewrite_handler_closure_returns(&mut clause_body, &return_name);
+                    handler_for_clause
+                        .return_continuations
+                        .borrow_mut()
+                        .insert(return_name.clone(), identity.clone());
                     let body = analyzer.transform_handler_expr(
-                        clause.body.clone(),
+                        clause_body,
                         handler_for_clause.clone(),
                         None,
                         identity,
-                    )?;
+                    );
+                    handler_for_clause
+                        .return_continuations
+                        .borrow_mut()
+                        .remove(&return_name);
+                    let body = body?;
                     return Ok(Expr::Block(bindings, Some(Box::new(body))));
                 }
                 let Some(input) = clause.resume_input.clone() else {
@@ -2047,12 +2061,26 @@ impl Analyzer {
                     uses: Rc::new(Cell::new(0)),
                 };
                 let identity: SourceContinuation = Rc::new(|_, value| Ok(value));
+                let return_id = analyzer.lowering.next_closure;
+                analyzer.lowering.next_closure += 1;
+                let return_name = format!("$handler$return$clause${return_id}");
+                let mut clause_body = clause.body.clone();
+                rewrite_handler_closure_returns(&mut clause_body, &return_name);
+                handler_for_clause
+                    .return_continuations
+                    .borrow_mut()
+                    .insert(return_name.clone(), identity.clone());
                 let body = analyzer.transform_handler_expr(
-                    clause.body.clone(),
+                    clause_body,
                     handler_for_clause.clone(),
                     Some(source_resume),
                     identity,
-                )?;
+                );
+                handler_for_clause
+                    .return_continuations
+                    .borrow_mut()
+                    .remove(&return_name);
+                let body = body?;
                 Ok(Expr::Block(bindings, Some(Box::new(body))))
             });
             return self.transform_handler_arguments(

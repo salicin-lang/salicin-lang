@@ -4,12 +4,9 @@ let ask = effect {
 
 let main = {
   (): i32 =>
-  ask.handle(do {
-    ask.value()
-  }) {
-    value(resume) => do {
-      let escaped = resume
-      42
-    },
+  ask.handle {
+    value: { (resume) => let escaped = resume
+      42 },
+    action: { ask.value() },
   }
 }

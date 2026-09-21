@@ -47,12 +47,12 @@ let main = {
   let mut future = async {
     consume(resource) + request()
   }
-  let result: i32 = ask.handle(do {
-    let polled: Poll<i32> = poll_once(future)
-    match(polled) { Ready(value) => value, Pending => 0,
-    }
-  }) {
-    ask(resume) => do { resume(40) },
+  let result: i32 = ask.handle {
+    ask: { (resume) => resume(40) },
+    action: { let polled: Poll<i32> = poll_once(future)
+      match(polled) { Ready(value) => value, Pending => 0,
+      }
+    },
   }
   let drop_count = unsafe {
     *drops

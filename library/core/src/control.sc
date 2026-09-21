@@ -58,8 +58,9 @@ pub let do = { <e: effects>with<e>
   {move action: with<core.control.loop_exit<()>, core.control.iteration_skip, e>() :()}
   {move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>() :bool}: () =>
   loop {
-    core.control.iteration_skip.handle(action()) {
-      next(resume) => (),
+    core.control.iteration_skip.handle {
+      next: { () => () },
+      action: { action() },
     }
     if(condition()) {
       continue()

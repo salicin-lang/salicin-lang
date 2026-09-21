@@ -18,10 +18,9 @@ let request = { with<ask, supply, throwing<bool>, unsafety>
 
 let run = { with<supply, throwing<bool>>(): i32 =>
   unsafe {
-    ask.handle(do {
-      request()
-    }) {
-      value(resume) => do { resume(42) },
+    ask.handle {
+      value: { (resume) => resume(42) },
+      action: { request() },
     }
   }
 }
@@ -29,8 +28,9 @@ let run = { with<supply, throwing<bool>>(): i32 =>
 let main = {
   (): i32 =>
   let result: Result<bool><i32> = try {
-    supply.handle(do { run() }) {
-      seed(resume) => do { resume(0) },
+    supply.handle {
+      seed: { (resume) => resume(0) },
+      action: { run() },
     }
   }
   result ?? 0

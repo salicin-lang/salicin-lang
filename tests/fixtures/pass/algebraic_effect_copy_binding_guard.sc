@@ -23,12 +23,12 @@ let consume = { (move resource: resource, value: i32): i32 => value }
 
 let evaluate = {
   (counter: Ptr<mut><i32>, accepted: bool): i32 =>
-  check.handle(do {
-    let event = event.value { value: resource { counter: counter }, field1: 20 }
-    match(event) { event.value( value: resource, field1: value ) if check.accept() && value > 0 => consume(resource, value), event.value( value: resource, field1: value ) => consume(resource, value), event.Empty => 0,
-    }
-  }) {
-    accept(resume) => do { resume(accepted) },
+  check.handle {
+    accept: { (resume) => resume(accepted) },
+    action: { let event = event.value { value: resource { counter: counter }, field1: 20 }
+      match(event) { event.value( value: resource, field1: value ) if check.accept() && value > 0 => consume(resource, value), event.value( value: resource, field1: value ) => consume(resource, value), event.Empty => 0,
+      }
+    },
   }
 }
 

@@ -36,18 +36,17 @@ let audit_outside = {
     abandon_step: bool,
   ): i32 =>
   let mut state = state { value: 20, drops: drops }
-  audit.handle(do {
-    step.handle(do {
-      let value = update(state)
-      value + state.value
-    }) {
-      delta(resume) => do {
-        if(abandon_step) { 40 } else: { resume(1) }
-      },
-    }
-  }) {
-    adjust(resume) => do {
-      if(abandon_audit) { 40 } else: { resume(1) }
+  audit.handle {
+    adjust: {
+      (resume) => if(abandon_audit) { 40 } else: { resume(1) }
+    },
+    action: { step.handle {
+        delta: {
+          (resume) => if(abandon_step) { 40 } else: { resume(1) }
+        },
+        action: { let value = update(state)
+          value + state.value },
+      }
     },
   }
 }
@@ -59,18 +58,17 @@ let step_outside = {
     abandon_step: bool,
   ): i32 =>
   let mut state = state { value: 20, drops: drops }
-  step.handle(do {
-    audit.handle(do {
-      let value = update(state)
-      value + state.value
-    }) {
-      adjust(resume) => do {
-        if(abandon_audit) { 40 } else: { resume(1) }
-      },
-    }
-  }) {
-    delta(resume) => do {
-      if(abandon_step) { 40 } else: { resume(1) }
+  step.handle {
+    delta: {
+      (resume) => if(abandon_step) { 40 } else: { resume(1) }
+    },
+    action: { audit.handle {
+        adjust: {
+          (resume) => if(abandon_audit) { 40 } else: { resume(1) }
+        },
+        action: { let value = update(state)
+          value + state.value },
+      }
     },
   }
 }

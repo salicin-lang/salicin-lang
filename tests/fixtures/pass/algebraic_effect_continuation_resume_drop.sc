@@ -29,10 +29,9 @@ let main = {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *counter = 0 }
-  let result = stop.handle(do {
-    program(counter)
-  }) {
-    value(resume) => do { resume(41) },
+  let result = stop.handle {
+    value: { (resume) => resume(41) },
+    action: { program(counter) },
   }
   let drops = unsafe { *counter }
   unsafe {

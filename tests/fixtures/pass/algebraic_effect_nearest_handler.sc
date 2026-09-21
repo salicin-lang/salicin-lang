@@ -4,13 +4,13 @@ let read = effect {
 
 let main = {
   (): i32 =>
-  read.handle(do {
-    let inner: i32 = read.handle(read.read()) {
-      read(resume) => do { resume(2) },
-    }
-    inner + read.read()
-  }) {
-    read(resume) => do { resume(40) },
+  read.handle {
+    read: { (resume) => resume(40) },
+    action: { let inner: i32 = read.handle {
+        read: { (resume) => resume(2) },
+        action: { read.read() },
+      }
+      inner + read.read() },
   }
 }
 

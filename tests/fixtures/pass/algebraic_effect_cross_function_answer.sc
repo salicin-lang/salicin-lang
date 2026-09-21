@@ -9,10 +9,11 @@ let choose_value = { with<decide>
 
 let main = {
   (): i32 =>
-  decide.handle(do {
-    if(choose_value()) { 42 } else: { 0 }
-  }) {
-    choose(resume) => do { resume(true) },
+  decide.handle {
+    choose: { (resume) => resume(true) },
+    action: {
+      if(choose_value()) { 42 } else: { 0 }
+    },
   }
 }
 

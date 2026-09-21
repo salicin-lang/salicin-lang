@@ -57,12 +57,13 @@ let main = {
 
   let captured = 0
   let effect_resource = resource { counter: counter, value: 1 }
-  let effectful = ask.handle(do {
-    effect_once<ask>({
-      ask.value() + captured + consume(effect_resource) - 1
-    })
-  }) {
-    value(resume) => do { resume(3) },
+  let effectful = ask.handle {
+    value: { (resume) => resume(3) },
+    action: {
+      effect_once<ask>({
+        ask.value() + captured + consume(effect_resource) - 1
+      })
+    },
   }
 
   let unsafety = unsafe {

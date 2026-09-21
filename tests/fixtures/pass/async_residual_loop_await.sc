@@ -66,71 +66,74 @@ let continue_once = {
 
 let run_success = {
   (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
-  ask.handle(do {
-    let mut future = async {
-      loop {
-        let done = await(make_step(drops, false))
-        if(done) {
-          break(42)
-        } else: {
-          continue()
+  ask.handle {
+    ask: { (resume) => resume(next(calls)) },
+    action: {
+      let mut future = async {
+        loop {
+          let done = await(make_step(drops, false))
+          if(done) {
+            break(42)
+          } else: {
+            continue()
+          }
         }
       }
-    }
-    let first = future.poll()
-    let second = future.poll()
-    match(first) {
-      Pending => do {
-        match(second) { Ready(value) => value, Pending => 0,
-        }
-      }, Ready(_) => 0,
-    }
-  }) {
-    ask(resume) => do { resume(next(calls)) },
+      let first = future.poll()
+      let second = future.poll()
+      match(first) {
+        Pending => do {
+          match(second) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
   }
 }
 
 let run_cancelled = {
   (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
-  ask.handle(do {
-    let mut future = async {
-      loop {
-        let done = await(make_step(drops, true))
-        if(done) {
-          break(0)
-        } else: {
-          continue()
+  ask.handle {
+    ask: { (resume) => resume(record_false(calls)) },
+    action: {
+      let mut future = async {
+        loop {
+          let done = await(make_step(drops, true))
+          if(done) {
+            break(0)
+          } else: {
+            continue()
+          }
         }
       }
-    }
-    match(future.poll()) { Pending => 42, Ready(_) => 0,
-    }
-  }) {
-    ask(resume) => do { resume(record_false(calls)) },
+      match(future.poll()) { Pending => 42, Ready(_) => 0,
+      }
+    },
   }
 }
 
 let run_abandoned = {
   (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
-  ask.handle(do {
-    let mut future = async {
-      loop {
-        let done = await(make_step(drops, false))
-        if(done) {
-          break(0)
-        } else: {
-          continue()
-        }
-      }
-    }
-    match(future.poll()) { Pending => 0, Ready(_) => 0,
-    }
-  }) {
-    ask(resume) => do {
-      if(continue_once(calls)) {
+  ask.handle {
+    ask: {
+      (resume) => if(continue_once(calls)) {
         resume(false)
       } else: {
         42
+      }
+    },
+    action: {
+      let mut future = async {
+        loop {
+          let done = await(make_step(drops, false))
+          if(done) {
+            break(0)
+          } else: {
+            continue()
+          }
+        }
+      }
+      match(future.poll()) { Pending => 0, Ready(_) => 0,
       }
     },
   }

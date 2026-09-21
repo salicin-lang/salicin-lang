@@ -13,14 +13,13 @@ let program = { with<read, add>
 
 let main = {
   (): i32 =>
-  read.handle(do {
-    add.handle(do {
-      program()
-    }) {
-      add(x, resume) => do { resume(x + read.read() + 2) },
-    }
-  }) {
-    read(resume) => do { resume(20) },
+  read.handle {
+    read: { (resume) => resume(20) },
+    action: { add.handle {
+        add: { (x, resume) => resume(x + read.read() + 2) },
+        action: { program() },
+      }
+    },
   }
 }
 

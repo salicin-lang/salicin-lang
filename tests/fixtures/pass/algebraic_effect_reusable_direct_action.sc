@@ -5,10 +5,9 @@ let ask = effect {
 let run = {
   ()
   {move action: with<ask>(): i32}: i32 =>
-  ask.handle(do {
-    action()
-  }) {
-    value(resume) => do { resume(10) },
+  ask.handle {
+    value: { (resume) => resume(10) },
+    action: { action() },
   }
 }
 

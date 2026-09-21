@@ -9,10 +9,9 @@ let apply_twice = { with<ask>
 
 let run = {
   (move action: with<ask>(): i32): i32 =>
-  ask.handle(do {
-    apply_twice(action)
-  }) {
-    value(resume) => do { resume(21) },
+  ask.handle {
+    value: { (resume) => resume(21) },
+    action: { apply_twice(action) },
   }
 }
 

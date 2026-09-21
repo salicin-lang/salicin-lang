@@ -5,9 +5,8 @@ let ask = effect {
 
 let main = {
   (): i32 =>
-  ask.handle(do {
-    ask.value(left: 42)
-  }) {
-    value(input, resume) => do { resume(input) },
+  ask.handle {
+    value: { (input, resume) => resume(input) },
+    action: { ask.value(left: 42) },
   }
 }

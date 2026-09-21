@@ -19,19 +19,16 @@ let program = { with<query>
 let main = {
   (): i32 =>
   let mut fallbacks = 0
-  let result = query.handle(do {
-    program()
-  }) {
-    option(present, resume) => do {
-      resume(if(present) { Option.Some(true) } else: { Option.None })
+  let result = query.handle {
+    option: {
+      (present, resume) => resume(if(present) { Option.Some(true) } else: { Option.None })
     },
-    result(present, resume) => do {
-      resume(if(present) { Result.Ok(true) } else: { Result.Err(()) })
+    result: {
+      (present, resume) => resume(if(present) { Result.Ok(true) } else: { Result.Err(()) })
     },
-    fallback(resume) => do {
-      fallbacks += 1;
-      resume(true)
-    },
+    fallback: { (resume) => fallbacks += 1;
+      resume(true) },
+    action: { program() },
   }
   result + fallbacks
 }

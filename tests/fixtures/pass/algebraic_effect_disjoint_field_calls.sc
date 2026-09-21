@@ -39,19 +39,13 @@ let main = {
   }
   unsafe { *drops = 0 }
 
-  let resumed = step.handle(do {
-    program(drops)
-  }) {
-    delta(resume) => do {
-      resume(1)
-    },
+  let resumed = step.handle {
+    delta: { (resume) => resume(1) },
+    action: { program(drops) },
   }
-  let abandoned = step.handle(do {
-    program(drops)
-  }) {
-    delta(_) => do {
-      40
-    },
+  let abandoned = step.handle {
+    delta: { (_) => 40 },
+    action: { program(drops) },
   }
   let drop_count = unsafe { *drops }
 

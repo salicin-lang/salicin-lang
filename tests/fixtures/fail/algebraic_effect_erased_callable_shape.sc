@@ -9,10 +9,9 @@ let apply = { with<ask>
 
 let run = {
   (move action: with<ask>(): i32): i32 =>
-  ask.handle(do {
-    apply(action)
-  }) {
-    value(resume) => do { resume(42) },
+  ask.handle {
+    value: { (resume) => resume(42) },
+    action: { apply(action) },
   }
 }
 

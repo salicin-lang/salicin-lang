@@ -21,7 +21,9 @@ use super::hir::{
     HirExpr, HirExprKind, ParamSig, Ty,
 };
 use super::lower::{error_expr, flatten_call, TypeProbe};
-use super::source_rewrite::{source_effect_expression_identity, substitute_function_types};
+use super::source_rewrite::{
+    rewrite_handler_closure_returns, source_effect_expression_identity, substitute_function_types,
+};
 use super::Analyzer;
 
 impl Analyzer {
@@ -730,24 +732,49 @@ impl Analyzer {
                     value,
                 };
                 let identity: SourceContinuation = Rc::new(|_, value| Ok(value));
+                let return_id = analyzer.lowering.next_closure;
+                analyzer.lowering.next_closure += 1;
+                let return_name = format!("$handler$return$done${return_id}");
+                let mut done_body = done.body.clone();
+                rewrite_handler_closure_returns(&mut done_body, &return_name);
+                handler
+                    .return_continuations
+                    .borrow_mut()
+                    .insert(return_name.clone(), identity.clone());
                 let body = analyzer.transform_handler_expr(
-                    done.body.clone(),
+                    done_body,
                     handler.clone(),
                     None,
                     identity,
-                )?;
+                );
+                handler
+                    .return_continuations
+                    .borrow_mut()
+                    .remove(&return_name);
+                let body = body?;
                 Ok(Expr::Block(vec![Stmt::Let(binding)], Some(Box::new(body))))
             })
         } else {
             Rc::new(|_, value| Ok(value))
         };
         let handled_identity = handler.identity.clone();
-        let transformed = match self.transform_handler_expr(
-            (**action_body).clone(),
+        let return_id = self.lowering.next_closure;
+        self.lowering.next_closure += 1;
+        let return_name = format!("$handler$return$action${return_id}");
+        let mut action_body = (**action_body).clone();
+        rewrite_handler_closure_returns(&mut action_body, &return_name);
+        let return_continuations = handler.return_continuations.clone();
+        return_continuations
+            .borrow_mut()
+            .insert(return_name.clone(), final_continuation.clone());
+        let transformed = self.transform_handler_expr(
+            action_body,
             handler,
             None,
             final_continuation,
-        ) {
+        );
+        return_continuations.borrow_mut().remove(&return_name);
+        let transformed = match transformed {
             Ok(expression) => expression,
             Err(()) => return error_expr(),
         };
@@ -763,7 +790,7 @@ impl Analyzer {
         let previous_lexical_source = context
             .lexical_handler_effect_sources
             .insert(handled_identity.clone(), instance.clone());
-        let lowered = self.lower_expr(&transformed, expected, context);
+        let lowered = self.lower_do_block(&transformed, expected, context);
         if newly_active {
             context.active_custom_effects.remove(&handled_identity);
         }

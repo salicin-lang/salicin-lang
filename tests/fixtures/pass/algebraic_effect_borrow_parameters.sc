@@ -15,12 +15,11 @@ let update = { with<read>
 let main = {
   (): i32 =>
   let mut base = 1
-  read.handle(do {
-    let first = add_read(base)
-    update(base)
-    first + base
-  }) {
-    read(resume) => do { resume(20) },
+  read.handle {
+    read: { (resume) => resume(20) },
+    action: { let first = add_read(base)
+      update(base)
+      first + base },
   }
 }
 

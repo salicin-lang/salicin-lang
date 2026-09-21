@@ -4,12 +4,9 @@ let choose = effect {
 
 let main = {
   (): i32 =>
-  choose.handle(do {
-    choose.choose()
-  }) {
-    choose(resume) => do {
-      resume(20);
-      resume(22)
-    },
+  choose.handle {
+    choose: { (resume) => resume(20);
+      resume(22) },
+    action: { choose.choose() },
   }
 }

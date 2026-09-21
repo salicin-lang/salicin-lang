@@ -34,13 +34,13 @@ let update = { with<step, throwing<bool>>(state: Borrow<mut><state>, fail: bool)
 let run = {
   (drops: Ptr<mut><i32>, fail: bool, abandon: bool): i32 =>
   let mut state = state { value: 20, drops: drops }
-  step.handle(do {
-    let result: Result<bool><i32> = try { update(state, fail) }
-    result ?? 5
-  }) {
-    delta(resume) => do {
-      if(abandon) { 40 } else: { resume(1) }
+  step.handle {
+    delta: {
+      (resume) => if(abandon) { 40 } else: { resume(1) }
     },
+    action: {
+      let result: Result<bool><i32> = try { update(state, fail) }
+      result ?? 5 },
   }
 }
 

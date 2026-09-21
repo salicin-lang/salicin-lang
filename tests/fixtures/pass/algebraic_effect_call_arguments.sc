@@ -9,10 +9,9 @@ let combine = { with<step>
 
 let main = {
   (): i32 =>
-  step.handle(do {
-    combine(step.next(19), step.next(23))
-  }) {
-    next(value, resume) => do { resume(value) },
+  step.handle {
+    next: { (value, resume) => resume(value) },
+    action: { combine(step.next(19), step.next(23)) },
   }
 }
 

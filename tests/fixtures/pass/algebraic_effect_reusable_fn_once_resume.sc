@@ -18,10 +18,9 @@ let consume = { (move resource: resource): i32 => 0 }
 
 let run = {
   (move action: with<ask>(): i32): i32 =>
-  ask.handle(do {
-    action()
-  }) {
-    value(resume) => do { resume(41) },
+  ask.handle {
+    value: { (resume) => resume(41) },
+    action: { action() },
   }
 }
 

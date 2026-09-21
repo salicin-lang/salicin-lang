@@ -884,25 +884,28 @@ The corresponding function value type is `with<counter>(): i32`.
 always covers the complete multi-group invocation. `with<E>` cannot wrap an
 ordinary result type.
 
-An operation transfers control to the nearest matching handler. A resumable arm receives a
+An operation transfers control to the nearest matching handler. A resumable clause receives a
 single-use continuation. Resuming supplies the operation result and eventually returns the
 handler's answer type. Abandoning the continuation cleans its captured state exactly once.
 
-A source handler first receives exactly one unlabeled action expression in
-parentheses, then a spaced brace group of pattern-like arms:
+Every effect declaration automatically synthesizes a `handle` function. It is
+called through the ordinary labeled brace-call syntax; each argument is an
+explicit closure and `action` must be final:
 
 ```sc fragment
-counter.handle(read()) {
-  next(resume) => resume(41),
-  Return(value) => value,
+counter.handle {
+  next: { (resume) => resume(41) },
+  done: { (value) => value },
+  action: { read() },
 }
 ```
 
-The action expression is delayed by the handler and evaluated under it. Each
-resumable operation arm receives the operation payload followed by its
-single-use continuation; an abortive operation arm has no continuation.
-`Return(value)` handles normal action completion and may transform the answer
-type. There are no `action:` or `done:` labeled fields.
+This is not a distinct control-flow grammar production: normal function-call
+parsing preserves the labels and closure values for the generated signature.
+Each resumable operation closure receives the operation payload followed by its
+single-use continuation; an abortive operation closure has no continuation.
+The optional `done` closure handles normal completion and may transform the
+answer type. Without it, completion preserves the action result.
 
 `throwing<Error>` is the standard abortive error effect. `throw(error)` invokes its `Raise`
 operation. `try { ... }` handles that effect and materializes `core.Result<Error><Value>`.

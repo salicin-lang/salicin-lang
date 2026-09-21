@@ -14,12 +14,9 @@ let update = { with<step>
 let main = {
   (): i32 =>
   let mut pair = pair { left: 20, right: 20 }
-  step.handle(do {
-    update(pair, pair.left)
-    pair.left + pair.right
-  }) {
-    tick(resume) => do {
-      resume(())
-    },
+  step.handle {
+    tick: { (resume) => resume(()) },
+    action: { update(pair, pair.left)
+      pair.left + pair.right },
   }
 }

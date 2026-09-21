@@ -41,17 +41,17 @@ let shared = {
     let value = await(make_step_with(offset))
     value
   }
-  ask.handle(do {
-    let first = future.poll()
-    let second = future.poll()
-    match(first) {
-      Pending => do {
-        match(second) { Ready(value) => value, Pending => 0,
-        }
-      }, Ready(_) => 0,
-    }
-  }) {
-    ask(resume) => do { resume(40) },
+  ask.handle {
+    ask: { (resume) => resume(40) },
+    action: { let first = future.poll()
+      let second = future.poll()
+      match(first) {
+        Pending => do {
+          match(second) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
   }
 }
 
@@ -62,17 +62,17 @@ let mutable = {
     value = value + amount
     value
   }
-  ask.handle(do {
-    let first = future.poll()
-    let second = future.poll()
-    match(first) {
-      Pending => do {
-        match(second) { Ready(result) => result, Pending => 0,
-        }
-      }, Ready(_) => 0,
-    }
-  }) {
-    ask(resume) => do { resume(40) },
+  ask.handle {
+    ask: { (resume) => resume(40) },
+    action: { let first = future.poll()
+      let second = future.poll()
+      match(first) {
+        Pending => do {
+          match(second) { Ready(result) => result, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
   }
 }
 
@@ -84,11 +84,12 @@ let cancelled = {
       value = value + amount
       value
     }
-    let handled: () = ask.handle(do {
-      match(future.poll()) { Pending => (), Ready(_) => (),
-      }
-    }) {
-      ask(resume) => do { resume(40) },
+    let handled: () = ask.handle {
+      ask: { (resume) => resume(40) },
+      action: {
+        match(future.poll()) { Pending => (), Ready(_) => (),
+        }
+      },
     }
     handled
   }

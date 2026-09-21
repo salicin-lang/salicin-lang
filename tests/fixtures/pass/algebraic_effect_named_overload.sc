@@ -10,11 +10,10 @@ let choose = { with<ask>
 
 let main = {
   (): i32 =>
-  ask.handle(do {
-    choose()
-  }) {
-    value(left, resume) => do { resume(left) },
-    value(right, resume) => do { resume(right) },
+  ask.handle {
+    value: { (left, resume) => resume(left) },
+    value: { (right, resume) => resume(right) },
+    action: { choose() },
   }
 }
 

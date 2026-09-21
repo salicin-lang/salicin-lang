@@ -62,37 +62,39 @@ by library types and APIs unless they explicitly declare an effect.
 
 ## Handler Shape
 
-Every source effect is validated against `core.effect.handle`. Its derived
-`handle` member accepts:
+Every source effect is validated against `core.effect.Handle`. Its derived
+`handle` function has one ordinary labeled Brace argument group containing:
 
-- one unlabeled action expression in parentheses;
-- one arm for each operation in a spaced trailing brace group;
-- a `Return(value)` arm for normal completion and answer-type conversion.
+- one closure for each operation;
+- an optional `done` closure for normal completion and answer-type conversion;
+- one final `action` closure evaluated under the handler.
 
 Conceptually:
 
 ```sc fragment
-let answer = state<i32>.handle(increment() + 1) {
-  get(resume) => resume(41),
-  put(value, resume) => resume(()),
-  Return(value) => value,
+let answer = state<i32>.handle {
+  get: { (resume) => resume(41) },
+  put: { (value, resume) => resume(()) },
+  done: { (value) => value },
+  action: { increment() + 1 },
 }
 ```
 
-The action is delayed and evaluated under the handler. The arm group is
-handler syntax, not an ordinary labeled Brace call. Arms are comma-separated,
-use the declared operation constructor names, and never use `action:` or
-`done:` labels. `Return` is reserved for normal completion.
+There is no dedicated handler grammar or parser rewrite. This is an ordinary
+declaration-directed call to the compiler-generated function: labels select its
+derived parameters and every value is an explicit closure. Omitting `done`
+preserves the action result unchanged.
 
-Arm parameter and result types come from the effect declaration. Overloaded operations retain
-their declared parameter labels so each arm remains unambiguous.
+Operation-closure parameter and result types come from the effect declaration.
+Overloaded operations retain their declared parameter labels so each closure
+remains unambiguous.
 
-An operation returning `never` is abortive. Its arm has no continuation and directly produces
+An operation returning `never` is abortive. Its closure has no continuation and directly produces
 the handler answer.
 
 ## Continuations
 
-A resumable arm receives a delimited, single-use continuation. Calling it:
+A resumable operation closure receives a delimited, single-use continuation. Calling it:
 
 1. supplies the operation result;
 2. resumes the suspended action;
@@ -152,7 +154,7 @@ structures, and their values are linear resources.
 
 The runtime representation may use generated frames and adapters, but those details are not
 observable language entities. Generated names must not appear in user diagnostics or participate in
-source lookup. A continuation currently cannot escape its handler arm.
+source lookup. A continuation currently cannot escape its operation closure.
 Consequently `suspension.handle` can interpret `suspension.suspend()` directly, but a
 source handler cannot yet store the suspended continuation as future state;
 `core.async.async` remains the compiler boundary that materializes that state.

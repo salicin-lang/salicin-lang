@@ -9,11 +9,10 @@ let ask = { with<ask>
 
 let leak = { with<ask>
   (): (with<ask>(): i32) =>
-  ask.handle(do {
-    let action = ask
-    action
-  }) {
-    value(resume) => do { resume(42) },
+  ask.handle {
+    value: { (resume) => resume(42) },
+    action: { let action = ask
+      action },
   }
 }
 

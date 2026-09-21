@@ -9,10 +9,9 @@ let once = { with<read>
 
 let main = {
   (): i32 =>
-  read.handle(do {
-    once(19) + once(23)
-  }) {
-    read(value, resume) => do { resume(value) },
+  read.handle {
+    read: { (value, resume) => resume(value) },
+    action: { once(19) + once(23) },
   }
 }
 

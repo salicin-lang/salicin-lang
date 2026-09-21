@@ -18,10 +18,9 @@ let consume = { (move resource: resource): i32 => 0 }
 
 let run = {
   (move action: with<abort>(): i32): i32 =>
-  abort.handle(do {
-    action()
-  }) {
-    stop(resume) => do { 41 },
+  abort.handle {
+    stop: { (resume) => 41 },
+    action: { action() },
   }
 }
 

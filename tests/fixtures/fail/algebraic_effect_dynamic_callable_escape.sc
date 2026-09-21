@@ -7,11 +7,11 @@ let right = { with<ask>(): i32 => ask.value() + 1 }
 
 let leak = { with<ask>
   (): (with<ask>(): i32) =>
-  ask.handle(do {
-    let selected: with<ask>(): i32  = if(true) { left } else: { right }
-    selected
-  }) {
-    value(resume) => do { resume(42) },
+  ask.handle {
+    value: { (resume) => resume(42) },
+    action: {
+      let selected: with<ask>(): i32  = if(true) { left } else: { right }
+      selected },
   }
 }
 

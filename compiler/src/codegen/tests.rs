@@ -6205,8 +6205,9 @@ let combine = { with<ask>[left: i32](right: i32): i32 =>
   left + right + ask.value()
 }
 let main = { (): i32 =>
-  ask.handle(combine[20](22)) {
-    value(resume) => resume(0),
+  ask.handle {
+    value: { (resume) => resume(0) },
+    action: { combine[20](22) },
   }
 }
 "#,
@@ -6220,8 +6221,9 @@ let combine = { with<ask>[left: i32](right: i32): i32 =>
   left + right + ask.value()
 }
 let main = { (): i32 =>
-  ask.handle(combine(20)(22)) {
-    value(resume) => resume(0),
+  ask.handle {
+    value: { (resume) => resume(0) },
+    action: { combine(20)(22) },
   }
 }
 "#,
@@ -6257,11 +6259,10 @@ let main = { (): i32 =>  0 }
         r#"
 let ask = effect { value: (): i32 }
 let main = { (): i32 =>
-  ask.handle(do {
-      let invoke: with<ask>(i32): i32 = { (value: i32) => value + ask.value() }
-      invoke(2)
-    }) {
-    value(resume) => resume(40),
+  ask.handle {
+    value: { (resume) => resume(40) },
+    action: { let invoke: with<ask>(i32): i32 = { (value: i32) => value + ask.value() }
+      invoke(2) },
   }
 }
 "#,
@@ -6275,8 +6276,9 @@ let combine = { <value: type>with<ask>[left: i32](right: i32): i32 =>
   left + right + ask.value()
 }
 let main = { (): i32 =>
-  ask.handle(combine<i32>[ask.value()](2)) {
-    value(resume) => resume(20),
+  ask.handle {
+    value: { (resume) => resume(20) },
+    action: { combine<i32>[ask.value()](2) },
   }
 }
 "#,
@@ -6293,8 +6295,9 @@ extend(cell, readable) {
 }
 let forward = { with<ask>(value: cell): i32 =>  value.read() }
 let main = { (): i32 =>
-  ask.handle(forward(cell{ value: 40 })) {
-    value(resume) => resume(2),
+  ask.handle {
+    value: { (resume) => resume(2) },
+    action: { forward(cell{ value: 40 }) },
   }
 }
 "#,
@@ -6321,8 +6324,9 @@ fn handler_continuations_require_parenthesized_calls() {
         r#"
 let ask = effect { value: (): i32 }
 let main = { (): i32 =>
-  ask.handle(ask.value()) {
-    value(resume) => resume{value: 42},
+  ask.handle {
+    value: { (resume) => resume{value: 42} },
+    action: { ask.value() },
   }
 }
 "#,
@@ -6341,8 +6345,9 @@ fn algebraic_handlers_preserve_operation_and_frame_residual_effects() {
         r#"
 let io = effect
 let ask = effect { value: with<io>(): i32 }
-let run = { with<io>(): i32 =>  ask.handle(ask.value()) {
-  value(resume) => resume(42),
+let run = { with<io>(): i32 =>  ask.handle {
+  value: { (resume) => resume(42) },
+  action: { ask.value() },
 } }
 let main = { (): i32 =>  0 }
 "#,
@@ -6354,10 +6359,12 @@ let main = { (): i32 =>  0 }
 let supply = effect { seed: (): i32 }
 let ask = effect { value: with<supply>(): i32 }
 let main = { (): i32 =>
-  supply.handle(ask.handle(ask.value()) {
-    value(resume) => resume(42),
-  }) {
-    seed(resume) => resume(0),
+  supply.handle {
+    seed: { (resume) => resume(0) },
+    action: { ask.handle {
+    value: { (resume) => resume(42) },
+    action: { ask.value() },
+  } },
   }
 }
 "#,
@@ -6370,10 +6377,16 @@ let supply = effect { seed: (): i32 }
 let ask = effect { value: with<supply>(): i32 }
 let request = { with<ask, supply>(): i32 =>  ask.value() }
 let inner = { with<supply>(): i32 =>
-  ask.handle(request()) { value(resume) => resume(42) }
+  ask.handle {
+    value: { (resume) => resume(42) },
+    action: { request() },
+  }
 }
 let main = { (): i32 =>
-  supply.handle(inner()) { seed(resume) => resume(0) }
+  supply.handle {
+    seed: { (resume) => resume(0) },
+    action: { inner() },
+  }
 }
 "#,
     )
@@ -6388,11 +6401,17 @@ let supply = effect { seed: (): i32 }
 let ask = effect { value: with<supply, throwing<bool>>(): i32 }
 let request = { with<ask, supply, throwing<bool>>(): i32 =>  ask.value() }
 let inner = { with<supply, throwing<bool>>(): i32 =>
-  ask.handle(request()) { value(resume) => resume(42) }
+  ask.handle {
+    value: { (resume) => resume(42) },
+    action: { request() },
+  }
 }
 let main = { (): i32 =>
   let result: Result<bool><i32> = try {
-supply.handle(inner()) { seed(resume) => resume(0) }
+supply.handle {
+  seed: { (resume) => resume(0) },
+  action: { inner() },
+}
   }
   result ?? 0
 }
@@ -6404,7 +6423,10 @@ supply.handle(inner()) { seed(resume) => resume(0) }
         r#"
 let io = effect
 let ask = effect { value: with<io>(): i32 }
-let run = { (): i32 =>  ask.handle(ask.value()) { value(resume) => resume(42) } }
+let run = { (): i32 =>  ask.handle {
+  value: { (resume) => resume(42) },
+  action: { ask.value() },
+} }
 let main = { (): i32 =>  run() }
 "#,
     )
@@ -6418,7 +6440,10 @@ let main = { (): i32 =>  run() }
 let io = effect
 let ask = effect { value: (): i32 }
 let request = { with<ask, io>(): i32 =>  ask.value() }
-let run = { (): i32 =>  ask.handle(request()) { value(resume) => resume(42) } }
+let run = { (): i32 =>  ask.handle {
+  value: { (resume) => resume(42) },
+  action: { request() },
+} }
 let main = { (): i32 =>  run() }
 "#,
     )
@@ -6433,15 +6458,24 @@ let throwing = core.error.throwing
 let unsafe = core.unsafe.unsafety
 
 let ask_unsafe = effect { value: with<unsafe>(): i32 }
-let unsafe_run = { (): i32 =>  unsafe { ask_unsafe.handle(ask_unsafe.value()) { value(resume) => resume(42) } } }
+let unsafe_run = { (): i32 =>  unsafe { ask_unsafe.handle {
+  value: { (resume) => resume(42) },
+  action: { ask_unsafe.value() },
+} } }
 let ask_failure = effect { value: with<throwing<bool>>(): i32 }
 let throwing_run = { with<throwing<bool>>(): i32 =>
-  ask_failure.handle(ask_failure.value()) { value(resume) => resume(42) }
+  ask_failure.handle {
+    value: { (resume) => resume(42) },
+    action: { ask_failure.value() },
+  }
 }
 let ask_frame = effect { value: (): i32 }
 let throwing_request = { with<ask_frame, throwing<bool>>(): i32 =>  ask_frame.value() }
 let throwing_frame = { with<throwing<bool>>(): i32 =>
-  ask_frame.handle(throwing_request()) { value(resume) => resume(42) }
+  ask_frame.handle {
+    value: { (resume) => resume(42) },
+    action: { throwing_request() },
+  }
 }
 let main = { (): i32 =>  0 }
 "#,
@@ -6454,7 +6488,10 @@ let Result = core.Result
 let unsafe = core.unsafe.unsafety
 
 let ask = effect { value: with<unsafe>(): i32 }
-let run = { (): i32 =>  ask.handle(ask.value()) { value(resume) => resume(42) } }
+let run = { (): i32 =>  ask.handle {
+  value: { (resume) => resume(42) },
+  action: { ask.value() },
+} }
 let main = { (): i32 =>  run() }
 "#,
     )
@@ -6469,7 +6506,10 @@ let Result = core.Result
 let throwing = core.error.throwing
 
 let ask = effect { value: with<throwing<bool>>(): i32 }
-let run = { (): i32 =>  ask.handle(ask.value()) { value(resume) => resume(42) } }
+let run = { (): i32 =>  ask.handle {
+  value: { (resume) => resume(42) },
+  action: { ask.value() },
+} }
 let main = { (): i32 =>  run() }
 "#,
     )
@@ -6489,7 +6529,11 @@ let ask = effect {
   value: (right: i32): i32
 }
 let choose = { with<ask>(): i32 =>  ask.value(left: 19) + ask.value(right: 23) }
-let main = { (): i32 =>  ask.handle(choose()) { value(left, resume) => resume(left), value(right, resume) => resume(right) } }
+let main = { (): i32 =>  ask.handle {
+  value: { (left, resume) => resume(left) },
+  value: { (right, resume) => resume(right) },
+  action: { choose() },
+} }
 "#,
     )
     .expect("named arguments and clause parameters should select effect operation overloads");
@@ -6516,11 +6560,12 @@ fn algebraic_effect_function_aliases_stay_static_and_handler_local() {
         r#"
 let ask = effect { value: (): i32 }
 let ask = { with<ask>(): i32 =>  ask.value() }
-let main = { (): i32 =>  ask.handle(do {
-  let action = ask
+let main = { (): i32 =>  ask.handle {
+  value: { (resume) => resume(42) },
+  action: { let action = ask
   let forwarded = action
-  forwarded()
-}) { value(resume) => resume(42) } }
+  forwarded() },
+} }
 "#,
     )
     .expect("a chained local alias should retain its statically known effectful target");
@@ -6530,10 +6575,11 @@ let main = { (): i32 =>  ask.handle(do {
 let ask = effect { value: (): i32 }
 let ask = { with<ask>(): i32 =>  ask.value() }
 let consume = { with<ask>(action: (): i32): i32 =>  action() }
-let main = { (): i32 =>  ask.handle(do {
-  let action = ask
-  consume(action)
-}) { value(resume) => resume(42) } }
+let main = { (): i32 =>  ask.handle {
+  value: { (resume) => resume(42) },
+  action: { let action = ask
+  consume(action) },
+} }
 "#,
     )
     .expect("a known function argument should specialize a higher-order effectful frame");
@@ -6544,11 +6590,12 @@ let ask = effect { value: (): i32 }
 let ask_left = { with<ask>(): i32 =>  ask.value() }
 let ask_right = { with<ask>(): i32 =>  ask.value() }
 let consume = { with<ask>(action: (): i32): i32 =>  action() }
-let main = { (): i32 =>  ask.handle(do {
-  let action: with<ask>(): i32= if(true) { ask_left } else: { ask_right }
+let main = { (): i32 =>  ask.handle {
+  value: { (resume) => resume(42) },
+  action: { let action: with<ask>(): i32= if(true) { ask_left } else: { ask_right }
   let forwarded = action
-  consume(forwarded)
-}) { value(resume) => resume(42) } }
+  consume(forwarded) },
+} }
 "#,
     )
     .expect("an aliased dynamic target should specialize a higher-order resumable frame");
@@ -6558,11 +6605,12 @@ let main = { (): i32 =>  ask.handle(do {
 let ask = effect { value: (): i32 }
 let ask_left = { with<ask>(): i32 =>  ask.value() }
 let ask_right = { with<ask>(): i32 =>  ask.value() }
-let main = { (): i32 =>  ask.handle(do {
-  let action: with<ask>(): i32= if(true) { ask_left } else: { ask_right }
+let main = { (): i32 =>  ask.handle {
+  value: { (resume) => resume(42) },
+  action: { let action: with<ask>(): i32= if(true) { ask_left } else: { ask_right }
   let escaped = action
-  escaped()
-}) { value(resume) => resume(42) } }
+  escaped() },
+} }
 "#,
     )
     .expect("a dynamic selection tag may be copied into an immutable handler-local alias");
@@ -6572,13 +6620,14 @@ let main = { (): i32 =>  ask.handle(do {
 let ask = effect { value: (): i32 }
 let ask_left = { with<ask>(): i32 =>  ask.value() }
 let ask_right = { with<ask>(): i32 =>  ask.value() }
-let main = { (): i32 =>  ask.handle(do {
-  let action: with<ask>(): i32= if(true) { ask_left } else: { ask_right }
+let main = { (): i32 =>  ask.handle {
+  value: { (resume) => resume(42) },
+  action: { let action: with<ask>(): i32= if(true) { ask_left } else: { ask_right }
   let other: with<ask>(): i32= if(true) { ask_right } else: { ask_left }
   let mut changed = action
   changed = other
-  changed()
-}) { value(resume) => resume(42) } }
+  changed() },
+} }
 "#,
     )
     .expect("mutable dynamic aliases remap assignments between equal finite target sets");
@@ -6589,13 +6638,14 @@ let ask = effect { value: (): i32 }
 let first = { with<ask>(): i32 =>  ask.value() }
 let second = { with<ask>(): i32 =>  ask.value() }
 let third = { with<ask>(): i32 =>  ask.value() }
-let main = { (): i32 =>  ask.handle(do {
-  let left: with<ask>(): i32= if(true) { first } else: { second }
+let main = { (): i32 =>  ask.handle {
+  value: { (resume) => resume(42) },
+  action: { let left: with<ask>(): i32= if(true) { first } else: { second }
   let right: with<ask>(): i32= if(true) { first } else: { third }
   let mut changed = left
   changed = right
-  changed()
-}) { value(resume) => resume(42) } }
+  changed() },
+} }
 "#,
     )
     .expect_err("mutable dynamic aliases require equal finite target sets");
@@ -6609,16 +6659,18 @@ let ask = effect {
   choose: (): bool
   value: (): i32
 }
-let main = { (): i32 =>  ask.handle(do {
-  let left_base = 1
+let main = { (): i32 =>  ask.handle {
+  choose: { (resume) => resume(false) },
+  value: { (resume) => resume(40) },
+  action: { let left_base = 1
   let right_base = 2
   let left: with<ask>(): i32= { () => ask.value() + left_base }
   let right: with<ask>(): i32= { () => ask.value() + right_base }
   let first: with<ask>(): i32= if(true) { left } else: { right }
   let second: with<ask>(): i32= if(false) { right } else: { left }
   let combined: with<ask>(): i32= if(ask.choose()) { first } else: { second }
-  combined()
-}) { choose(resume) => resume(false), value(resume) => resume(40) } }
+  combined() },
+} }
 "#,
     )
     .expect("effectful union selectors forward capturing closure environments");
@@ -6631,15 +6683,16 @@ fn dynamic_resumable_closure_selection_preserves_fn_once_consumption() {
 let ask = effect { value: (): i32 }
 let payload = struct { value: i32 }
 let consume = { (move payload: payload): i32 =>  payload.value }
-let main = { (): i32 =>  ask.handle(do {
-  let left_payload = payload{ value: 20 }
+let main = { (): i32 =>  ask.handle {
+  value: { (resume) => resume(1) },
+  action: { let left_payload = payload{ value: 20 }
   let right_payload = payload{ value: 21 }
   let left: with<ask>(): i32= { () => ask.value() + consume(left_payload) }
   let right: with<ask>(): i32= { () => ask.value() + consume(right_payload) }
   let action: with<ask>(): i32= if(true) { left } else: { right }
   let first = action()
-  first + action()
-}) { value(resume) => resume(1) } }
+  first + action() },
+} }
 "#,
     )
     .expect_err("a selected fn_once resumable closure cannot be invoked twice");
@@ -6656,14 +6709,15 @@ fn effectful_guards_inspect_noncopy_inputs_without_committing_payload_moves() {
 let ask = effect { accept: (): bool }
 let payload = struct { value: i32 }
 let event = enum { value { value: payload }, empty }
-let main = { (): i32 =>  ask.handle(do {
-  let event = event.value { value: payload{ value: 42 } }
+let main = { (): i32 =>  ask.handle {
+  accept: { (resume) => resume(false) },
+  action: { let event = event.value { value: payload{ value: 42 } }
   match(event) {
 event.value(value: _) if ask.accept() => 0,
 event.value(value: _) => 42,
 event.empty => 0,
-  }
-}) { accept(resume) => resume(false) } }
+  } },
+} }
 "#,
     )
     .expect("a binding-free effectful guard may inspect a non-copyable enum input");
@@ -6674,14 +6728,15 @@ let ask = effect { accept: (): bool }
 let payload = struct { value: i32 }
 let event = enum { value { value: payload }, empty }
 let consume = { (move payload: payload): i32 =>  payload.value }
-let main = { (): i32 =>  ask.handle(do {
-  let event = event.value { value: payload{ value: 42 } }
+let main = { (): i32 =>  ask.handle {
+  accept: { (resume) => resume(false) },
+  action: { let event = event.value { value: payload{ value: 42 } }
   match(event) {
 event.value(value: payload) if ask.accept() => consume(payload),
 event.value(value: payload) => consume(payload),
 event.empty => 0,
-  }
-}) { accept(resume) => resume(false) } }
+  } },
+} }
 "#,
     )
     .expect("a successful guard path can commit non-copyable bindings before entering its body");
@@ -6691,14 +6746,15 @@ event.empty => 0,
 let ask = effect { accept: (): bool }
 let payload = struct { value: i32 }
 let event = enum { value { value: payload }, empty }
-let main = { (): i32 =>  ask.handle(do {
-  let event = event.value { value: payload{ value: 42 } }
+let main = { (): i32 =>  ask.handle {
+  accept: { (resume) => resume(false) },
+  action: { let event = event.value { value: payload{ value: 42 } }
   match(event) {
 event.value(value: payload) if ask.accept() && payload.value > 0 => 1,
 event.value(value: _) => 42,
 event.empty => 0,
-  }
-}) { accept(resume) => resume(false) } }
+  } },
+} }
 "#,
     )
     .expect("a suspended guard reconstructs projected non-copyable bindings from its owned input");
@@ -6709,14 +6765,15 @@ let ask = effect { accept: (): bool }
 let payload = struct { value: i32 }
 let event = enum { value { value: payload }, empty }
 let consume = { (move payload: payload): bool =>  payload.value > 0 }
-let main = { (): i32 =>  ask.handle(do {
-  let event = event.value { value: payload{ value: 42 } }
+let main = { (): i32 =>  ask.handle {
+  accept: { (resume) => resume(false) },
+  action: { let event = event.value { value: payload{ value: 42 } }
   match(event) {
 event.value(value: payload) if ask.accept() && consume(payload) => 1,
 event.value(value: _) => 42,
 event.empty => 0,
-  }
-}) { accept(resume) => resume(false) } }
+  } },
+} }
 "#,
     )
     .expect_err("a guard may inspect but not move its reconstructed payload view");
@@ -6845,10 +6902,11 @@ let forward = { <e: effects>with<e>(move action: with<e>(): i32): i32 =>
 }
 
 let main = { (): i32 =>
-  ask.handle(do {
-    let captured = 0
-    forward<ask>({ ask.value() + captured })
-  }) { value(resume) => resume(42) }
+  ask.handle {
+    value: { (resume) => resume(42) },
+    action: { let captured = 0
+    forward<ask>({ ask.value() + captured }) },
+  }
 }
 "#,
     )
@@ -6869,8 +6927,9 @@ let forward = { <e: effects>with<e>(move action: with<e>(): i32): i32 =>
 }
 
 let main = { (): i32 =>
-  ask.handle(forward<tell>({ ask.value() })) {
-    value(resume) => resume(42)
+  ask.handle {
+    value: { (resume) => resume(42) },
+    action: { forward<tell>({ ask.value() }) },
   }
 }
 "#,
@@ -7748,9 +7807,10 @@ let request = effect {
   empty: {}: i32
 }
 let main = { (): i32 =>
-  request.handle(request.echo { 40, right: 0 } + request.empty {}) {
-    echo(left, right, resume) => resume(left + right),
-    empty(resume) => resume(2),
+  request.handle {
+    echo: { (left, right, resume) => resume(left + right) },
+    empty: { (resume) => resume(2) },
+    action: { request.echo { 40, right: 0 } + request.empty {} },
   }
 }
 "#,
@@ -7849,27 +7909,36 @@ let main = { (): () =>  apply { partial value => value } { partial value => valu
 fn algebraic_handlers_require_one_labeled_brace_group_with_action_last() {
     for (call, expected) in [
         (
-            "ask.handle() { value(resume) => resume(42) }",
-            "exactly one unlabeled parenthesized action",
+            "ask.handle { value: { (resume) => resume(42) } }",
+            "exactly one `action` argument",
         ),
         (
-            "ask.handle(action: ask.value()) { value(resume) => resume(42) }",
-            "exactly one unlabeled parenthesized action",
+            "ask.handle { value: { (resume) => resume(42) }, action: ask.value() }",
+            "all be labeled closures",
         ),
         (
-            "ask.handle(ask.value(), ask.value()) { value(resume) => resume(42) }",
-            "exactly one unlabeled parenthesized action",
+            "ask.handle { action: { ask.value() }, value: { (resume) => resume(42) } }",
+            "exactly one `action` argument, in final position",
         ),
         (
-            "ask.handle(ask.value()) { value => 42 }",
-            "expected a parameter group",
+            "ask.handle { value: 42, action: { ask.value() } }",
+            "all be labeled closures",
+        ),
+        (
+            "ask.handle(ask.value()) { value(resume) => resume(42) }",
+            "expects one brace-delimited argument group",
         ),
     ] {
-        let error = crate::parser::parse(&format!(
+        let diagnostics = compile_text(&format!(
             "let ask = effect {{ value: (): i32 }}\nlet main = {{ (): i32 => {call} }}\n"
         ))
         .expect_err("invalid handler argument shape must be rejected");
-        assert!(error.message.contains(expected), "{error:?}");
+        assert!(
+            diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.message.contains(expected)),
+            "{diagnostics:?}"
+        );
     }
 }
 
@@ -11911,7 +11980,10 @@ fn reusable_handler_capturing_action_materializes_direct_literals() {
         r#"
 let ask = effect { value: (): i32 }
 let run = { (){move action: with<ask>() :i32}: i32 =>
-  ask.handle(action()) { value(resume) => resume(10) }
+  ask.handle {
+    value: { (resume) => resume(10) },
+    action: { action() },
+  }
 }
 let main = { (): i32 =>
   let mut base = 31
@@ -11932,7 +12004,10 @@ fn reusable_handler_materializes_arguments_before_direct_action() {
         r#"
 let ask = effect { value: (): i32 }
 let run = { (seed: i32){move action: with<ask>() :i32}: i32 =>
-  ask.handle(action() + seed) { value(resume) => resume(20) }
+  ask.handle {
+    value: { (resume) => resume(20) },
+    action: { action() + seed },
+  }
 }
 let prepare = { (order: Borrow<mut><i32>): i32 =>
   order = order + 1
@@ -11957,10 +12032,11 @@ fn reusable_handler_stages_borrowed_arguments_before_direct_action() {
         r#"
 let ask = effect { value: (): i32 }
 let run = { (left: Borrow<i32>, right: Borrow<mut><i32>){move action: with<ask>() :i32}: i32 =>
-  ask.handle(do {
-    right = right + action()
-    left + right
-  }) { value(resume) => resume(2) }
+  ask.handle {
+    value: { (resume) => resume(2) },
+    action: { right = right + action()
+    left + right },
+  }
 }
 
 let main = { (): i32 =>

@@ -22,15 +22,14 @@ let main = {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *counter = 0 }
-  let result = abort.handle(do {
-    let resource = resource { counter: counter }
-    let action: with<abort>(): i32  = { () =>
-      let value = abort.stop()
-      value + consume(resource)
-    }
-    action()
-  }) {
-    stop(resume) => do { 41 },
+  let result = abort.handle {
+    stop: { (resume) => 41 },
+    action: { let resource = resource { counter: counter }
+      let action: with<abort>(): i32  = { () =>
+        let value = abort.stop()
+        value + consume(resource)
+      }
+      action() },
   }
   let drops = unsafe { *counter }
   unsafe {

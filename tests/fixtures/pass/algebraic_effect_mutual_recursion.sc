@@ -17,10 +17,9 @@ let odd = { with<tick>
 let main = {
   (): i32 =>
   let value = 14
-  tick.handle(do {
-    even(3)
-  }) {
-    tick(resume) => do { resume(value) },
+  tick.handle {
+    tick: { (resume) => resume(value) },
+    action: { even(3) },
   }
 }
 

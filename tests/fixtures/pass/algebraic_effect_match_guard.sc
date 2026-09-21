@@ -25,10 +25,9 @@ let classify_named = { with<decide>
 
 let main = {
   (): i32 =>
-  decide.handle(do {
-    classify_direct(event.value { value: 20 }) + classify_named(event.value { value: 21 })
-  }) {
-    accept(value, resume) => do { resume(value == 20) },
+  decide.handle {
+    accept: { (value, resume) => resume(value == 20) },
+    action: { classify_direct(event.value { value: 20 }) + classify_named(event.value { value: 21 }) },
   }
 }
 

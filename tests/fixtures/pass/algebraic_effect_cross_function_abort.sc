@@ -10,10 +10,9 @@ let program = { with<stop>
 
 let main = {
   (): i32 =>
-  let result = stop.handle(do {
-    program() + 1
-  }) {
-    stop(resume) => do { 40 },
+  let result = stop.handle {
+    stop: { (resume) => 40 },
+    action: { program() + 1 },
   }
   result + 2
 }

@@ -9,10 +9,9 @@ let program = { with<read>
 
 let main = {
   (): i32 =>
-  read.handle(do {
-    program() + 1
-  }) {
-    read(resume) => do { resume(40) + 1 },
+  read.handle {
+    read: { (resume) => resume(40) + 1 },
+    action: { program() + 1 },
   }
 }
 

@@ -9,10 +9,9 @@ let ask = { with<ask>
 
 let main = {
   (): i32 =>
-  ask.handle(do {
-    let mut action = ask
-    action()
-  }) {
-    value(resume) => do { resume(42) },
+  ask.handle {
+    value: { (resume) => resume(42) },
+    action: { let mut action = ask
+      action() },
   }
 }

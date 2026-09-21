@@ -6,11 +6,11 @@ pub let EffectCallable = <Input: type, Output: type, Answer: type>: type builtin
 
 /// Protocol anchor for compiler-derived effect handlers.
 /// Every source `effect` declaration automatically satisfies this trait; the
-/// operation clauses and `Handle` member are synthesized from that operation set.
+/// labeled argument schema and `handle` function are synthesized from its operations.
 pub let Handle = trait<self: effect> {
-  /// Clause parameter schema synthesized from the operations of `Self`.
-  Clauses: <Value: type, Answer: type>: parameters;
+  /// Complete argument schema synthesized from the operations of `Self`.
+  Arguments: <Value: type, Answer: type>: parameters;
   /// Handles `Self` around `action`, leaving `Rest` as the residual effect row.
   handle: <Value: type, Answer: type, rest: effects>with<rest>
-  ...Clauses<Value, Answer>{move action: with<self, rest>() :Value}: Answer
+  ...Arguments<Value, Answer>: Answer
 }

@@ -109,8 +109,9 @@ let process = { with<overdraft>
 
 let main = {
   (): i32 =>
-  let balance = overdraft.handle(process(Batch { index: 0 })) {
-    reject() => 1,
+  let balance = overdraft.handle {
+    reject: { () => 1 },
+    action: { process(Batch { index: 0 }) },
   }
   let count = count_batch(Batch { index: 0 })
   if(balance == 42 && count == 4) { 42 } else: { 1 }

@@ -4,15 +4,15 @@ let read = effect {
 
 let main = {
   (): i32 =>
-  read.handle(do {
-    let values = [42, 0]
-    match(values[read.read()]) {
-      42 => do {
-        if(read.read() == 0) { 42 } else: { 0 }
-      }, _ => 0,
-    }
-  }) {
-    read(resume) => do { resume(0) },
+  read.handle {
+    read: { (resume) => resume(0) },
+    action: { let values = [42, 0]
+      match(values[read.read()]) {
+        42 => do {
+          if(read.read() == 0) { 42 } else: { 0 }
+        }, _ => 0,
+      }
+    },
   }
 }
 

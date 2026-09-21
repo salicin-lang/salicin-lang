@@ -17,28 +17,25 @@ let choose_with_throw_sugar = { with<throwing<i32>>(fail: bool): i32 =>
 
 let handled_throw = {
   (): i32 =>
-  throwing<i32>.handle(do {
-    fail_with_answer()
-  }) {
-    raise(error) => do { error },
+  throwing<i32>.handle {
+    raise: { (error) => error },
+    action: { fail_with_answer() },
   }
 }
 
 let handled_throw_sugar_function = {
   (): i32 =>
-  throwing<i32>.handle(do {
-    fail_with_throw_sugar()
-  }) {
-    raise(error) => do { error },
+  throwing<i32>.handle {
+    raise: { (error) => error },
+    action: { fail_with_throw_sugar() },
   }
 }
 
 let handled_throw_sugar_action = {
   (): i32 =>
-  throwing<i32>.handle(do {
-    throw(42)
-  }) {
-    raise(error) => do { error },
+  throwing<i32>.handle {
+    raise: { (error) => error },
+    action: { throw(42) },
   }
 }
 
@@ -72,14 +69,11 @@ let inferred_try_from_throw_sugar_function = {
 let handled_async = {
   (): i32 =>
   let mut seen = 0
-  let value = suspension.handle(do {
-    suspension.suspend();
-    1
-  }) {
-    suspend(resume) => do {
-      seen = 1;
-      resume(())
-    },
+  let value = suspension.handle {
+    suspend: { (resume) => seen = 1;
+      resume(()) },
+    action: { suspension.suspend();
+      1 },
   }
   value + seen + 40
 }

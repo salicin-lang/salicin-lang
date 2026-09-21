@@ -629,6 +629,19 @@ mod tests {
     }
 
     #[test]
+    fn formats_generated_handle_members_as_ordinary_labeled_calls() {
+        let source = "let run = { (): i32 => state.handle{get:{(resume)=>resume(42)},action:{state.get()},} }\n";
+        let formatted = format_source(source).expect("format generated handle call");
+        assert!(formatted.contains("state.handle {"), "{formatted}");
+        assert!(formatted.contains("get:"), "{formatted}");
+        assert!(formatted.contains("action:"), "{formatted}");
+        assert_eq!(
+            format_source(&formatted).expect("format output again"),
+            formatted
+        );
+    }
+
+    #[test]
     fn does_not_treat_closure_parameters_as_declaration_continuations() {
         let source = "let main = { (): i32 => \nlet closure = { (left: i32) =>  do {\nleft\n}\n}\nclosure(42)\n}\n";
         let expected = "let main = {\n  (): i32 =>\n  let closure = {\n    (left: i32) =>  do {\n      left\n    }\n  }\n  closure(42)\n}\n";

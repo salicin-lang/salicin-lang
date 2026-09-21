@@ -4,9 +4,8 @@ let abort = effect {
 
 let main = {
   (): i32 =>
-  abort.handle(do {
-    abort.stop(42)
-  }) {
-    stop(value, resume) => do { resume(value) },
+  abort.handle {
+    stop: { (value, resume) => resume(value) },
+    action: { abort.stop(42) },
   }
 }

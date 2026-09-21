@@ -4,13 +4,14 @@ let probe = effect {
 
 let main = {
   (): i32 =>
-  probe.handle(do {
-    probe.read()
-  }) {
-    read(resume) => do { resume(true) },
-    Return(value) => do {
-      if(value) { 42 } else: { 0 }
+  probe.handle {
+    read: { (resume) => return(resume(true)) },
+    done: {
+      (value) => return(if(value) { 42 } else: { 0 })
     },
+    action: {
+      let ignored = do { return(false) }
+      return(probe.read()) },
   }
 }
 

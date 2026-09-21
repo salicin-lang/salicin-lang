@@ -7,9 +7,10 @@ pub let throwing = <Error: type> effect {
 /// Handles `throwing<Error>` from `action` and returns a `Result`.
 pub let try = { <f: effects, T: type, Error: type>with<f>
   {move action: with<core.error.throwing<Error>, f>() :T}: core.Result<Error><T> =>
-  core.error.throwing<Error>.handle(action()) {
-    raise(error) => core.Result.Err(error),
-    Return(value) => core.Result.Ok(value),
+  core.error.throwing<Error>.handle {
+    raise: { (error) => core.Result.Err(error) },
+    done: { (value) => core.Result.Ok(value) },
+    action: { action() },
   }
 }
 

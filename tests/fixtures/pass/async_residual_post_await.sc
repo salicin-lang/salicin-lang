@@ -36,17 +36,17 @@ let main = {
     let value = await(make_step())
     value + 2
   }
-  ask.handle(do {
-    let first = future.poll()
-    let second = future.poll()
-    match(first) {
-      Pending => do {
-        match(second) { Ready(value) => value, Pending => 0,
-        }
-      }, Ready(_) => 0,
-    }
-  }) {
-    ask(resume) => do { resume(40) },
+  ask.handle {
+    ask: { (resume) => resume(40) },
+    action: { let first = future.poll()
+      let second = future.poll()
+      match(first) {
+        Pending => do {
+          match(second) { Ready(value) => value, Pending => 0,
+          }
+        }, Ready(_) => 0,
+      }
+    },
   }
 }
 

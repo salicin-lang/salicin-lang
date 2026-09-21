@@ -3917,19 +3917,19 @@ fn validate_handle(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         && definition.where_predicates.is_empty()
         && matches!(
             definition.members.as_slice(),
-            [clauses @ TraitMember::AssociatedType { .. }, TraitMember::Function(function)]
-                if valid_handle_clauses(clauses)
+            [arguments @ TraitMember::AssociatedType { .. }, TraitMember::Function(function)]
+                if valid_handle_arguments(arguments)
                 && valid_handle_method(function)
         );
     if !valid {
         diagnostics.push(
-            "lang item `Handle` must have shape `pub let Handle = trait<self: effect> { Clauses: <Value: type, Answer: type>: parameters; handle: <Value: type, Answer: type, rest: effects>with<rest> ...Clauses<Value, Answer>{move action: with<self, rest>(): Value}: Answer }`"
+            "lang item `Handle` must have shape `pub let Handle = trait<self: effect> { Arguments: <Value: type, Answer: type>: parameters; handle: <Value: type, Answer: type, rest: effects>with<rest> ...Arguments<Value, Answer>: Answer }`"
                 .to_owned(),
         );
     }
 }
 
-fn valid_handle_clauses(member: &TraitMember) -> bool {
+fn valid_handle_arguments(member: &TraitMember) -> bool {
     matches!(
         member,
         TraitMember::AssociatedType {
@@ -3937,22 +3937,18 @@ fn valid_handle_clauses(member: &TraitMember) -> bool {
             compile_groups,
             kind: AssociatedKind::Parameters,
             default: None,
-        } if name == "Clauses"
+        } if name == "Arguments"
             && *compile_groups
                 == vec![vec![type_parameter("Value"), type_parameter("Answer")]]
     )
 }
 
 fn valid_handle_method(function: &Function) -> bool {
-    let [clauses_group, action_group] = function.groups.as_slice() else {
+    let [arguments_group] = function.groups.as_slice() else {
         return false;
     };
-    let ([clauses], [action]) = (clauses_group.as_slice(), action_group.as_slice()) else {
+    let [arguments] = arguments_group.as_slice() else {
         return false;
-    };
-    let action_effects = crate::ast::FunctionEffects {
-        parameters: vec!["rest".to_owned(), "self".to_owned()],
-        ..crate::ast::FunctionEffects::default()
     };
     function.name == "handle"
         && function.compile_groups
@@ -3962,23 +3958,20 @@ fn valid_handle_method(function: &Function) -> bool {
                 compile_effects_parameter("rest"),
             ]]
         && function.return_type == Some(named_type("Answer"))
-        && function.effects.group_delimiters == [GroupDelimiter::Brace, GroupDelimiter::Brace]
+        && function.effects.group_delimiters == [GroupDelimiter::Brace]
         && function.effects == effect_parameter("rest")
         && function.where_predicates.is_empty()
         && function.body.is_none()
-        && clauses.name == "Clauses"
-        && clauses.mode == PassMode::Inferred
-        && clauses.ty
+        && arguments.name == "Arguments"
+        && arguments.mode == PassMode::Inferred
+        && arguments.ty
             == Type::Named(
                 "$parameter$groups$expand".to_owned(),
                 vec![Type::Named(
-                    "Clauses".to_owned(),
+                    "Arguments".to_owned(),
                     vec![named_type("Value"), named_type("Answer")],
                 )],
             )
-        && action.name == "action"
-        && action.mode == PassMode::Move
-        && action.ty == function_type(vec![Vec::new()], named_type("Value"), action_effects)
 }
 
 fn compile_effects_parameter(name: &str) -> CompileParam {

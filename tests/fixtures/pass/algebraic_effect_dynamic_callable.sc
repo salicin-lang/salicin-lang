@@ -39,10 +39,9 @@ let select = { with<ask>
 
 let main = {
   (): i32 =>
-  ask.handle(do {
-    select(2)
-  }) {
-    value(resume) => do { resume(20) },
+  ask.handle {
+    value: { (resume) => resume(20) },
+    action: { select(2) },
   }
 }
 

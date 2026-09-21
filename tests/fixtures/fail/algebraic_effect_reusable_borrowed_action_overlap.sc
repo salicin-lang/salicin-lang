@@ -9,10 +9,9 @@ let state = struct {
 let run = {
   (state: Borrow<mut><state>)
   {move action: with<ask>(): i32}: i32 =>
-  ask.handle(do {
-    action() + state.value
-  }) {
-    value(resume) => do { resume(1) },
+  ask.handle {
+    value: { (resume) => resume(1) },
+    action: { action() + state.value },
   }
 }
 

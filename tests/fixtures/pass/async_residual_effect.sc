@@ -21,12 +21,12 @@ let main = {
   let mut future = async {
     request() + offset
   }
-  ask.handle(do {
-    let polled: Poll<i32> = poll_once(future)
-    match(polled) { Ready(value) => value, Pending => 0,
-    }
-  }) {
-    ask(resume) => do { resume(40) },
+  ask.handle {
+    ask: { (resume) => resume(40) },
+    action: { let polled: Poll<i32> = poll_once(future)
+      match(polled) { Ready(value) => value, Pending => 0,
+      }
+    },
   }
 }
 

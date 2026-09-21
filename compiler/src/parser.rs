@@ -1166,9 +1166,9 @@ impl Parser {
                 ));
             }
             let operation = self.expect_ident("an effect operation name")?;
-            if matches!(operation.as_str(), "Return" | "handle" | "done" | "action") {
+            if matches!(operation.as_str(), "handle" | "done" | "action") {
                 return Err(self.error_here(format!(
-                    "effect operation name `{operation}` is reserved by handler lowering"
+                    "effect operation name `{operation}` is reserved by the generated `handle` function"
                 )));
             }
             self.expect(&TokenKind::Colon, "`:` after effect operation name")?;
@@ -4714,27 +4714,7 @@ impl Parser {
         let mut expression = self.primary(allow_brace_group)?;
 
         loop {
-            if self.at(&TokenKind::LBrace)
-                && matches!(
-                    &expression,
-                    Expr::Call(callee, _)
-                        if matches!(callee.as_ref(), Expr::Member(_, member) if member == "handle")
-                )
-            {
-                expression = self.effect_handler_expression(expression)?;
-            } else if self.at(&TokenKind::LBrace)
-                && matches!(&expression, Expr::Member(_, member) if member == "handle")
-            {
-                return Err(self.error_here(
-                    "old labeled handler syntax was removed; write `.handle(action) { Operation(...) => body, Return(value) => value }`",
-                ));
-            } else if matches!(&expression, Expr::Member(_, member) if member == "handle")
-                && self.current_group_delimiter().is_some()
-                && self.current_group_delimiter() != Some(GroupDelimiter::Parenthesis)
-            {
-                return Err(self
-                    .error_here("`.handle` requires exactly one unlabeled parenthesized action"));
-            } else if let Some(delimiter) = self.call_delimiter_follows(allow_brace_group) {
+            if let Some(delimiter) = self.call_delimiter_follows(allow_brace_group) {
                 if delimiter == GroupDelimiter::Brace {
                     self.layout.brace_groups.push(self.current().start_byte);
                 }
@@ -4791,83 +4771,6 @@ impl Parser {
         }
 
         Ok(expression)
-    }
-
-    fn effect_handler_expression(&mut self, expression: Expr) -> Result<Expr, ParseError> {
-        let Expr::Call(callee, action_arguments) = expression else {
-            unreachable!("handler call shape was checked")
-        };
-        let Expr::Member(effect, member) = *callee else {
-            unreachable!("handler member shape was checked")
-        };
-        debug_assert_eq!(member, "handle");
-        let [CallArg {
-            label: None,
-            value: action,
-        }] = action_arguments.as_slice()
-        else {
-            return Err(
-                self.error_here("`.handle` requires exactly one unlabeled parenthesized action")
-            );
-        };
-        if self.previous().end_byte == self.current().start_byte {
-            return Err(self.error_here(
-                "handler arms are a spaced trailing group: `.handle(action) { ... }`",
-            ));
-        }
-
-        let open = self.current().clone();
-        let body_start_byte = self.body_start_byte(self.index + 1);
-        self.layout.brace_groups.push(open.start_byte);
-        self.expect(&TokenKind::LBrace, "`{` before handler arms")?;
-        self.skip_separators();
-        let mut arguments = Vec::new();
-        while !self.at(&TokenKind::RBrace) {
-            let operation = self.expect_ident("an effect operation name or `Return`")?;
-            let parameters = self.parameter_group()?;
-            self.expect(&TokenKind::FatArrow, "`=>` after handler arm")?;
-            let body = if self.at(&TokenKind::Do) && self.at_offset(1, &TokenKind::LBrace) {
-                self.advance();
-                self.block()?
-            } else {
-                self.expression(true)?
-            };
-            arguments.push(CallArg {
-                label: Some(if operation == "Return" {
-                    "done".to_owned()
-                } else {
-                    operation
-                }),
-                value: Expr::Closure(parameters, Box::new(body)),
-            });
-            self.skip_newlines();
-            if self.take(&TokenKind::Comma) {
-                self.skip_separators();
-                if self.at(&TokenKind::RBrace) {
-                    break;
-                }
-            } else {
-                break;
-            }
-        }
-        self.expect(&TokenKind::RBrace, "`}` after handler arms")?;
-        let close = self.previous().clone();
-        self.layout.closures.push(SourceBracedRegion {
-            open_byte: open.start_byte,
-            close_byte: close.start_byte,
-            body_start_byte,
-            open_line: open.line,
-            close_line: close.line,
-        });
-        arguments.push(CallArg {
-            label: Some("action".to_owned()),
-            value: Expr::Closure(Vec::new(), Box::new(action.clone())),
-        });
-        Ok(Expr::DelimitedCall {
-            callee: Box::new(Expr::Member(effect, "handle".to_owned())),
-            delimiter: GroupDelimiter::Brace,
-            arguments,
-        })
     }
 
     fn explicit_call_delimiter_follows(&self) -> Option<GroupDelimiter> {

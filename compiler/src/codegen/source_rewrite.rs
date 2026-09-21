@@ -2593,31 +2593,50 @@ pub(super) fn source_type_expression_name(expression: &Expr) -> Option<String> {
 }
 
 pub(super) fn rewrite_handler_returns(expression: &mut Expr, return_name: &str) {
+    rewrite_handler_returns_inner(expression, return_name, false);
+}
+
+pub(super) fn rewrite_handler_closure_returns(expression: &mut Expr, return_name: &str) {
+    rewrite_handler_returns_inner(expression, return_name, true);
+}
+
+fn rewrite_handler_returns_inner(
+    expression: &mut Expr,
+    return_name: &str,
+    stop_at_function_boundaries: bool,
+) {
     match expression {
-        Expr::Located { value, .. } => rewrite_handler_returns(value, return_name),
+        Expr::Located { value, .. } => {
+            rewrite_handler_returns_inner(value, return_name, stop_at_function_boundaries)
+        }
         Expr::Return(value) => {
             let mut value = value.take().map_or(Expr::Unit, |value| *value);
-            rewrite_handler_returns(&mut value, return_name);
+            rewrite_handler_returns_inner(&mut value, return_name, stop_at_function_boundaries);
             *expression = Expr::Call(
                 Box::new(Expr::Name(return_name.to_owned())),
                 vec![CallArg { label: None, value }],
             );
         }
         Expr::Closure(_, _) | Expr::PatternClosure { .. } => {}
+        Expr::DoBlock { .. } | Expr::Async { .. } if stop_at_function_boundaries => {}
         Expr::Unary(_, value)
         | Expr::Try(value)
         | Expr::DoBlock { body: value }
         | Expr::Async { body: value }
         | Expr::Await(value)
         | Expr::Throw(value)
-        | Expr::Unsafe(value) => rewrite_handler_returns(value, return_name),
-        Expr::Borrow { value, .. } => rewrite_handler_returns(value, return_name),
+        | Expr::Unsafe(value) => {
+            rewrite_handler_returns_inner(value, return_name, stop_at_function_boundaries)
+        }
+        Expr::Borrow { value, .. } => {
+            rewrite_handler_returns_inner(value, return_name, stop_at_function_boundaries)
+        }
         Expr::Binary(left, _, right)
         | Expr::Coalesce(left, right)
         | Expr::Assign(left, right)
         | Expr::CompoundAssign(left, _, right) => {
-            rewrite_handler_returns(left, return_name);
-            rewrite_handler_returns(right, return_name);
+            rewrite_handler_returns_inner(left, return_name, stop_at_function_boundaries);
+            rewrite_handler_returns_inner(right, return_name, stop_at_function_boundaries);
         }
         Expr::HandlerCoalesce {
             scrutinee,
@@ -2625,48 +2644,76 @@ pub(super) fn rewrite_handler_returns(expression: &mut Expr, return_name: &str) 
             fallback,
             ..
         } => {
-            rewrite_handler_returns(scrutinee, return_name);
-            rewrite_handler_returns(success, return_name);
-            rewrite_handler_returns(fallback, return_name);
+            rewrite_handler_returns_inner(scrutinee, return_name, stop_at_function_boundaries);
+            rewrite_handler_returns_inner(success, return_name, stop_at_function_boundaries);
+            rewrite_handler_returns_inner(fallback, return_name, stop_at_function_boundaries);
         }
         Expr::HandlerChainCall(chain) => {
-            rewrite_handler_returns(&mut chain.scrutinee, return_name);
+            rewrite_handler_returns_inner(
+                &mut chain.scrutinee,
+                return_name,
+                stop_at_function_boundaries,
+            );
             for argument in chain.groups.iter_mut().flatten() {
-                rewrite_handler_returns(&mut argument.value, return_name);
+                rewrite_handler_returns_inner(
+                    &mut argument.value,
+                    return_name,
+                    stop_at_function_boundaries,
+                );
             }
-            rewrite_handler_returns(&mut chain.success, return_name);
-            rewrite_handler_returns(&mut chain.residual, return_name);
+            rewrite_handler_returns_inner(
+                &mut chain.success,
+                return_name,
+                stop_at_function_boundaries,
+            );
+            rewrite_handler_returns_inner(
+                &mut chain.residual,
+                return_name,
+                stop_at_function_boundaries,
+            );
         }
         Expr::Call(callee, arguments)
         | Expr::DelimitedCall {
             callee, arguments, ..
         } => {
-            rewrite_handler_returns(callee, return_name);
+            rewrite_handler_returns_inner(callee, return_name, stop_at_function_boundaries);
             for argument in arguments {
-                rewrite_handler_returns(&mut argument.value, return_name);
+                rewrite_handler_returns_inner(
+                    &mut argument.value,
+                    return_name,
+                    stop_at_function_boundaries,
+                );
             }
         }
         Expr::Member(base, _) | Expr::ChainMember(base, _) => {
-            rewrite_handler_returns(base, return_name)
+            rewrite_handler_returns_inner(base, return_name, stop_at_function_boundaries)
         }
         Expr::Array(elements) | Expr::Tuple(elements) => {
             for element in elements {
-                rewrite_handler_returns(element, return_name);
+                rewrite_handler_returns_inner(element, return_name, stop_at_function_boundaries);
             }
         }
         Expr::Index { base, index } => {
-            rewrite_handler_returns(base, return_name);
-            rewrite_handler_returns(index, return_name);
+            rewrite_handler_returns_inner(base, return_name, stop_at_function_boundaries);
+            rewrite_handler_returns_inner(index, return_name, stop_at_function_boundaries);
         }
         Expr::Block(statements, tail) => {
             for statement in statements {
                 match statement {
-                    Stmt::Let(binding) => rewrite_handler_returns(&mut binding.value, return_name),
-                    Stmt::Expr(expression) => rewrite_handler_returns(expression, return_name),
+                    Stmt::Let(binding) => rewrite_handler_returns_inner(
+                        &mut binding.value,
+                        return_name,
+                        stop_at_function_boundaries,
+                    ),
+                    Stmt::Expr(expression) => rewrite_handler_returns_inner(
+                        expression,
+                        return_name,
+                        stop_at_function_boundaries,
+                    ),
                 }
             }
             if let Some(tail) = tail {
-                rewrite_handler_returns(tail, return_name);
+                rewrite_handler_returns_inner(tail, return_name, stop_at_function_boundaries);
             }
         }
         Expr::If {
@@ -2674,31 +2721,41 @@ pub(super) fn rewrite_handler_returns(expression: &mut Expr, return_name: &str) 
             then_branch,
             else_branch,
         } => {
-            rewrite_handler_returns(condition, return_name);
-            rewrite_handler_returns(then_branch, return_name);
+            rewrite_handler_returns_inner(condition, return_name, stop_at_function_boundaries);
+            rewrite_handler_returns_inner(then_branch, return_name, stop_at_function_boundaries);
             if let Some(else_branch) = else_branch {
-                rewrite_handler_returns(else_branch, return_name);
+                rewrite_handler_returns_inner(
+                    else_branch,
+                    return_name,
+                    stop_at_function_boundaries,
+                );
             }
         }
         Expr::While {
             condition, body, ..
         } => {
-            rewrite_handler_returns(condition, return_name);
-            rewrite_handler_returns(body, return_name);
+            rewrite_handler_returns_inner(condition, return_name, stop_at_function_boundaries);
+            rewrite_handler_returns_inner(body, return_name, stop_at_function_boundaries);
         }
-        Expr::Loop { body } => rewrite_handler_returns(body, return_name),
+        Expr::Loop { body } => {
+            rewrite_handler_returns_inner(body, return_name, stop_at_function_boundaries)
+        }
         Expr::Break(value) => {
             if let Some(value) = value {
-                rewrite_handler_returns(value, return_name);
+                rewrite_handler_returns_inner(value, return_name, stop_at_function_boundaries);
             }
         }
         Expr::Match { scrutinee, arms } => {
-            rewrite_handler_returns(scrutinee, return_name);
+            rewrite_handler_returns_inner(scrutinee, return_name, stop_at_function_boundaries);
             for arm in arms {
                 if let Some(guard) = &mut arm.guard {
-                    rewrite_handler_returns(guard, return_name);
+                    rewrite_handler_returns_inner(guard, return_name, stop_at_function_boundaries);
                 }
-                rewrite_handler_returns(&mut arm.body, return_name);
+                rewrite_handler_returns_inner(
+                    &mut arm.body,
+                    return_name,
+                    stop_at_function_boundaries,
+                );
             }
         }
         Expr::Type(_)

@@ -38,13 +38,12 @@ let unsafe_outside = {
   ): i32 =>
   unsafe {
     let mut state = state { value: 20, drops: drops }
-    step.handle(do {
-      let value = update(state, calls)
-      value + state.value
-    }) {
-      delta(resume) => do {
-        if(abandon) { 40 } else: { resume(1) }
+    step.handle {
+      delta: {
+        (resume) => if(abandon) { 40 } else: { resume(1) }
       },
+      action: { let value = update(state, calls)
+        value + state.value },
     }
   }
 }
@@ -56,14 +55,15 @@ let unsafe_inside = {
     abandon: bool,
   ): i32 =>
   let mut state = state { value: 20, drops: drops }
-  step.handle(do {
-    unsafe {
-      let value = update(state, calls)
-      value + state.value
-    }
-  }) {
-    delta(resume) => do {
-      if(abandon) { 40 } else: { resume(1) }
+  step.handle {
+    delta: {
+      (resume) => if(abandon) { 40 } else: { resume(1) }
+    },
+    action: {
+      unsafe {
+        let value = update(state, calls)
+        value + state.value
+      }
     },
   }
 }

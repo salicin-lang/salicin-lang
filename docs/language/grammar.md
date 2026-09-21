@@ -297,8 +297,9 @@ for a default implementation. Associated declarations also omit `let`.
 
 Effect operations use the same `name: signature` form: they omit `let` and `=`,
 require an explicit runtime group, and have no implementation body. Their names
-are used by qualified operation calls and handler arms. `Return` is reserved for
-handler completion.
+are used by qualified operation calls and the labeled arguments of the
+compiler-generated `handle` function. `handle`, `done`, and `action` are
+reserved within an effect declaration for that generated interface.
 
 An associated type or associated constructor has no runtime parameter groups. Its compile-time
 groups appear before `: type`. Associated declaration defaults are not supported yet.
@@ -533,8 +534,7 @@ prefix_op = "-" | "!" | contextual("move") | contextual("borrow") ;
 
 ```ebnf
 postfix_suffix =
-    handler_suffix
-  | argument_group
+    argument_group
   | ".", IDENT
   | "?.", IDENT
   | brace_application ;
@@ -547,16 +547,6 @@ argument = [ IDENT, ":" ], expression ;
 brace_application =
     [ horizontal_space ], "{", brace_group_contents, "}" ;
 
-handler_suffix =
-    ".", contextual("handle"),
-    "(", expression, ")", horizontal_space,
-    "{", separators,
-    handler_arm, { ",", separators, handler_arm },
-    [ "," ], separators, "}" ;
-
-handler_arm =
-    IDENT, "(", [ pattern, { ",", pattern }, [ "," ] ], ")",
-    "=>", expression ;
 ```
 
 Parenthesis, square, and angle postfix openers must be byte-adjacent to their
@@ -573,11 +563,12 @@ The declaration schema resolves their contents as ordinary/labeled arguments or
 as a callable parameter body. Struct construction uses this production.
 Standalone brace expressions remain closures.
 
-The handler suffix is distinct. It requires exactly one unlabeled
-parenthesized action and whitespace before the arm group:
-`.handle(action) { Operation(...) => expression, Return(value) => expression }`.
-The action is delayed by handler semantics. Handler arms are not labeled call
-arguments; `action:` and `done:` are not productions.
+Every effect declaration synthesizes a `handle` function. A handler is an
+ordinary declaration-directed brace call whose labeled arguments are closures:
+`effect.handle { operation: { (parameters..., resume) => expression }, action: { expression } }`.
+The optional `done: { (value) => expression }` argument transforms normal
+completion. `action` is required exactly once in final position. No dedicated
+handler expression or handler-arm production exists.
 
 ```ebnf
 delimited_group(item) =

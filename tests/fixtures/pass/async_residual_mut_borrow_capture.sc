@@ -22,12 +22,12 @@ let program = {
     value = value + amount
     value
   }
-  ask.handle(do {
-    let polled: Poll<i32> = poll_once(future)
-    match(polled) { Ready(result) => result, Pending => 0,
-    }
-  }) {
-    ask(resume) => do { resume(40) },
+  ask.handle {
+    ask: { (resume) => resume(40) },
+    action: { let polled: Poll<i32> = poll_once(future)
+      match(polled) { Ready(result) => result, Pending => 0,
+      }
+    },
   }
 }
 

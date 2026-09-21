@@ -17,12 +17,9 @@ let program = { with<step>
 
 let main = {
   (): i32 =>
-  step.handle(do {
-    program(1)
-  }) {
-    delta(resume) => do {
-      resume(2)
-    },
+  step.handle {
+    delta: { (resume) => resume(2) },
+    action: { program(1) },
   }
 }
 

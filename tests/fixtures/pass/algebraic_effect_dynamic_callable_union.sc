@@ -9,14 +9,14 @@ let right = { with<ask>(): i32 => ask.value() + 3 }
 
 let main = {
   (): i32 =>
-  ask.handle(do {
-    let first: with<ask>(): i32  = if(true) { left } else: { middle }
-    let second: with<ask>(): i32  = if(false) { middle } else: { right }
-    let combined: with<ask>(): i32  = if(ask.choose()) { first } else: { second }
-    combined()
-  }) {
-    choose(resume) => do { resume(false) },
-    value(resume) => do { resume(39) },
+  ask.handle {
+    choose: { (resume) => resume(false) },
+    value: { (resume) => resume(39) },
+    action: {
+      let first: with<ask>(): i32  = if(true) { left } else: { middle }
+      let second: with<ask>(): i32  = if(false) { middle } else: { right }
+      let combined: with<ask>(): i32  = if(ask.choose()) { first } else: { second }
+      combined() },
   }
 }
 

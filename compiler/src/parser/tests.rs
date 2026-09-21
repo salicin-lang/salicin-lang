@@ -174,21 +174,22 @@ fn brace_calls_treat_pattern_arms_as_one_callable_argument() {
 }
 
 #[test]
-fn parses_callable_effect_operations_and_normalizes_handler_clauses() {
+fn parses_callable_effect_operations_and_generated_handle_calls() {
     let program = parse(
         "let state_effect = <S: type> effect {\n\
          get: (): S\n\
          put: (value: S): ()\n\
          }\n\
          let run = { (state: i32): i32 =>\n\
-         state_effect<i32>.handle(state_effect<i32>.get()) {\n\
-         get(resume) => resume(state),\n\
-         put(value, resume) => do { resume(value) },\n\
-         Return(value) => value,\n\
+         state_effect<i32>.handle {\n\
+         get: { (resume) => resume(state) },\n\
+         put: { (value, resume) => do { resume(value) } },\n\
+         done: { (value) => value },\n\
+         action: { state_effect<i32>.get() },\n\
          }\n\
          }\n",
     )
-    .expect("callable effect operations and handler clauses must parse");
+    .expect("effect operations and generated handle calls must parse");
     let Item::Effect(effect) = &program.items[0] else {
         panic!("expected effect");
     };
@@ -225,17 +226,30 @@ fn parses_callable_effect_operations_and_normalizes_handler_clauses() {
 }
 
 #[test]
-fn rejects_removed_callable_effect_and_handler_forms() {
+fn rejects_removed_callable_and_effect_forms() {
     for source in [
         "let old = (x: i32): i32 => x\n",
         "let old = effect { let Get = (): i32 }\n",
-        "let old = { (): i32 => State.handle { action: { 0 } } }\n",
     ] {
         assert!(parse(source).is_err(), "removed syntax parsed: {source}");
     }
-    let handler = parse("let old = { (): i32 => State.handle { action: { 0 } } }\n")
-        .expect_err("old labeled handlers are removed");
-    assert!(handler.message.contains("old labeled handler syntax"));
+}
+
+#[test]
+fn reserves_generated_handle_argument_names_but_allows_return_operations() {
+    for name in ["handle", "done", "action"] {
+        let error = parse(&format!("let invalid = effect {{ {name}: (): () }}\n"))
+            .expect_err("generated handle argument name must be reserved");
+        assert!(
+            error
+                .message
+                .contains("is reserved by the generated `handle` function"),
+            "{}",
+            error.message
+        );
+    }
+    parse("let valid = effect { Return: (): () }\n")
+        .expect("Return is no longer a handler-specific operation name");
 }
 
 #[test]
@@ -2142,9 +2156,10 @@ fn removed_named_closure_attachments_do_not_parse_as_calls() {
 fn handler_member_accepts_one_labeled_brace_call() {
     let program = parse(
         "let run = { (): i32 => \n\
-             ask.handle(ask.value()) {\n\
-             value(resume) => resume(42),\n\
-             Return(answer) => answer,\n\
+             ask.handle {\n\
+             value: { (resume) => resume(42) },\n\
+             done: { (answer) => answer },\n\
+             action: { ask.value() },\n\
              }\n\
              }\n",
     )
@@ -2178,8 +2193,9 @@ fn handler_member_accepts_one_labeled_brace_call() {
 fn handler_brace_call_ends_before_the_following_statement() {
     let program = parse(
         "let run = { (): i32 => \n\
-             let ignored = iteration_skip.handle(()) {\n\
-             next() => (),\n\
+             let ignored = iteration_skip.handle {\n\
+             next: { () => () },\n\
+             action: { () },\n\
              }\n\
              if(true) { 42 } else: { 0 }\n\
              }\n",
@@ -3079,8 +3095,8 @@ fn parses_compiler_owned_constraint_fragments_and_rejects_defaults() {
 fn parses_trait_self_effect_parameter_in_member_rows() {
     let program = parse(
             "let Handle = trait<self: effect> {\n\
-             Clauses: <Value: type, Answer: type>: parameters\n\
-             handle: <Value: type, Answer: type, rest: effects>with<rest> ...Clauses<Value, Answer>{move action: with<self, rest>(): Value}: Answer\n\
+             Arguments: <Value: type, Answer: type>: parameters\n\
+             handle: <Value: type, Answer: type, rest: effects>with<rest> ...Arguments<Value, Answer>: Answer\n\
              }\n",
         )
         .unwrap();
@@ -3088,7 +3104,7 @@ fn parses_trait_self_effect_parameter_in_member_rows() {
         panic!("expected trait");
     };
     let TraitMember::AssociatedType { kind, .. } = &definition.members[0] else {
-        panic!("expected clauses schema");
+        panic!("expected arguments schema");
     };
     assert_eq!(*kind, AssociatedKind::Parameters);
     let TraitMember::Function(function) = &definition.members[1] else {
@@ -3099,7 +3115,7 @@ fn parses_trait_self_effect_parameter_in_member_rows() {
         Type::Named(
             "$parameter$groups$expand".to_owned(),
             vec![Type::Named(
-                "Clauses".to_owned(),
+                "Arguments".to_owned(),
                 vec![
                     Type::Named("Value".to_owned(), Vec::new()),
                     Type::Named("Answer".to_owned(), Vec::new()),
@@ -3108,11 +3124,6 @@ fn parses_trait_self_effect_parameter_in_member_rows() {
         )
     );
     assert_eq!(function.effects.parameters, vec!["rest"]);
-    let Type::Function { effects, .. } = &function.groups[1][0].ty else {
-        panic!("expected action callable parameter");
-    };
-    assert_eq!(effects.parameters, vec!["rest", "self"]);
-    assert!(effects.custom.is_empty());
 }
 
 #[test]
@@ -3428,8 +3439,9 @@ fn parses_function_shaped_handlers_with_contextual_clause_parameters() {
     let program = parse(
         "let state = <s: type> effect { get: (): s }\n\
              let main = { (): i32 => \n\
-             state<i32>.handle(state<i32>.get()) {\n\
-             get(resume) => resume(42)\n\
+             state<i32>.handle {\n\
+             get: { (resume) => resume(42) },\n\
+             action: { state<i32>.get() },\n\
              }\n\
              }\n",
     )

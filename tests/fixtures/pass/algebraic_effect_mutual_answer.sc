@@ -16,10 +16,11 @@ let odd = { with<tick>
 
 let main = {
   (): i32 =>
-  tick.handle(do {
-    if(odd(3)) { 42 } else: { 0 }
-  }) {
-    tick(resume) => do { resume(true) },
+  tick.handle {
+    tick: { (resume) => resume(true) },
+    action: {
+      if(odd(3)) { 42 } else: { 0 }
+    },
   }
 }
 
