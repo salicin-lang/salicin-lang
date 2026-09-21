@@ -6,6 +6,11 @@ subset.
 
 ## Unreleased
 
+- **Breaking:** Named declaration signatures now attach directly to their names:
+  `let Box<T: type> = struct { ... }`, `let identity<T: type>(value: T): T =
+  { value }`, and `operation(): Result`. The former colon between a declaration
+  name and its compile-time, effect, or runtime parameter groups is removed;
+  `:` remains the result or ordinary value type separator.
 - **Breaking:** Syntax-owned compile-time metadata now consistently uses angle
   groups: `test<"name"> { ... }`, callable-signature
   `requires<T is Trait>`, `extend<Target, Trait>`, and

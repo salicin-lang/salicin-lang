@@ -4,16 +4,16 @@ let number = struct { value: i32 }
 
 extend<number, Add<number>> {
   let Output = number;
-  let add: (self)(rhs: number): number = { number { value: self.value + rhs.value } }
+  let add(self)(rhs: number): number = { number { value: self.value + rhs.value } }
 }
 
-let tick: (count: Borrow<mut><i32>)
+let tick(count: Borrow<mut><i32>)
   (value: i32): number = {
   count = count + 1
   number { value: value }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut left_count = 0
   let mut right_count = 0
   let answer = tick(left_count)(19) + tick(right_count)(23)

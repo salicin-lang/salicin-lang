@@ -1,13 +1,13 @@
 let decide = effect {
-  choose: (): bool
+  choose(): bool
 }
 
-let choose_value: with<decide>
+let choose_value with<decide>
   (): bool = {
   decide.choose()
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   decide.handle {
     choose: { (resume) => resume(true) },
     action: {

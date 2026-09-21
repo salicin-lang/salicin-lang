@@ -1,7 +1,7 @@
-let accept_same: <t: type>(left: t, right: t): i32 = { 21 }
-let accept: <t: type>(value: t): i32 = { 21 }
+let accept_same<t: type>(left: t, right: t): i32 = { 21 }
+let accept<t: type>(value: t): i32 = { 21 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let wide: i64 = 7
   let ordered = accept_same(0, wide)
   let arithmetic = accept(0 + wide)

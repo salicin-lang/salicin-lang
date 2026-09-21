@@ -1,9 +1,9 @@
-let state: <s: type> = effect {
-  get: (): s
-  put: (move value: s): ()
+let state<s: type> = effect {
+  get(): s
+  put(move value: s): ()
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   state<i32>.handle {
     get: { (resume) => resume(42) },
     action: { state<i32>.get() },

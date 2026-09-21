@@ -4,7 +4,7 @@ let choice = enum {
 }
 
 extend<choice> {
-  let unwrap: (move self)
+  let unwrap(move self)
     (): i32 = {
     match(self) {
       choice.answer( answer: value ) => value,
@@ -13,7 +13,7 @@ extend<choice> {
   }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let choice = choice.answer { answer: 42 }
   choice.unwrap()
 }

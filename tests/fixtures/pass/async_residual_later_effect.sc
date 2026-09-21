@@ -2,7 +2,7 @@ let Future = core.async.Future
 let Poll = core.async.Poll
 
 let ask = effect {
-  ask: (): i32
+  ask(): i32
 }
 
 let resource = struct {
@@ -17,7 +17,7 @@ let step = struct {
 }
 
 extend<resource, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.drops = *self.drops + 100
@@ -26,7 +26,7 @@ extend<resource, Droppable> {
 }
 
 extend<step, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.drops = *self.drops + 10
@@ -37,7 +37,7 @@ extend<step, Droppable> {
 extend<step, Future<()>> {
   let Output = i32;
 
-  let poll: <r: region>
+  let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
     if(self.polls == 0) {
@@ -49,14 +49,14 @@ extend<step, Future<()>> {
   }
 }
 
-let record: (calls: Ptr<mut><i32>, value: i32): i32 = {
+let record(calls: Ptr<mut><i32>, value: i32): i32 = {
   unsafe {
     *calls = *calls + 1
   }
   value
 }
 
-let run_success: (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
+let run_success(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   let mut future = async {
     let retained = resource { drops: drops, value: 1 }
     let value = await(step { drops: drops, polls: 0, value: 40 })
@@ -79,7 +79,7 @@ let run_success: (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   }
 }
 
-let run_cancelled: (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
+let run_cancelled(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   ask.handle {
     ask: { (resume) => resume(record(calls, 1)) },
     action: {
@@ -96,7 +96,7 @@ let run_cancelled: (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   }
 }
 
-let run_abandoned: (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
+let run_abandoned(drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   ask.handle {
     ask: { (_) => record(calls, 42) },
     action: {
@@ -120,7 +120,7 @@ let run_abandoned: (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

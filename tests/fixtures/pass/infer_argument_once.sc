@@ -1,11 +1,11 @@
-let identity: <t: type>(move value: t): t = { value }
+let identity<t: type>(move value: t): t = { value }
 
-let tick: (count: Borrow<mut><i32>): i32 = {
+let tick(count: Borrow<mut><i32>): i32 = {
   count = count + 1
   42
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut count = 0
   let value = identity(tick(count))
   if(count == 1) { value } else: { 0 }

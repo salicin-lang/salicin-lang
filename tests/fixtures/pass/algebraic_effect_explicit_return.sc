@@ -1,11 +1,11 @@
 let read = effect {
-  read: (): i32
+  read(): i32
 }
 
 let resource = struct { counter: Ptr<mut><i32> }
 
 extend<resource, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.counter = *self.counter + 1
@@ -13,14 +13,14 @@ extend<resource, Droppable> {
   }
 }
 
-let read_early: with<read>
+let read_early with<read>
   (counter: Ptr<mut><i32>): i32 = {
   let resource = resource { counter: counter }
   let value = read.read()
   return(value)
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let counter = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

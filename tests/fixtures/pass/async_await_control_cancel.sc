@@ -16,7 +16,7 @@ let marker = struct {
 }
 
 extend<marker, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.counter = *self.counter + self.amount
@@ -25,7 +25,7 @@ extend<marker, Droppable> {
 }
 
 extend<first, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.counter = *self.counter + 10
@@ -34,7 +34,7 @@ extend<first, Droppable> {
 }
 
 extend<second, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.counter = *self.counter + 1
@@ -45,7 +45,7 @@ extend<second, Droppable> {
 extend<first, Future<()>> {
   let Output = i32;
 
-  let poll: <r: region>
+  let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
     Poll<i32>.Pending
@@ -55,28 +55,28 @@ extend<first, Future<()>> {
 extend<second, Future<()>> {
   let Output = i32;
 
-  let poll: <r: region>
+  let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
     Poll<i32>.Pending
   }
 }
 
-let allocate: with<unsafety>
+let allocate with<unsafety>
   (): Ptr<mut><i32> = {
   unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
 }
 
-let release: with<unsafety>
+let release with<unsafety>
   (counter: Ptr<mut><i32>): () = {
   unsafe {
     raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   unsafe {
     let counter = allocate()
     *counter = 0

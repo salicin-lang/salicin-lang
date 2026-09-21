@@ -2,12 +2,12 @@ let Option = core.Option
 let Result = core.Result
 
 let query = effect {
-  option: (present: bool): Option<bool>;
-  result: (present: bool): Result<()><bool>;
-  fallback: (): bool
+  option(present: bool): Option<bool>;
+  result(present: bool): Result<()><bool>;
+  fallback(): bool
 }
 
-let program: with<query>
+let program with<query>
   (): i32 = {
   let option_some = if(query.option(true) ?? query.fallback()) { 10 } else: { 0 }
   let option_none = if(query.option(false) ?? query.fallback()) { 10 } else: { 0 }
@@ -16,7 +16,7 @@ let program: with<query>
   option_some + option_none + result_ok + result_err
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut fallbacks = 0
   let result = query.handle {
     option: {

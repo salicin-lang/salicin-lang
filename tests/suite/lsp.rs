@@ -55,8 +55,8 @@ fn workspace() -> (TestDirectory, PathBuf, PathBuf) {
         "salicin.toml",
         "[package]\nname = \"lsp-acceptance\"\nversion = \"0.1.0\"\nedition = \"2026\"\n",
     );
-    let root = workspace.write("src/main.sc", "let main: (): i32 = { helper.value() }\n");
-    let module = workspace.write("src/helper.sc", "pub let value: (): i32 = { 42 }\n");
+    let root = workspace.write("src/main.sc", "let main(): i32 = { helper.value() }\n");
+    let module = workspace.write("src/helper.sc", "pub let value(): i32 = { 42 }\n");
     (
         workspace,
         fs::canonicalize(root).unwrap(),

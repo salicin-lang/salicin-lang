@@ -1088,7 +1088,7 @@ impl Analyzer {
             && !drop_trait_has_required_shape(&definition)
         {
             self.error(
-                "`Droppable` language trait must have shape `let Droppable = trait { drop: (self: Borrow<mut><self>)(): () }`",
+                "`Droppable` language trait must have shape `let Droppable = trait { drop(self: Borrow<mut><self>)(): () }`",
             );
             valid = false;
         }
@@ -1102,13 +1102,13 @@ impl Analyzer {
                 let method = operator_trait.method();
                 let shape = match operator_trait.lang_item {
                     LangItemKind::Eq => format!(
-                        "let Eq: <Rhs: type> = trait {{ {method}: (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
+                        "let Eq<Rhs: type> = trait {{ {method}(self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
                     ),
                     LangItemKind::PartialOrd => format!(
-                        "let PartialOrd: <Rhs: type> = trait {{ {method}: (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
+                        "let PartialOrd<Rhs: type> = trait {{ {method}(self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
                     ),
                     _ => format!(
-                        "let {trait_name}: <Rhs: type> = trait {{ Output: type; {method}: (self)(rhs: Rhs): Output }}"
+                        "let {trait_name}<Rhs: type> = trait {{ Output: type; {method}(self)(rhs: Rhs): Output }}"
                     ),
                 };
                 self.error(format!(
@@ -1126,7 +1126,7 @@ impl Analyzer {
                 let trait_name = operator.lang_item.source_name();
                 let method = operator.method();
                 self.error(format!(
-                    "`{trait_name}` language trait must have shape `let {trait_name} = trait {{ Output: type; {method}: (self)(): Output }}`"
+                    "`{trait_name}` language trait must have shape `let {trait_name} = trait {{ Output: type; {method}(self)(): Output }}`"
                 ));
                 valid = false;
             }

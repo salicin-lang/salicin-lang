@@ -1,6 +1,6 @@
 let Vec = alloc.Vec
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut values: Vec<i32> = Vec<i32>.with_capacity(8)
   values.push(10)
   values.push(30)

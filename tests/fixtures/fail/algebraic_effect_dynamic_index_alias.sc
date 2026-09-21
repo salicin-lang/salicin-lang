@@ -1,15 +1,15 @@
 let step = effect {
-  tick: (): ()
+  tick(): ()
 }
 
-let update: with<step>
+let update with<step>
   (left: Borrow<mut><i32>, right: Borrow<mut><i32>): () = {
   step.tick()
   left = left + 1
   right = right + 1
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut values = [20, 20]
   let left: i32 = 0
   let right: i32 = 1

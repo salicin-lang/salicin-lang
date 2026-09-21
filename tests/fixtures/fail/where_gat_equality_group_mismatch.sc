@@ -1,8 +1,8 @@
 let lend = trait {
-  Item: <a: access><r: region>: type
+  Item<a: access><r: region>: type
 }
 
-let require: <t: type>(move value: t): ()
+let require<t: type>(move value: t): ()
   requires<t is lend && t.Item<a: access, r: region> == Borrow<a><r><i32>> = { }
 
-let main: (): () = { }
+let main(): () = { }

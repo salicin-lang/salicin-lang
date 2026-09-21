@@ -1,4 +1,4 @@
-let shared: <r: region>
+let shared<r: region>
   (anchor: Borrow<r><i32>)
   (pointer: Ptr<mut><i32>): Borrow<r><i32> = {
   unsafe {
@@ -6,7 +6,7 @@ let shared: <r: region>
   }
 }
 
-let mutable: <r: region>
+let mutable<r: region>
   (anchor: Borrow<mut, r><i32>)
   (pointer: Ptr<mut><i32>): Borrow<mut, r><i32> = {
   unsafe {
@@ -14,7 +14,7 @@ let mutable: <r: region>
   }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let pointer = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

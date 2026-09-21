@@ -1,11 +1,11 @@
 let check = effect {
-  accept: (): bool
+  accept(): bool
 }
 
 let resource = struct { counter: Ptr<mut><i32> }
 
 extend<resource, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.counter = *self.counter + 1
@@ -18,7 +18,7 @@ let event = enum {
   Empty,
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let counter = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

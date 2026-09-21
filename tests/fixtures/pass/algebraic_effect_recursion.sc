@@ -1,8 +1,8 @@
 let read = effect {
-  read: (): i32
+  read(): i32
 }
 
-let sum_reads: with<read>
+let sum_reads with<read>
   (count: i32): i32 = {
   if(count == 0) {
     return(0)
@@ -10,7 +10,7 @@ let sum_reads: with<read>
   read.read() + sum_reads(count - 1)
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let value = 14
   read.handle {
     read: { (resume) => resume(value) },

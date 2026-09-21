@@ -1,7 +1,7 @@
 let Option = core.Option
 let Result = core.Result
 
-let main: (): i32 = {
+let main(): i32 = {
   let inner = Result<bool><i32>.Ok(42)
   let outer = Option<Result<bool><i32>>.Some(inner)
   match(outer) {

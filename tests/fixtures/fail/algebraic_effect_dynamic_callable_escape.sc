@@ -1,11 +1,11 @@
 let ask = effect {
-  value: (): i32
+  value(): i32
 }
 
-let left: with<ask>(): i32 = { ask.value() }
-let right: with<ask>(): i32 = { ask.value() + 1 }
+let left with<ask>(): i32 = { ask.value() }
+let right with<ask>(): i32 = { ask.value() + 1 }
 
-let leak: with<ask>
+let leak with<ask>
   (): (with<ask>(): i32) = {
   ask.handle {
     value: { (resume) => resume(42) },
@@ -15,4 +15,4 @@ let leak: with<ask>
   }
 }
 
-let main: (): i32 = { 0 }
+let main(): i32 = { 0 }

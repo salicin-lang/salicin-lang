@@ -1,9 +1,9 @@
 let audit = effect {
-  adjust: (): i32
+  adjust(): i32
 }
 
 let step = effect {
-  delta: (): i32
+  delta(): i32
 }
 
 let state = struct {
@@ -12,7 +12,7 @@ let state = struct {
 }
 
 extend<state, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.drops = *self.drops + 1
@@ -20,7 +20,7 @@ extend<state, Droppable> {
   }
 }
 
-let update: with<audit, step>
+let update with<audit, step>
   (state: Borrow<mut><state>): i32 = {
   let adjustment = audit.adjust()
   let delta = step.delta()
@@ -28,7 +28,7 @@ let update: with<audit, step>
   state.value
 }
 
-let audit_outside: (
+let audit_outside(
   drops: Ptr<mut><i32>,
   abandon_audit: bool,
   abandon_step: bool,
@@ -49,7 +49,7 @@ let audit_outside: (
   }
 }
 
-let step_outside: (
+let step_outside(
   drops: Ptr<mut><i32>,
   abandon_audit: bool,
   abandon_step: bool,
@@ -70,7 +70,7 @@ let step_outside: (
   }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

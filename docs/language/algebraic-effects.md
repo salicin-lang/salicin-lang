@@ -8,9 +8,9 @@ This document defines the implementation contract for source-declared algebraic 
 An effect is a nominal compile-time identity with zero or more operations:
 
 ```sc fragment
-let state: <S: type> = effect {
-  get: (): S
-  put: (move value: S): ()
+let state<S: type> = effect {
+  get(): S
+  put(move value: S): ()
 }
 ```
 
@@ -21,7 +21,7 @@ the final group is supplied.
 Effect declaration parameters and effect-identity arguments are compile-time
 groups and therefore use angle brackets exclusively, as in `state<S>`.
 
-Operations use callable declarations of the form `name: signature`: they omit
+Operations use callable declarations of the form `name(parameters): Result`: they omit
 `let` and `=`, use `snake_case` names, and cannot have bodies. They are selected through
 their effect identity and obey ordinary visibility and overload rules. A
 declaration with the same operation name in another effect is unrelated.
@@ -31,21 +31,21 @@ declaration with the same operation name in another effect is unrelated.
 `with<E>` adds the normalized effect row `E` to a callable signature or type:
 
 ```sc fragment
-let increment: with<state<i32>>(): i32 = {
+let increment with<state<i32>>(): i32 = {
   let value = state<i32>.get()
   state<i32>.put(value + 1)
   value
 }
 
-let apply: <e: effects> with<e>
+let apply<e: effects> with<e>
   (action: with<e>(i32): i32)
   (value: i32): i32 = {
   action(value)
 }
 ```
 
-An ordinary named callable places its signature after the declaration colon and
-before `=`; trait and effect members use the same `name: signature` shape. A
+An ordinary named callable attaches its signature directly to the declaration name
+and places it before `=`; trait and effect members use the same shape. A
 function value uses the callable type `with<state<i32>>(): i32`. The row belongs to
 the complete multi-group call, not to a parameter group or result value.
 `with<>(a): b` is the pure callable `(a): b`; a non-callable operand is

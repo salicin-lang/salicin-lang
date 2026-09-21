@@ -19,9 +19,9 @@ An effectful declaration places its signature before `=` and its implementation
 inside the body braces:
 
 ```salicin
-let read: with<io>(path: str): String = { ... }
+let read with<io>(path: str): String = { ... }
 
-let apply: <e: effects> with<e>
+let apply<e: effects> with<e>
   (action: with<e>(i32): i32)
   (value: i32): i32 = {
   action(value)
@@ -32,7 +32,7 @@ The final colon introduces the declaration result. A pure named callable uses
 the same signature-first structure:
 
 ```salicin
-let identity: (value: i32): i32 = { value }
+let identity(value: i32): i32 = { value }
 ```
 
 `let f: (...): with<e>(R) = { ... }` is not an effect annotation: it attempts to use

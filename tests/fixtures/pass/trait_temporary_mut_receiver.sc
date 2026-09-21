@@ -1,18 +1,18 @@
 let reset = trait {
-  reset: (self: Borrow<mut><self>)(): i32
+  reset(self: Borrow<mut><self>)(): i32
 }
 
 let counter = struct { value: i32 }
 
 extend<counter, reset> {
-  let reset: (self: Borrow<mut><self>)
+  let reset(self: Borrow<mut><self>)
     (): i32 = {
     self.value = 42
     self.value
   }
 }
 
-let main: (): i32 = { counter { value: 0 }.reset() }
+let main(): i32 = { counter { value: 0 }.reset() }
 
 test<"trait_temporary_mut_receiver.sc"> {
   std.test.assert(main() == 42)

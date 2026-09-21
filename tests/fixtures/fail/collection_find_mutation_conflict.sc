@@ -1,7 +1,7 @@
-let read: (value: Borrow<i32>): i32 = { value }
-let positive: (value: Borrow<i32>): bool = { read(value) > 0 }
+let read(value: Borrow<i32>): i32 = { value }
+let positive(value: Borrow<i32>): bool = { read(value) > 0 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut values: Array<i32><2> = [20, 22]
   let found = values.find(positive)!!
   values.reverse()

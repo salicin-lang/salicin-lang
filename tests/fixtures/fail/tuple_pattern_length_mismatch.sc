@@ -1,4 +1,4 @@
-let main: (): i32 = {
+let main(): i32 = {
   match((1, 2)) { (value,) => value,
   }
 }

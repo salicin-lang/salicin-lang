@@ -8,9 +8,9 @@ use `.sc`; the compiler executable is `salic`.
 > Salicin is under active development. Its syntax, semantics, and standard library are not stable.
 
 ```sc check
-let add: (x: i32)(y: i32): i32 = { x + y }
+let add(x: i32)(y: i32): i32 = { x + y }
 
-let main: (): i32 = {
+let main(): i32 = {
   let add_two = add(2)
   add_two(40)
 }

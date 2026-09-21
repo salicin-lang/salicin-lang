@@ -1,6 +1,6 @@
 let Vec = alloc.Vec
 
-let valid_conversion: (): bool = {
+let valid_conversion(): bool = {
   let mut bytes = Vec<u8>.with_capacity(8)
   bytes.push(65)
   bytes.push(230)
@@ -23,7 +23,7 @@ let valid_conversion: (): bool = {
   }
 }
 
-let invalid_conversion: (): bool = {
+let invalid_conversion(): bool = {
   let mut bytes = Vec<u8>.with_capacity(7)
   bytes.push(65)
   bytes.push(226)
@@ -45,7 +45,7 @@ let invalid_conversion: (): bool = {
   }
 }
 
-let truncated_conversion: (): bool = {
+let truncated_conversion(): bool = {
   let mut bytes = Vec<u8>.new()
   bytes.push(65)
   bytes.push(226)
@@ -58,7 +58,7 @@ let truncated_conversion: (): bool = {
   }
 }
 
-let edge_conversion: (): bool = {
+let edge_conversion(): bool = {
   let empty = Vec<u8>.new()
   let empty_ok = match(alloc.string.string_from_utf8(empty)) {
     Ok(text) => text.is_empty(),
@@ -73,7 +73,7 @@ let edge_conversion: (): bool = {
     literal_bytes.read(2) == 179
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   if(valid_conversion() &&
     invalid_conversion() &&
     truncated_conversion() &&

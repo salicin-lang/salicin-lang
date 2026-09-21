@@ -9,7 +9,7 @@ let resource = struct {
 }
 
 extend<resource, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.drops = *self.drops + 1
@@ -17,7 +17,7 @@ extend<resource, Droppable> {
   }
 }
 
-let choose: with<throwing<bool>>(fail: bool, value: i32): i32 = {
+let choose with<throwing<bool>>(fail: bool, value: i32): i32 = {
   if(fail) {
     throw(true)
   } else: {
@@ -25,16 +25,16 @@ let choose: with<throwing<bool>>(fail: bool, value: i32): i32 = {
   }
 }
 
-let consume_or_throw: with<throwing<bool>>(move resource: resource): i32 = {
+let consume_or_throw with<throwing<bool>>(move resource: resource): i32 = {
   choose(true, resource.value)
 }
 
-let poll_once: <e: effects, f: type, t: type> with<e>
+let poll_once<e: effects, f: type, t: type> with<e>
   (future: Borrow<mut><f>): Poll<t> requires<f is Future<e> && f.Output == t> = {
   future.poll()
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let offset = 42
   let mut success = async {
     choose(false, offset)

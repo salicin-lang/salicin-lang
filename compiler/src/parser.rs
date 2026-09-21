@@ -168,7 +168,7 @@ impl Parser {
                 uses.extend(self.use_declaration(visibility)?);
             } else if self.at_context_ident("extern") {
                 return Err(self.error_here(
-                    "grouped `extern` declarations have been removed; use `let name: (...): result = foreign<c, \"symbol\">`",
+                    "grouped `extern` declarations have been removed; use `let name(...): result = foreign<c, \"symbol\">`",
                 ));
             } else if self.at_context_ident("test") {
                 if visibility != Visibility::Private {
@@ -498,8 +498,10 @@ impl Parser {
             return Err(self.error_here("`let mut` cannot declare a generic function or type"));
         }
 
-        if compile_groups.is_empty() {
-            self.take_named_callable_header_colon();
+        if self.legacy_named_signature_colon_follows() {
+            return Err(self.error_here(
+                "named declaration parameters attach directly to the name; remove the `:`",
+            ));
         }
 
         let (compile_groups, groups, mut effects, has_callable_boundary, mut has_effect_clause) =
@@ -904,7 +906,7 @@ impl Parser {
         while !self.at(&TokenKind::RBrace) {
             if self.at(&TokenKind::Let) {
                 return Err(self.error_here(
-                    "effect operations omit `let`; write `operation: (parameters): Result`",
+                    "effect operations omit `let`; write `operation(parameters): Result`",
                 ));
             }
             let operation = self.expect_ident("an effect operation name")?;
@@ -913,7 +915,11 @@ impl Parser {
                     "effect operation name `{operation}` is reserved by the generated `handle` function"
                 )));
             }
-            self.expect(&TokenKind::Colon, "`:` after effect operation name")?;
+            if self.legacy_named_signature_colon_follows() {
+                return Err(self.error_here(
+                    "effect operation parameters attach directly to the name; remove the `:`",
+                ));
+            }
             let (
                 operation_compile_groups,
                 groups,
@@ -1161,29 +1167,6 @@ impl Parser {
     fn named_compile_parameter_groups(
         &mut self,
     ) -> Result<Vec<Vec<CompileParam>>, ParseError> {
-        if self.group_starts_with_compile_parameter() {
-            return Err(self.error_here(
-                "named declaration compile-time parameters follow `:` before `=`",
-            ));
-        }
-        if !self.at(&TokenKind::Colon) {
-            return Ok(Vec::new());
-        }
-        let mut group_start = self.index + 1;
-        while matches!(
-            self.tokens.get(group_start).map(|token| &token.kind),
-            Some(TokenKind::Newline)
-        ) {
-            group_start += 1;
-        }
-        if !matches!(
-            self.tokens.get(group_start).map(|token| &token.kind),
-            Some(TokenKind::Less)
-        ) {
-            return Ok(Vec::new());
-        }
-        self.advance();
-        self.skip_newlines();
         let mut groups = Vec::new();
         while self.group_starts_with_compile_parameter() {
             let parameters = self.compile_parameter_group()?;
@@ -1203,19 +1186,18 @@ impl Parser {
         Ok(groups)
     }
 
-    fn take_named_callable_header_colon(&mut self) -> bool {
+    fn legacy_named_signature_colon_follows(&mut self) -> bool {
         if !self.at(&TokenKind::Colon) {
             return false;
         }
         let colon = self.index;
         self.advance();
         self.skip_newlines();
-        if self.at_context_ident("with") || self.runtime_parameter_declaration_group_follows() {
-            true
-        } else {
-            self.index = colon;
-            false
-        }
+        let follows = self.group_starts_with_compile_parameter()
+            || self.at_context_ident("with")
+            || self.runtime_parameter_declaration_group_follows();
+        self.index = colon;
+        follows
     }
 
     fn sort_level_literal(&mut self) -> Result<u64, ParseError> {
@@ -1384,8 +1366,10 @@ impl Parser {
         self.effect_parameters_in_scope.clear();
         let named_group_start = self.layout.parameter_groups.len();
         let compile_groups = self.named_compile_parameter_groups()?;
-        if compile_groups.is_empty() {
-            self.take_named_callable_header_colon();
+        if self.legacy_named_signature_colon_follows() {
+            return Err(self.error_here(
+                "extension member parameters attach directly to the name; remove the `:`",
+            ));
         }
         let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
             self.declaration_groups(true, &[], compile_groups)?;
@@ -3143,25 +3127,29 @@ impl Parser {
         }
         if self.at(&TokenKind::Let) {
             return Err(self
-                .error_here("trait members omit `let`; write `name: signature` or `name: type`"));
+                .error_here("trait members omit `let`; write `name(parameters): Result` or `name: type`"));
         }
-        if matches!(self.current().kind, TokenKind::Ident(_))
-            && self.at_offset(1, &TokenKind::Colon)
-        {
-            return self.trait_colon_member(outer_effect_parameters);
+        if matches!(self.current().kind, TokenKind::Ident(_)) {
+            return self.trait_named_member(outer_effect_parameters);
         }
-        Err(self
-            .error_here("expected a trait member declaration `name: signature` or `name: type`"))
+        Err(self.error_here(
+            "expected a trait member declaration `name(parameters): Result` or `name: type`",
+        ))
     }
 
-    fn trait_colon_member(
+    fn trait_named_member(
         &mut self,
         outer_effect_parameters: &[String],
     ) -> Result<TraitMember, ParseError> {
         let name = self.expect_ident("a trait member name")?;
-        self.expect(&TokenKind::Colon, "`:` after trait member name")?;
+        let compile_groups = self.named_compile_parameter_groups()?;
+        if self.legacy_named_signature_colon_follows() {
+            return Err(self.error_here(
+                "trait member parameters attach directly to the name; remove the `:`",
+            ));
+        }
         let (compile_groups, groups, mut effects, has_callable_boundary, _) =
-            self.declaration_groups(true, outer_effect_parameters, Vec::new())?;
+            self.declaration_groups(true, outer_effect_parameters, compile_groups)?;
         let associated_kind = if groups.is_empty() {
             if compile_groups.is_empty() && self.take(&TokenKind::Type) {
                 Some(AssociatedKind::Type)
@@ -3245,7 +3233,7 @@ impl Parser {
         }
         if self.at(&TokenKind::FatArrow) {
             return Err(self.error_here(
-                "trait default implementations use `=`; write `name: signature = body`",
+                "trait default implementations use `=`; write `name(parameters): Result = body`",
             ));
         }
         let body = if self.take(&TokenKind::Equal) {

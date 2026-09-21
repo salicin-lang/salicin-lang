@@ -1,7 +1,7 @@
 let counter = struct { value: i32 }
 
 extend<counter> {
-  let reset: (self: Borrow<mut><self>)
+  let reset(self: Borrow<mut><self>)
     (): () = {
     self.value = 0
   }
@@ -9,7 +9,7 @@ extend<counter> {
   let answer = 42
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut counter = counter { value: 41 }
   counter.reset()
   counter.value + counter.answer

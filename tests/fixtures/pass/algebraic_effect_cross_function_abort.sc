@@ -1,14 +1,14 @@
 let stop = effect {
-  stop: (): i32
+  stop(): i32
 }
 
-let program: with<stop>
+let program with<stop>
   (): i32 = {
   let value = stop.stop()
   value + 1
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let result = stop.handle {
     stop: { (resume) => 40 },
     action: { program() + 1 },

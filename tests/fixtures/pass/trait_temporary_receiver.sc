@@ -1,14 +1,14 @@
 let read = trait {
-  read: (self: Borrow<self>)(): i32
+  read(self: Borrow<self>)(): i32
 }
 
 let number = struct { value: i32 }
 
 extend<number, read> {
-  let read: (self: Borrow<self>)(): i32 = { self.value }
+  let read(self: Borrow<self>)(): i32 = { self.value }
 }
 
-let main: (): i32 = { number { value: 42 }.read() }
+let main(): i32 = { number { value: 42 }.read() }
 
 test<"trait_temporary_receiver.sc"> {
   std.test.assert(main() == 42)

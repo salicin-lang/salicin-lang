@@ -65,7 +65,7 @@ test_registration =
 A test registration cannot have an attribute or visibility. Its string must be
 non-empty, and the Brace group is the test body. `test` remains an ordinary
 identifier outside this top-level form. The edition-owned
-`pub let test: <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () = builtin()`
+`pub let test<name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () = builtin()`
 declaration validates the static name and body contract.
 
 ### 2.0.1 Declaration and guard forms
@@ -93,12 +93,10 @@ guard contract.
 
 ```ebnf
 let_decl = "let", [ contextual("mut") ], IDENT,
-           ( ":", declaration_signature, [ "=", declaration_initializer ]
-            | "=", declaration_rhs ) ;
-
-declaration_signature =
-    callable_signature
-  | type_expr ;
+           { compile_parameter_group },
+           ( callable_signature_tail, [ "=", declaration_initializer ]
+             | ":", type_expr, [ "=", expression ]
+             | "=", declaration_rhs ) ;
 
 declaration_initializer =
     callable_body
@@ -112,6 +110,9 @@ declaration_rhs =
 
 callable_signature =
     { compile_parameter_group },
+    callable_signature_tail ;
+
+callable_signature_tail =
     [ with_clause ],
     { runtime_parameter_group },
     [ "...", type_expr ],
@@ -153,9 +154,9 @@ and `= type { ... }` are not productions.
 `let Name = { field: Type, ... }` is a bodyless Brace schema declaration; it introduces a nominal
 struct and the same-named Brace constructor.
 
-Named declaration compile-time parameters and callable groups precede `=` and
-follow the declaration signature colon: `let Cell: <T: type> = struct { value: T }`
-and `let identity: <T: type>(value: T): T = { value }`. Compile-time and runtime
+Named declaration compile-time parameters and callable groups attach directly
+to the declaration name: `let Cell<T: type> = struct { value: T }`
+and `let identity<T: type>(value: T): T = { value }`. Compile-time and runtime
 groups remain valid inside a callable brace for anonymous callables and contexts
 without a declaration name. A named declaration cannot repeat its signature in
 the body.
@@ -166,7 +167,7 @@ extension method whose exact declaration is validated by the edition
 contract. It is not an expression initializer available to user packages.
 Anonymous callable values have one outer brace pair and separate their signature
 from their implementation with `=>`. Named callable declarations instead write
-`let name: signature = body`; omitting `= body` is valid only where a bodyless
+`let name(parameters): Result = body`; omitting `= body` is valid only where a bodyless
 callable contract is allowed.
 The removed bare form `let name = (parameters): Result => body` is not grammar.
 
@@ -256,7 +257,7 @@ effect_decl =
     { effect_operation, separators }, "}" ;
 
 effect_operation =
-    IDENT, ":",
+    IDENT,
     [ with_clause ],
     runtime_parameter_group, { runtime_parameter_group },
     ":", type_expr ;
@@ -296,17 +297,17 @@ trait_decl =
 self_parameter = contextual("self"), ":", compile_parameter_sort ;
 
 trait_member =
-    IDENT, ":", callable_signature, [ "=", callable_body ]
+    IDENT, callable_signature, [ "=", callable_body ]
   | IDENT, ":", ( contextual("type") | contextual("parameters") )
-  | IDENT, ":", compile_parameter_group, { compile_parameter_group },
+  | IDENT, compile_parameter_group, { compile_parameter_group },
     ":", ( contextual("type") | contextual("parameters") ) ;
 ```
 
-Trait callable members use declarations of the form `name: signature`:
-the bodyless form declares an abstract requirement and `name: signature = body`
+Trait callable members use declarations of the form `name(parameters): Result`:
+the bodyless form declares an abstract requirement and `name(parameters): Result = body`
 for a default implementation. Associated declarations also omit `let`.
 
-Effect operations use the same `name: signature` form: they omit `let` and `=`,
+Effect operations use the same `name(parameters): Result` form: they omit `let` and `=`,
 require an explicit runtime group, and have no implementation body. Their names
 are used by qualified operation calls and the labeled arguments of the
 compiler-generated `handle` function. `handle`, `done`, and `action` are
@@ -374,7 +375,7 @@ its compile-time parameters. A function applies the same compiler-owned
 `requires` guard to its body:
 
 ```sc fragment
-let duplicate: <T: type>(value: T): (T, T) requires<T is Copyable> = {
+let duplicate<T: type>(value: T): (T, T) requires<T is Copyable> = {
   (value, value)
 }
 ```
@@ -415,12 +416,12 @@ Every other marker must match a known
 compiler-owned edition contract and is removed before code generation.
 Trait callable requirements, effect operations, and user opaque types remain
 bodyless declarations rather than builtin definitions. The callable forms are
-introduced by a colon after the member or operation name.
+attached directly to the member or operation name.
 
 The root `core` module also contains the public overloads
-`pub let foreign: <abi: abi>: never = builtin()` and
-`pub let foreign: <abi: abi, symbol: String>: never = builtin()`, plus
-`pub let test: <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () = builtin()`
+`pub let foreign<abi: abi>: never = builtin()` and
+`pub let foreign<abi: abi, symbol: String>: never = builtin()`, plus
+`pub let test<name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () = builtin()`
 and the generic `requires<condition> = { body }` contract. They authorize the
 `foreign<c, ...>` initializer, top-level test registration, and function-body
 guard respectively;

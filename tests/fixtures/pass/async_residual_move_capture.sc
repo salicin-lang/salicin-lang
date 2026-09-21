@@ -2,7 +2,7 @@ let Future = core.async.Future
 let Poll = core.async.Poll
 
 let ask = effect {
-  ask: (): i32
+  ask(): i32
 }
 
 let resource = struct {
@@ -11,7 +11,7 @@ let resource = struct {
   }
 
 extend<resource, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.drops = *self.drops + 1
@@ -19,21 +19,21 @@ extend<resource, Droppable> {
   }
 }
 
-let request: with<ask>
+let request with<ask>
   (): i32 = {
   ask.ask()
 }
 
-let consume: (move resource: resource): i32 = {
+let consume(move resource: resource): i32 = {
   resource.value
 }
 
-let poll_once: <e: effects, f: type, t: type> with<e>
+let poll_once<e: effects, f: type, t: type> with<e>
   (future: Borrow<mut><f>): Poll<t> requires<f is Future<e> && f.Output == t> = {
   future.poll()
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

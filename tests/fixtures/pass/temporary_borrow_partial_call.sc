@@ -1,8 +1,8 @@
 let number = struct { value: i32 }
 
-let add: (value: i32)(number: Borrow<number>): i32 = { value + number.value }
+let add(value: i32)(number: Borrow<number>): i32 = { value + number.value }
 
-let main: (): i32 = {
+let main(): i32 = {
   let add_number = add(20)
   add_number(number { value: 22 })
 }

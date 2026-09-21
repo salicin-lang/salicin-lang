@@ -1,4 +1,4 @@
-let main: (): i32 = {
+let main(): i32 = {
   let mut answer = 40
   loop {
     loop {

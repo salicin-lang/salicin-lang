@@ -2,7 +2,7 @@ let Future = core.async.Future
 let Poll = core.async.Poll
 
 let ask = effect {
-  ask: (): i32
+  ask(): i32
 }
 
 let step = struct {
@@ -13,7 +13,7 @@ let step = struct {
 extend<step, Future<()>> {
   let Output = i32;
 
-  let poll: <r: region>
+  let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
     if(self.polls == 0) {
@@ -25,17 +25,17 @@ extend<step, Future<()>> {
   }
 }
 
-let make_step: with<ask>
+let make_step with<ask>
   (): step = {
   step { polls: 0, value: ask.ask() }
 }
 
-let make_step_with: with<ask>
+let make_step_with with<ask>
   (offset: Borrow<i32>): step = {
   step { polls: 0, value: ask.ask() + offset }
 }
 
-let shared: (offset: Borrow<i32>): i32 = {
+let shared(offset: Borrow<i32>): i32 = {
   let mut future = async {
     let value = await(make_step_with(offset))
     value
@@ -57,7 +57,7 @@ let shared: (offset: Borrow<i32>): i32 = {
   }
 }
 
-let mutable: (value: Borrow<mut><i32>): i32 = {
+let mutable(value: Borrow<mut><i32>): i32 = {
   let mut future = async {
     let amount = await(make_step())
     value = value + amount
@@ -80,7 +80,7 @@ let mutable: (value: Borrow<mut><i32>): i32 = {
   }
 }
 
-let cancelled: (value: Borrow<mut><i32>): i32 = {
+let cancelled(value: Borrow<mut><i32>): i32 = {
   do {
     let mut future = async {
       let amount = await(make_step())
@@ -102,7 +102,7 @@ let cancelled: (value: Borrow<mut><i32>): i32 = {
   value
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let offset = 2
   let mut first = 2
   let mut second = 2

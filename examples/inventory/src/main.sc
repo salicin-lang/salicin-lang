@@ -1,4 +1,4 @@
-let fail: with<std.io.io>
+let fail with<std.io.io>
   (message: core.string.String)
   (code: i32): i32 = {
   let view = message.as_str()
@@ -8,7 +8,7 @@ let fail: with<std.io.io>
   }
 }
 
-let take_number: (
+let take_number(
   arguments: Borrow<mut><alloc.Vec<core.string.String>>,
 ): core.Option<i64> = {
   let text = arguments.remove(1)
@@ -19,7 +19,7 @@ let take_number: (
   }
 }
 
-let main: with<std.io.io>
+let main with<std.io.io>
   (): i32 = {
   let mut arguments = match(std.io.arguments()) {
     Ok(value) => value,

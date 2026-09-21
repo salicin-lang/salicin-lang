@@ -1,4 +1,4 @@
-let main: (): i32 = {
+let main(): i32 = {
   let mut value = 40
   let mut bump = {
     value = value + 1

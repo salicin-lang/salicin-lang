@@ -747,7 +747,7 @@ mod tests {
             sources: vec![SourceUnit {
                 path: "/checkout/main.sc".into(),
                 module_path: Vec::new(),
-                source: "let main: (): i32 = {  42 }\n".into(),
+                source: "let main(): i32 = {  42 }\n".into(),
                 is_root: true,
             }],
         };

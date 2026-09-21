@@ -1,4 +1,4 @@
-let bounce: <t: type>
+let bounce<t: type>
   (move value: t)
   (again: bool): t = {
   if(again) {
@@ -8,7 +8,7 @@ let bounce: <t: type>
   }
 }
 
-let main: (): i32 = { bounce<i32>(42)(true) }
+let main(): i32 = { bounce<i32>(42)(true) }
 
 test<"generic_same_instance_recursion.sc"> {
   std.test.assert(main() == 42)

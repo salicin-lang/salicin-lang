@@ -1,8 +1,8 @@
 let stop = effect {
-  stop: (): bool
+  stop(): bool
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   stop.handle {
     stop: { (resume) => 1 },
     action: { let skipped = false && stop.stop()

@@ -1,9 +1,9 @@
-let identity: <t: type>: type = t
+let identity<t: type>: type = t
 
 let factory = trait {
-  Item: <t: type>: type
+  Item<t: type>: type
 
-  make: (self: Borrow<self>)(value: i32): Item<i32>
+  make(self: Borrow<self>)(value: i32): Item<i32>
   }
 
 let cell = struct {}
@@ -11,16 +11,16 @@ let cell = struct {}
 extend<cell, factory> {
   let Item = identity;
 
-  let make: (self: Borrow<self>)(value: i32): i32 = { value }
+  let make(self: Borrow<self>)(value: i32): i32 = { value }
 }
 
-let make_i32: <t: type>
+let make_i32<t: type>
   (value: Borrow<t>): i32
 requires<t is factory && t.Item<u: type> == u> = {
   value.make(42)
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let cell = cell {}
   make_i32(cell)
 }

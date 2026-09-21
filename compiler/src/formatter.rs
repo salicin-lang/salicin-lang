@@ -650,8 +650,8 @@ mod tests {
 
     #[test]
     fn formats_indentation_comments_and_trailing_space_idempotently() {
-        let source = "let main: (): i32 = {    \n// { stays a comment\nif(true) {\n/* nested {\n   /* } */\n*/\n42\n} else: {\n0\n}\n}\n";
-        let expected = "let main: (): i32 = {\n  // { stays a comment\n  if(true) {\n    /* nested {\n    /* } */\n    */\n    42\n  } else: {\n    0\n  }\n}\n";
+        let source = "let main(): i32 = {    \n// { stays a comment\nif(true) {\n/* nested {\n   /* } */\n*/\n42\n} else: {\n0\n}\n}\n";
+        let expected = "let main(): i32 = {\n  // { stays a comment\n  if(true) {\n    /* nested {\n    /* } */\n    */\n    42\n  } else: {\n    0\n  }\n}\n";
         let formatted = format_source(source).expect("format valid source");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -663,16 +663,16 @@ mod tests {
     #[test]
     fn preserves_expression_newlines_without_creating_calls() {
         let source =
-            "let apply: (value: i32): i32 = {  value }\nlet main: (): i32 = { \napply\n42\n}\n";
+            "let apply(value: i32): i32 = {  value }\nlet main(): i32 = { \napply\n42\n}\n";
         let expected =
-            "let apply: (value: i32): i32 = {  value }\nlet main: (): i32 = {\n  apply\n  42\n}\n";
+            "let apply(value: i32): i32 = {  value }\nlet main(): i32 = {\n  apply\n  42\n}\n";
         assert_eq!(format_source(source).expect("format calls"), expected);
     }
 
     #[test]
     fn expands_nested_blocks_and_their_leading_closing_braces() {
-        let source = "let run: (move action: (): i32): i32 = {  action() }\nlet main: (): i32 = {  run { 42 } }\nlet other: (): i32 = {  unsafe {\n0\n} }\n";
-        let expected = "let run: (move action: (): i32): i32 = {  action() }\nlet main: (): i32 = {\n  run { 42 }\n}\nlet other: (): i32 = {\n  unsafe {\n    0\n  }\n}\n";
+        let source = "let run(move action: (): i32): i32 = {  action() }\nlet main(): i32 = {  run { 42 } }\nlet other(): i32 = {  unsafe {\n0\n} }\n";
+        let expected = "let run(move action: (): i32): i32 = {  action() }\nlet main(): i32 = {\n  run { 42 }\n}\nlet other(): i32 = {\n  unsafe {\n    0\n  }\n}\n";
         let formatted = format_source(source).expect("format nested blocks");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -683,8 +683,8 @@ mod tests {
 
     #[test]
     fn indents_parameter_groups_and_match_arms() {
-        let source = "let apply: <e: effects> with<e>\n(action: with<e>(i32): i32)\n(value: i32): i32 = {  action(value) }\n\nlet main: (): i32 = { \nmatch(true) {\ntrue => match(false) {\nfalse => apply()(42),\ntrue => 0,\n},\nfalse => 0,\n}\n}\n";
-        let expected = "let apply: <e: effects> with<e>\n  (action: with<e>(i32): i32)\n  (value: i32): i32 = {  action(value) }\n\nlet main: (): i32 = {\n  match(true) {\n    true => match(false) {\n      false => apply()(42),\n      true => 0,\n    },\n    false => 0,\n  }\n}\n";
+        let source = "let apply<e: effects> with<e>\n(action: with<e>(i32): i32)\n(value: i32): i32 = {  action(value) }\n\nlet main(): i32 = { \nmatch(true) {\ntrue => match(false) {\nfalse => apply()(42),\ntrue => 0,\n},\nfalse => 0,\n}\n}\n";
+        let expected = "let apply<e: effects> with<e>\n  (action: with<e>(i32): i32)\n  (value: i32): i32 = {  action(value) }\n\nlet main(): i32 = {\n  match(true) {\n    true => match(false) {\n      false => apply()(42),\n      true => 0,\n    },\n    false => 0,\n  }\n}\n";
         let formatted = format_source(source).expect("format continuations");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -692,15 +692,15 @@ mod tests {
             formatted
         );
 
-        let source = "let pair: <\nleft: type,\nright: type,\n> = struct { left: left, right: right }\n";
-        let expected = "let pair: <\n  left: type,\n  right: type,\n> = struct { left: left, right: right }\n";
+        let source = "let pair<\nleft: type,\nright: type,\n> = struct { left: left, right: right }\n";
+        let expected = "let pair<\n  left: type,\n  right: type,\n> = struct { left: left, right: right }\n";
         assert_eq!(format_source(source).unwrap(), expected);
     }
 
     #[test]
     fn expands_inline_arms_when_a_match_already_spans_lines() {
-        let source = "let next: <r: region>(batch: Borrow<mut><r><Batch>)\n(): Option<Transaction> = {\nlet transaction: Option<Transaction> = match(batch.index) { 0 => Some(Transaction.Credit(30)), 1 => Some(Transaction.Debit(8)), _ => None,\n}\ntransaction\n}\n";
-        let expected = "let next: <r: region>\n  (batch: Borrow<mut><r><Batch>)\n  (): Option<Transaction> = {\n  let transaction: Option<Transaction> = match(batch.index) {\n    0 => Some(Transaction.Credit(30)),\n    1 => Some(Transaction.Debit(8)),\n    _ => None,\n  }\n  transaction\n}\n";
+        let source = "let next<r: region>(batch: Borrow<mut><r><Batch>)\n(): Option<Transaction> = {\nlet transaction: Option<Transaction> = match(batch.index) { 0 => Some(Transaction.Credit(30)), 1 => Some(Transaction.Debit(8)), _ => None,\n}\ntransaction\n}\n";
+        let expected = "let next<r: region>\n  (batch: Borrow<mut><r><Batch>)\n  (): Option<Transaction> = {\n  let transaction: Option<Transaction> = match(batch.index) {\n    0 => Some(Transaction.Credit(30)),\n    1 => Some(Transaction.Debit(8)),\n    _ => None,\n  }\n  transaction\n}\n";
         let formatted = format_source(source).expect("format multiline match arms");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -708,7 +708,7 @@ mod tests {
             formatted
         );
 
-        let nested = "let main: (): i32 = {\nmatch(true) { true => match(false) { false => 42, true => 0, }, false => 0,\n}\n}\n";
+        let nested = "let main(): i32 = {\nmatch(true) { true => match(false) { false => 42, true => 0, }, false => 0,\n}\n}\n";
         let formatted = format_source(nested).expect("format nested compact match");
         assert!(
             formatted.contains("true => match(false) { false => 42, true => 0, },"),
@@ -718,8 +718,8 @@ mod tests {
 
     #[test]
     fn puts_named_function_groups_on_new_lines_for_multiline_bodies() {
-        let source = "let credit: (state: Borrow<mut><Ledger>)(amount: i32): () = {\nstate.balance = state.balance + amount\nstate.processed = state.processed + 1\n}\nlet compact = { (state: Borrow<mut><Ledger>)(amount: i32): i32 =>  amount }\n";
-        let expected = "let credit: (state: Borrow<mut><Ledger>)\n  (amount: i32): () = {\n  state.balance = state.balance + amount\n  state.processed = state.processed + 1\n}\nlet compact = { (state: Borrow<mut><Ledger>)(amount: i32): i32 =>  amount }\n";
+        let source = "let credit(state: Borrow<mut><Ledger>)(amount: i32): () = {\nstate.balance = state.balance + amount\nstate.processed = state.processed + 1\n}\nlet compact = { (state: Borrow<mut><Ledger>)(amount: i32): i32 =>  amount }\n";
+        let expected = "let credit(state: Borrow<mut><Ledger>)\n  (amount: i32): () = {\n  state.balance = state.balance + amount\n  state.processed = state.processed + 1\n}\nlet compact = { (state: Borrow<mut><Ledger>)(amount: i32): i32 =>  amount }\n";
         let formatted = format_source(source).expect("format callable parameter groups");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -730,8 +730,8 @@ mod tests {
 
     #[test]
     fn formats_delimiters_where_clauses_and_expression_continuations() {
-        let source = "let marker = trait {}\nlet duplicate: <t: type>(value: t): t requires<t is Copyable && t is marker> = { \nvalue\n}\n\nlet add: (\nleft: i32,\nright: i32,\n): i32 = { \nleft +\nright\n}\n\nlet main: (): i32 = { \nlet values = [\n40,\n2,\n]\nlet grouped =\n(values[0] + values[1])\nadd(\nvalues[0],\nvalues[1],\n) + grouped - 42\n}\n";
-        let expected = "let marker = trait {}\nlet duplicate: <t: type>\n  (value: t): t requires<t is Copyable && t is marker> = {\n  value\n}\n\nlet add: (\n  left: i32,\n  right: i32,\n): i32 = {\n  left +\n    right\n}\n\nlet main: (): i32 = {\n  let values = [\n    40,\n    2,\n  ]\n  let grouped =\n    (values[0] + values[1])\n  add(\n    values[0],\n    values[1],\n  ) + grouped - 42\n}\n";
+        let source = "let marker = trait {}\nlet duplicate<t: type>(value: t): t requires<t is Copyable && t is marker> = { \nvalue\n}\n\nlet add(\nleft: i32,\nright: i32,\n): i32 = { \nleft +\nright\n}\n\nlet main(): i32 = { \nlet values = [\n40,\n2,\n]\nlet grouped =\n(values[0] + values[1])\nadd(\nvalues[0],\nvalues[1],\n) + grouped - 42\n}\n";
+        let expected = "let marker = trait {}\nlet duplicate<t: type>\n  (value: t): t requires<t is Copyable && t is marker> = {\n  value\n}\n\nlet add(\n  left: i32,\n  right: i32,\n): i32 = {\n  left +\n    right\n}\n\nlet main(): i32 = {\n  let values = [\n    40,\n    2,\n  ]\n  let grouped =\n    (values[0] + values[1])\n  add(\n    values[0],\n    values[1],\n  ) + grouped - 42\n}\n";
         let formatted = format_source(source).expect("format syntax continuations");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -742,19 +742,19 @@ mod tests {
 
     #[test]
     fn canonicalizes_a_space_before_brace_application() {
-        let source = "let choose: <t: type>[left: t]{right: t}(fallback: t): t = {  left }\nlet value = choose<i32>[1]{2}(3)\n";
-        let expected = "let choose: <t: type>[left: t]{right: t}(fallback: t): t = {  left }\nlet value = choose<i32>[1] {2}(3)\n";
+        let source = "let choose<t: type>[left: t]{right: t}(fallback: t): t = {  left }\nlet value = choose<i32>[1]{2}(3)\n";
+        let expected = "let choose<t: type>[left: t]{right: t}(fallback: t): t = {  left }\nlet value = choose<i32>[1] {2}(3)\n";
         assert_eq!(format_source(source).unwrap(), expected);
 
-        let source = "let count: {value: usize}: usize = {  value }\nlet consume: (value: Array<i32><count{2}>): i32 = {  value[0] }\n";
-        let expected = "let count: {value: usize}: usize = {  value }\nlet consume: (value: Array<i32><count {2}>): i32 = {  value[0] }\n";
+        let source = "let count{value: usize}: usize = {  value }\nlet consume(value: Array<i32><count{2}>): i32 = {  value[0] }\n";
+        let expected = "let count{value: usize}: usize = {  value }\nlet consume(value: Array<i32><count {2}>): i32 = {  value[0] }\n";
         assert_eq!(format_source(source).unwrap(), expected);
     }
 
     #[test]
     fn spaces_brace_application_after_a_same_line_block_comment() {
-        let source = "let count: {value: usize}: usize = {  value }\nlet consume: (value: Array<i32><count/* units */{2}>): i32 = {  value[0] }\n";
-        let expected = "let count: {value: usize}: usize = {  value }\nlet consume: (value: Array<i32><count/* units */ {2}>): i32 = {  value[0] }\n";
+        let source = "let count{value: usize}: usize = {  value }\nlet consume(value: Array<i32><count/* units */{2}>): i32 = {  value[0] }\n";
+        let expected = "let count{value: usize}: usize = {  value }\nlet consume(value: Array<i32><count/* units */ {2}>): i32 = {  value[0] }\n";
         assert_eq!(format_source(source).unwrap(), expected);
     }
 
@@ -775,9 +775,9 @@ mod tests {
     #[test]
     fn spaces_a_for_iterable_brace_application_without_changing_its_role() {
         let source =
-            "let visit: (): () = { \n  for (counter{current: 0, end: 4}) { value => value }\n}\n";
+            "let visit(): () = { \n  for (counter{current: 0, end: 4}) { value => value }\n}\n";
         let expected =
-            "let visit: (): () = {\n  for (counter {current: 0, end: 4}) { value => value }\n}\n";
+            "let visit(): () = {\n  for (counter {current: 0, end: 4}) { value => value }\n}\n";
         let formatted = format_source(source).expect("format parenthesized `for` iterable");
         assert_eq!(formatted, expected);
         parse(&formatted).expect("formatted constructor remains the `for` iterable");
@@ -785,8 +785,8 @@ mod tests {
 
     #[test]
     fn preserves_minimal_syntax_contract_tokens_idempotently() {
-        let source = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell: <t: type> = struct { value: t }\nextend<cell<t>><requires: t is marker> {\n}\nlet guarded: <t: type>(value: t): t requires<t is marker> = { \nvalue\n}\ntest<\"minimal contracts\"> {\nlet value = 1\n}\n";
-        let expected = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell: <t: type> = struct { value: t }\nextend<cell<t>><requires: t is marker> {\n}\nlet guarded: <t: type>\n  (value: t): t requires<t is marker> = {\n  value\n}\ntest<\"minimal contracts\"> {\n  let value = 1\n}\n";
+        let source = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell<t: type> = struct { value: t }\nextend<cell<t>><requires: t is marker> {\n}\nlet guarded<t: type>(value: t): t requires<t is marker> = { \nvalue\n}\ntest<\"minimal contracts\"> {\nlet value = 1\n}\n";
+        let expected = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell<t: type> = struct { value: t }\nextend<cell<t>><requires: t is marker> {\n}\nlet guarded<t: type>\n  (value: t): t requires<t is marker> = {\n  value\n}\ntest<\"minimal contracts\"> {\n  let value = 1\n}\n";
         let formatted = format_source(source).expect("format minimal syntax contracts");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -797,7 +797,7 @@ mod tests {
 
     #[test]
     fn preserves_trait_and_effect_member_declarations_idempotently() {
-        let source = "let marker = trait {}\nlet protocol = trait {\nItem: <r: region>: type\nArgs: <T: type>: parameters\nread: <T: type>(self)(value: T): T requires<T is marker> = value\n}\nlet state = effect {\nget: (): i32\n}\n";
+        let source = "let marker = trait {}\nlet protocol = trait {\nItem<r: region>: type\nArgs<T: type>: parameters\nread<T: type>(self)(value: T): T requires<T is marker> = value\n}\nlet state = effect {\nget(): i32\n}\n";
         let formatted = format_source(source).expect("format trait and effect declarations");
         parse(&formatted).expect("formatted member declarations must reparse");
         assert_eq!(
@@ -808,7 +808,7 @@ mod tests {
 
     #[test]
     fn formats_generated_handle_members_as_ordinary_labeled_calls() {
-        let source = "let run: (): i32 = { state.handle{get:{(resume)=>resume(42)},action:{state.get()},} }\n";
+        let source = "let run(): i32 = { state.handle{get:{(resume)=>resume(42)},action:{state.get()},} }\n";
         let formatted = format_source(source).expect("format generated handle call");
         assert!(formatted.contains("state.handle {"), "{formatted}");
         assert!(formatted.contains("get:"), "{formatted}");
@@ -821,8 +821,8 @@ mod tests {
 
     #[test]
     fn does_not_treat_closure_parameters_as_declaration_continuations() {
-        let source = "let main: (): i32 = { \nlet closure = { (left: i32) =>  do {\nleft\n}\n}\nclosure(42)\n}\n";
-        let expected = "let main: (): i32 = {\n  let closure = {\n    (left: i32) =>  do {\n      left\n    }\n  }\n  closure(42)\n}\n";
+        let source = "let main(): i32 = { \nlet closure = { (left: i32) =>  do {\nleft\n}\n}\nclosure(42)\n}\n";
+        let expected = "let main(): i32 = {\n  let closure = {\n    (left: i32) =>  do {\n      left\n    }\n  }\n  closure(42)\n}\n";
         let formatted = format_source(source).expect("format closure parameters");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -845,7 +845,7 @@ mod tests {
 
     #[test]
     fn rejects_invalid_source_without_rewriting_it() {
-        let error = format_source("let main( = {\n").expect_err("invalid source must fail");
+        let error = format_source("let main: ( = {\n").expect_err("invalid source must fail");
         assert!(!error.is_empty());
     }
 }

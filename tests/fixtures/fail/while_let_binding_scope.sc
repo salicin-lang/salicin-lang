@@ -1,8 +1,8 @@
 let Option = core.Option
 
-let next: (): Option<i32> = { None }
+let next(): Option<i32> = { None }
 
-let main: (): i32 = {
+let main(): i32 = {
   loop {
     match(next()) { Some(value) => value, None => break(),
     }

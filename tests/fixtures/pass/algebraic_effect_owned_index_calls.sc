@@ -1,5 +1,5 @@
 let step = effect {
-  delta: (): i32
+  delta(): i32
 }
 
 let state = struct {
@@ -8,7 +8,7 @@ let state = struct {
 }
 
 extend<state, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.drops = *self.drops + 1
@@ -16,7 +16,7 @@ extend<state, Droppable> {
   }
 }
 
-let mark: (calls: Ptr<mut><i32>)
+let mark(calls: Ptr<mut><i32>)
   (digit: i32): i32 = {
   unsafe {
     *calls = *calls * 10 + digit
@@ -24,14 +24,14 @@ let mark: (calls: Ptr<mut><i32>)
   }
 }
 
-let next_index: (calls: Ptr<mut><i32>): usize = {
+let next_index(calls: Ptr<mut><i32>): usize = {
   unsafe {
     *calls = *calls * 10 + 2
     1
   }
 }
 
-let update: with<step>
+let update with<step>
   (before: i32)
   (value: Borrow<mut><i32>)
   (after: i32): () = {
@@ -39,7 +39,7 @@ let update: with<step>
   value = value + delta + before + after
 }
 
-let program: with<step>
+let program with<step>
   (drops: Ptr<mut><i32>)
   (calls: Ptr<mut><i32>): i32 = {
   let mut state = state { values: [0, 40], drops: drops }
@@ -47,7 +47,7 @@ let program: with<step>
   state.values[1]
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

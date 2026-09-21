@@ -1,5 +1,5 @@
 extend<Ptr<a><t>> {
-  let identity: (self)(): Ptr<a><t> = { self }
+  let identity(self)(): Ptr<a><t> = { self }
 }
 
-let main: (): i32 = { 0 }
+let main(): i32 = { 0 }

@@ -1063,7 +1063,7 @@ edition = "2026"
     fn loads_explicit_targets_and_exposes_validated_metadata() {
         let temp = TempDir::new();
         temp.write("source/library.sc", "let answer = 42\n");
-        temp.write("source/tool.sc", "let main: () = {  0 }\n");
+        temp.write("source/tool.sc", "let main() = {  0 }\n");
         temp.write(
             MANIFEST_FILE_NAME,
             &basic_manifest(
@@ -1096,7 +1096,7 @@ path = "source/tool.sc"
     fn discovers_default_library_and_binary_and_allows_the_same_name() {
         let temp = TempDir::new();
         temp.write("src/lib.sc", "let answer = 42\n");
-        temp.write("src/main.sc", "let main: () = {  0 }\n");
+        temp.write("src/main.sc", "let main() = {  0 }\n");
         temp.write(MANIFEST_FILE_NAME, &basic_manifest("\n[dependencies]\n"));
 
         let manifest = load_manifest(temp.path().join(MANIFEST_FILE_NAME)).unwrap();
@@ -1108,7 +1108,7 @@ path = "source/tool.sc"
     #[test]
     fn rejects_unknown_fields_at_every_manifest_level() {
         let temp = TempDir::new();
-        temp.write("src/main.sc", "let main: () = {  0 }\n");
+        temp.write("src/main.sc", "let main() = {  0 }\n");
         temp.write(
             MANIFEST_FILE_NAME,
             r#"[package]
@@ -1131,7 +1131,7 @@ license = "MIT"
             ("hello", "1.0.0", "2025", "not supported"),
         ] {
             let temp = TempDir::new();
-            temp.write("src/main.sc", "let main: () = {  0 }\n");
+            temp.write("src/main.sc", "let main() = {  0 }\n");
             temp.write(
                 MANIFEST_FILE_NAME,
                 &format!(
@@ -1156,7 +1156,7 @@ license = "MIT"
     #[test]
     fn validates_registry_dependency_requests_and_rejects_unsupported_sources() {
         let temp = TempDir::new();
-        temp.write("src/main.sc", "let main: () = {  0 }\n");
+        temp.write("src/main.sc", "let main() = {  0 }\n");
         temp.write(
             MANIFEST_FILE_NAME,
             &basic_manifest(
@@ -1219,7 +1219,7 @@ license = "MIT"
         let temp = TempDir::new();
         write_test_package(&temp, "alpha", "alpha-package", "");
         write_test_package(&temp, "zeta", "zeta-package", "");
-        temp.write("root/src/main.sc", "let main: () = {  0 }\n");
+        temp.write("root/src/main.sc", "let main() = {  0 }\n");
         temp.write(
             "root/salicin.toml",
             r#"[package]
@@ -1255,7 +1255,7 @@ alpha_util = { path = "../alpha" }
     fn rejects_invalid_dependency_aliases_paths_and_manifests() {
         for alias in ["Upper", "has-dash", "self", "_", "let", "core", "alloc"] {
             let temp = TempDir::new();
-            temp.write("root/src/main.sc", "let main: () = {  0 }\n");
+            temp.write("root/src/main.sc", "let main() = {  0 }\n");
             temp.write(
                 "root/salicin.toml",
                 &format!(
@@ -1269,7 +1269,7 @@ alpha_util = { path = "../alpha" }
         }
 
         let temp = TempDir::new();
-        temp.write("root/src/main.sc", "let main: () = {  0 }\n");
+        temp.write("root/src/main.sc", "let main() = {  0 }\n");
         for path in [
             "/dep",
             "C:/dep",
@@ -1364,12 +1364,12 @@ alpha_util = { path = "../alpha" }
     #[test]
     fn dependency_graph_requires_library_targets() {
         let temp = TempDir::new();
-        temp.write("app/src/main.sc", "let main: () = {  0 }\n");
+        temp.write("app/src/main.sc", "let main() = {  0 }\n");
         temp.write(
             "app/salicin.toml",
             "[package]\nname = \"app\"\nversion = \"1.0.0\"\nedition = \"2026\"\n\n[dependencies]\ntool = { path = \"../tool\" }\n",
         );
-        temp.write("tool/src/main.sc", "let main: () = {  0 }\n");
+        temp.write("tool/src/main.sc", "let main() = {  0 }\n");
         temp.write(
             "tool/salicin.toml",
             "[package]\nname = \"tool\"\nversion = \"1.0.0\"\nedition = \"2026\"\n",
@@ -1402,7 +1402,7 @@ alpha_util = { path = "../alpha" }
             ["alpha", "zeta"]
         );
 
-        temp.write("src/lib.sc", "pub let root: (): i32 = {  0 }\n");
+        temp.write("src/lib.sc", "pub let root(): i32 = {  0 }\n");
         temp.write(
             MANIFEST_FILE_NAME,
             "[package]\nname = \"root\"\nversion = \"1.0.0\"\nedition = \"2026\"\n\n[workspace]\nmembers = [\"members/alpha\"]\n",
@@ -1468,7 +1468,7 @@ alpha_util = { path = "../alpha" }
             .to_string();
         assert!(virtual_root.contains("virtual workspace"), "{virtual_root}");
 
-        temp.write("app/src/main.sc", "let main: (): i32 = {  0 }\n");
+        temp.write("app/src/main.sc", "let main(): i32 = {  0 }\n");
         temp.write(
             "app/salicin.toml",
             "[package]\nname = \"app\"\nversion = \"1.0.0\"\nedition = \"2026\"\n\n[dependencies]\nvirtual = { path = \"../virtual\" }\n",
@@ -1495,8 +1495,8 @@ alpha_util = { path = "../alpha" }
     #[test]
     fn rejects_duplicate_binary_target_names() {
         let temp = TempDir::new();
-        temp.write("src/one.sc", "let main: () = {  0 }\n");
-        temp.write("src/two.sc", "let main: () = {  0 }\n");
+        temp.write("src/one.sc", "let main() = {  0 }\n");
+        temp.write("src/two.sc", "let main() = {  0 }\n");
         temp.write(
             MANIFEST_FILE_NAME,
             &basic_manifest(
@@ -1519,7 +1519,7 @@ path = "src/two.sc"
     #[test]
     fn rejects_binary_names_that_could_escape_the_build_directory() {
         let temp = TempDir::new();
-        temp.write("src/main.sc", "let main: () = {  0 }\n");
+        temp.write("src/main.sc", "let main() = {  0 }\n");
         temp.write(
             MANIFEST_FILE_NAME,
             &basic_manifest(
@@ -1538,7 +1538,7 @@ path = "src/main.sc"
     #[test]
     fn validates_target_paths() {
         let temp = TempDir::new();
-        temp.write("outside.sc", "let main: () = {  0 }\n");
+        temp.write("outside.sc", "let main() = {  0 }\n");
         temp.write("package/src/not-salicin.txt", "text\n");
 
         for (path, expected) in [

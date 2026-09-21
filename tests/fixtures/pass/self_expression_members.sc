@@ -2,16 +2,16 @@ let point = struct { raw: i32 }
 
 extend<point> {
   let origin: self = self { raw: 40 }
-  let new: (value: i32): self = { self { raw: value } }
-  let shifted: (move self)(delta: i32): self = { self { raw: self.raw + delta } }
-  let read: (self: Borrow<self>)(): i32 = { self.raw }
-  let read: (value: self): i32 = { self.read(self: value)() }
+  let new(value: i32): self = { self { raw: value } }
+  let shifted(move self)(delta: i32): self = { self { raw: self.raw + delta } }
+  let read(self: Borrow<self>)(): i32 = { self.raw }
+  let read(value: self): i32 = { self.read(self: value)() }
 }
 
 let choice = enum { Some(i32), None }
 
 extend<choice> {
-  let unwrap: (move self)
+  let unwrap(move self)
     (): i32 = {
     match(self) {
       self.Some(value) => value,
@@ -21,19 +21,19 @@ extend<choice> {
 }
 
 let rebuild = trait {
-  rebuild: (move self)(): self;
-  read: (self: Borrow<self>)(): i32;
-  twice: (self: Borrow<self>)(): i32 = self.read() + self.read()
+  rebuild(move self)(): self;
+  read(self: Borrow<self>)(): i32;
+  twice(self: Borrow<self>)(): i32 = self.read() + self.read()
 }
 
 let wrapper = struct { raw: i32 }
 
 extend<wrapper, rebuild> {
-  let rebuild: (move self)(): self = { self { raw: self.raw } }
-  let read: (self: Borrow<self>)(): i32 = { self.raw }
+  let rebuild(move self)(): self = { self { raw: self.raw } }
+  let read(self: Borrow<self>)(): i32 = { self.raw }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let shifted = point.new(40).shifted(2)
   let point_value = point.read(shifted)
   let choice = choice.Some(42).unwrap()

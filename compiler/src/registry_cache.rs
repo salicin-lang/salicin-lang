@@ -1100,7 +1100,7 @@ mod tests {
             ("answer-kit-1.2.3/salicin.toml", manifest.as_bytes()),
             (
                 "answer-kit-1.2.3/src/lib.sc",
-                b"pub let answer: (): i32 = {  42 }",
+                b"pub let answer(): i32 = {  42 }",
             ),
         ])
     }
@@ -1138,7 +1138,7 @@ mod tests {
         assert_eq!(outcome, RegistryMaterializeOutcome::Published);
         assert_eq!(
             fs::read_to_string(repaired.root.join("src/lib.sc")).unwrap(),
-            "pub let answer: (): i32 = {  42 }"
+            "pub let answer(): i32 = {  42 }"
         );
     }
 
@@ -1169,7 +1169,7 @@ mod tests {
             ("answer-kit-1.2.3/salicin.toml", wrong_manifest.as_bytes()),
             (
                 "answer-kit-1.2.3/src/lib.sc",
-                b"pub let answer: (): i32 = {  42 }",
+                b"pub let answer(): i32 = {  42 }",
             ),
         ]);
         let (provider, release) = identities(&wrong, vec![]);

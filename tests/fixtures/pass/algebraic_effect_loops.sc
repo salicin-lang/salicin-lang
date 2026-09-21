@@ -1,8 +1,8 @@
 let tick = effect {
-  tick: (): i32
+  tick(): i32
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut count = 0
   tick.handle {
     tick: { (resume) => resume(1) },

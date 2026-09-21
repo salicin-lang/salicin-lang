@@ -1,7 +1,7 @@
 let parse_i64_radix = core.fmt.parse_i64_radix
 
 /// Parses one strict decimal command-line field.
-pub let decimal: (
+pub let decimal(
   value: Borrow<core.string.str>,
 ): core.Result<core.fmt.ParseIntError><i64> = {
   parse_i64_radix(value, 10)

@@ -8,20 +8,20 @@ pub let FromUtf8Error = struct {
 
 extend<FromUtf8Error> {
   /// Returns the length of the valid UTF-8 prefix.
-  let valid_up_to: (self: Borrow<self>)(): u64 = {  self.valid_prefix }
+  let valid_up_to(self: Borrow<self>)(): u64 = {  self.valid_prefix }
 
   /// Recovers ownership of the rejected bytes.
-  let into_bytes: (move self)(): Vec<u8> = {  self.bytes }
+  let into_bytes(move self)(): Vec<u8> = {  self.bytes }
 }
 
-let first_invalid_owned_utf8: (bytes: Borrow<Vec<u8>>): core.Option<u64> = {
+let first_invalid_owned_utf8(bytes: Borrow<Vec<u8>>): core.Option<u64> = {
   let source = bytes.as_slice<shared>()
   core.string.str.first_invalid_utf8(source)
 }
 
 /// Validates and consumes bytes, transferring their allocation on success and
 /// returning the original owner on failure.
-pub let string_from_utf8: (
+pub let string_from_utf8(
   move bytes: Vec<u8>,
 ): core.Result<FromUtf8Error><core.string.String> = {
   match(first_invalid_owned_utf8(bytes)) {
@@ -44,7 +44,7 @@ pub let string_from_utf8: (
 
 /// Consumes a String and returns owned bytes. Heap storage transfers without
 /// copying; static literal storage is copied into a fresh vector.
-pub let string_into_bytes: (
+pub let string_into_bytes(
   move value: core.string.String,
 ): Vec<u8> = {
   let parts = unsafe {
@@ -75,33 +75,33 @@ pub let StringWriter = struct {
 
 extend<StringWriter> {
   /// Creates an empty writer without allocating.
-  let new: (): StringWriter = {
+  let new(): StringWriter = {
     StringWriter { value: core.string.String.new() }
   }
 
   /// Creates an empty writer with reserved UTF-8 byte capacity.
-  let with_capacity: (capacity: u64): StringWriter = {
+  let with_capacity(capacity: u64): StringWriter = {
     StringWriter { value: core.string.String.with_capacity(capacity) }
   }
 
   /// Borrows the text written so far.
-  let as_str: <r: region>
+  let as_str<r: region>
     (self: Borrow<r><self>)
     (): Borrow<r><core.string.str> = {
     self.value.as_str()
   }
 
   /// Returns the completed owned String.
-  let finish: (move self)(): core.string.String = {  self.value }
+  let finish(move self)(): core.string.String = {  self.value }
 }
 
 extend<StringWriter, core.fmt.TextWriter<pure>> {
-  let write_scalar: (self: Borrow<mut><self>)
+  let write_scalar(self: Borrow<mut><self>)
     (value: core.string.UnicodeScalar): () = {
     self.value.push(value)
   }
 
-  let write_ascii: (self: Borrow<mut><self>)
+  let write_ascii(self: Borrow<mut><self>)
     (value: u8): () = {
     if(value > 127) {
       unsafe {

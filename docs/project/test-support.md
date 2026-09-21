@@ -34,7 +34,7 @@ let Outcome = enum {
   Failed(String),
 }
 
-let run: (
+let run(
   move action: with<core.error.throwing<String>>(): (),
 ): Outcome
 ```

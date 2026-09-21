@@ -2,7 +2,7 @@ let Future = core.async.Future
 let Poll = core.async.Poll
 
 let ask = effect {
-  ask: (): i32
+  ask(): i32
 }
 
 let step = struct {
@@ -13,7 +13,7 @@ let step = struct {
 }
 
 extend<step, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.drops = *self.drops + self.drop_amount
@@ -24,7 +24,7 @@ extend<step, Droppable> {
 extend<step, Future<()>> {
   let Output = i32;
 
-  let poll: <r: region>
+  let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
     if(self.polls == 0) {
@@ -36,7 +36,7 @@ extend<step, Future<()>> {
   }
 }
 
-let run: (drops: Ptr<mut><i32>, first: bool): i32 = {
+let run(drops: Ptr<mut><i32>, first: bool): i32 = {
   let mut future = async {
     if(first) {
       await(step { drops: drops, polls: 0, value: ask.ask(), drop_amount: 10 })
@@ -61,7 +61,7 @@ let run: (drops: Ptr<mut><i32>, first: bool): i32 = {
   }
 }
 
-let cancel_second: (drops: Ptr<mut><i32>): i32 = {
+let cancel_second(drops: Ptr<mut><i32>): i32 = {
   ask.handle {
     ask: { (resume) => resume(40) },
     action: {
@@ -80,7 +80,7 @@ let cancel_second: (drops: Ptr<mut><i32>): i32 = {
   }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

@@ -1,1 +1,1 @@
-let main: (): i32 = { self }
+let main(): i32 = { self }

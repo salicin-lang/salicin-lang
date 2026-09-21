@@ -8,7 +8,7 @@ let resource = struct {
 }
 
 extend<resource, Droppable> {
-  let drop: (self: Borrow<mut><self>)
+  let drop(self: Borrow<mut><self>)
     (): () = {
     unsafe {
       *self.drops = *self.drops + 1
@@ -25,7 +25,7 @@ let step = struct {
 extend<step, Future<()>> {
   let Output = i32;
 
-  let poll: <r: region>
+  let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
     if(self.polls == 0) {
@@ -37,7 +37,7 @@ extend<step, Future<()>> {
   }
 }
 
-let choose: with<throwing<bool>>(fail: bool): i32 = {
+let choose with<throwing<bool>>(fail: bool): i32 = {
   if(fail) {
     throw(true)
   } else: {
@@ -45,11 +45,11 @@ let choose: with<throwing<bool>>(fail: bool): i32 = {
   }
 }
 
-let make_step: with<throwing<bool>>(move resource: resource, fail: bool): step = {
+let make_step with<throwing<bool>>(move resource: resource, fail: bool): step = {
   step { polls: 0, value: choose(fail), resource: resource }
 }
 
-let run_success: (drops: Ptr<mut><i32>): i32 = {
+let run_success(drops: Ptr<mut><i32>): i32 = {
   let result: Result<bool><i32> = try {
     let resource = resource { drops: drops }
     let mut future = async {
@@ -76,7 +76,7 @@ let run_success: (drops: Ptr<mut><i32>): i32 = {
   }
 }
 
-let run_throwing: (drops: Ptr<mut><i32>): i32 = {
+let run_throwing(drops: Ptr<mut><i32>): i32 = {
   let result: Result<bool><i32> = try {
     let resource = resource { drops: drops }
     let mut future = async {
@@ -103,7 +103,7 @@ let run_throwing: (drops: Ptr<mut><i32>): i32 = {
   }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

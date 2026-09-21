@@ -4,7 +4,7 @@ let PartialOrdering = core.ops.PartialOrdering
 let number = struct { value: i32, unordered: bool }
 
 extend<number, PartialOrd<number>> {
-  let partial_cmp: (self: Borrow<self>)
+  let partial_cmp(self: Borrow<self>)
     (rhs: Borrow<number>): PartialOrdering = {
     if(self.unordered || rhs.unordered) { Unordered }
     else: {
@@ -17,7 +17,7 @@ extend<number, PartialOrd<number>> {
   }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let low = number { value: 1, unordered: false }
   let high = number { value: 2, unordered: false }
   let none = number { value: 0, unordered: true }

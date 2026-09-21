@@ -4,10 +4,10 @@ let number = struct { value: i32 }
 
 extend<number, Mul<i32>> {
   let Output = i32;
-  let mul: (self)(rhs: i32): i32 = { self.value * rhs }
+  let mul(self)(rhs: i32): i32 = { self.value * rhs }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let right = 2
   let answer = number { value: 21 } * right
   answer + right - 2

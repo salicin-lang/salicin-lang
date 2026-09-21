@@ -1,8 +1,8 @@
 let abort = effect {
-  stop: (): i32
+  stop(): i32
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut reached = 0
   let result = abort.handle {
     stop: { (resume) => 42 },

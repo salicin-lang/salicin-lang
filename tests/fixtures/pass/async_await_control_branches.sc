@@ -9,7 +9,7 @@ let step = struct {
 extend<step, Future<()>> {
   let Output = i32;
 
-  let poll: <r: region>
+  let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
     if(self.polled) {
@@ -29,7 +29,7 @@ let other_step = struct {
 extend<other_step, Future<()>> {
   let Output = i32;
 
-  let poll: <r: region>
+  let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
     if(self.polled) {
@@ -41,11 +41,11 @@ extend<other_step, Future<()>> {
   }
 }
 
-let step: (value: i32): step = {
+let step(value: i32): step = {
   step { polled: false, value: value }
 }
 
-let other_step: (value: i32): other_step = {
+let other_step(value: i32): other_step = {
   other_step { polled: false, value: value }
 }
 
@@ -54,7 +54,7 @@ let choice = enum {
   right
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut conditional = async {
     let value = if(true) {
       let prefix = 19

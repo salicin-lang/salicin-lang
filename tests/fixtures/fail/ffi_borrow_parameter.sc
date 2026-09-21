@@ -1,3 +1,3 @@
-let inspect: (value: Borrow<i32>): i32 = foreign<c>
+let inspect(value: Borrow<i32>): i32 = foreign<c>
 
-let main: (): i32 = { 0 }
+let main(): i32 = { 0 }

@@ -1,12 +1,12 @@
 let step = effect {
-  delta: (): i32
+  delta(): i32
 }
 
 let state = struct {
   value: i32,
 }
 
-let program: with<step>
+let program with<step>
   (): i32 = {
   let mut state = state { value: 40 }
   let mut count = 0
@@ -18,7 +18,7 @@ let program: with<step>
   state.value
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   step.handle {
     delta: { (resume) => resume(1) },
     action: { program() },

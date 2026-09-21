@@ -1,11 +1,11 @@
 let number = struct { value: i32 }
 
 extend<number> {
-  let read: (self: Borrow<self>)(): i32 = { self.value }
-  let take: (move self)(): i32 = { self.value }
+  let read(self: Borrow<self>)(): i32 = { self.value }
+  let take(move self)(): i32 = { self.value }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let number = number { value: 21 }
   let first = number.read()
   first + number.take()

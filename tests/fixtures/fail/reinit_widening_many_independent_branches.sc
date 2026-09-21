@@ -14,9 +14,9 @@ let bundle = struct { f00: payload,
   f12: payload,
   f13: payload, }
 
-let consume: (move value: payload): () = { () }
+let consume(move value: payload): () = { () }
 
-let stress: (
+let stress(
     b00: bool,
     b01: bool,
     b02: bool,
@@ -50,7 +50,7 @@ let stress: (
   bundle.f13.value
 }
 
-let main: (): i32 = { stress(
+let main(): i32 = { stress(
     false,
     false,
     false,

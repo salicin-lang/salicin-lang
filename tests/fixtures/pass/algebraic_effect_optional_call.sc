@@ -2,18 +2,18 @@ let Option = core.Option
 let Result = core.Result
 
 let read = effect {
-  option_base: (present: bool): Option<adder>;
-  result_base: (present: bool): Result<bool><adder>;
-  argument: (): i32
+  option_base(present: bool): Option<adder>;
+  result_base(present: bool): Result<bool><adder>;
+  argument(): i32
 }
 
 let adder = struct { base: i32 }
 
 extend<adder> {
-  let add: (self)(value: i32): i32 = { self.base + value }
+  let add(self)(value: i32): i32 = { self.base + value }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut arguments = 0
   let result: i32 = read.handle {
     option_base: {

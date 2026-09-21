@@ -1,3 +1,3 @@
-let invalid: <t: type>(move value: t): i32 = { value.field }
+let invalid<t: type>(move value: t): i32 = { value.field }
 
-let main: (): i32 = { 42 }
+let main(): i32 = { 42 }

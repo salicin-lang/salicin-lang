@@ -1,8 +1,8 @@
 let read = effect {
-  read: (): usize
+  read(): usize
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   read.handle {
     read: { (resume) => resume(0) },
     action: { let values = [42, 0]

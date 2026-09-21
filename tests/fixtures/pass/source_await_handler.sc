@@ -8,7 +8,7 @@ let step = struct { ready: bool }
 extend<step, Future<()>> {
   let Output = i32;
 
-  let poll: <r: region>
+  let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<i32> = {
     if(self.ready) {
@@ -20,7 +20,7 @@ extend<step, Future<()>> {
   }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   suspension.handle {
     suspend: { (resume) => resume(()) },
     action: { await_source(step { ready: false }) },

@@ -1,4 +1,4 @@
-let main: (): i32 = {
+let main(): i32 = {
   let future = async {
     loop {
       let value = await(child())
@@ -12,7 +12,7 @@ let main: (): i32 = {
   42
 }
 
-let child: () = {
+let child() = {
   async { 1 }
 }
 

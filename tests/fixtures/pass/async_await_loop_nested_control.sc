@@ -8,7 +8,7 @@ let step = struct {
 extend<step, Future<()>> {
   let Output = bool;
 
-  let poll: <r: region>
+  let poll<r: region>
     (self: Borrow<mut><r><self>)
     (): Poll<bool> = {
     let done = unsafe {
@@ -19,11 +19,11 @@ extend<step, Future<()>> {
   }
 }
 
-let step: (remaining: Ptr<mut><i32>): step = {
+let step(remaining: Ptr<mut><i32>): step = {
   step { remaining: remaining }
 }
 
-let main: (): i32 = {
+let main(): i32 = {
   let mut remaining = 4
   let remaining_ptr = ptr<mut>(borrow<mut>(remaining))
   let mut future = async {
