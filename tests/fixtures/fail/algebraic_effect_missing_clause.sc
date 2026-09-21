@@ -3,10 +3,11 @@ let state = <s: type> effect {
   put: (move value: s): ()
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   state<i32>.handle(do {
-      state<i32>.get()
-    }) {
+    state<i32>.get()
+  }) {
     get(resume) => do { resume(42) },
   }
 }

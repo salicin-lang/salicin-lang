@@ -2,16 +2,18 @@ let ask = effect {
   value: (): i32
 }
 
-let ask = { with<ask>(): i32 =>
+let ask = { with<ask>
+  (): i32 =>
   ask.value()
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   ask.handle(do {
-      let action = ask
-      let forwarded = action
-      forwarded()
-    }) {
+    let action = ask
+    let forwarded = action
+    forwarded()
+  }) {
     value(resume) => do { resume(42) },
   }
 }

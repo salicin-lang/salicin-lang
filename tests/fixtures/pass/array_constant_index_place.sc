@@ -1,10 +1,12 @@
 let read = { (value: Borrow<i32>): i32 => value }
 
-let set = { (value: Borrow<mut><i32>): () =>
+let set = {
+  (value: Borrow<mut><i32>): () =>
   value = 22
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut values = [20, 0]
   let first = read(values[0])
   set(values[1])

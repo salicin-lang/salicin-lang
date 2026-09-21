@@ -30,7 +30,8 @@ let extract_local = { with<throwing<bool>>(): i32 =>
   stored.raise()
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let success = try {
     extract_local()
   }!!

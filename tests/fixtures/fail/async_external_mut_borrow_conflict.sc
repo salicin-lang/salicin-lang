@@ -1,4 +1,5 @@
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut value = 41
   let reference: Borrow<mut><i32> = borrow<mut>(value)
   let future = async {
@@ -9,6 +10,7 @@ let main = { (): i32 =>
   0
 }
 
-let child = { () =>
+let child = {
+  () =>
   async { 1 }
 }

@@ -5,7 +5,8 @@ let read = { with<throwing<bool>>(fail: bool): i32 =>
   if(fail) { throw(true) } else: { 40 }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let propagated: Result<bool><i32> = try {
     read(true) + 2
   }

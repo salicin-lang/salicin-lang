@@ -18,7 +18,8 @@ extend(step, Future<()>) {
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let offset = 1
   let mut future = async {
     let value = await(step { polls: 0 })

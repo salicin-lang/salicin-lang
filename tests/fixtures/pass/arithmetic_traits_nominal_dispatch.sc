@@ -25,7 +25,8 @@ extend(number, Rem<number>) {
   let rem = { (self)(rhs: number): number => number { value: self.value % rhs.value } }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let subtraction = number { value: 50 } - number { value: 8 }
   let multiplication = number { value: 6 } * number { value: 7 }
   let division = number { value: 84 } / number { value: 2 }

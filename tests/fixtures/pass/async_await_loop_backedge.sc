@@ -25,7 +25,8 @@ extend(step, Future<()>) {
   }
 }
 
-let next_step = { (remaining: Ptr<mut><i32>): step =>
+let next_step = {
+  (remaining: Ptr<mut><i32>): step =>
   step { polled: false, remaining: remaining }
 }
 
@@ -47,11 +48,13 @@ extend(ready_step, Future<()>) {
   }
 }
 
-let ready_step = { (remaining: Ptr<mut><i32>): ready_step =>
+let ready_step = {
+  (remaining: Ptr<mut><i32>): ready_step =>
   ready_step { remaining: remaining }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut remaining = 3
   let remaining_ptr = ptr<mut>(borrow<mut>(remaining))
   let mut future = async {

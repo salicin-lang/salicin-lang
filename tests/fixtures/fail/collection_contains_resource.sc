@@ -4,7 +4,8 @@ extend(resource, Droppable) {
   let drop = { (self: Borrow<mut><self>)(): () => () }
 }
 
-let main = { (): i32 =>
-  let values: Array<resource><1> = [resource{ value: 42 }]
-  if(values.contains(resource{ value: 42 })) { 42 } else: { 0 }
+let main = {
+  (): i32 =>
+  let values: Array<resource><1> = [resource { value: 42 }]
+  if(values.contains(resource { value: 42 })) { 42 } else: { 0 }
 }

@@ -10,7 +10,9 @@ let resource = struct {
 }
 
 extend(resource, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -23,16 +25,19 @@ let ignore = { (move action: (): i32): i32 => 29 }
 
 let once = { (move action: (): i32): i32 => action() }
 
-let repeat = { (move action: (): ()): () =>
+let repeat = {
+  (move action: (): ()): () =>
   action()
   action()
 }
 
-let effect_once = { <e: effects>with<e>(move action: with<e>(): i32): i32 =>
+let effect_once = { <e: effects>with<e>
+  (move action: with<e>(): i32): i32 =>
   action()
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let counter = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
@@ -53,10 +58,10 @@ let main = { (): i32 =>
   let captured = 0
   let effect_resource = resource { counter: counter, value: 1 }
   let effectful = ask.handle(do {
-      effect_once<ask>({
-        ask.value() + captured + consume(effect_resource) - 1
-      })
-    }) {
+    effect_once<ask>({
+      ask.value() + captured + consume(effect_resource) - 1
+    })
+  }) {
     value(resume) => do { resume(3) },
   }
 

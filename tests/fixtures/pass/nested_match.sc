@@ -8,7 +8,8 @@ let outer = enum {
   Empty,
 }
 
-let read = { (value: outer): i32 =>
+let read = {
+  (value: outer): i32 =>
   match(value) {
     outer.wrapped(inner) => do {
       match(inner) { inner.value( value: number ) => number, inner.Empty => 0,

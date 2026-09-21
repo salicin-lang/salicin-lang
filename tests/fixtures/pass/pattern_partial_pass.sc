@@ -1,13 +1,14 @@
 let Option = core.Option
 
 let apply = { (
-  move choose: (Option<i32>): core.control.Attempt<Option<i32>><i32>,
-)(move input: Option<i32>): core.control.Attempt<Option<i32>><i32> =>
+    move choose: (Option<i32>): core.control.Attempt<Option<i32>><i32>,
+  )(move input: Option<i32>): core.control.Attempt<Option<i32>><i32> =>
   choose(input)
 }
 
-let main = { (): i32 =>
-  let attempted = apply({ Some(value) -> value })(Option.Some(42))
+let main = {
+  (): i32 =>
+  let attempted = apply({ partial Some(value) => value })(Option.Some(42))
   match(attempted) { Hit(value) => value, Miss(_) => 0,
   }
 }

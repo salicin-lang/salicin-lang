@@ -1,12 +1,14 @@
-let add = { (
-  left: i32,
-  right: i32,
-): i32 =>
+let add = {
+  (
+    left: i32,
+    right: i32,
+  ): i32 =>
   left +
     right
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let values = [
     40,
     2,

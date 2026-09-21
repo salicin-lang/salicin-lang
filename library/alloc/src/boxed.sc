@@ -5,8 +5,9 @@ pub let Box = <T: type> struct {
 }
 
 /// Allocates heap storage and moves `value` into a new Box.
-let box_new = { <T: type>(value: T): Box<T> =>
-    let pointer = unsafe {
+let box_new = { <T: type>
+  (value: T): Box<T> =>
+  let pointer = unsafe {
     raw_alloc<T>(size_of<T>, align_of<T>)
   }
   unsafe {
@@ -16,29 +17,31 @@ let box_new = { <T: type>(value: T): Box<T> =>
 }
 
 /// Consumes `boxed` without deallocating and returns its owned raw pointer.
-let box_into_raw = { <T: type>(move boxed: Box<T>): Ptr<mut><T> =>
-    let pointer = boxed.pointer
+let box_into_raw = { <T: type>
+  (move boxed: Box<T>): Ptr<mut><T> =>
+  let pointer = boxed.pointer
   forget(boxed)
   pointer
 }
 
 /// Copies the boxed value out of `boxed`.
 let box_read = { <T: type>(boxed: Borrow<Box<T>>): T requires(T is Copyable) =>
-    unsafe {
+  unsafe {
     *boxed.pointer
   }
 }
 
 /// Copies `value` over the current boxed value.
 let box_write = { <T: type>(boxed: Borrow<mut><Box<T>>)(copy value: T): () requires(T is Copyable) =>
-    unsafe {
+  unsafe {
     *boxed.pointer = value
   }
 }
 
 /// Consumes `boxed`, deallocates its storage, and returns the owned value.
-let box_into_inner = { <T: type>(move boxed: Box<T>): T =>
-    let pointer = boxed.pointer
+let box_into_inner = { <T: type>
+  (move boxed: Box<T>): T =>
+  let pointer = boxed.pointer
   let value = unsafe {
     raw_take(pointer)
   }
@@ -51,7 +54,7 @@ let box_into_inner = { <T: type>(move boxed: Box<T>): T =>
 
 /// Replaces the boxed value and returns the previous value.
 let box_replace = { <T: type>(boxed: Borrow<mut><Box<T>>)(value: T): T =>
-    let pointer = boxed.pointer
+  let pointer = boxed.pointer
   let previous = unsafe {
     raw_take(pointer)
   }
@@ -63,8 +66,8 @@ let box_replace = { <T: type>(boxed: Borrow<mut><Box<T>>)(value: T): T =>
 
 /// Borrows the boxed value with the same access and region as `boxed`.
 let box_as_ref = { <a: access, r: region, T: type>
-    (boxed: Borrow<a><r><Box<T>>): Borrow<a><r><T> =>
-    unsafe {
+  (boxed: Borrow<a><r><Box<T>>): Borrow<a><r><T> =>
+  unsafe {
     raw_borrow<a>(boxed.pointer, borrow<a>(boxed))
   }
 }
@@ -74,12 +77,15 @@ extend(Box<T>) {
   /// Allocates a new Box containing `value`.
   let new = { (value: T): Box<T> =>  box_new(value) }
   /// Rebuilds unique ownership from a pointer returned by `Box.into_raw`.
-  let from_raw = { with<core.unsafe.unsafety>(pointer: Ptr<mut><T>): Box<T> =>
-      Box<T> { pointer: pointer }
+  let from_raw = { with<core.unsafe.unsafety>
+    (pointer: Ptr<mut><T>): Box<T> =>
+    Box<T> { pointer: pointer }
   }
   /// Borrows the boxed value with the requested access.
-  let as_ref = { <a: access>(self: Borrow<a><self>)(): Borrow<a><T> =>
-      unsafe {
+  let as_ref = { <a: access>
+    (self: Borrow<a><self>)
+    (): Borrow<a><T> =>
+    unsafe {
       raw_borrow<a>(self.pointer, borrow<a>(self))
     }
   }
@@ -100,16 +106,19 @@ extend(Box<T>)<requires: T is Copyable> {
 }
 
 /// Releases one Box allocation after its value has been taken.
-let box_deallocate = { <T: type>(pointer: Ptr<mut><T>): () =>
-    unsafe {
+let box_deallocate = { <T: type>
+  (pointer: Ptr<mut><T>): () =>
+  unsafe {
     raw_dealloc(pointer, size_of<T>, align_of<T>)
   }
 }
 
 /// Drops the owned value and releases its heap allocation.
 extend(Box<T>, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
-      let pointer = self.pointer
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
+    let pointer = self.pointer
     do {
       let value = unsafe {
         raw_take(pointer)

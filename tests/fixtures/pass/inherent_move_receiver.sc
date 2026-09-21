@@ -4,7 +4,8 @@ extend(payload) {
   let into_value = { (move self)(): i32 => self.value }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let payload = payload { value: 42 }
   payload.into_value()
 }

@@ -12,5 +12,5 @@ pub let Handle = trait<self: effect> {
   Clauses: <Value: type, Answer: type>: parameters;
   /// Handles `Self` around `action`, leaving `Rest` as the residual effect row.
   handle: <Value: type, Answer: type, rest: effects>with<rest>
-      ...Clauses<Value, Answer>{move action: with<self, rest>() :Value}: Answer
+  ...Clauses<Value, Answer>{move action: with<self, rest>() :Value}: Answer
 }

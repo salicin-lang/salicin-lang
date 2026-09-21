@@ -11,6 +11,7 @@ test("ordinary helpers") {
   std.test.assert(helper() == 42)
 }
 
-let helper = { (): i32 =>
+let helper = {
+  (): i32 =>
   42
 }

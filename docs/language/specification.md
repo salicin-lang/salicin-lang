@@ -543,8 +543,12 @@ result, delimiters, and effects while the arms supply the implementation.
 Effectful callable types require a parenthesized first runtime group, and
 callable types do not encode parameter passing modifiers. Named pattern
 callables cannot be overloaded because their generated input has no
-source-level argument label. The removed `->` spelling and consecutive
-pattern-partial calls are not syntax.
+source-level argument label. The removed `->` spelling is not syntax. Partial
+matching is explicit as
+`{ partial Pattern [if guard] => expression }` and requires a contextual
+`(Input): core.control.Attempt<Input><Output>` type; it returns `Hit(output)` on
+success and `Miss(input)` on failure. Callable implementations, pattern and
+match arms, partial closures, handlers, and `for` bodies all use `=>`.
 
 Closures capture referenced outer bindings. Shared captures can be copied when their complete
 environment is copyable. Mutable and owning captures obey the same exclusivity and move rules as

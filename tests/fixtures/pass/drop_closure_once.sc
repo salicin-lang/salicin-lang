@@ -1,7 +1,9 @@
 let resource = struct { value: i32 }
 
 extend(resource, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     let checked = 1 / self.value
     self.value = 0
   }
@@ -10,32 +12,37 @@ extend(resource, Droppable) {
 let consume = { (move value: resource): () => () }
 let consume_pair = { (move left: resource, move right: resource): () => () }
 
-let invoke = { (): i32 =>
+let invoke = {
+  (): i32 =>
   let resource = resource { value: 1 }
   let once = { consume(resource) }
   once()
   42
 }
 
-let abandon = { (): () =>
+let abandon = {
+  (): () =>
   let resource = resource { value: 1 }
   let once = { consume(resource) }
 }
 
-let invoke_pair = { (): () =>
+let invoke_pair = {
+  (): () =>
   let left = resource { value: 1 }
   let right = resource { value: 1 }
   let once = { consume_pair(left, right) }
   once()
 }
 
-let conditional = { (flag: bool): () =>
+let conditional = {
+  (flag: bool): () =>
   let resource = resource { value: 1 }
   let once = { consume(resource) }
   if(flag) { once() }
 }
 
-let early = { (): i32 =>
+let early = {
+  (): i32 =>
   let resource = resource { value: 1 }
   let once = { (value: i32) =>
     do {
@@ -46,7 +53,8 @@ let early = { (): i32 =>
   once(return(42))
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let answer = invoke()
   abandon()
   invoke_pair()

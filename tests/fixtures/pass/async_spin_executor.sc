@@ -22,7 +22,8 @@ extend(step, Future<()>) {
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut executor = Spin {}
   let pending = step { polled: false }
   let ready = async { 1 }

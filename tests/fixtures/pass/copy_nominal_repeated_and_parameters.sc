@@ -6,7 +6,8 @@ let read_left = { (pair: pair): i32 => pair.left }
 
 let read_right = { (copy pair: pair): i32 => pair.right }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let pair = pair { left: 10, right: 11 }
   let first = pair
   let second = pair

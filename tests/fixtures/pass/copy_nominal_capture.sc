@@ -8,7 +8,8 @@ extend(pair) {
 
 let add = { (pair: pair)(increment: i32): i32 => pair.left + pair.right + increment }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let pair = pair { left: 10, right: 1 }
   let add_pair = add(pair)
   let combine_pair = pair.combine(1)

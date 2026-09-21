@@ -2,10 +2,11 @@ let probe = effect {
   read: (): bool
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   probe.handle(do {
-      probe.read()
-    }) {
+    probe.read()
+  }) {
     read(resume) => do { resume(true) },
     Return(value) => do {
       if(value) { 42 } else: { 0 }

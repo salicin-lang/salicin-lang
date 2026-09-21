@@ -3,7 +3,8 @@ let Vec = alloc.Vec
 
 let read = { (value: Borrow<i32>): i32 => value }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut fixed = [10, 20, 12]
   let fixed_middle = do {
     match(fixed.get(1)) { Option.Some(value) => read(value), Option.None => 0,

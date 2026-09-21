@@ -1032,19 +1032,19 @@ fn core_diagnostics_are_stable_source_level_contracts() {
     for (fixture_name, line, column, message) in [
         (
             "use_after_move.sc",
-            8,
+            9,
             3,
             "use of moved or uninitialized value",
         ),
         (
             "array_index_type.sc",
-            3,
+            4,
             3,
             "type mismatch for array index: expected `usize`, found `bool`",
         ),
         (
             "throw_in_plain_return.sc",
-            2,
+            3,
             3,
             "call to `throw` requires `throwing<bool>`; handle it with `try { ... }` or propagate it from the current function",
         ),

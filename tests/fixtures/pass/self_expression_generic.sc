@@ -13,7 +13,8 @@ extend(cell<t>, rewrap) {
   let rewrap = { (move self)(): self => self { value: self.value } }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let first = cell.wrap(20).value
   let cell = cell.wrap(0)
   let second = cell.replace(22).rewrap().value

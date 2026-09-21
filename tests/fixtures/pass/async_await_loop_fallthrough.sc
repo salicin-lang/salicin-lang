@@ -19,11 +19,13 @@ extend(step, Future<()>) {
   }
 }
 
-let step = { (remaining: Ptr<mut><i32>): step =>
+let step = {
+  (remaining: Ptr<mut><i32>): step =>
   step { remaining: remaining }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut implicit_remaining = 3
   let implicit_ptr = ptr<mut>(borrow<mut>(implicit_remaining))
   let mut implicit = async {

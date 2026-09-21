@@ -28,7 +28,8 @@ extend(pair) {
   let right_method = { <r: region>(self: Borrow<r><self>)(): Borrow<r><i32> => borrow(self.right) }
 
   let left_mut_method = { <r: region>
-    (self: Borrow<mut, r><self>)(): Borrow<mut, r><i32> => borrow<mut>(self.left) }
+    (self: Borrow<mut, r><self>)
+    (): Borrow<mut, r><i32> => borrow<mut>(self.left) }
 
   let inferred_right = { (self: Borrow<self>)(): Borrow<i32> => borrow(self.right) }
 
@@ -43,7 +44,8 @@ extend(pair, right_view) {
   let view = { <r: region>(self: Borrow<r><self>)(): Borrow<r><i32> => borrow(self.right) }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut pair_value = pair { left: 20, right: 0 }
   let holder_value = holder { value: 0 }
   let before = do {

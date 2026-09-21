@@ -1,4 +1,5 @@
-let factorial = { (value: usize): usize =>
+let factorial = {
+  (value: usize): usize =>
   if(value == 0) {
     1
   } else: {

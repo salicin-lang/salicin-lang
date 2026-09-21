@@ -2,20 +2,23 @@ let tick = effect {
   tick: (): bool
 }
 
-let even = { with<tick>(count: i32): bool =>
+let even = { with<tick>
+  (count: i32): bool =>
   if(count == 0) { return(true) }
   if(tick.tick()) { odd(count - 1) } else: { false }
 }
 
-let odd = { with<tick>(count: i32): bool =>
+let odd = { with<tick>
+  (count: i32): bool =>
   if(count == 0) { return(false) }
   if(tick.tick()) { even(count - 1) } else: { true }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   tick.handle(do {
-      if(odd(3)) { 42 } else: { 0 }
-    }) {
+    if(odd(3)) { 42 } else: { 0 }
+  }) {
     tick(resume) => do { resume(true) },
   }
 }

@@ -6,7 +6,8 @@ let inspect = effect {
 
 let read = { (value: Borrow<i32>): i32 => value }
 
-let effect_greater_than_ten = { with<inspect>(value: Borrow<i32>): bool =>
+let effect_greater_than_ten = { with<inspect>
+  (value: Borrow<i32>): bool =>
   inspect.accepted(read(value))
 }
 

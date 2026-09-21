@@ -17,7 +17,8 @@ extend(cell<t>) {
   let add = { (self: Borrow<self>)(right: t): t => right }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   choose(left: 10) + cell.choose(right: 10) + cell<i32> { value: 0 }.add(left: 22)
 }
 

@@ -1,8 +1,9 @@
 let Option = core.Option
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let choose: (Option<i32>): core.control.Attempt<Option<i32>><i32> = {
-    Some(value) -> value + 1
+    partial Some(value) => value + 1
   }
   let hit = choose(Option.Some(40))
   let miss = choose(Option.None)

@@ -2,8 +2,9 @@ let Option = core.Option
 
 let boxed = struct { value: i32 }
 
-let main = { (): i32 =>
-  let boxed = Option<boxed>.Some(boxed{ value: 42 })
+let main = {
+  (): i32 =>
+  let boxed = Option<boxed>.Some(boxed { value: 42 })
   let answer = boxed?.value ?? 0
   answer + (boxed?.value ?? 0)
 }

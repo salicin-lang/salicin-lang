@@ -11,7 +11,9 @@ extend(point) {
 let choice = enum { Some(i32), None }
 
 extend(choice) {
-  let unwrap = { (move self)(): i32 =>
+  let unwrap = {
+    (move self)
+    (): i32 =>
     match(self) { self.Some(value) => value, self.None => 0,
     }
   }
@@ -30,7 +32,8 @@ extend(wrapper, rebuild) {
   let read = { (self: Borrow<self>)(): i32 => self.raw }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let shifted = point.new(40).shifted(2)
   let point_value = point.read(shifted)
   let choice = choice.Some(42).unwrap()

@@ -12,41 +12,46 @@ let state = struct {
 }
 
 extend(state, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let update = { with<step>(value: Borrow<mut><i32>): () =>
+let update = { with<step>
+  (value: Borrow<mut><i32>): () =>
   let delta = step.delta()
   value = value + delta
 }
 
-let program = { with<step>(drops: Ptr<mut><i32>): i32 =>
+let program = { with<step>
+  (drops: Ptr<mut><i32>): i32 =>
   let mut state = state { counter: counter { value: 40 }, drops: drops }
   update(state.counter.value)
   update(state.counter.value)
   state.counter.value
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *drops = 0 }
 
   let resumed = step.handle(do {
-      program(drops)
-    }) {
+    program(drops)
+  }) {
     delta(resume) => do {
       resume(1)
     },
   }
   let abandoned = step.handle(do {
-      program(drops)
-    }) {
+    program(drops)
+  }) {
     delta(_) => do {
       40
     },

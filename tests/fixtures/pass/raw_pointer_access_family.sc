@@ -1,6 +1,7 @@
 let preserve = { <a: access><t: type>(pointer: Ptr<a><t>): Ptr<a><t> => pointer }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let shared_value = 40
   let mut mutable_value = 1
   let shared_pointer = ptr<i32>(borrow(shared_value))

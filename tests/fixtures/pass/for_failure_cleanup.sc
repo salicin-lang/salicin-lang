@@ -12,7 +12,9 @@ let counter = struct {
 }
 
 extend(counter, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -22,7 +24,9 @@ extend(counter, Droppable) {
 extend(counter, Iterator) {
   let Item = OwnedItem<i32>;
 
-  let next = { <r: region>(self: Borrow<mut><r><self>)(): Option<i32> =>
+  let next = { <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Option<i32> =>
     if(self.current < self.end) {
       let value = self.current
       self.current = self.current + 1
@@ -36,7 +40,9 @@ extend(counter, Iterator) {
 extend(counter, IntoIterator) {
   let Iter = counter;
 
-  let into_iter = { (move self)(): counter =>
+  let into_iter = {
+    (move self)
+    (): counter =>
     self
   }
 }
@@ -46,13 +52,14 @@ let check = { with<throwing<bool>>(value: i32): () =>
 }
 
 let visit = { with<throwing<bool>>(move counter: counter): i32 =>
-  for counter { value ->
+  for counter { value =>
     check(value)
   }
   42
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

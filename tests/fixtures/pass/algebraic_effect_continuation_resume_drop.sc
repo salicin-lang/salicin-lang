@@ -5,7 +5,9 @@ let stop = effect {
 let resource = struct { counter: Ptr<mut><i32> }
 
 extend(resource, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -14,20 +16,22 @@ extend(resource, Droppable) {
 
 let consume = { (move resource: resource): i32 => 0 }
 
-let program = { with<stop>(counter: Ptr<mut><i32>): i32 =>
+let program = { with<stop>
+  (counter: Ptr<mut><i32>): i32 =>
   let resource = resource { counter: counter }
   let value = stop.value()
   value + consume(resource)
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let counter = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *counter = 0 }
   let result = stop.handle(do {
-      program(counter)
-    }) {
+    program(counter)
+  }) {
     value(resume) => do { resume(41) },
   }
   let drops = unsafe { *counter }

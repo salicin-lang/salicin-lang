@@ -8,5 +8,5 @@ pub let Copyable = trait<requires: self is Movable> {}
 pub let Droppable = trait {
   /// Releases resources owned by `self`.
   drop: (self: Borrow<mut><self>)
-      (): ()
+  (): ()
 }

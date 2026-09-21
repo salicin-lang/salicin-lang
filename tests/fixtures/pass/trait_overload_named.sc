@@ -14,7 +14,8 @@ extend(counter, select) {
   let make = { (right: i32): i32 => right + 1 }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   counter { value: 0 }.pick(right: 20) + counter.make(right: 20)
 }
 

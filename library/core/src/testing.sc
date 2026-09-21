@@ -8,7 +8,7 @@ pub let Outcome = enum {
 pub let run = { (
     move action: with<core.error.throwing<core.string.String>>() :(),
   ): Outcome =>
-    core.error.throwing<core.string.String>.handle(action()) {
+  core.error.throwing<core.string.String>.handle(action()) {
     raise(message) => Outcome.Failed(message),
     Return(_) => Outcome.Passed,
   }

@@ -49,11 +49,13 @@ extend(right_step, Future<()>) {
   }
 }
 
-let left = { (remaining: Ptr<mut><i32>): left_step =>
+let left = {
+  (remaining: Ptr<mut><i32>): left_step =>
   left_step { polled: false, remaining: remaining }
 }
 
-let right = { (remaining: Ptr<mut><i32>): right_step =>
+let right = {
+  (remaining: Ptr<mut><i32>): right_step =>
   right_step { polled: false, remaining: remaining }
 }
 
@@ -62,7 +64,8 @@ let choice = enum {
   right
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut remaining = 3
   let remaining_ptr = ptr<mut>(borrow<mut>(remaining))
   let mut future = async {

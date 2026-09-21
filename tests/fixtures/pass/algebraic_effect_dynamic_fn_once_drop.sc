@@ -5,7 +5,9 @@ let abort = effect {
 let resource = struct { counter: Ptr<mut><i32> }
 
 extend(resource, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -14,25 +16,26 @@ extend(resource, Droppable) {
 
 let consume = { (move resource: resource): i32 => 0 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let counter = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
   unsafe { *counter = 0 }
   let result = abort.handle(do {
-      let left_resource = resource { counter: counter }
-      let right_resource = resource { counter: counter }
-      let left: with<abort>(): i32  = { () =>
-        let value = abort.stop()
-        value + consume(left_resource)
-      }
-      let right: with<abort>(): i32  = { () =>
-        let value = abort.stop()
-        value + consume(right_resource)
-      }
-      let action: with<abort>(): i32  = if(true) { left } else: { right }
-      action()
-    }) {
+    let left_resource = resource { counter: counter }
+    let right_resource = resource { counter: counter }
+    let left: with<abort>(): i32  = { () =>
+      let value = abort.stop()
+      value + consume(left_resource)
+    }
+    let right: with<abort>(): i32  = { () =>
+      let value = abort.stop()
+      value + consume(right_resource)
+    }
+    let action: with<abort>(): i32  = if(true) { left } else: { right }
+    action()
+  }) {
     stop(resume) => do { 40 },
   }
   let drops = unsafe { *counter }

@@ -10,7 +10,8 @@ let choose = { with<throwing<bool>>(flag: bool): i32 =>
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let success: Result<bool><i32> = try { choose(false) }
   let failure: Result<bool><i32> = try { choose(true) }
   (success ?? 0) + (failure ?? 0)

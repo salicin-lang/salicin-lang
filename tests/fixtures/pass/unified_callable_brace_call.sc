@@ -1,5 +1,6 @@
 let apply =
-  { (value: i32)
+  {
+  (value: i32)
   {transform: (i32): i32}
   : i32
   => transform(value) }
@@ -10,7 +11,8 @@ let Point = struct {
 
 let evaluate = { {action: (): i32}: i32 => action() }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let value = evaluate {
     42
   }

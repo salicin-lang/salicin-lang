@@ -1,10 +1,14 @@
 let increment = { (value: i32): i32 => value + 1 }
 
-let choose = { (left: i32)(right: i32): i32 =>
+let choose = {
+  (left: i32)
+  (right: i32): i32 =>
   if(left == 40) { right } else: { 0 }
 }
 
-let apply = { (value: i32) {move action: (i32): i32}: i32 =>
+let apply = {
+  (value: i32)
+  {move action: (i32): i32}: i32 =>
   action(value)
 }
 
@@ -13,12 +17,15 @@ let counter = struct {
 }
 
 extend(counter) {
-  let plus = { (self: Borrow<self>)(amount: i32): i32 =>
+  let plus = {
+    (self: Borrow<self>)
+    (amount: i32): i32 =>
     self.value + amount
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let first = increment(39)
   let precedence = increment(38) + 1
   let second = choose(first)(41)

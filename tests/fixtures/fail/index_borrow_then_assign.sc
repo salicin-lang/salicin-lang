@@ -10,8 +10,9 @@ extend(bag, Index<i32>) {
   }
 }
 
-let main = { (): i32 =>
-  let mut bag = bag{ value: 1 }
+let main = {
+  (): i32 =>
+  let mut bag = bag { value: 1 }
   let item = borrow(bag[0])
   bag[0] = 42
   item

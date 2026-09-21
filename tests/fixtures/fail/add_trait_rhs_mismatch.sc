@@ -8,4 +8,4 @@ extend(number, Add<i32>) {
   let add = { (self)(rhs: i32): i32 => self.value + rhs }
 }
 
-let main = { (): i32 => number{ value: 40 } + offset{ value: 2 } }
+let main = { (): i32 => number { value: 40 } + offset { value: 2 } }

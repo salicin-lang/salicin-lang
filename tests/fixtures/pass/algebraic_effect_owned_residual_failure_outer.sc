@@ -11,7 +11,9 @@ let state = struct {
 }
 
 extend(state, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -32,15 +34,16 @@ let update = { with<step, throwing<bool>>(state: Borrow<mut><state>, fail: bool)
 let run = { with<throwing<bool>>(drops: Ptr<mut><i32>, fail: bool): i32 =>
   let mut state = state { value: 20, drops: drops }
   step.handle(do {
-      update(state, fail)
-    }) {
+    update(state, fail)
+  }) {
     delta(resume) => do {
       resume(1)
     },
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

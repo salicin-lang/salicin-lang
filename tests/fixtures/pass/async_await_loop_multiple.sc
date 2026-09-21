@@ -9,7 +9,9 @@ let step = struct {
 }
 
 extend(step, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -39,11 +41,13 @@ extend(step, Future<()>) {
   }
 }
 
-let step = { (remaining: Ptr<mut><i32>, drops: Ptr<mut><i32>, finish: bool): step =>
+let step = {
+  (remaining: Ptr<mut><i32>, drops: Ptr<mut><i32>, finish: bool): step =>
   step { polled: false, remaining: remaining, drops: drops, finish: finish }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut remaining = 2
   let mut drops = 0
   let remaining_ptr = ptr<mut>(borrow<mut>(remaining))

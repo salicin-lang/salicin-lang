@@ -5,7 +5,9 @@ extend(resource) {
 }
 
 extend(resource, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     let checked = 1 / self.value
     self.value = 0
   }

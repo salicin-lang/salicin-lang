@@ -24,12 +24,13 @@ extend(flag, Future<()>) {
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let future = async {
     if(true) {
-      await(number{})
+      await(number {})
     } else: {
-      await(flag{})
+      await(flag {})
     }
   }
   0

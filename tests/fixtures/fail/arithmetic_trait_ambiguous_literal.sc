@@ -12,7 +12,8 @@ extend(number, Mul<i64>) {
   let mul = { (self)(rhs: i64): i64 => rhs * 21 }
 }
 
-let main = { (): i32 =>
-  let answer = number{ value: 21 } * 2
+let main = {
+  (): i32 =>
+  let answer = number { value: 21 } * 2
   42
 }

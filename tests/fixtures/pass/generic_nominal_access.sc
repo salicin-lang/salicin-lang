@@ -9,7 +9,8 @@ let with_access = { <a: access, t: type>
   access_box<a><t> { value: value }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut value = 40
   do {
     let cell = with_access<mut, i32>(borrow<mut>(value))

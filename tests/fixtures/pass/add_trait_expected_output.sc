@@ -12,7 +12,8 @@ extend(number, Add<i64>) {
   let add = { (self)(rhs: i64): i64 => rhs + 40 }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let answer: i64 = number { value: 40 } + 2
   if(answer == 42) { 42 } else: { 0 }
 }

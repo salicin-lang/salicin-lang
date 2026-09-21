@@ -11,7 +11,9 @@ let step = struct {
 }
 
 extend(step, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -28,85 +30,91 @@ extend(step, Future<()>) {
   }
 }
 
-let make_step = { with<ask>(drops: Ptr<mut><i32>): step =>
+let make_step = { with<ask>
+  (drops: Ptr<mut><i32>): step =>
   step { drops: drops, done: ask.ask() }
 }
 
-let next = { (calls: Ptr<mut><i32>): bool =>
+let next = {
+  (calls: Ptr<mut><i32>): bool =>
   unsafe {
     *calls = *calls + 1
     *calls == 3
   }
 }
 
-let run_true = { (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
+let run_true = {
+  (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
   ask.handle(do {
-      let mut future = async {
-        while(true) {
-          let done = await(make_step(drops))
-          if(done) {
-            break()
-          } else: {
-            continue()
-          }
+    let mut future = async {
+      while(true) {
+        let done = await(make_step(drops))
+        if(done) {
+          break()
+        } else: {
+          continue()
         }
       }
-      let first = future.poll()
-      let second = future.poll()
-      match(first) {
-        Pending => do {
-          match(second) { Ready(_) => 42, Pending => 0,
-          }
-        }, Ready(_) => 0,
-      }
-    }) {
+    }
+    let first = future.poll()
+    let second = future.poll()
+    match(first) {
+      Pending => do {
+        match(second) { Ready(_) => 42, Pending => 0,
+        }
+      }, Ready(_) => 0,
+    }
+  }) {
     ask(resume) => do { resume(next(calls)) },
   }
 }
 
-let run_false = { (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
+let run_false = {
+  (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
   ask.handle(do {
-      let mut future = async {
-        while(false) {
-          let done = await(make_step(drops))
-          if(done) {
-            break()
-          } else: {
-            continue()
-          }
+    let mut future = async {
+      while(false) {
+        let done = await(make_step(drops))
+        if(done) {
+          break()
+        } else: {
+          continue()
         }
       }
-      match(future.poll()) { Ready(_) => 42, Pending => 0,
-      }
-    }) {
+    }
+    match(future.poll()) { Ready(_) => 42, Pending => 0,
+    }
+  }) {
     ask(resume) => do { resume(next(calls)) },
   }
 }
 
-let run_post = { (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
+let run_post = {
+  (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
   ask.handle(do {
-      let mut future = async {
-        do {
-          let ignored = await(make_step(drops))
-        }
-        while: {
-          unsafe { *calls < 3 }
-        }
+    let mut future = async {
+      do {
+        let ignored = await(make_step(drops))
       }
-      let first = future.poll()
-      let second = future.poll()
-      match(first) {
-        Pending => do {
-          match(second) { Ready(_) => 42, Pending => 0,
-          }
-        }, Ready(_) => 0,
+      while: {
+        unsafe { *calls < 3 }
       }
-    }) {
+    }
+    let first = future.poll()
+    let second = future.poll()
+    match(first) {
+      Pending => do {
+        match(second) { Ready(_) => 42, Pending => 0,
+        }
+      }, Ready(_) => 0,
+    }
+  }) {
     ask(resume) => do { resume(next(calls)) },
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

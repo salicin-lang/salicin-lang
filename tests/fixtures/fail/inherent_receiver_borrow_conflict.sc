@@ -4,7 +4,8 @@ extend(cell) {
   let clash = { (self: Borrow<self>)(move other: cell): i32 => self.value + other.value }
 }
 
-let main = { (): i32 =>
-  let cell = cell{ value: 21 }
+let main = {
+  (): i32 =>
+  let cell = cell { value: 21 }
   cell.clash(cell)
 }

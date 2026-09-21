@@ -7,7 +7,8 @@ let read_twice = { (copy cell: cell<cell<i32>>): i32 =>
   duplicate.value.value + cell.value.value - 42
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let inner = cell { value: 42 }
   let outer = cell { value: inner }
   let duplicate = outer

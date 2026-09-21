@@ -1,4 +1,5 @@
-let fail = { (): i32 =>
+let fail = {
+  (): i32 =>
   throw(true)
 }
 

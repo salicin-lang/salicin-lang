@@ -4,8 +4,9 @@ extend(number) {
   let value = { (self: Borrow<self>)(): i32 => self.raw }
 }
 
-let main = { (): i32 =>
-  let number = number{ value: 42 }
+let main = {
+  (): i32 =>
+  let number = number { value: 42 }
   let bound = number.value
   bound()
 }

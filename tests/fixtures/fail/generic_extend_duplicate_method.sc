@@ -8,7 +8,8 @@ extend(cell<t>) {
   let answer = { (self: Borrow<self>)(): i32 => 2 }
 }
 
-let main = { (): i32 =>
-  let cell = cell{ value: 0 }
+let main = {
+  (): i32 =>
+  let cell = cell { value: 0 }
   cell.answer()
 }

@@ -1555,8 +1555,8 @@ mod tests {
     #[test]
     fn rejects_box_read_without_its_copy_proof() {
         let source = alloc_source().replacen(
-            ": T requires(T is Copyable) =>\n    unsafe {",
-            ": T =>\n    unsafe {",
+            ": T requires(T is Copyable) =>\n  unsafe {",
+            ": T =>\n  unsafe {",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1567,8 +1567,8 @@ mod tests {
     #[test]
     fn rejects_box_write_without_its_copy_proof() {
         let source = alloc_source().replacen(
-            "let box_write = { <T: type>(boxed: Borrow<mut><Box<T>>)(copy value: T): () requires(T is Copyable) =>\n    unsafe {",
-            "let box_write = { <T: type>(boxed: Borrow<mut><Box<T>>)(copy value: T): () =>\n    unsafe {",
+            "let box_write = { <T: type>(boxed: Borrow<mut><Box<T>>)(copy value: T): () requires(T is Copyable) =>\n  unsafe {",
+            "let box_write = { <T: type>(boxed: Borrow<mut><Box<T>>)(copy value: T): () =>\n  unsafe {",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1579,8 +1579,8 @@ mod tests {
     #[test]
     fn rejects_box_from_raw_without_unsafety() {
         let source = alloc_source().replacen(
-            "let from_raw = { with<core.unsafe.unsafety>(pointer: Ptr<mut><T>): Box<T> =>",
-            "let from_raw = { (pointer: Ptr<mut><T>): Box<T> =>",
+            "let from_raw = { with<core.unsafe.unsafety>\n    (pointer: Ptr<mut><T>): Box<T> =>",
+            "let from_raw = {\n    (pointer: Ptr<mut><T>): Box<T> =>",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1591,8 +1591,8 @@ mod tests {
     #[test]
     fn rejects_box_into_raw_without_ownership_transfer() {
         let source = alloc_source().replacen(
-            "let box_into_raw = { <T: type>(move boxed: Box<T>): Ptr<mut><T>",
-            "let box_into_raw = { <T: type>(boxed: Borrow<Box<T>>): Ptr<mut><T>",
+            "let box_into_raw = { <T: type>\n  (move boxed: Box<T>): Ptr<mut><T>",
+            "let box_into_raw = { <T: type>\n  (boxed: Borrow<Box<T>>): Ptr<mut><T>",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1624,8 +1624,8 @@ mod tests {
     #[test]
     fn rejects_a_malformed_vec_drop_extension() {
         let source = alloc_source().replacen(
-            "extend(Vec<T>, Droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let drop = { (self: Borrow<mut><self>)(): () =>",
-            "extend(Vec<T>, Droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let release = { (self: Borrow<mut><self>)(): () =>",
+            "extend(Vec<T>, Droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let drop = {\n    (self: Borrow<mut><self>)\n    (): () =>",
+            "extend(Vec<T>, Droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let release = {\n    (self: Borrow<mut><self>)\n    (): () =>",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))

@@ -3,14 +3,16 @@ let ask = effect {
   value: (right: i32): i32
 }
 
-let choose = { with<ask>(): i32 =>
+let choose = { with<ask>
+  (): i32 =>
   ask.value(left: 19) + ask.value(right: 23)
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   ask.handle(do {
-      choose()
-    }) {
+    choose()
+  }) {
     value(left, resume) => do { resume(left) },
     value(right, resume) => do { resume(right) },
   }

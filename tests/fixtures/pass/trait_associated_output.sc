@@ -9,7 +9,8 @@ extend(number, convert) {
   let Output = i32;
   let convert = { (self: Borrow<self>)(): i32 => self.value }}
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let number = number { value: 42 }
   number.convert()
 }

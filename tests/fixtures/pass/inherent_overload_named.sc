@@ -8,7 +8,8 @@ extend(counter) {
   let make = { (right: i32): counter => counter { value: right + 1 } }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let counter = counter.make(right: 19)
   counter.add(right: 21)
 }

@@ -17,23 +17,28 @@ pub let Summary = struct {
 }
 
 extend(Inventory) {
-  let new = { (): Inventory =>
+  let new = {
+    (): Inventory =>
     Inventory { products: Vec<model.Product>.new() }
   }
 
-  let push = { (self: Borrow<mut><self>)(move product: model.Product): () =>
+  let push = {
+    (self: Borrow<mut><self>)
+    (move product: model.Product): () =>
     self.products.push(product)
   }
 }
 
 extend(Inventory, Summarize) {
-  let summarize = { (move self)(): Summary =>
+  let summarize = {
+    (move self)
+    (): Summary =>
     let mut owner = self
     let products = owner.products.take()
     let mut count: u64 = 0
     let mut total: i64 = 0
     let mut name_bytes: u64 = 0
-    for products { product ->
+    for products { product =>
       count = count + 1
       total = total + product.value()
       name_bytes = name_bytes + product.name_bytes()

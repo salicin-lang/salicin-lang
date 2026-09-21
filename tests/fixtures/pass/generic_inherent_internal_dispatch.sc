@@ -2,7 +2,8 @@ let cell = <t: type> struct { value: t }
 
 extend(cell<t>) {
   let take = { (move self)(): t => self.value }
-  let round_trip = { (move value: t): t =>
+  let round_trip = {
+    (move value: t): t =>
     let cell = cell { value: value }
     cell.take()
   }

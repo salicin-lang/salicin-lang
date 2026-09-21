@@ -18,14 +18,18 @@ pub let usize: type = builtin()
 extend(bool, core.marker.Copyable) {}
 extend(bool, core.ops.bit.Not) {
   let Output = bool
-  let not = { (self)(): bool =>
-      match(self) { false => true, true => false,
+  let not = {
+    (self)
+    (): bool =>
+    match(self) { false => true, true => false,
     }
   }
 }
 extend(bool, core.cmp.Eq<bool>) {
-  let eq = { (self: Borrow<bool>)(rhs: Borrow<bool>): bool =>
-      match(self) {
+  let eq = {
+    (self: Borrow<bool>)
+    (rhs: Borrow<bool>): bool =>
+    match(self) {
       false => do {
         match(rhs) { false => true, true => false,
         }

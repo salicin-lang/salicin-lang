@@ -5519,13 +5519,13 @@ impl Parser {
         }
         if !self.at(&TokenKind::LBrace) {
             return Err(self.error_here(
-                "`for` requires a brace pattern body; write `for iterable { pattern -> body }`",
+                "`for` requires a brace pattern body; write `for iterable { pattern => body }`",
             ));
         }
         self.expect(&TokenKind::LBrace, "`{` before the `for` body pattern")?;
         self.skip_separators();
         let pattern = self.pattern()?;
-        self.expect(&TokenKind::Arrow, "`->` after the `for` body pattern")?;
+        self.expect(&TokenKind::FatArrow, "`=>` after the `for` body pattern")?;
         let body = self.block_contents()?;
 
         let id = self.next_control_binding;
@@ -5792,12 +5792,27 @@ impl Parser {
         }
 
         let pattern_start = self.index;
+        let partial = self.at_context_ident("partial");
+        if partial {
+            self.advance();
+        }
         if let Ok(pattern) = self.pattern() {
             let guard = if self.take(&TokenKind::If) {
                 Some(Box::new(self.expression(true)?))
             } else {
                 None
             };
+            if partial {
+                self.expect(
+                    &TokenKind::FatArrow,
+                    "`=>` after a `partial` pattern closure",
+                )?;
+                return Ok(Expr::PatternClosure {
+                    pattern,
+                    guard,
+                    body: Box::new(self.block_contents()?),
+                });
+            }
             if self.take(&TokenKind::FatArrow) {
                 let id = self.next_control_binding;
                 self.next_control_binding += 1;
@@ -5818,12 +5833,10 @@ impl Parser {
                     }),
                 ));
             }
-            if self.take(&TokenKind::Arrow) {
-                return Ok(Expr::PatternClosure {
-                    pattern,
-                    guard,
-                    body: Box::new(self.block_contents()?),
-                });
+            if self.at(&TokenKind::Arrow) {
+                return Err(self.error_here(
+                    "`->` pattern closures were removed; write `partial Pattern => body`",
+                ));
             }
         }
         self.index = pattern_start;

@@ -15,7 +15,8 @@ extend(bag, Index<i32>) {
   }
 }
 
-let main = { (): resource =>
-  let bag = bag{ value: resource{ value: 42 } }
+let main = {
+  (): resource =>
+  let bag = bag { value: resource { value: 42 } }
   bag[0]
 }

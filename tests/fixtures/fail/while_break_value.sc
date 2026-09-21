@@ -1,4 +1,5 @@
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   while(true) {
     break(42)
   }

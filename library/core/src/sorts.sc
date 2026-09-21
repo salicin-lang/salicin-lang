@@ -11,7 +11,7 @@ pub let sort_of = { <
 
 /// Returns the runtime type of an unevaluated expression.
 pub let type_of = { <T: type>
-    (move expression: (): T): type => builtin() }
+  (move expression: (): T): type => builtin() }
 
 /// Sort of compile-time type values.
 pub let type: sort<2>

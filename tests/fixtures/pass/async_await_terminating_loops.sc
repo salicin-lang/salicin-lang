@@ -21,7 +21,8 @@ extend(step, Future<()>) {
   }
 }
 
-let step = { (value: i32): step =>
+let step = {
+  (value: i32): step =>
   step { polled: false, value: value }
 }
 
@@ -45,11 +46,13 @@ extend(condition, Future<()>) {
   }
 }
 
-let condition = { (value: bool): condition =>
+let condition = {
+  (value: bool): condition =>
   condition { polled: false, value: value }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut value_loop = async {
     loop {
       break(await(step(40)))

@@ -1,4 +1,5 @@
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let pointer = unsafe {
     raw_alloc<()>(0, align_of<()>)
   }

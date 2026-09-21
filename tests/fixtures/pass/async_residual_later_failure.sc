@@ -15,7 +15,9 @@ let step = struct {
 }
 
 extend(resource, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.drops = *self.drops + 100
     }
@@ -23,7 +25,9 @@ extend(resource, Droppable) {
 }
 
 extend(step, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.drops = *self.drops + 10
     }
@@ -46,10 +50,10 @@ extend(step, Future<()>) {
 }
 
 let finish = { with<throwing<bool>>(
-  calls: Ptr<mut><i32>,
-  fail: bool,
-  value: i32,
-): i32 =>
+    calls: Ptr<mut><i32>,
+    fail: bool,
+    value: i32,
+  ): i32 =>
   unsafe {
     *calls = *calls + 1
   }
@@ -60,11 +64,12 @@ let finish = { with<throwing<bool>>(
   }
 }
 
-let run = { (
-  drops: Ptr<mut><i32>,
-  calls: Ptr<mut><i32>,
-  fail: bool,
-): i32 =>
+let run = {
+  (
+    drops: Ptr<mut><i32>,
+    calls: Ptr<mut><i32>,
+    fail: bool,
+  ): i32 =>
   let result: Result<bool><i32> = try {
     let mut future = async {
       let retained = resource { drops: drops, value: 1 }
@@ -88,7 +93,8 @@ let run = { (
   }
 }
 
-let run_cancelled = { (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
+let run_cancelled = {
+  (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
   let result: Result<bool><i32> = try {
     let mut future = async {
       let retained = resource { drops: drops, value: 1 }
@@ -103,7 +109,8 @@ let run_cancelled = { (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

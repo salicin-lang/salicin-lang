@@ -7839,7 +7839,7 @@ fn successive_brace_pattern_closures_follow_declared_callable_groups() {
     compile_text(
         r#"
 let apply = { {move first: (i32): core.control.Attempt<i32><i32>}{move second: (i32): core.control.Attempt<i32><i32>}: () =>  () }
-let main = { (): () =>  apply { value -> value } { value -> value } }
+let main = { (): () =>  apply { partial value => value } { partial value => value } }
 "#,
     )
     .expect("successive Brace pattern closures must follow successive declared groups");
@@ -9961,7 +9961,7 @@ fn lowers_for_through_validated_iteration_lang_items() {
              let into_iter = { (move self)(): counter =>  self }\n}\n\
              let main = { (): i32 => \n\
              let mut sum = 0\n\
-             for counter{ current: 0, end: 4 } { value ->\n\
+             for counter{ current: 0, end: 4 } { value =>\n\
              sum = sum + value\n\
              }\n\
              sum\n\

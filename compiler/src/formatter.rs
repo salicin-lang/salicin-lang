@@ -597,9 +597,9 @@ mod tests {
     #[test]
     fn spaces_a_for_iterable_brace_application_without_changing_its_role() {
         let source =
-            "let visit = { (): () => \n  for (counter{current: 0, end: 4}) { value -> value }\n}\n";
+            "let visit = { (): () => \n  for (counter{current: 0, end: 4}) { value => value }\n}\n";
         let expected =
-            "let visit = {\n  (): () =>\n  for (counter {current: 0, end: 4}) { value -> value }\n}\n";
+            "let visit = {\n  (): () =>\n  for (counter {current: 0, end: 4}) { value => value }\n}\n";
         let formatted = format_source(source).expect("format parenthesized `for` iterable");
         assert_eq!(formatted, expected);
         parse(&formatted).expect("formatted constructor remains the `for` iterable");

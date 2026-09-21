@@ -1,6 +1,7 @@
 let Vec = alloc.Vec
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut values: Vec<()> = Vec<()>.new()
   let mut index: u64 = 0
   while(index < 100) {

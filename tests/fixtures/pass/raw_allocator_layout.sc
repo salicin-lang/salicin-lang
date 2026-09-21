@@ -2,7 +2,8 @@ let payload = struct { left: i32, right: i32 }
 
 extend(payload, Copyable) {}
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let pointer = unsafe {
     raw_alloc<payload>(size_of<payload>, align_of<payload>)
   }

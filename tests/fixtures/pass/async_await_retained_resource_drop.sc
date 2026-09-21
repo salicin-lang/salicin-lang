@@ -8,7 +8,9 @@ let resource = struct {
 }
 
 extend(resource, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -21,7 +23,9 @@ let step = struct {
 }
 
 extend(step, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.counter = *self.counter + 1
     }
@@ -43,19 +47,22 @@ extend(step, Future<()>) {
   }
 }
 
-let allocate = { with<unsafety>(): Ptr<mut><i32> =>
+let allocate = { with<unsafety>
+  (): Ptr<mut><i32> =>
   unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
 }
 
-let release = { with<unsafety>(counter: Ptr<mut><i32>): () =>
+let release = { with<unsafety>
+  (counter: Ptr<mut><i32>): () =>
   unsafe {
     raw_dealloc(counter, size_of<i32>, align_of<i32>)
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   unsafe {
     let counter = allocate()
     *counter = 0

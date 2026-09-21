@@ -7,7 +7,8 @@ let query = effect {
   fallback: (): bool
 }
 
-let program = { with<query>(): i32 =>
+let program = { with<query>
+  (): i32 =>
   let option_some = if(query.option(true) ?? query.fallback()) { 10 } else: { 0 }
   let option_none = if(query.option(false) ?? query.fallback()) { 10 } else: { 0 }
   let result_ok = if(query.result(true) ?? query.fallback()) { 10 } else: { 0 }
@@ -15,11 +16,12 @@ let program = { with<query>(): i32 =>
   option_some + option_none + result_ok + result_err
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut fallbacks = 0
   let result = query.handle(do {
-      program()
-    }) {
+    program()
+  }) {
     option(present, resume) => do {
       resume(if(present) { Option.Some(true) } else: { Option.None })
     },

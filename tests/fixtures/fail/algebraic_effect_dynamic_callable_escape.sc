@@ -5,11 +5,12 @@ let ask = effect {
 let left = { with<ask>(): i32 => ask.value() }
 let right = { with<ask>(): i32 => ask.value() + 1 }
 
-let leak = { with<ask>(): (with<ask>(): i32) =>
+let leak = { with<ask>
+  (): (with<ask>(): i32) =>
   ask.handle(do {
-      let selected: with<ask>(): i32  = if(true) { left } else: { right }
-      selected
-    }) {
+    let selected: with<ask>(): i32  = if(true) { left } else: { right }
+    selected
+  }) {
     value(resume) => do { resume(42) },
   }
 }

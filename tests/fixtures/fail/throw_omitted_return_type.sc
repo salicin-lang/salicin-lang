@@ -1,4 +1,5 @@
-let fail = { () =>
+let fail = {
+  () =>
   throw(true)
 }
 

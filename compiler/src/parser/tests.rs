@@ -98,6 +98,25 @@ fn parses_only_braced_anonymous_and_pattern_callables() {
 }
 
 #[test]
+fn parses_explicit_partial_pattern_closures_with_fat_arrows() {
+    let program = parse(
+        "let choose = { partial Some(value) if value > 0 => value }\n",
+    )
+    .expect("explicit partial pattern closure must parse");
+    let Item::Global(binding) = &program.items[0] else {
+        panic!("expected closure-valued global");
+    };
+    assert!(matches!(
+        binding.value,
+        Expr::PatternClosure { guard: Some(_), .. }
+    ));
+
+    let error = parse("let choose = { Some(value) -> value }\n")
+        .expect_err("the single arrow must be rejected everywhere");
+    assert!(error.message.contains("`->` pattern closures were removed"));
+}
+
+#[test]
 fn promotes_boolean_pattern_callables_and_preserves_ordinary_closure_globals() {
     let program = parse(
         "let select = { true => 1, false => 0 }\n\
@@ -1598,7 +1617,7 @@ fn tight_and_spaced_braces_are_the_same_delimited_application() {
 #[test]
 fn spaced_brace_application_in_for_iterable_stops_before_pattern_body() {
     let source =
-        "let visit = { (): () => for (counter { current: 0, end: 4 }) { value -> value } }\n";
+        "let visit = { (): () => for (counter { current: 0, end: 4 }) { value => value } }\n";
     parse(source).expect("the parenthesized Brace application must stop before the `for` body");
 }
 
@@ -1654,14 +1673,14 @@ fn nested_commas_and_labels_do_not_make_a_brace_body_an_argument_list() {
 fn brace_calls_work_in_guards_and_parenthesized_for_iterables() {
     parse(
         "let value = match(input) { item if predicate{1} => item }\n\
-             let mapped = for (make { x => x }) { item -> item }\n",
+             let mapped = for (make { x => x }) { item => item }\n",
     )
     .expect("brace calls are unambiguous in guards and parenthesized iterables");
 }
 
 #[test]
 fn directly_ambiguous_for_iterable_brace_bodies_require_parentheses() {
-    let error = parse("let value = for make { x => x } { item -> item }\n").unwrap_err();
+    let error = parse("let value = for make { x => x } { item => item }\n").unwrap_err();
     assert!(error
         .message
         .contains("parenthesize the iterable application"));
@@ -3589,7 +3608,7 @@ fn parses_loop_with_break_value() {
 #[test]
 fn desugars_for_to_iteration_lang_item_calls() {
     let program =
-        parse("let main = { (): () => for (values()) { value -> consume(value) } }\n").unwrap();
+        parse("let main = { (): () => for (values()) { value => consume(value) } }\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -3609,6 +3628,10 @@ fn desugars_for_to_iteration_lang_item_calls() {
             ..
         })
     ));
+
+    let error = parse("let main = { (): () => for (values()) { value -> consume(value) } }\n")
+        .expect_err("the legacy single-arrow `for` body must be rejected");
+    assert!(error.message.contains("`=>` after the `for` body pattern"));
 }
 
 #[test]

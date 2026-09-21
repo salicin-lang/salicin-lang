@@ -1,8 +1,9 @@
 let Vec = alloc.Vec
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut values = Vec<i32>.new()
   values.push(42)
-  for values { value -> () }
+  for values { value => () }
   values.len()
 }

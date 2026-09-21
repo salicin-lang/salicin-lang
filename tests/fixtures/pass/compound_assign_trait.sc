@@ -8,18 +8,23 @@ extend(counter) {
 }
 
 extend(counter, AddAssign<i32>) {
-  let add_assign = { (self: Borrow<mut><self>)(rhs: i32): () =>
+  let add_assign = {
+    (self: Borrow<mut><self>)
+    (rhs: i32): () =>
     self.value += rhs
   }
 }
 
 extend(counter, BitXorAssign<i32>) {
-  let bit_xor_assign = { (self: Borrow<mut><self>)(rhs: i32): () =>
+  let bit_xor_assign = {
+    (self: Borrow<mut><self>)
+    (rhs: i32): () =>
     self.value ^= rhs
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut counter = counter { value: 40 }
   counter += 2
   counter ^= 0

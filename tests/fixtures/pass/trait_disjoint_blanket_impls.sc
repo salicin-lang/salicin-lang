@@ -12,7 +12,8 @@ extend(cell<t>, convert<i64>) {
   let convert = { (self: Borrow<self>)(): i64 => 42 }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let cell = cell { value: true }
   42
 }

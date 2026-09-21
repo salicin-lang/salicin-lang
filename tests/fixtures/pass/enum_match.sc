@@ -3,7 +3,8 @@ let answer = enum {
   Empty,
 }
 
-let read = { (value: answer): i32 =>
+let read = {
+  (value: answer): i32 =>
   match(value) { answer.value( value: number ) => number, answer.Empty => 0,
   }
 }

@@ -5,7 +5,8 @@ extend(number) {
   let take = { (move self)(): i32 => self.value }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let number = number { value: 21 }
   let first = number.read()
   first + number.take()

@@ -9,7 +9,9 @@ let step = struct {
 }
 
 extend(step, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -26,7 +28,8 @@ extend(step, Future<()>) {
   }
 }
 
-let increment = { (calls: Ptr<mut><i32>): i32 =>
+let increment = {
+  (calls: Ptr<mut><i32>): i32 =>
   unsafe {
     *calls = *calls + 1
     *calls
@@ -34,10 +37,10 @@ let increment = { (calls: Ptr<mut><i32>): i32 =>
 }
 
 let make_step = { with<throwing<bool>>(
-  drops: Ptr<mut><i32>,
-  calls: Ptr<mut><i32>,
-  fail_at: i32,
-): step =>
+    drops: Ptr<mut><i32>,
+    calls: Ptr<mut><i32>,
+    fail_at: i32,
+  ): step =>
   let call = increment(calls)
   if(call == fail_at) {
     throw(true)
@@ -46,11 +49,12 @@ let make_step = { with<throwing<bool>>(
   }
 }
 
-let run = { (
-  drops: Ptr<mut><i32>,
-  calls: Ptr<mut><i32>,
-  fail_at: i32,
-): i32 =>
+let run = {
+  (
+    drops: Ptr<mut><i32>,
+    calls: Ptr<mut><i32>,
+    fail_at: i32,
+  ): i32 =>
   let result: Result<bool><i32> = try {
     let mut future = async {
       loop {
@@ -82,7 +86,8 @@ let run = { (
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

@@ -6,7 +6,8 @@ let state = struct {
   value: i32,
 }
 
-let program = { with<step>(): i32 =>
+let program = { with<step>
+  (): i32 =>
   let mut state = state { value: 40 }
   let mut count = 0
   while(count < 2) {
@@ -17,10 +18,11 @@ let program = { with<step>(): i32 =>
   state.value
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   step.handle(do {
-      program()
-    }) {
+    program()
+  }) {
     delta(resume) => do {
       resume(1)
     },

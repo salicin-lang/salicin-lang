@@ -1,6 +1,7 @@
 let cell = struct { value: i32 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut add = cell { value: 40 }
   add.value += 2
 

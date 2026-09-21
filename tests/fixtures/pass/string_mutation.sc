@@ -1,4 +1,5 @@
-let scalar = { (value: u32): core.string.UnicodeScalar =>
+let scalar = {
+  (value: u32): core.string.UnicodeScalar =>
   match(core.string.UnicodeScalar.from_u32(value)) {
     Some(value) => value, None => do {
       unsafe {
@@ -8,7 +9,8 @@ let scalar = { (value: u32): core.string.UnicodeScalar =>
   }
 }
 
-let construction_checks = { (): bool =>
+let construction_checks = {
+  (): bool =>
   let source: String = "柳A"
   let source_view = source.as_str()
   let copied = String.from_str(source_view)
@@ -26,7 +28,8 @@ let construction_checks = { (): bool =>
     reserved.capacity() == 12
 }
 
-let append_checks = { (): bool =>
+let append_checks = {
+  (): bool =>
   let mut text: String = "A"
   text.reserve(7)
   let reserved = text.capacity() >= 8
@@ -44,7 +47,8 @@ let append_checks = { (): bool =>
     boundary
 }
 
-let truncation_checks = { (): bool =>
+let truncation_checks = {
+  (): bool =>
   let source: String = "A柳🙂"
   let source_view = source.as_str()
   let mut text = String.from_str(source_view)
@@ -60,7 +64,8 @@ let truncation_checks = { (): bool =>
     text.capacity() == 8
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   if(construction_checks() &&
     append_checks() &&
     truncation_checks() ) {

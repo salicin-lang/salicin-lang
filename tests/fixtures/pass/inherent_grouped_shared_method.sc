@@ -4,7 +4,8 @@ extend(number) {
   let plus = { (self: Borrow<self>)(x: i32)(y: i32): i32 => self.value + x + y }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let number = number { value: 40 }
   number.plus(1)(1)
 }

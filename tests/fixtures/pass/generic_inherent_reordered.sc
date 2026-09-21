@@ -5,7 +5,8 @@ extend(pair<y, x>) {
   let take_first = { (move self)(): y => self.first }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let pair = pair.new(42, true)
   pair.take_first()
 }

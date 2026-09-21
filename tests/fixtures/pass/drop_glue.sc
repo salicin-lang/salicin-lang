@@ -6,12 +6,15 @@ let choice = enum {
 }
 
 extend(resource, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     self.value = 0
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let value = choice.Some(wrapper { resource: resource { value: 42 } })
   42
 }

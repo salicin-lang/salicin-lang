@@ -101,6 +101,18 @@ in source order. A Boolean literal arm determines a `bool` input; other named
 forms require a whole-callable annotation or callable type alias. Named pattern
 callables cannot be overloaded because their input has no source-level label.
 
+A partial pattern closure is explicit:
+
+```sc fragment
+{ partial Some(value) if value > 0 => value }
+```
+
+Its contextual type is `(Input): core.control.Attempt<Input><Output>`. A
+successful pattern and guard produce `Hit(output)`; failure produces
+`Miss(input)` without consuming the original input. The `partial` marker keeps
+this behavior distinct from an ordinary one-arm pattern callable while using
+the same `=>` separator everywhere.
+
 Failure to match is not an error result and does not consume the scrutinee. The next case receives
 the same logical input state. A successful pattern establishes its bindings before the guard. A
 false guard rolls back those bindings and proceeds to the next case.
@@ -124,9 +136,10 @@ This syntax maps directly to match semantics. The brace contains
 comma-separated match arms; it is not a tight brace call, a closure-valued
 intermediate, or a sequence of postfix match cases.
 
-The old `->` arm and consecutive pattern-callable form have been removed. The
-replacement is one multi-arm callable `{ P => ..., Q => ... }`, or a direct
-`match(value) { P => ..., Q => ... }` expression when matching immediately.
+The old `->` token has been removed. Use a multi-arm callable
+`{ P => ..., Q => ... }`, an explicit partial closure
+`{ partial P => ... }`, or a direct `match(value) { P => ..., Q => ... }`
+expression when matching immediately.
 
 Lowering must preserve:
 
@@ -142,12 +155,12 @@ Compiler-generated internal match names must never appear in user diagnostics.
 
 ## For
 
-`for pattern in iterable { body }` is governed by `IntoIterator` and `Iterator`:
+`for iterable { pattern => body }` is governed by `IntoIterator` and `Iterator`:
 
 ```sc fragment
 let Iterator = trait {
   Item: <r: region>: type
-  next: <r: region>(self: Borrow<mut><r><self>): core.Option<Item<r>>
+  next: <r: region>(self: Borrow<mut><r><self>)(): core.Option<Item<r>>
 }
 ```
 

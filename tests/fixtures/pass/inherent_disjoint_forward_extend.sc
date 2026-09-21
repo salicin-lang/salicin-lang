@@ -8,7 +8,8 @@ extend(number) {
   let bonus = 2
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let number = number { value: 40 }
   number.read() + number.bonus
 }

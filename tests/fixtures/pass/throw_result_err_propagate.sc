@@ -7,7 +7,8 @@ let fail = { with<throwing<bool>>(): i32 =>
 
 let forward = { with<throwing<bool>>(): i32 => fail() }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let result: Result<bool><i32> = try { forward() }
   result ?? 42
 }

@@ -15,7 +15,8 @@ pub let requires = { <
     condition: bool,
   e: effects,
   Result: type,
-  >with<e>{move body: with<e>() :Result}: Result => builtin() }
+  >with<e>
+  {move body: with<e>() :Result}: Result => builtin() }
 
 pub let never = core.never.never
 pub let Movable = core.marker.Movable

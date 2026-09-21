@@ -2,7 +2,8 @@ let boxed = struct { value: i32 }
 
 let consume = { (move boxed: boxed): i32 => boxed.value }
 
-let restore = { (select_first: bool): i32 =>
+let restore = {
+  (select_first: bool): i32 =>
   let mut boxed = boxed { value: 0 }
   consume(boxed)
   if(select_first) {

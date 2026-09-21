@@ -4,7 +4,8 @@ let pure = { (): i32 => 42 }
 
 let invoke = { with<unsafety>(action: with<unsafety>(): i32)(): i32 => action() }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   unsafe { invoke(pure)() }
 }
 

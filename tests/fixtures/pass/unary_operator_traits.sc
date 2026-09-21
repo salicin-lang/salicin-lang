@@ -10,7 +10,9 @@ extend(number, Neg) {
 
 extend(flag, Not) {
   let Output = i32;
-  let not = { (self)(): i32 =>
+  let not = {
+    (self)
+    (): i32 =>
     if(self.value) { 0 } else: { 42 }
   }
 }
@@ -18,7 +20,8 @@ extend(flag, Not) {
 let negate = { <t: type>(move value: t): t requires(t is Neg && t.Output == t) => -value }
 let invert = { <t: type>(move value: t): t requires(t is Not && t.Output == t) => !value }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   if(invert(false)) {
     !flag { value: false } + -number { value: 0 } + negate(0)
   } else: {

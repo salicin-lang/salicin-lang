@@ -1,4 +1,5 @@
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let values = [42]
   let index: usize = 1
   values[index]

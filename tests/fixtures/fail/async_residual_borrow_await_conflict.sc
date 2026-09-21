@@ -19,11 +19,13 @@ extend(step, Future<()>) {
   }
 }
 
-let make_step = { with<ask>(): step =>
-  step{ value: ask.ask() }
+let make_step = { with<ask>
+  (): step =>
+  step { value: ask.ask() }
 }
 
-let program = { (value: Borrow<mut><i32>): i32 =>
+let program = {
+  (value: Borrow<mut><i32>): i32 =>
   let future = async {
     let amount = await(make_step())
     value = value + amount
@@ -33,7 +35,8 @@ let program = { (value: Borrow<mut><i32>): i32 =>
   42
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut value = 2
   program(value)
 }

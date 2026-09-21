@@ -6,7 +6,8 @@ extend(cell<t>) {
   let view = { <a: access>(self: Borrow<a><self>)(): Borrow<a><t> => borrow<a>(self.value) }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut left = 1
   let right = 20
   let mut cell = cell { value: 20 }

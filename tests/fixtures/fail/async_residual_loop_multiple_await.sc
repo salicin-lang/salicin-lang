@@ -19,26 +19,28 @@ extend(step, Future<()>) {
   }
 }
 
-let make_step = { with<ask>(): step =>
-  step{ done: ask.ask() }
+let make_step = { with<ask>
+  (): step =>
+  step { done: ask.ask() }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   ask.handle(do {
-      let mut future = async {
-        loop {
-          let first = await(make_step())
-          let second = await(make_step())
-          if(second) {
-            break(42)
-          } else: {
-            continue()
-          }
+    let mut future = async {
+      loop {
+        let first = await(make_step())
+        let second = await(make_step())
+        if(second) {
+          break(42)
+        } else: {
+          continue()
         }
       }
-      match(future.poll()) { Ready(value) => value, Pending => 0,
-      }
-    }) {
+    }
+    match(future.poll()) { Ready(value) => value, Pending => 0,
+    }
+  }) {
     ask(resume) => do { resume(false) },
   }
 }

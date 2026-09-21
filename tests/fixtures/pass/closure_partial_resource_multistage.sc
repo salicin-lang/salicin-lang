@@ -1,7 +1,9 @@
 let resource = struct { value: i32 }
 
 extend(resource, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     let checked = 1 / self.value
     self.value = 0
   }
@@ -9,7 +11,8 @@ extend(resource, Droppable) {
 
 let consume = { (move value: resource): () => () }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let base = 40
   let finish = { (move resource: resource)(left: i32)(right: i32) =>
     consume(resource)

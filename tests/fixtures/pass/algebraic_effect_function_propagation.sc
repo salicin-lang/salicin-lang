@@ -7,11 +7,12 @@ let program = { with<state<i32>>(): i32 =>
   state<i32>.get() + answer
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let answer = 40
   state<i32>.handle(do {
-      program() + 1
-    }) {
+    program() + 1
+  }) {
     get(resume) => do { resume(answer) },
   }
 }

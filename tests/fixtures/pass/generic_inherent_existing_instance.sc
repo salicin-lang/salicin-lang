@@ -5,7 +5,8 @@ extend(cell<t>) {
   let take = { (move self)(): t => self.value }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let holder = holder { cell: cell { value: 42 } }
   holder.cell.take()
 }

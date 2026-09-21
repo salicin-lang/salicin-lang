@@ -16,23 +16,24 @@ let bundle = struct { f00: payload,
 
 let consume = { (move value: payload): () => () }
 
-let stress = { (
-  b00: bool,
-  b01: bool,
-  b02: bool,
-  b03: bool,
-  b04: bool,
-  b05: bool,
-  b06: bool,
-  b07: bool,
-  b08: bool,
-  b09: bool,
-  b10: bool,
-  b11: bool,
-  b12: bool,
-  b13: bool,
-): i32 =>
-  let mut bundle = bundle{ left: payload{ value: 0 }, right: payload{ value: 1 }, field2: payload{ value: 2 }, field3: payload{ value: 3 }, field4: payload{ value: 4 }, field5: payload{ value: 5 }, field6: payload{ value: 6 }, field7: payload{ value: 7 }, field8: payload{ value: 8 }, field9: payload{ value: 9 }, field10: payload{ value: 10 }, field11: payload{ value: 11 }, field12: payload{ value: 12 }, field13: payload{ value: 13 } }
+let stress = {
+  (
+    b00: bool,
+    b01: bool,
+    b02: bool,
+    b03: bool,
+    b04: bool,
+    b05: bool,
+    b06: bool,
+    b07: bool,
+    b08: bool,
+    b09: bool,
+    b10: bool,
+    b11: bool,
+    b12: bool,
+    b13: bool,
+  ): i32 =>
+  let mut bundle = bundle { left: payload { value: 0 }, right: payload { value: 1 }, field2: payload { value: 2 }, field3: payload { value: 3 }, field4: payload { value: 4 }, field5: payload { value: 5 }, field6: payload { value: 6 }, field7: payload { value: 7 }, field8: payload { value: 8 }, field9: payload { value: 9 }, field10: payload { value: 10 }, field11: payload { value: 11 }, field12: payload { value: 12 }, field13: payload { value: 13 } }
   if(b00) { consume(bundle.f00) }
   if(b01) { consume(bundle.f01) }
   if(b02) { consume(bundle.f02) }
@@ -50,7 +51,8 @@ let stress = { (
   bundle.f13.value
 }
 
-let main = { (): i32 => stress(
+let main = {
+  (): i32 => stress(
     false,
     false,
     false,

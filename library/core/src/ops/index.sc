@@ -5,6 +5,6 @@ pub let Index = <Key: type> trait {
 
   /// Borrows the selected element with the receiver's access.
   index: <a: access>
-      (self: Borrow<a><self>)
-      (key: Key): Borrow<a><Output>
-}
+  (self: Borrow<a><self>)
+  (key: Key): Borrow<a><Output>
+  }

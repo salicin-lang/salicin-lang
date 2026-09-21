@@ -9,7 +9,9 @@ let choice = enum { Some(i32), None }
 extend(values, Iterator) {
   let Item = OwnedItem<choice>;
 
-  let next = { <r: region>(self: Borrow<mut><r><self>)(): Option<choice> =>
+  let next = { <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Option<choice> =>
     if(self.done) {
       None
     } else: {
@@ -24,8 +26,9 @@ extend(values, IntoIterator) {
   let into_iter = { (move self)(): values => self }
 }
 
-let main = { (): i32 =>
-  for values{ done: false } { choice.Some(value) ->
+let main = {
+  (): i32 =>
+  for values { done: false } { choice.Some(value) =>
     value
   }
   0

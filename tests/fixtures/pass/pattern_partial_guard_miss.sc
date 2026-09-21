@@ -4,10 +4,11 @@ let payload = struct {
   value: i32,
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let offset = 1
   let choose: (Option<payload>): core.control.Attempt<Option<payload>><i32> = {
-    Some(payload) if payload.value > 100 -> payload.value + offset
+    partial Some(payload) if payload.value > 100 => payload.value + offset
   }
   let attempted = choose(Option.Some(payload { value: 42 }))
   match(attempted) {

@@ -1,8 +1,9 @@
 let StringWriter = alloc.string.StringWriter
 
 /// Formats the stable output consumed by both the CLI and its acceptance test.
-pub let render = { (value: catalog.Summary): core.string.String =>
-    let mut writer = StringWriter.new()
+pub let render = {
+  (value: catalog.Summary): core.string.String =>
+  let mut writer = StringWriter.new()
   "items=".display(writer)
   value.count.display(writer)
   "\ntotal=".display(writer)

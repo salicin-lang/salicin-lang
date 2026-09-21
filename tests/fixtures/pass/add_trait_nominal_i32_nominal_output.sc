@@ -7,7 +7,8 @@ extend(number, Add<i32>) {
   let add = { (self)(rhs: i32): number => number { value: self.value + rhs } }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let answer = number { value: 40 } + 2
   answer.value
 }

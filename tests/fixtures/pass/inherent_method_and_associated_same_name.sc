@@ -5,7 +5,8 @@ extend(number) {
   let value = 2
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let number_value = number { raw: 40 }
   number_value.value() + number.value
 }

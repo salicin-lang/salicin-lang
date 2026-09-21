@@ -9,4 +9,4 @@ extend(other) {
   let read = { (self: Borrow<self>)(): i32 => self.value }
 }
 
-let main = { (): i32 => number.read(other{ value: 42 })() }
+let main = { (): i32 => number.read(other { value: 42 })() }

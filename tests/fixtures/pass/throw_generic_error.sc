@@ -5,7 +5,8 @@ let fail = { <e: type>with<throwing<e>>(move error: e): i32 =>
   throw(error)
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let result: Result<bool><i32> = try { fail<bool>(true) }
   result ?? 42
 }

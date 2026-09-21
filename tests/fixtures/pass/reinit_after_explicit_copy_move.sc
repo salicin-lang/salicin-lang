@@ -4,7 +4,8 @@ extend(number, Copyable) {}
 
 let consume = { (move number: number): i32 => number.value }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut number = number { value: 20 }
   let first = consume(number)
   number = number { value: 22 }

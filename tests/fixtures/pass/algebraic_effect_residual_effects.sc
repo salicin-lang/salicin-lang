@@ -11,21 +11,23 @@ let ask = effect {
   value: with<supply, throwing<bool>, unsafety>(): i32
 }
 
-let request = { with<ask, supply, throwing<bool>, unsafety>(): i32 =>
+let request = { with<ask, supply, throwing<bool>, unsafety>
+  (): i32 =>
   ask.value()
 }
 
 let run = { with<supply, throwing<bool>>(): i32 =>
   unsafe {
     ask.handle(do {
-        request()
-      }) {
+      request()
+    }) {
       value(resume) => do { resume(42) },
     }
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let result: Result<bool><i32> = try {
     supply.handle(do { run() }) {
       seed(resume) => do { resume(0) },

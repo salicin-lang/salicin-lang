@@ -9,7 +9,9 @@ let resource = struct {
 }
 
 extend(resource, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -44,7 +46,8 @@ let make_step = { with<throwing<bool>>(fail: bool): step =>
   }
 }
 
-let run_success = { (drops: Ptr<mut><i32>): i32 =>
+let run_success = {
+  (drops: Ptr<mut><i32>): i32 =>
   let result: Result<bool><i32> = try {
     let outer = resource { drops: drops, value: 1 }
     let mut future = async {
@@ -65,7 +68,8 @@ let run_success = { (drops: Ptr<mut><i32>): i32 =>
   }
 }
 
-let run_throwing = { (drops: Ptr<mut><i32>): i32 =>
+let run_throwing = {
+  (drops: Ptr<mut><i32>): i32 =>
   let result: Result<bool><i32> = try {
     let outer = resource { drops: drops, value: 1 }
     let mut future = async {
@@ -83,7 +87,8 @@ let run_throwing = { (drops: Ptr<mut><i32>): i32 =>
   }
 }
 
-let run_cancelled = { (drops: Ptr<mut><i32>): i32 =>
+let run_cancelled = {
+  (drops: Ptr<mut><i32>): i32 =>
   let result: Result<bool><i32> = try {
     let outer = resource { drops: drops, value: 1 }
     let mut future = async {
@@ -98,7 +103,8 @@ let run_cancelled = { (drops: Ptr<mut><i32>): i32 =>
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

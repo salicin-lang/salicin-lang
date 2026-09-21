@@ -4,27 +4,32 @@ let ctfe_source: i16 = 255
 let ctfe_conversion: core.Option<u8> =
   ctfe_source.checked_into<Output: u8>()
 
-let is_some_u8 = { (value: core.Option<u8>, expected: u8): bool =>
+let is_some_u8 = {
+  (value: core.Option<u8>, expected: u8): bool =>
   match(value) { Some(value) => value == expected, None => false,
   }
 }
 
-let is_some_i16 = { (value: core.Option<i16>, expected: i16): bool =>
+let is_some_i16 = {
+  (value: core.Option<i16>, expected: i16): bool =>
   match(value) { Some(value) => value == expected, None => false,
   }
 }
 
-let is_none_u8 = { (value: core.Option<u8>): bool =>
+let is_none_u8 = {
+  (value: core.Option<u8>): bool =>
   match(value) { Some(_) => false, None => true,
   }
 }
 
-let is_none_i8 = { (value: core.Option<i8>): bool =>
+let is_none_i8 = {
+  (value: core.Option<i8>): bool =>
   match(value) { Some(_) => false, None => true,
   }
 }
 
-let sign_checks = { (): bool =>
+let sign_checks = {
+  (): bool =>
   let negative: i32 = -1
   let zero: i32 = 0
   let positive: u32 = 1
@@ -37,7 +42,8 @@ let sign_checks = { (): bool =>
   negative_ok && zero_ok && positive_ok
 }
 
-let conversion_checks = { (): bool =>
+let conversion_checks = {
+  (): bool =>
   let narrow: i16 = 255
   let overflow: i16 = 256
   let negative: i16 = -1
@@ -52,7 +58,8 @@ let conversion_checks = { (): bool =>
   }
 }
 
-let wide_checks = { (): bool =>
+let wide_checks = {
+  (): bool =>
   let minimum: i128 = -170141183460469231731687303715884105728
   let maximum: u128 = 340282366920938463463374607431768211455
   let pointer_maximum: usize = 18446744073709551615
@@ -65,7 +72,8 @@ let wide_checks = { (): bool =>
     pointer_to_signed
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let value: i32 = 7
   let minimum: i32 = -3
   let maximum: i32 = 5

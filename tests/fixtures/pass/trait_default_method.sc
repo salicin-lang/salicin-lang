@@ -35,7 +35,8 @@ extend(boxed, take) {
   let take = { (move self)(): i32 => self.value }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let number = number { value: 21 }
   let cell = cell { value: number }
   let overridden = override {}

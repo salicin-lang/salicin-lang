@@ -5,14 +5,15 @@ let ask = effect {
 let left = { with<ask>(): i32 => ask.value() }
 let right = { with<ask>(): i32 => ask.value() + 1 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   ask.handle(do {
-      let first: with<ask>(): i32  = if(true) { left } else: { right }
-      let second: with<ask>(): i32  = if(true) { right } else: { left }
-      let mut selected = first
-      selected = second
-      selected() + 1
-    }) {
+    let first: with<ask>(): i32  = if(true) { left } else: { right }
+    let second: with<ask>(): i32  = if(true) { right } else: { left }
+    let mut selected = first
+    selected = second
+    selected() + 1
+  }) {
     value(resume) => do { resume(40) },
   }
 }

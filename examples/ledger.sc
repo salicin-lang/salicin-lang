@@ -78,7 +78,7 @@ extend(Batch, IntoIterator) {
 let count_batch = {
   (move batch: Batch): i32 =>
   let mut count = 0
-  for batch { _ ->
+  for batch { _ =>
     count = count + 1
   }
   count
@@ -101,7 +101,7 @@ let apply = { with<overdraft>
 let process = { with<overdraft>
   (move batch: Batch): i32 =>
   let mut ledger = Ledger { balance: 0, processed: 0 }
-  for batch { transaction ->
+  for batch { transaction =>
     apply(ledger)(transaction)
   }
   ledger.snapshot()

@@ -1,6 +1,7 @@
 let Slice = core.memory.Slice
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut order: Array<i32><5> = [1, 2, 3, 4, 5]
   order.swap(0, 4)
   order.swap(2, 2)

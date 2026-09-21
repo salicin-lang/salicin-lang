@@ -542,7 +542,7 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
         ),
         (
             "requires",
-            "pub let requires = { <\n    condition: bool,\n  e: effects,\n  Result: type,\n  >with<e>{move body: with<e>() :Result}: Result => builtin() }\n",
+            "pub let requires = { <\n    condition: bool,\n  e: effects,\n  Result: type,\n  >with<e>\n  {move body: with<e>() :Result}: Result => builtin() }\n",
         ),
     ] {
         let missing = EDITION_2026_LIB.replace(declaration, "");
@@ -672,8 +672,8 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
     }));
 
     let abstract_builtin = EDITION_2026_MARKER.replace(
-        "drop: (self: Borrow<mut><self>)\n      (): ()",
-        "drop: (self: Borrow<mut><self>)\n      (): () = builtin()",
+        "drop: (self: Borrow<mut><self>)\n  (): ()",
+        "drop: (self: Borrow<mut><self>)\n  (): () = builtin()",
     );
     assert_ne!(abstract_builtin, EDITION_2026_MARKER);
     let modules = edition_2026_test_modules(&[("marker", &abstract_builtin)]);
@@ -867,8 +867,8 @@ fn rejects_malformed_control_contracts() {
             (
                 "continue",
                 EDITION_2026_CONTROL.replace(
-                    "pub let continue = { with<iteration_skip>(): never =>",
-                    "pub let continue = { with<iteration_skip>(): () =>",
+                    "pub let continue = { with<iteration_skip>\n  (): never =>",
+                    "pub let continue = { with<iteration_skip>\n  (): () =>",
                 ),
             ),
             (
@@ -888,8 +888,8 @@ fn rejects_malformed_control_contracts() {
             (
                 "if",
                 EDITION_2026_CONTROL.replace(
-                    "with<e>(condition: bool){move then: with<e>(): T}",
-                    "with<e>(condition: i32){move then: with<e>(): T}",
+                    "with<e>\n  (condition: bool)\n  {move then: with<e>(): T}",
+                    "with<e>\n  (condition: i32)\n  {move then: with<e>(): T}",
                 ),
             ),
             (
@@ -902,8 +902,8 @@ fn rejects_malformed_control_contracts() {
             (
                 "for",
                 EDITION_2026_CONTROL.replace(
-                    "    Iter.Item == Item",
-                    "    Iter.Item == bool",
+                    "      Iter.Item == Item",
+                    "      Iter.Item == bool",
                 ),
             ),
         ] {
@@ -920,9 +920,9 @@ fn rejects_malformed_control_contracts() {
         }
 
     let malformed = EDITION_2026_UNSAFE.replace(
-            "pub let unsafe = { <e: effects, T: type>with<e>{move action: with<core.unsafe.unsafety, e>() :T}: T",
-            "pub let unsafe = { <e: effects, T: type>with<e>{move action: with<e>() :T}: T",
-        );
+        "pub let unsafe = { <e: effects, T: type>with<e>\n  {move action: with<core.unsafe.unsafety, e>() :T}: T",
+        "pub let unsafe = { <e: effects, T: type>with<e>\n  {move action: with<e>() :T}: T",
+    );
     let modules = edition_2026_test_modules(&[("unsafe", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error
@@ -931,7 +931,7 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `unsafe`")));
 
     let bodyless = EDITION_2026_UNSAFE.replace(
-        ": T =>\n    core.unsafe.unsafety.handle(action()) {\n  }",
+        ": T =>\n  core.unsafe.unsafety.handle(action()) {\n  }",
         ": T",
     );
     let modules = edition_2026_test_modules(&[("unsafe", &bodyless)]);
@@ -1077,8 +1077,8 @@ fn rejects_malformed_async_contracts() {
         (
             "await",
             EDITION_2026_ASYNC.replace(
-                "with<core.async.suspension, e>(move future: F): T",
-                "with<e>(move future: F): T",
+                "with<core.async.suspension, e>\n  (move future: F): T",
+                "with<e>\n  (move future: F): T",
             ),
         ),
     ] {
@@ -1098,8 +1098,8 @@ fn rejects_malformed_async_contracts() {
 #[test]
 fn rejects_malformed_iteration_contracts() {
     let malformed = EDITION_2026_ITER.replace(
-        "next: <r: region>(self: Borrow<mut><r><self>)\n      (): core.Option<Item<r>>",
-        "next: <r: region>(self: Borrow<r><self>)\n      (): core.Option<Item<r>>",
+        "next: <r: region>(self: Borrow<mut><r><self>)\n  (): core.Option<Item<r>>",
+        "next: <r: region>(self: Borrow<r><self>)\n  (): core.Option<Item<r>>",
     );
     let modules = edition_2026_test_modules(&[("iter", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -1112,8 +1112,8 @@ fn rejects_malformed_iteration_contracts() {
 #[test]
 fn rejects_malformed_assignment_operator_contracts() {
     let malformed = EDITION_2026_OPS_ASSIGN.replace(
-        "add_assign: (self: Borrow<mut><self>)\n      (rhs: Rhs): ()",
-        "add_assign: (self: Borrow<self>)\n      (rhs: Rhs): ()",
+        "add_assign: (self: Borrow<mut><self>)\n  (rhs: Rhs): ()",
+        "add_assign: (self: Borrow<self>)\n  (rhs: Rhs): ()",
     );
     let modules = edition_2026_test_modules(&[("ops/assign", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();

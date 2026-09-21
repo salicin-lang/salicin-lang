@@ -9,7 +9,8 @@ let fail = { with<throwing<bool>>(counter: Borrow<mut><i32>): i32 =>
   throw(true)
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let mut counter = 0
   let result: Result<bool><i32> = try {
     fail(counter)

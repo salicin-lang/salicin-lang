@@ -12,7 +12,7 @@ pub let BitAnd = <Rhs: type> trait {
   Output: type
   /// Computes bitwise and with `rhs`.
   bit_and: (self)
-      (rhs: Rhs): Output
+  (rhs: Rhs): Output
 }
 
 /// Trait backing binary `|`.
@@ -21,7 +21,7 @@ pub let BitOr = <Rhs: type> trait {
   Output: type
   /// Computes bitwise or with `rhs`.
   bit_or: (self)
-      (rhs: Rhs): Output
+  (rhs: Rhs): Output
 }
 
 /// Trait backing binary `^`.
@@ -30,7 +30,7 @@ pub let BitXor = <Rhs: type> trait {
   Output: type
   /// Computes bitwise xor with `rhs`.
   bit_xor: (self)
-      (rhs: Rhs): Output
+  (rhs: Rhs): Output
 }
 
 /// Trait backing binary `<<`.
@@ -39,7 +39,7 @@ pub let Shl = <Rhs: type> trait {
   Output: type
   /// Shifts `self` left by `rhs`.
   shl: (self)
-      (rhs: Rhs): Output
+  (rhs: Rhs): Output
 }
 
 /// Trait backing binary `>>`.
@@ -48,5 +48,5 @@ pub let Shr = <Rhs: type> trait {
   Output: type
   /// Shifts `self` right by `rhs`.
   shr: (self)
-      (rhs: Rhs): Output
+  (rhs: Rhs): Output
 }

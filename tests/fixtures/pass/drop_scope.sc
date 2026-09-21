@@ -5,7 +5,9 @@ let choice = enum {
 }
 
 extend(resource, Droppable) {
-  let drop = { (self: Borrow<mut><self>)(): () =>
+  let drop = {
+    (self: Borrow<mut><self>)
+    (): () =>
     let checked = 1 / self.value
     self.value = 0
   }
@@ -13,29 +15,34 @@ extend(resource, Droppable) {
 
 let consume = { (move value: resource): () => () }
 
-let conditional = { (flag: bool): () =>
+let conditional = {
+  (flag: bool): () =>
   let value = resource { value: 1 }
   if(flag) { consume(value) }
 }
 
-let inspect = { (move choice: choice): i32 =>
+let inspect = {
+  (move choice: choice): i32 =>
   match(choice) { Some(_) => 1, None => 0,
   }
 }
 
-let early = { (): i32 =>
+let early = {
+  (): i32 =>
   let value = resource { value: 1 }
   return(1)
 }
 
-let looped = { (): i32 =>
+let looped = {
+  (): i32 =>
   loop {
     let value = resource { value: 1 }
     break(1)
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   do {
     let value = resource { value: 1 }
   }

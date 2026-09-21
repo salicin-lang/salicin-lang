@@ -15,7 +15,7 @@ extend(cell<t>, read)<requires: t is read> {
 }
 
 let read_cell = { <t: type>(cell: Borrow<cell<t>>): i32
-requires(t is read) => cell.read() }
+  requires(t is read) => cell.read() }
 
 let value = trait {
   Item: type
@@ -27,7 +27,8 @@ extend(cell<t>, value) {
   let take = { (move self)(): t => self.value }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let cell = cell { value: leaf { value: 42 } }
   let read = read_cell(cell)
   let leaf = cell.take()

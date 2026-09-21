@@ -607,6 +607,7 @@ primary =
   | if_expression
   | while_expression
   | do_while_expression
+  | for_expression
   | return_expression
   | break_expression
   | await_expression ;
@@ -625,7 +626,8 @@ array_expression =
 callable_expression =
     zero_parameter_callable
   | parameterized_callable
-  | pattern_callable ;
+  | pattern_callable
+  | partial_pattern_closure ;
 
 zero_parameter_callable =
     "{", block_contents, "}" ;
@@ -640,6 +642,14 @@ pattern_callable =
 
 pattern_callable_arm =
     pattern, [ contextual("if"), expression ], "=>", expression ;
+
+partial_pattern_closure =
+    "{", separators, contextual("partial"), pattern,
+    [ contextual("if"), expression ], "=>", block_contents, "}" ;
+
+for_expression =
+    contextual("for"), expression, "{", pattern, "=>",
+    block_contents, "}" ;
 
 ```
 
@@ -711,8 +721,11 @@ other inputs currently require a callable annotation, for example
 `let select: (core.Option<i32>): i32 = { Some(value) => value, None => 0 }`.
 The annotation may also name a callable type alias. Named pattern callables do
 not participate in overload sets because their input has no source-level label.
-The former `->` arm and consecutive
-`callee { P -> ... } { Q -> ... }` forms are not grammar.
+A contextual partial pattern closure is written
+`{ partial Pattern [if expression] => expression }` and must have a contextual
+`(Input): core.control.Attempt<Input><Output>` type. The former `->` token is
+not grammar; callable implementations, match arms, pattern arms, partial
+closures, handlers, and `for` bodies all use `=>`.
 
 `c` selects the C data representation and may appear at most once. It is
 orthogonal to named options such as `derive: Copyable`; for example,

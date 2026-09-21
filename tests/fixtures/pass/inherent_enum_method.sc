@@ -4,13 +4,16 @@ let choice = enum {
 }
 
 extend(choice) {
-  let unwrap = { (move self)(): i32 =>
+  let unwrap = {
+    (move self)
+    (): i32 =>
     match(self) { choice.answer( answer: value ) => value, choice.Empty => 0,
     }
   }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let choice = choice.answer { answer: 42 }
   choice.unwrap()
 }

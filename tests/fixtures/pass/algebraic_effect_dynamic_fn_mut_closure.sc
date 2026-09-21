@@ -2,23 +2,24 @@ let ask = effect {
   value: (): i32
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   ask.handle(do {
-      let mut left_total = 0
-      let mut right_total = 20
-      let mut left: with<ask>(i32): i32  = { (value: i32) =>
-        left_total = left_total + value
-        ask.value() + left_total
-      }
-      let mut right: with<ask>(i32): i32  = { (value: i32) =>
-        right_total = right_total + value
-        ask.value() + right_total
-      }
-      let mut action: with<ask>(i32): i32  = if(true) { left } else: { right }
-      let first = action(1)
-      let second = action(2)
-      first + second + 18
-    }) {
+    let mut left_total = 0
+    let mut right_total = 20
+    let mut left: with<ask>(i32): i32  = { (value: i32) =>
+      left_total = left_total + value
+      ask.value() + left_total
+    }
+    let mut right: with<ask>(i32): i32  = { (value: i32) =>
+      right_total = right_total + value
+      ask.value() + right_total
+    }
+    let mut action: with<ask>(i32): i32  = if(true) { left } else: { right }
+    let first = action(1)
+    let second = action(2)
+    first + second + 18
+  }) {
     value(resume) => do { resume(10) },
   }
 }

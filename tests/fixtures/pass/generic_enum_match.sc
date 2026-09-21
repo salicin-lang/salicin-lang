@@ -3,7 +3,8 @@ let maybe = <t: type> enum {
   None,
 }
 
-let unwrap = { (move value: maybe<i32>): i32 =>
+let unwrap = {
+  (move value: maybe<i32>): i32 =>
   match(value) { Some(item) => item, None => 0,
   }
 }

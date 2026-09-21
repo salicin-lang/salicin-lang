@@ -6,7 +6,8 @@ extend(token, Eq<token>) {
   let eq = { (self: Borrow<self>)(rhs: Borrow<token>): bool => self.value == rhs.value }
 }
 
-let main = { (): i32 =>
+let main = {
+  (): i32 =>
   let left = token { value: 7 }
   let same = token { value: 7 }
   let different = token { value: 8 }
