@@ -2,11 +2,11 @@ let Vec = alloc.Vec
 
 let resource = struct { counter: Ptr<mut><i32>, value: i32 }
 
-extend(resource) {
+extend<resource> {
   let read: (self: Borrow<self>)(): i32 = { self.value }
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -68,6 +68,6 @@ let main: (): i32 = {
   }
 }
 
-test("vec_resource.sc") {
+test<"vec_resource.sc"> {
   std.test.assert(main() == 42)
 }

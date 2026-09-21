@@ -6,6 +6,6 @@ let main: (): i32 = {
   42
 }
 
-test("vec_insert_out_of_bounds.sc") {
+test<"vec_insert_out_of_bounds.sc"> {
   std.test.assert(main() == 42)
 }

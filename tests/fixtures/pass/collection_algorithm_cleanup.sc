@@ -4,7 +4,7 @@ let token = struct {
   drops: Ptr<mut><i32>,
 }
 
-extend(token, Droppable) {
+extend<token, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -50,6 +50,6 @@ let main: (): i32 = {
   }
 }
 
-test("collection_algorithm_cleanup.sc") {
+test<"collection_algorithm_cleanup.sc"> {
   std.test.assert(main() == 42)
 }

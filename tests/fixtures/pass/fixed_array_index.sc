@@ -3,6 +3,6 @@ let main: (): i32 = {
   values[0] + values[1]
 }
 
-test("fixed_array_index.sc") {
+test<"fixed_array_index.sc"> {
   std.test.assert(main() == 42)
 }

@@ -22,6 +22,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_owned_index_oob.sc") {
+test<"algebraic_effect_owned_index_oob.sc"> {
   std.test.assert(main() == 42)
 }

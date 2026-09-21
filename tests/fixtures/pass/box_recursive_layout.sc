@@ -10,6 +10,6 @@ let main: (): i32 = {
   42
 }
 
-test("box_recursive_layout.sc") {
+test<"box_recursive_layout.sc"> {
   std.test.assert(main() == 42)
 }

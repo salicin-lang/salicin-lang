@@ -6,6 +6,6 @@ let main: (): i32 = {
   0
 }
 
-test("vec_capacity_overflow.sc") {
+test<"vec_capacity_overflow.sc"> {
   std.test.assert(main() == 42)
 }

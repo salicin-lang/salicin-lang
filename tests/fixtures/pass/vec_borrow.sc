@@ -2,7 +2,7 @@ let Vec = alloc.Vec
 
 let resource = struct { value: i32 }
 
-extend(resource) {
+extend<resource> {
   let read: (self: Borrow<self>)(): i32 = { self.value }
 }
 
@@ -33,6 +33,6 @@ let main: (): i32 = {
   if(second == 21) { first + third } else: { 0 }
 }
 
-test("vec_borrow.sc") {
+test<"vec_borrow.sc"> {
   std.test.assert(main() == 42)
 }

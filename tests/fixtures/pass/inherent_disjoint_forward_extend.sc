@@ -1,10 +1,10 @@
-extend(number) {
+extend<number> {
   let read: (self: Borrow<self>)(): i32 = { self.value }
 }
 
 let number = struct { value: i32 }
 
-extend(number) {
+extend<number> {
   let bonus = 2
 }
 
@@ -13,6 +13,6 @@ let main: (): i32 = {
   number.read() + number.bonus
 }
 
-test("inherent_disjoint_forward_extend.sc") {
+test<"inherent_disjoint_forward_extend.sc"> {
   std.test.assert(main() == 42)
 }

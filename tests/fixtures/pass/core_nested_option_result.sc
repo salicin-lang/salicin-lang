@@ -15,6 +15,6 @@ let main: (): i32 = {
   }
 }
 
-test("core_nested_option_result.sc") {
+test<"core_nested_option_result.sc"> {
   std.test.assert(main() == 42)
 }

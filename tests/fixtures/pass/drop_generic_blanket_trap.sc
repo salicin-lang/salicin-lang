@@ -1,6 +1,6 @@
 let bomb: <t: type> = struct { marker: t, divisor: i32 }
 
-extend(bomb<t>, Droppable) {
+extend<bomb<t>, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let trapped = 1 / self.divisor
@@ -12,6 +12,6 @@ let main: (): i32 = {
   0
 }
 
-test("drop_generic_blanket_trap.sc") {
+test<"drop_generic_blanket_trap.sc"> {
   std.test.assert(main() == 42)
 }

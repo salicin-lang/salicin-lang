@@ -8,6 +8,6 @@ let main: (): i32 = {
   ordered + arithmetic
 }
 
-test("infer_constraint_order.sc") {
+test<"infer_constraint_order.sc"> {
   std.test.assert(main() == 42)
 }

@@ -1,7 +1,7 @@
 let cell: <t: type> = struct { value: t }
 let holder = struct { cell: cell<i32> }
 
-extend(cell<t>) {
+extend<cell<t>> {
   let take: (move self)(): t = { self.value }
 }
 
@@ -10,6 +10,6 @@ let main: (): i32 = {
   holder.cell.take()
 }
 
-test("generic_inherent_existing_instance.sc") {
+test<"generic_inherent_existing_instance.sc"> {
   std.test.assert(main() == 42)
 }

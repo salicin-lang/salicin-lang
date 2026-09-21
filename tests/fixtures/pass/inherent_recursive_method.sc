@@ -1,6 +1,6 @@
 let number = struct { value: i32 }
 
-extend(number) {
+extend<number> {
   let descend: (self: Borrow<self>)
     (remaining: i32): i32 = {
     if(remaining == 0) {
@@ -16,6 +16,6 @@ let main: (): i32 = {
   number.descend(3)
 }
 
-test("inherent_recursive_method.sc") {
+test<"inherent_recursive_method.sc"> {
   std.test.assert(main() == 42)
 }

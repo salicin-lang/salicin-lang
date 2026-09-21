@@ -7,6 +7,6 @@ let main: (): i32 = {
   total
 }
 
-test("array_into_iterator.sc") {
+test<"array_into_iterator.sc"> {
   std.test.assert(main() == 42)
 }

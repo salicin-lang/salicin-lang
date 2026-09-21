@@ -1,6 +1,6 @@
 let cell: <t: type> = struct { value: t }
 
-extend(cell<t>)<requires: t is Copyable> {
+extend<cell<t>><requires: t is Copyable> {
   let new: (copy value: t): cell<t> = { cell { value: value } }
   let duplicate: (self: Borrow<self>)
     (): t = {
@@ -10,7 +10,7 @@ extend(cell<t>)<requires: t is Copyable> {
 }
 
 let read_twice: <t: type>
-  (cell: Borrow<cell<t>>): t requires(t is Copyable) = {
+  (cell: Borrow<cell<t>>): t requires<t is Copyable> = {
   cell.duplicate()
 }
 
@@ -19,6 +19,6 @@ let main: (): i32 = {
   read_twice(cell)
 }
 
-test("constrained_generic_extend.sc") {
+test<"constrained_generic_extend.sc"> {
   std.test.assert(main() == 42)
 }

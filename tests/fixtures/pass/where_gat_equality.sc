@@ -8,7 +8,7 @@ let factory = trait {
 
 let cell = struct {}
 
-extend(cell, factory) {
+extend<cell, factory> {
   let Item = identity;
 
   let make: (self: Borrow<self>)(value: i32): i32 = { value }
@@ -16,7 +16,7 @@ extend(cell, factory) {
 
 let make_i32: <t: type>
   (value: Borrow<t>): i32
-requires(t is factory && t.Item<u: type> == u) = {
+requires<t is factory && t.Item<u: type> == u> = {
   value.make(42)
 }
 
@@ -25,6 +25,6 @@ let main: (): i32 = {
   make_i32(cell)
 }
 
-test("where_gat_equality.sc") {
+test<"where_gat_equality.sc"> {
   std.test.assert(main() == 42)
 }

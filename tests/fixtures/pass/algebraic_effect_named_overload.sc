@@ -16,6 +16,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_named_overload.sc") {
+test<"algebraic_effect_named_overload.sc"> {
   std.test.assert(main() == 42)
 }

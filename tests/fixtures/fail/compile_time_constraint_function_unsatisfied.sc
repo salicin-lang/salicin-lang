@@ -1,6 +1,6 @@
 let resource = struct { value: i32 }
 
-let duplicate: <t: type>(copy value: t): (t, t) requires(t is Copyable) = {
+let duplicate: <t: type>(copy value: t): (t, t) requires<t is Copyable> = {
   (value, value)
 }
 

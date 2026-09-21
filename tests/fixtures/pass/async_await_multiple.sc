@@ -6,7 +6,7 @@ let step = struct {
   value: i32
 }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -48,6 +48,6 @@ let main: (): i32 = {
   first_poll + second_poll + third_poll + fourth_poll - 3
 }
 
-test("async_await_multiple.sc") {
+test<"async_await_multiple.sc"> {
   std.test.assert(main() == 42)
 }

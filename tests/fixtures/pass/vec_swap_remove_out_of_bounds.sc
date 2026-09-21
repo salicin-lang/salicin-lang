@@ -6,6 +6,6 @@ let main: (): i32 = {
   values.swap_remove(1)
 }
 
-test("vec_swap_remove_out_of_bounds.sc") {
+test<"vec_swap_remove_out_of_bounds.sc"> {
   std.test.assert(main() == 42)
 }

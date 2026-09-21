@@ -14,6 +14,6 @@ let main: (): i32 = {
   from_vec + slice[0]
 }
 
-test("index_protocol_containers.sc") {
+test<"index_protocol_containers.sc"> {
   std.test.assert(main() == 42)
 }

@@ -2,7 +2,7 @@ let resource = struct { value: i32 }
 let bundle = struct { left: resource, right: resource }
 let choice = enum { Some(bundle, resource), None }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let checked = 1 / self.value
@@ -29,6 +29,6 @@ let main: (): i32 = { inspect(
   )
 }
 
-test("drop_match_nested.sc") {
+test<"drop_match_nested.sc"> {
   std.test.assert(main() == 42)
 }

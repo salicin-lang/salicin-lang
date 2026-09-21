@@ -2,7 +2,7 @@ let inspect: <a: access>(value: Borrow<a><i32>): i32 = { value }
 
 let cell: <t: type> = struct { value: t }
 
-extend(cell<t>) {
+extend<cell<t>> {
   let view: <a: access>(self: Borrow<a><self>)(): Borrow<a><t> = { borrow<a>(self.value) }
 }
 
@@ -21,6 +21,6 @@ let main: (): i32 = {
   after + inspect(right) + inspect<mut>(left) - 1
 }
 
-test("access_generic.sc") {
+test<"access_generic.sc"> {
   std.test.assert(main() == 42)
 }

@@ -7,6 +7,6 @@ let reset: (counter: Borrow<mut><counter>): i32 = {
 
 let main: (): i32 = { reset(counter { value: 0 }) }
 
-test("temporary_mut_borrow_argument.sc") {
+test<"temporary_mut_borrow_argument.sc"> {
   std.test.assert(main() == 42)
 }

@@ -10,6 +10,6 @@ let main: (): i32 = {
   }
 }
 
-test("layout_intrinsics_generic.sc") {
+test<"layout_intrinsics_generic.sc"> {
   std.test.assert(main() == 42)
 }

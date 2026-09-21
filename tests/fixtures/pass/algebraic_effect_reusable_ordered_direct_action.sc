@@ -23,6 +23,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_reusable_ordered_direct_action.sc") {
+test<"algebraic_effect_reusable_ordered_direct_action.sc"> {
   std.test.assert(main() == 42)
 }

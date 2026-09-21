@@ -112,12 +112,12 @@ pub let match: <
 /// Iterates through `iterable`, passing each item to the lazy body.
 pub let for: <e: effects, Iterable: type, Iter: type, Item: type> with<e>
   (move iterable: Iterable)
-  {move body: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(Item): ()}: () requires(
-    Iterable is core.iter.IntoIterator &&
-    Iterable.Iter == Iter &&
-    Iter is core.iter.Iterator &&
-    Iter.Item == Item
-) = {
+  {move body: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(Item): ()}: () requires<
+  Iterable is core.iter.IntoIterator &&
+  Iterable.Iter == Iter &&
+  Iter is core.iter.Iterator &&
+  Iter.Item == Item
+> = {
   let mut iterator = iterable.into_iter()
   loop {
     match(iterator.next()) {

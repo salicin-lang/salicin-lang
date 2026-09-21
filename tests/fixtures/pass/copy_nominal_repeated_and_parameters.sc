@@ -1,6 +1,6 @@
 let pair = struct { left: i32, right: i32 }
 
-extend(pair, Copyable) {}
+extend<pair, Copyable> {}
 
 let read_left: (pair: pair): i32 = { pair.left }
 
@@ -13,6 +13,6 @@ let main: (): i32 = {
   first.left + second.right + read_left(pair) + read_right(pair)
 }
 
-test("copy_nominal_repeated_and_parameters.sc") {
+test<"copy_nominal_repeated_and_parameters.sc"> {
   std.test.assert(main() == 42)
 }

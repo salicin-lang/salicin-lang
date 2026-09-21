@@ -22,6 +22,6 @@ let read: (value: outer): i32 = {
 
 let main: (): i32 = { read(outer.wrapped(inner.value { value: 42 })) }
 
-test("nested_match.sc") {
+test<"nested_match.sc"> {
   std.test.assert(main() == 42)
 }

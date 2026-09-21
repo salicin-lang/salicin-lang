@@ -15,6 +15,6 @@ let main: (): i32 = {
   (first ?? 0) + (second ?? 0)
 }
 
-test("throw_if_flow.sc") {
+test<"throw_if_flow.sc"> {
   std.test.assert(main() == 42)
 }

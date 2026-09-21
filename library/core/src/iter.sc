@@ -32,7 +32,7 @@ pub let ArrayIntoIter: <T: type>
   next_index: usize,
 }
 
-extend(ArrayIntoIter<T><l>, Iterator)<requires: T is core.marker.Copyable> {
+extend<ArrayIntoIter<T><l>, Iterator><requires: T is core.marker.Copyable> {
   let Item = OwnedItem<T>;
   let next: <r: region>
     (self: Borrow<mut><r><self>)
@@ -47,7 +47,7 @@ extend(ArrayIntoIter<T><l>, Iterator)<requires: T is core.marker.Copyable> {
   }
 }
 
-extend(Array<T><l>, IntoIterator)<requires: T is core.marker.Copyable> {
+extend<Array<T><l>, IntoIterator><requires: T is core.marker.Copyable> {
   let Iter = ArrayIntoIter<T><l>;
   let into_iter: (move self)
     (): ArrayIntoIter<T><l> = {
@@ -63,7 +63,7 @@ pub let SliceIter: <a: access><T: type> = struct {
   next_index: u64,
 }
 
-extend(SliceIter<a><T>, Iterator) {
+extend<SliceIter<a><T>, Iterator> {
   let Item = BorrowedItem<a, T>;
   /// Yields one access-preserving Borrow tied to this `next` Borrow.
   let next: <r: region>
@@ -81,12 +81,12 @@ extend(SliceIter<a><T>, Iterator) {
   }
 }
 
-extend(SliceIter<a><T>, IntoIterator) {
+extend<SliceIter<a><T>, IntoIterator> {
   let Iter = SliceIter<a><T>;
   let into_iter: (move self)(): SliceIter<a><T> = {  self }
 }
 
-extend(Slice<T>) {
+extend<Slice<T>> {
   /// Iterates over borrowed values while retaining source access.
   let iter: <a: access = shared>
     (self: Borrow<a><self>)
@@ -95,7 +95,7 @@ extend(Slice<T>) {
   }
 }
 
-extend(Array<T><l>) {
+extend<Array<T><l>> {
   /// Iterates over borrowed elements without requiring them to be Copyable.
   let iter: <a: access = shared>
     (self: Borrow<a><self>)

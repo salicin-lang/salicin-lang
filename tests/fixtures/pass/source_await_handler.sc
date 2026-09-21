@@ -5,7 +5,7 @@ let await_source = core.async.await
 
 let step = struct { ready: bool }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -27,6 +27,6 @@ let main: (): i32 = {
   }
 }
 
-test("source_await_handler.sc") {
+test<"source_await_handler.sc"> {
   std.test.assert(main() == 42)
 }

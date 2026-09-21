@@ -1,6 +1,6 @@
 let resource = struct { counter: Ptr<mut><i32> }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -11,7 +11,7 @@ extend(resource, Droppable) {
 
 let cell: <t: type> = struct { value: t }
 
-extend(cell<t>) {
+extend<cell<t>> {
   let new: (move value: t): cell<t> = { cell { value: value } }
   let take: (move self)(): t = { self.value }
 }
@@ -36,6 +36,6 @@ let main: (): i32 = {
   41 + drops
 }
 
-test("generic_inherent_resource.sc") {
+test<"generic_inherent_resource.sc"> {
   std.test.assert(main() == 42)
 }

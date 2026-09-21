@@ -1985,7 +1985,7 @@ fn validate_constraint_query_contract(program: &Program, diagnostics: &mut Vec<S
     );
     if !valid {
         diagnostics.push(
-            "compile-time constraint query must have shape `extend(type, Is<constraint>) { let is: <Left: type, right: constraint> =: bool builtin() }`"
+            "compile-time constraint query must have shape `extend<type, Is<constraint>> { let is: <Left: type, right: constraint> =: bool builtin() }`"
                 .to_owned(),
         );
     }

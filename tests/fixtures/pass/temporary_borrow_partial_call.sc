@@ -7,6 +7,6 @@ let main: (): i32 = {
   add_number(number { value: 22 })
 }
 
-test("temporary_borrow_partial_call.sc") {
+test<"temporary_borrow_partial_call.sc"> {
   std.test.assert(main() == 42)
 }

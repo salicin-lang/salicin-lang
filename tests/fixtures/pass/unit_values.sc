@@ -6,6 +6,6 @@ let main: (): i32 = {
   take(value)
 }
 
-test("unit_values.sc") {
+test<"unit_values.sc"> {
   std.test.assert(main() == 42)
 }

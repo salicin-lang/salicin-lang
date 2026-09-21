@@ -11,6 +11,6 @@ let main: (): i32 = {
   }
 }
 
-test("async_await_ready.sc") {
+test<"async_await_ready.sc"> {
   std.test.assert(main() == 42)
 }

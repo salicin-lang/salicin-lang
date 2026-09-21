@@ -12,6 +12,6 @@ let main: (): i32 = {
   read(ptr(borrow(value)))
 }
 
-test("do_forwards_unsafe_color.sc") {
+test<"do_forwards_unsafe_color.sc"> {
   std.test.assert(main() == 42)
 }

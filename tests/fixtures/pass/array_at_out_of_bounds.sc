@@ -6,6 +6,6 @@ let main: (): i32 = {
   read(value)
 }
 
-test("array_at_out_of_bounds.sc") {
+test<"array_at_out_of_bounds.sc"> {
   std.test.assert(main() == 42)
 }

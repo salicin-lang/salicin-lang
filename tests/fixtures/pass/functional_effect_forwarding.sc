@@ -35,6 +35,6 @@ let main: (): i32 = {
   read_option(mapped) + read_option(applied) + read_option(chained) - 43
 }
 
-test("functional_effect_forwarding.sc") {
+test<"functional_effect_forwarding.sc"> {
   std.test.assert(main() == 42)
 }

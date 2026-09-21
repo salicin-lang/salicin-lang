@@ -1,6 +1,6 @@
 let number = struct { value: i32 }
 
-extend(number, Copyable) {}
+extend<number, Copyable> {}
 
 let consume: (move number: number): i32 = { number.value }
 
@@ -11,6 +11,6 @@ let main: (): i32 = {
   first + consume(number)
 }
 
-test("reinit_after_explicit_copy_move.sc") {
+test<"reinit_after_explicit_copy_move.sc"> {
   std.test.assert(main() == 42)
 }

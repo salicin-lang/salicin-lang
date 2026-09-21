@@ -8,7 +8,7 @@ let state = struct {
   drops: Ptr<mut><i32>,
 }
 
-extend(state, Droppable) {
+extend<state, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -58,6 +58,6 @@ let main: (): i32 = {
   resumed + abandoned + drop_count - 102
 }
 
-test("algebraic_effect_reusable_borrowed_action.sc") {
+test<"algebraic_effect_reusable_borrowed_action.sc"> {
   std.test.assert(main() == 42)
 }

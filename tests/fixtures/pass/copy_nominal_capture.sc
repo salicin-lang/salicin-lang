@@ -1,8 +1,8 @@
 let pair = struct { left: i32, right: i32 }
 
-extend(pair, Copyable) {}
+extend<pair, Copyable> {}
 
-extend(pair) {
+extend<pair> {
   let combine: (self)(left: i32)(right: i32): i32 = { self.left + self.right + left + right }
 }
 
@@ -25,6 +25,6 @@ let main: (): i32 = {
   }
 }
 
-test("copy_nominal_capture.sc") {
+test<"copy_nominal_capture.sc"> {
   std.test.assert(main() == 42)
 }

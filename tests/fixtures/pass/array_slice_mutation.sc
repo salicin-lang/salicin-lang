@@ -66,6 +66,6 @@ let main: (): i32 = {
   42
 }
 
-test("array_slice_mutation.sc") {
+test<"array_slice_mutation.sc"> {
   std.test.assert(main() == 42)
 }

@@ -31,6 +31,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_dynamic_union_fn_mut.sc") {
+test<"algebraic_effect_dynamic_union_fn_mut.sc"> {
   std.test.assert(main() == 42)
 }

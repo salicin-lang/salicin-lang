@@ -131,7 +131,7 @@ A top-level test registration has call-like syntax with one compile-time name
 and one Brace body group:
 
 ```sc fragment
-test("arithmetic") {
+test<"arithmetic"> {
   std.test.assert(20 + 22 == 42)
 }
 ```
@@ -251,14 +251,15 @@ pub let test: <name: String>{move body: with<core.error.throwing<core.string.Str
 pub let requires: <condition: bool, e: effects, Result: type> with<e>{move body: with<e>(): Result}: Result = builtin()
 ```
 
-`foreign(c, ...)` passes the finite `abi.c` value (using the contextual short spelling `c`) as
+`foreign<c, ...>` passes the finite `abi.c` value (using the contextual short spelling `c`) as
 statically validated metadata to its containing function declaration;
-`test("name") { ... }` consumes its compile-time `String` name in syntax and
+`test<"name"> { ... }` consumes its compile-time `String` name in syntax and
 supplies a body whose only escaping effect is structured test failure. Neither
 metadata payload is a runtime value.
 
-The function-definition form `= requires(condition) { body }` supplies a
-compile-time `bool` and a delayed parameterless closure to `core.requires`.
+The function-signature form `requires<condition> = { body }` supplies a
+compile-time `bool` and checks the declaration body under that proof through
+the `core.requires` contract.
 Trait and extension requirements instead use an ordinary adjacent angle
 compile-time group in their declaration header, `<requires: condition>`. `extend`
 itself is parser-owned syntax: there is no decorative `extend` callable or
@@ -677,7 +678,7 @@ match(value) {
 
 A trait is neither a runtime type nor a sort. Semantically, it declares a relation over a subject
 and any compile-time arguments. A bound such as `T: Iterator` is a logical constraint (a solver
-goal); an applicable `extend(T, Iterator)` supplies implementation evidence. Associated-type
+goal); an applicable `extend<T, Iterator>` supplies implementation evidence. Associated-type
 bindings add projection-equality constraints to the same goal. Trait declarations and evidence are
 erased after static dispatch.
 
@@ -695,7 +696,7 @@ let Iterator = trait {
 An `extend` block adds inherent members or implements a trait:
 
 ```sc fragment
-extend(Point) {
+extend<Point> {
   let translated: (self: Borrow<self>)(dx: i32, dy: i32): Point = {
     Point{x: self.x + dx, y: self.y + dy}
   }
@@ -707,7 +708,7 @@ extend(Point) {
 `extend<T: type, Trait: trait>(impl: (self): ())` for trait implementations. The final implementation
 argument is written as a trailing declaration block. Its target is a type pattern: constructor
 parameters are bound by destructuring and their sorts are inferred from the constructor signature.
-For example, `extend(Result<Error><T>, core.flow.Chain) { ... }` binds `Error` and `T` as `type`
+For example, `extend<Result<Error><T>, core.flow.Chain> { ... }` binds `Error` and `T` as `type`
 values without a separate compile-time parameter header.
 
 Trait dispatch is static. Implementations are selected by the concrete subject and trait
@@ -724,7 +725,7 @@ pub let Is: <right: sort<2>> = trait<self: sort<2>> {
   is: <left: self, right: right>: bool
 }
 
-extend(type, Is<constraint>) {
+extend<type, Is<constraint>> {
   let is: <
     Left: type,
     right: constraint,
@@ -736,14 +737,14 @@ An extension may guard its target pattern after that pattern binds its inferred
 compile-time parameters:
 
 ```sc fragment
-extend(Cell<T>, Copyable)
+extend<Cell<T>, Copyable>
 <requires: T is Copyable> {}
 ```
 
 A function applies the compiler-owned `requires` guard to its body:
 
 ```sc fragment
-let duplicate: <T: type>(value: T): (T, T) requires(T is Copyable) = {
+let duplicate: <T: type>(value: T): (T, T) requires<T is Copyable> = {
   (value, value)
 }
 ```
@@ -755,14 +756,14 @@ Associated type equalities are written as separate projection constraints:
 
 ```sc fragment
 let produce: <T: type>(value: T): i32
-requires(T is Produce && T.Item == i32) = {
+requires<T is Produce && T.Item == i32> = {
   value.produce()
 }
 ```
 
 Trait and extension prerequisites use an ordinary labeled angle compile-time
 group, for example `let Copyable = trait<requires: self is Movable> {}` and
-`extend(Cell<T>, Copyable)<requires: T is Copyable> {}`.
+`extend<Cell<T>, Copyable><requires: T is Copyable> {}`.
 
 Generic associated constructors retain their parameter groups and sorts. Their receiver region can
 determine a yielded type, as in `Iterator.Item<r>`.
@@ -772,7 +773,7 @@ type expression by declaring alpha-renamable binders on the projection:
 
 ```sc fragment
 let borrow_item: <T: type>(value: T): ()
-requires(T is Iterator && T.Item<r: region> == Borrow<r><i32>) = { ... }
+requires<T is Iterator && T.Item<r: region> == Borrow<r><i32>> = { ... }
 ```
 
 The binder groups and sorts must exactly match the associated declaration. The right side may use
@@ -1092,7 +1093,7 @@ recoverable unwind mechanism.
 
 ## 14. Unsafe and Foreign Calls
 
-`foreign(c)` is a complete declaration initializer for a C-owned function.
+`foreign<c>` is a complete declaration initializer for a C-owned function.
 Calling the declaration implicitly requires `unsafety`; the declaration does
 not spell an explicit effect row. The optional second argument is a validated
 ASCII linker symbol. When omitted, it defaults to the Salicin declaration
@@ -1109,13 +1110,13 @@ let read: (
   fd: i32,
   buffer: Ptr<mut><u8>,
   count: usize,
-): isize = foreign(c)
+): isize = foreign<c>
 
 let c_read: (
   fd: i32,
   buffer: Ptr<mut><u8>,
   count: usize,
-): isize = foreign(c, "read")
+): isize = foreign<c, "read">
 ```
 
 Each foreign declaration has exactly one runtime parameter group, an

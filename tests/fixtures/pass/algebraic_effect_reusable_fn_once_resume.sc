@@ -4,7 +4,7 @@ let ask = effect {
 
 let resource = struct { counter: Ptr<mut><i32> }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -46,6 +46,6 @@ let main: (): i32 = {
   result
 }
 
-test("algebraic_effect_reusable_fn_once_resume.sc") {
+test<"algebraic_effect_reusable_fn_once_resume.sc"> {
   std.test.assert(main() == 42)
 }

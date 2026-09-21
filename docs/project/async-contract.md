@@ -45,7 +45,7 @@ pub let Executor = trait {
   run: <e: effects, F: type> with<e>
     (self: Borrow<mut><self>)
     (move future: F): F.Output
-    requires(F is Future<e>)
+    requires<F is Future<e>>
 }
 ```
 

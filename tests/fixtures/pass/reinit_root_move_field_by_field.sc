@@ -13,6 +13,6 @@ let main: (): i32 = {
   recovered_left + inspect(pair) + consume_pair(pair)
 }
 
-test("reinit_root_move_field_by_field.sc") {
+test<"reinit_root_move_field_by_field.sc"> {
   std.test.assert(main() == 42)
 }

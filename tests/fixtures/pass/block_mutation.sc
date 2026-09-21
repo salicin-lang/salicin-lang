@@ -4,6 +4,6 @@ let main: (): i32 = {
   value
 }
 
-test("block_mutation.sc") {
+test<"block_mutation.sc"> {
   std.test.assert(main() == 42)
 }

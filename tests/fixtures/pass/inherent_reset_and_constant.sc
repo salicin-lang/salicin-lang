@@ -1,6 +1,6 @@
 let counter = struct { value: i32 }
 
-extend(counter) {
+extend<counter> {
   let reset: (self: Borrow<mut><self>)
     (): () = {
     self.value = 0
@@ -15,6 +15,6 @@ let main: (): i32 = {
   counter.value + counter.answer
 }
 
-test("inherent_reset_and_constant.sc") {
+test<"inherent_reset_and_constant.sc"> {
   std.test.assert(main() == 42)
 }

@@ -81,6 +81,6 @@ let main: (): i32 = {
   handled_throw() + handled_throw_sugar_function() + handled_throw_sugar_action() + tried_throw_sugar_function() + tried_throw_sugar_action() + inferred_try_from_throw_sugar_function() + handled_async() - 252
 }
 
-test("standard_effect_operations.sc") {
+test<"standard_effect_operations.sc"> {
   std.test.assert(main() == 42)
 }

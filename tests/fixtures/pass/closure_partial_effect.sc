@@ -11,6 +11,6 @@ let main: (): i32 = {
   }
 }
 
-test("closure_partial_effect.sc") {
+test<"closure_partial_effect.sc"> {
   std.test.assert(main() == 42)
 }

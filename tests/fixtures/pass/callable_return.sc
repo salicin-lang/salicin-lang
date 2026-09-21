@@ -10,6 +10,6 @@ let main: (): i32 = {
   pending(2)
 }
 
-test("callable_return.sc") {
+test<"callable_return.sc"> {
   std.test.assert(main() == 42)
 }

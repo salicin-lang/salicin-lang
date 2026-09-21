@@ -72,7 +72,7 @@ generic specialization ownership, and collision behavior.
 
 ## C Boundary
 
-`foreign(c)` and `foreign(c, "symbol")` declare one external C symbol and
+`foreign<c>` and `foreign<c, "symbol">` declare one external C symbol and
 implicitly require `unsafety` at calls. A declaration must have exactly one
 runtime parameter group, no compile-time runtime residue, no `throwing` or
 custom effect row, integer or raw-pointer parameters, and an integer,

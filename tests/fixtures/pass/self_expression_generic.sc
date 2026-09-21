@@ -4,12 +4,12 @@ let rewrap = trait {
 
 let cell: <t: type> = struct { value: t }
 
-extend(cell<t>) {
+extend<cell<t>> {
   let wrap: (move value: t): self = { self { value: value } }
   let replace: (move self)(move value: t): self = { self { value: value } }
 }
 
-extend(cell<t>, rewrap) {
+extend<cell<t>, rewrap> {
   let rewrap: (move self)(): self = { self { value: self.value } }
 }
 
@@ -20,6 +20,6 @@ let main: (): i32 = {
   first + second
 }
 
-test("self_expression_generic.sc") {
+test<"self_expression_generic.sc"> {
   std.test.assert(main() == 42)
 }

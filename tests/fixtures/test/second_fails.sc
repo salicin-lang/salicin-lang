@@ -1,11 +1,11 @@
-test("first") {
+test<"first"> {
   ()
 }
 
-test("second") {
+test<"second"> {
   std.test.fail("expected failure")
 }
 
-test("third") {
+test<"third"> {
   ()
 }

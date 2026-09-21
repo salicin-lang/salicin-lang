@@ -22,6 +22,6 @@ let main: (): i32 = {
   }
 }
 
-test("defer_throw.sc") {
+test<"defer_throw.sc"> {
   std.test.assert(main() == 42)
 }

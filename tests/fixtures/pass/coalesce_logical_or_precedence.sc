@@ -5,6 +5,6 @@ let main: (): i32 = {
   if(present ?? false || true) { 0 } else: { 42 }
 }
 
-test("coalesce_logical_or_precedence.sc") {
+test<"coalesce_logical_or_precedence.sc"> {
   std.test.assert(main() == 42)
 }

@@ -6,6 +6,6 @@ let main: (): i32 = {
   add_two(1)
 }
 
-test("closure_partial_multistage.sc") {
+test<"closure_partial_multistage.sc"> {
   std.test.assert(main() == 42)
 }

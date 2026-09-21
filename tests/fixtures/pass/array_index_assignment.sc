@@ -4,6 +4,6 @@ let main: (): i32 = {
   values[0]
 }
 
-test("array_index_assignment.sc") {
+test<"array_index_assignment.sc"> {
   std.test.assert(main() == 42)
 }

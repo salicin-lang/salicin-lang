@@ -59,7 +59,7 @@ item = [ visibility ], ( let_decl | extend_decl )
 visibility = "pub", [ "(", "package", ")" ] ;
 
 test_registration =
-    contextual("test"), "(", STRING, ")", zero_parameter_callable ;
+    contextual("test"), "<", STRING, ">", zero_parameter_callable ;
 ```
 
 A test registration cannot have an attribute or visibility. Its string must be
@@ -72,17 +72,18 @@ declaration validates the static name and body contract.
 
 These three spellings occupy different grammatical categories:
 
-- `test("name") { ... }` is a declaration form backed by the source-visible
+- `test<"name"> { ... }` is a declaration form backed by the source-visible
   `core.test` contract above. Its metadata name is consumed by syntax and its
   body has type
   `with<core.error.throwing<core.string.String>>(): ()`.
-- `extend(pattern, ...)<requires: condition> { ... }` is an implementation
+- `extend<pattern, ...><requires: condition> { ... }` is an implementation
   declaration. Its optional `requires:` entry is an ordinary angle
   compile-time group; `extend` itself has no fake function declaration in
   `core`.
-- `requires(goals) expression` is an initializer guard. It constrains the
+- `requires<goals>` is a callable-signature guard before `=`. It constrains the
   function body through the source-visible `core.requires` contract, passing
-  the compile-time `bool` and delayed body closure.
+  compile-time constraints while the implementation remains the declaration
+  body after `=`.
 
 Trait inheritance uses the same labeled `<requires: condition>` compile-time
 group as `extend`; it does not invoke the function-body
@@ -115,7 +116,7 @@ callable_signature =
     { runtime_parameter_group },
     [ "...", type_expr ],
     [ ":", declaration_annotation ],
-    [ where_clause ] ;
+    [ constraint_guard ] ;
 
 callable_body = "{", block_contents, "}" | expression ;
 
@@ -138,9 +139,9 @@ builtin_initializer =
     contextual("builtin"), "(", ")" ;
 
 foreign_initializer =
-    contextual("foreign"), "(",
+    contextual("foreign"), "<",
     contextual("c"), [ ",", STRING ],
-    ")" ;
+    ">" ;
 ```
 
 `let name: type` declares an opaque nominal type. Compiler-owned sources may declare an abstract
@@ -318,10 +319,10 @@ groups appear before `: type`. Associated declaration defaults are not supported
 
 ```ebnf
 extend_decl =
-    "extend", "(",
+    "extend", "<",
     type_expr,
     [ ",", trait_ref ],
-    ")",
+    ">",
     [ requires_compile_group ],
     "{", separators,
     { extend_member, separators },
@@ -332,18 +333,16 @@ extend_member =
   | "let", IDENT, "=", expression ;
 
 constraint_guard =
-    contextual("requires"), constraint_arguments ;
+    contextual("requires"), "<",
+    constraint_expression,
+    { ( "&&" | "," ), constraint_expression },
+    [ "," ], ">" ;
 
 requires_compile_group =
     "<", contextual("requires"), ":",
     constraint_expression,
     { ( "&&" | "," ), constraint_expression },
     [ "," ], ">" ;
-
-constraint_arguments =
-    "(", constraint_expression,
-    { ( "&&" | "," ), constraint_expression },
-    [ "," ], ")" ;
 
 constraint_expression =
     type_path, contextual("is"), trait_ref
@@ -360,8 +359,8 @@ trait_argument = [ IDENT, ":" ], type_expr ;
 ```
 
 The `requires:` group in a trait or extension header is an ordinary labeled
-angle compile-time group carrying a boolean requirement, not dedicated
-parenthesized syntax, a callable declaration, or a new static sort. `extend`
+angle compile-time group carrying a boolean requirement, not a callable
+declaration or a new static sort. `extend`
 is parser-owned declaration syntax and has no
 corresponding `extend` function or language item.
 
@@ -375,7 +374,7 @@ its compile-time parameters. A function applies the same compiler-owned
 `requires` guard to its body:
 
 ```sc fragment
-let duplicate: <T: type>(value: T): (T, T) requires(T is Copyable) = {
+let duplicate: <T: type>(value: T): (T, T) requires<T is Copyable> = {
   (value, value)
 }
 ```
@@ -422,8 +421,8 @@ The root `core` module also contains the public overloads
 `pub let foreign: <abi: abi>: never = builtin()` and
 `pub let foreign: <abi: abi, symbol: String>: never = builtin()`, plus
 `pub let test: <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () = builtin()`
-and the generic `requires(condition, body)` contract. They authorize the
-`foreign(c, ...)` initializer, top-level test registration, and function-body
+and the generic `requires<condition> = { body }` contract. They authorize the
+`foreign<c, ...>` initializer, top-level test registration, and function-body
 guard respectively;
 `c` is a finite `abi` sort value, while linker and test-name strings remain syntax metadata.
 

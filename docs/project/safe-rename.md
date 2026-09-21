@@ -13,7 +13,7 @@ source files or apply the returned workspace edit.
 - a missing or multi-candidate occurrence;
 - compiler-generated entities, which never enter the source index;
 - dependency-owned declarations or any operation requiring a dependency edit;
-- `foreign(...)` and compiler-owned `builtin()` declarations;
+- `foreign<...>` and compiler-owned `builtin()` declarations;
 - implementation markers and other constructs without an identifier; and
 - an empty, keyword, `_`, non-NFC, multi-token, malformed, or unchanged name.
 

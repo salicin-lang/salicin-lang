@@ -8,6 +8,6 @@ let through_closure: <t: type>
 
 let main: (): i32 = { through_closure<i32>(42) }
 
-test("generic_call_inside_closure.sc") {
+test<"generic_call_inside_closure.sc"> {
   std.test.assert(main() == 42)
 }

@@ -6,7 +6,7 @@ pub let FromUtf8Error = struct {
   valid_prefix: u64,
 }
 
-extend(FromUtf8Error) {
+extend<FromUtf8Error> {
   /// Returns the length of the valid UTF-8 prefix.
   let valid_up_to: (self: Borrow<self>)(): u64 = {  self.valid_prefix }
 
@@ -73,7 +73,7 @@ pub let StringWriter = struct {
   value: core.string.String,
 }
 
-extend(StringWriter) {
+extend<StringWriter> {
   /// Creates an empty writer without allocating.
   let new: (): StringWriter = {
     StringWriter { value: core.string.String.new() }
@@ -95,7 +95,7 @@ extend(StringWriter) {
   let finish: (move self)(): core.string.String = {  self.value }
 }
 
-extend(StringWriter, core.fmt.TextWriter<pure>) {
+extend<StringWriter, core.fmt.TextWriter<pure>> {
   let write_scalar: (self: Borrow<mut><self>)
     (value: core.string.UnicodeScalar): () = {
     self.value.push(value)

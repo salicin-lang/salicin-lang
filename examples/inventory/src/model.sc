@@ -12,7 +12,7 @@ pub let Valued = trait {
   value: (self: Borrow<self>)(): i64
 }
 
-extend(Product) {
+extend<Product> {
   let new: (move name: String, units: i64, unit_price: i64): Product = {
     Product { name: name, units: units, unit_price: unit_price }
   }
@@ -23,7 +23,7 @@ extend(Product) {
   }
 }
 
-extend(Product, Valued) {
+extend<Product, Valued> {
   let value: (self: Borrow<self>)
     (): i64 = {
     self.units * self.unit_price

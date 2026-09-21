@@ -8,6 +8,6 @@ let main: (): i32 = {
   bump()
 }
 
-test("closure_mut_capture.sc") {
+test<"closure_mut_capture.sc"> {
   std.test.assert(main() == 42)
 }

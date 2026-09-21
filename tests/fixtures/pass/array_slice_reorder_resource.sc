@@ -5,11 +5,11 @@ let resource = struct {
   value: i32,
 }
 
-extend(resource) {
+extend<resource> {
   let read: (self: Borrow<self>)(): i32 = { self.value }
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -73,6 +73,6 @@ let main: (): i32 = {
   if(drops == 4) { score + drops } else: { 0 }
 }
 
-test("array_slice_reorder_resource.sc") {
+test<"array_slice_reorder_resource.sc"> {
   std.test.assert(main() == 42)
 }

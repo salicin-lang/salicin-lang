@@ -16,6 +16,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_fn_mut_closure.sc") {
+test<"algebraic_effect_fn_mut_closure.sc"> {
   std.test.assert(main() == 42)
 }

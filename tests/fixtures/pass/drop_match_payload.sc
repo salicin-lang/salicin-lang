@@ -1,7 +1,7 @@
 let resource = struct { value: i32 }
 let choice = enum { pair(resource, resource), None }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let checked = 1 / self.value
@@ -41,6 +41,6 @@ let main: (): i32 = {
   first + second - 42
 }
 
-test("drop_match_payload.sc") {
+test<"drop_match_payload.sc"> {
   std.test.assert(main() == 42)
 }

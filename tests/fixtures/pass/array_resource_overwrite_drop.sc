@@ -1,6 +1,6 @@
 let resource = struct { counter: Ptr<mut><i32> }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -29,6 +29,6 @@ let main: (): i32 = {
   39 + drops
 }
 
-test("array_resource_overwrite_drop.sc") {
+test<"array_resource_overwrite_drop.sc"> {
   std.test.assert(main() == 42)
 }

@@ -12,6 +12,6 @@ let main: (): i32 = {
   total
 }
 
-test("vec_into_iterator.sc") {
+test<"vec_into_iterator.sc"> {
   std.test.assert(main() == 42)
 }

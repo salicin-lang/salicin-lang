@@ -9,6 +9,6 @@ let main: (): i32 = {
   value
 }
 
-test("raw_pointer_write.sc") {
+test<"raw_pointer_write.sc"> {
   std.test.assert(main() == 42)
 }

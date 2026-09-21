@@ -17,6 +17,6 @@ let main: (): i32 = {
   current - previous + 41
 }
 
-test("box_methods.sc") {
+test<"box_methods.sc"> {
   std.test.assert(main() == 42)
 }

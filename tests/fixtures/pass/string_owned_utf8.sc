@@ -84,6 +84,6 @@ let main: (): i32 = {
   }
 }
 
-test("string_owned_utf8.sc") {
+test<"string_owned_utf8.sc"> {
   std.test.assert(main() == 42)
 }

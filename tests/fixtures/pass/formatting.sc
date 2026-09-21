@@ -93,6 +93,6 @@ let main: (): i32 = {
   }
 }
 
-test("formatting.sc") {
+test<"formatting.sc"> {
   std.test.assert(main() == 42)
 }

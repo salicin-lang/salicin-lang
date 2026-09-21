@@ -2,7 +2,7 @@ let Option = core.Option
 
 let counter = struct { value: i32 }
 
-extend(counter) {
+extend<counter> {
   let reset: (self: Borrow<mut><self>)
     (): () = {
     self.value = 0

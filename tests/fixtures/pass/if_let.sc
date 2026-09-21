@@ -11,6 +11,6 @@ let main: (): i32 = {
   choose(Some(40)) + choose(None)
 }
 
-test("if_let.sc") {
+test<"if_let.sc"> {
   std.test.assert(main() == 42)
 }

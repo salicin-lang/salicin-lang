@@ -16,6 +16,6 @@ let main: (): i32 = {
   result ?? 0
 }
 
-test("return_type_effects.sc") {
+test<"return_type_effects.sc"> {
   std.test.assert(main() == 42)
 }

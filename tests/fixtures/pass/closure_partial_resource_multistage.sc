@@ -1,6 +1,6 @@
 let resource = struct { value: i32 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let checked = 1 / self.value
@@ -21,6 +21,6 @@ let main: (): i32 = {
   second(1)
 }
 
-test("closure_partial_resource_multistage.sc") {
+test<"closure_partial_resource_multistage.sc"> {
   std.test.assert(main() == 42)
 }

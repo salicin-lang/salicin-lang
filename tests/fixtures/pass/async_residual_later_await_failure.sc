@@ -10,7 +10,7 @@ let step = struct {
   drop_amount: i32,
 }
 
-extend(step, Droppable) {
+extend<step, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -19,7 +19,7 @@ extend(step, Droppable) {
   }
 }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -124,6 +124,6 @@ let main: (): i32 = {
   }
 }
 
-test("async_residual_later_await_failure.sc") {
+test<"async_residual_later_await_failure.sc"> {
   std.test.assert(main() == 42)
 }

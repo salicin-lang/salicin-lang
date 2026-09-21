@@ -9,6 +9,6 @@ let main: (): i32 = {
   }
 }
 
-test("loop_move_then_break.sc") {
+test<"loop_move_then_break.sc"> {
   std.test.assert(main() == 42)
 }

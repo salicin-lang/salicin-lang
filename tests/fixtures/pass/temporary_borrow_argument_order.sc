@@ -18,6 +18,6 @@ let main: (): i32 = {
   if(order == 12) { result } else: { 0 }
 }
 
-test("temporary_borrow_argument_order.sc") {
+test<"temporary_borrow_argument_order.sc"> {
   std.test.assert(main() == 42)
 }

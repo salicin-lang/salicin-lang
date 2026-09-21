@@ -24,7 +24,7 @@ fails: the corpus tests already provide that coverage.
   additionally compile and run one when runtime behavior matters.
 - `fixtures/fail/` contains sources rejected by the frontend. A focused test is
   needed only when the exact diagnostic is part of the language contract.
-- `fixtures/test/` is reserved for the language's built-in `test(...)` runner.
+- `fixtures/test/` is reserved for the language's built-in `test<...>` runner.
 
 Fixtures may be grouped into feature subdirectories. Pass their relative path
 to `fixture`, for example `fixture("pass", "async/ready.sc")`.

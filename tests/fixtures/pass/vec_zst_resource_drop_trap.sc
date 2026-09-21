@@ -2,7 +2,7 @@ let Vec = alloc.Vec
 
 let bomb = struct {}
 
-extend(bomb, Droppable) {
+extend<bomb, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -17,6 +17,6 @@ let main: (): i32 = {
   0
 }
 
-test("vec_zst_resource_drop_trap.sc") {
+test<"vec_zst_resource_drop_trap.sc"> {
   std.test.assert(main() == 42)
 }

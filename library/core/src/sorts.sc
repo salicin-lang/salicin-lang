@@ -30,9 +30,9 @@ pub let Is: <right: sort<2>> = trait<self: sort<2>> {
           is: <left: self, right: right>: bool
         }
 
-        extend(type, Is<constraint>) {
-          let is: <
-            Left: type,
-            right: constraint,
-          >: bool = builtin()
-        }
+        extend<type, Is<constraint>> {
+              let is: <
+                Left: type,
+                right: constraint,
+              >: bool = builtin()
+            }

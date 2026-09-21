@@ -1,6 +1,6 @@
 let number = struct { value: i32 }
 
-extend(number) {
+extend<number> {
   let plus: (self: Borrow<self>)(x: i32)(y: i32): i32 = { self.value + x + y }
 }
 
@@ -9,6 +9,6 @@ let main: (): i32 = {
   number.plus(1)(1)
 }
 
-test("inherent_grouped_shared_method.sc") {
+test<"inherent_grouped_shared_method.sc"> {
   std.test.assert(main() == 42)
 }

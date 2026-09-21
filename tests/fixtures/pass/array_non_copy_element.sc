@@ -9,6 +9,6 @@ let main: (): i32 = {
   first + unwrap(values[0]) - unwrap(values[1]) - 16
 }
 
-test("array_non_copy_element.sc") {
+test<"array_non_copy_element.sc"> {
   std.test.assert(main() == 42)
 }

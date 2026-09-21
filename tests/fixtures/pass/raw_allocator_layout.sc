@@ -1,6 +1,6 @@
 let payload = struct { left: i32, right: i32 }
 
-extend(payload, Copyable) {}
+extend<payload, Copyable> {}
 
 let main: (): i32 = {
   let pointer = unsafe {
@@ -18,6 +18,6 @@ let main: (): i32 = {
   value.left + value.right
 }
 
-test("raw_allocator_layout.sc") {
+test<"raw_allocator_layout.sc"> {
   std.test.assert(main() == 42)
 }

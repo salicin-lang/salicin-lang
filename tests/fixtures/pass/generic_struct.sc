@@ -5,6 +5,6 @@ let main: (): i32 = {
   cell.value
 }
 
-test("generic_struct.sc") {
+test<"generic_struct.sc"> {
   std.test.assert(main() == 42)
 }

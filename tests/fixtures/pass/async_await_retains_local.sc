@@ -18,6 +18,6 @@ let main: (): i32 = {
   }
 }
 
-test("async_await_retains_local.sc") {
+test<"async_await_retains_local.sc"> {
   std.test.assert(main() == 42)
 }

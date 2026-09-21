@@ -339,7 +339,7 @@ let vec_shrink_to_fit: <T: type>
 /// Copies the element at `index` out of `values`.
 let vec_read: <T: type>
   (values: Borrow<Vec<T>>)
-  (index: u64): T requires(T is Copyable) = {
+  (index: u64): T requires<T is Copyable> = {
   if(index >= values.length) {
     unsafe {
       raw_trap()
@@ -354,7 +354,7 @@ let vec_read: <T: type>
 let vec_write: <T: type>
   (values: Borrow<mut><Vec<T>>)
   (index: u64)
-  (copy value: T): () requires(T is Copyable) = {
+  (copy value: T): () requires<T is Copyable> = {
   if(index >= values.length) {
     unsafe {
       raw_trap()
@@ -366,7 +366,7 @@ let vec_write: <T: type>
 }
 
 /// Provides inherent vector constructors and mutation operations.
-extend(Vec<T>) {
+extend<Vec<T>> {
   /// Creates an empty vector with zero capacity.
   let new: (): Vec<T> = {  vec_new() }
   /// Creates an empty vector with storage for `capacity` elements.
@@ -501,7 +501,7 @@ extend(Vec<T>) {
 }
 
 /// Provides copy-based Slice extension and mutation operations.
-extend(Vec<T>)<requires: T is Copyable> {
+extend<Vec<T>><requires: T is Copyable> {
   /// Copies every element of `source` onto the end of this vector.
   let extend_from_slice: (self: Borrow<mut><self>)
     (source: Borrow<Slice<T>>): () = {
@@ -557,7 +557,7 @@ pub let VecIntoIter: <T: type> = struct {
 }
 
 /// Routes bracket access through the source-defined indexing protocol.
-extend(Vec<T>, Index<u64>) {
+extend<Vec<T>, Index<u64>> {
   let Output = T
   let index: <a: access>
     (self: Borrow<a><self>)
@@ -567,7 +567,7 @@ extend(Vec<T>, Index<u64>) {
 }
 
 /// Advances an owning vector Iterator in source order.
-extend(VecIntoIter<T>, Iterator) {
+extend<VecIntoIter<T>, Iterator> {
   let Item = OwnedItem<T>;
   let next: <r: region>
     (self: Borrow<mut><r><self>)
@@ -585,7 +585,7 @@ extend(VecIntoIter<T>, Iterator) {
 }
 
 /// Consumes a vector into an owning Iterator.
-extend(Vec<T>, IntoIterator) {
+extend<Vec<T>, IntoIterator> {
   let Iter = VecIntoIter<T>;
   let into_iter: (move self)
     (): VecIntoIter<T> = {
@@ -596,7 +596,7 @@ extend(Vec<T>, IntoIterator) {
 }
 
 /// Drops elements not yet yielded and releases the transferred vector storage.
-extend(VecIntoIter<T>, Droppable) {
+extend<VecIntoIter<T>, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     while(self.next_index < self.length) {
@@ -610,7 +610,7 @@ extend(VecIntoIter<T>, Droppable) {
 }
 
 /// Drops initialized elements and releases vector storage.
-extend(Vec<T>, Droppable) {
+extend<Vec<T>, Droppable> {
   /// Drops all initialized elements and deallocates storage.
   let drop: (self: Borrow<mut><self>)
     (): () = {
@@ -641,7 +641,7 @@ pub(package) let vec_into_raw_parts: <T: type>
 }
 
 /// Provides equality-based membership for vectors.
-extend(Vec<T>)<requires: T is Copyable && T is core.cmp.Eq<T>> {
+extend<Vec<T>><requires: T is Copyable && T is core.cmp.Eq<T>> {
   /// Returns whether this vector contains an element equal to `needle`.
   let contains: (self: Borrow<self>)
     (copy needle: T): bool = {

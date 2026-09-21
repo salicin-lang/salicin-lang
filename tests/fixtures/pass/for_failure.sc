@@ -7,7 +7,7 @@ let OwnedItem = core.iter.OwnedItem
 
 let counter = struct { current: i32, end: i32 }
 
-extend(counter, Iterator) {
+extend<counter, Iterator> {
   let Item = OwnedItem<i32>;
 
   let next: <r: region>
@@ -23,7 +23,7 @@ extend(counter, Iterator) {
   }
 }
 
-extend(counter, IntoIterator) {
+extend<counter, IntoIterator> {
   let Iter = counter;
 
   let into_iter: (move self)
@@ -53,6 +53,6 @@ let main: (): i32 = {
   (success ?? 0) + (failure ?? 0)
 }
 
-test("for_failure.sc") {
+test<"for_failure.sc"> {
   std.test.assert(main() == 42)
 }

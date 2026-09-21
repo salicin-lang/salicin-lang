@@ -22,6 +22,6 @@ let main: (): i32 = {
   left + right
 }
 
-test("pattern_partial_attempt.sc") {
+test<"pattern_partial_attempt.sc"> {
   std.test.assert(main() == 42)
 }

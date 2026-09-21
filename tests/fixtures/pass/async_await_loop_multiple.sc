@@ -8,7 +8,7 @@ let step = struct {
   finish: bool
 }
 
-extend(step, Droppable) {
+extend<step, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -17,7 +17,7 @@ extend(step, Droppable) {
   }
 }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = bool;
 
   let poll: <r: region>
@@ -112,6 +112,6 @@ let main: (): i32 = {
     unsafe { *cancel_drops_ptr } - 2
 }
 
-test("async_await_loop_multiple.sc") {
+test<"async_await_loop_multiple.sc"> {
   std.test.assert(main() == 42)
 }

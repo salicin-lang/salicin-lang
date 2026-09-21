@@ -18,6 +18,6 @@ let main: (): i32 = {
   sum(pair) + singleton((1,)) + nested(value)
 }
 
-test("tuple_basics.sc") {
+test<"tuple_basics.sc"> {
   std.test.assert(main() == 42)
 }

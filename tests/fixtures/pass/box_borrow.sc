@@ -2,7 +2,7 @@ let Box = alloc.Box
 
 let resource = struct { value: i32 }
 
-extend(resource) {
+extend<resource> {
   let read: (self: Borrow<self>)(): i32 = { self.value }
 }
 
@@ -31,6 +31,6 @@ let main: (): i32 = {
   first - 10 + second + third
 }
 
-test("box_borrow.sc") {
+test<"box_borrow.sc"> {
   std.test.assert(main() == 42)
 }

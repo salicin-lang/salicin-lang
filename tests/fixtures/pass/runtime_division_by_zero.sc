@@ -5,6 +5,6 @@ let main: (): i32 = {
   divide(zero)
 }
 
-test("runtime_division_by_zero.sc") {
+test<"runtime_division_by_zero.sc"> {
   std.test.assert(main() == 42)
 }

@@ -8,7 +8,7 @@ pub let Option: <T: type> = enum {
 
 /// Common inspection, borrowing, transformation, fallback, and conversion
 /// operations for optional values.
-extend(Option<T>) {
+extend<Option<T>> {
   /// Returns whether this Option contains a value.
   let is_some: (self: Borrow<self>)
     (): bool = {
@@ -98,7 +98,7 @@ extend(Option<T>) {
 }
 
 /// Provides `?.` chaining for `Option`.
-extend(Option<T>, core.flow.Chain) {
+extend<Option<T>, core.flow.Chain> {
   /// The payload type produced by a successful Option.
   let Item = T
   /// Rebuilds `Option` around a transformed payload type.
@@ -116,7 +116,7 @@ extend(Option<T>, core.flow.Chain) {
 }
 
 /// Provides `??` fallback evaluation for `Option`.
-extend(Option<T>, core.flow.Coalesce) {
+extend<Option<T>, core.flow.Coalesce> {
   /// The value type returned by coalescing.
   let Item = T
 
@@ -132,7 +132,7 @@ extend(Option<T>, core.flow.Coalesce) {
 }
 
 /// Provides postfix `!` extraction for `Option`.
-extend(Option<T>, core.flow.Unwrap) {
+extend<Option<T>, core.flow.Unwrap> {
   let Output = T
 
   let unwrap: (move self): T = {

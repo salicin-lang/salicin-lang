@@ -1,6 +1,6 @@
 let counter = struct { value: i32 }
 
-extend(counter) {
+extend<counter> {
   let reset: (self: Borrow<mut><self>)
     (): i32 = {
     self.value = 42
@@ -10,6 +10,6 @@ extend(counter) {
 
 let main: (): i32 = { counter { value: 0 }.reset() }
 
-test("inherent_temporary_mut_receiver.sc") {
+test<"inherent_temporary_mut_receiver.sc"> {
   std.test.assert(main() == 42)
 }

@@ -12,6 +12,6 @@ let main: (): i32 = {
   first + sibling + consume_pair(pair)
 }
 
-test("reinit_partial_field.sc") {
+test<"reinit_partial_field.sc"> {
   std.test.assert(main() == 42)
 }

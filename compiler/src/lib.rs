@@ -70,7 +70,7 @@ pub struct TestCompilation {
     pub names: Vec<String>,
 }
 
-/// Compile all contextual `test("name") { ... }` registrations in one source
+/// Compile all contextual `test<"name"> { ... }` registrations in one source
 /// file into a single native-runner module.
 pub fn compile_test_source(source: &str) -> Result<TestCompilation, Vec<String>> {
     compile_test_source_filtered(source, None)
@@ -414,7 +414,7 @@ mod tests {
                 "cannot define type `fake`",
             ),
             (
-                "extend(i32) { let fake: (self)(): i32 = builtin() }\nlet main: (): i32 = {  0 }\n",
+                "extend<i32> { let fake: (self)(): i32 = builtin() }\nlet main: (): i32 = {  0 }\n",
                 "cannot define extension methods",
             ),
         ] {
@@ -432,8 +432,8 @@ mod tests {
     #[test]
     fn test_compilation_preserves_registration_names_and_rejects_invalid_targets() {
         let compilation = compile_test_source(
-            "test(\"arithmetic\") { std.test.assert(20 + 22 == 42) }\n\
-             test(\"utf-8: 盐\") { () }\n",
+            "test<\"arithmetic\"> { std.test.assert(20 + 22 == 42) }\n\
+             test<\"utf-8: 盐\"> { () }\n",
         )
         .expect("test registrations should compile into one runner");
         assert_eq!(compilation.names, ["arithmetic", "utf-8: 盐"]);
@@ -442,9 +442,9 @@ mod tests {
             .contains("define i32 @main(i32 %argc, ptr %argv)"));
 
         let filtered = compile_test_source_filtered(
-            "test(\"alpha\") { () }\n\
-             test(\"beta\") { std.test.fail(\"not selected\") }\n\
-             test(\"alphabet\") { () }\n",
+            "test<\"alpha\"> { () }\n\
+             test<\"beta\"> { std.test.fail(\"not selected\") }\n\
+             test<\"alphabet\"> { () }\n",
             Some("alpha"),
         )
         .expect("filtered registrations should compile into one runner");
@@ -452,7 +452,7 @@ mod tests {
         assert!(!filtered.ir.contains("62657461"));
 
         let empty_selection =
-            compile_test_source_filtered("test(\"available\") { () }\n", Some("missing"))
+            compile_test_source_filtered("test<\"available\"> { () }\n", Some("missing"))
                 .expect("a filter with no matches should compile an empty runner");
         assert!(empty_selection.names.is_empty());
         assert!(empty_selection
@@ -466,7 +466,7 @@ mod tests {
             .any(|diagnostic| diagnostic.contains("contains no test declarations")));
 
         let wrong_result =
-            compile_test_source("test(\"wrong result\") { true }\n").expect_err("unit is required");
+            compile_test_source("test<\"wrong result\"> { true }\n").expect_err("unit is required");
         assert!(
             wrong_result
                 .iter()
@@ -475,7 +475,7 @@ mod tests {
         );
 
         let ordinary = compile_source(
-            "test(\"not part of a build\") { missing_test_only_name }\n\
+            "test<\"not part of a build\"> { missing_test_only_name }\n\
              let main: (): i32 = {  42 }\n",
         )
         .expect("ordinary builds should discard test registrations before checking");
@@ -764,7 +764,7 @@ mod tests {
     #[test]
     fn operator_traits_require_imports_but_operator_syntax_does_not() {
         let missing = "let number = struct { value: i32 }\n\
-             extend(number, Add<number>) {\n\
+             extend<number, Add<number>> {\n\
              let Output = number\n\
              let add: (self)(rhs: number): number = {  number{ value: self.value + rhs.value } }\n\
              }\n\
@@ -785,7 +785,7 @@ mod tests {
             .expect("built-in operator syntax should not require importing its protocol");
 
         let missing_order = "let number = struct { value: i32 }\n\
-             extend(number, PartialOrd<number>) {\n\
+             extend<number, PartialOrd<number>> {\n\
              let partial_cmp: (self: Borrow<self>)(rhs: Borrow<number>): core.ops.PartialOrdering = { \n\
              core.ops.PartialOrdering.Equal\n\
              }\n\
@@ -809,7 +809,7 @@ mod tests {
             .expect("imported partial_ord should define ordering operators");
 
         let missing_unary = "let number = struct { value: i32 }\n\
-             extend(number, Neg) {\n\
+             extend<number, Neg> {\n\
              let Output = number\n\
              let neg: (self)(): number = {  self }\n}\n\
              let main: (): i32 = {  0 }\n";
@@ -826,7 +826,7 @@ mod tests {
         compile_source(&imported_unary).expect("imported neg should define unary `-`");
 
         let missing_bitwise = "let bits = struct { value: i32 }\n\
-             extend(bits, BitAnd<bits>) {\n\
+             extend<bits, BitAnd<bits>> {\n\
              let Output = bits\n\
              let bit_and: (self)(rhs: bits): bits = {  bits{ value: self.value & rhs.value } }\n\
              }\n\
@@ -853,7 +853,7 @@ mod tests {
     #[test]
     fn generic_inherent_methods_accept_member_compile_parameters() {
         let source = "let cell: <t: type> = struct { value: t }\n\
-             extend(cell<t>) {\n\
+             extend<cell<t>> {\n\
              let make: <u: type>(move value: t)(marker: u): cell<t> = { \n\
              cell<t>{ value: value }\n\
              }\n\
@@ -965,7 +965,7 @@ mod tests {
         let ir = compile_source(
             "let Index = core.ops.Index\n\
              let bag = struct { value: i32 }\n\
-             extend(bag, Index<i32>) {\n\
+             extend<bag, Index<i32>> {\n\
              let Output = i32\n\
              let index: <a: access>(self: Borrow<a><self>)\n\
              (key: i32): Borrow<a><i32> = {\n\
@@ -987,7 +987,7 @@ mod tests {
         let ir = compile_source(
             "let Index = core.ops.Index\n\
              let bag = struct { value: i32 }\n\
-             extend(bag, Index<i32>) {\n\
+             extend<bag, Index<i32>> {\n\
              let Output = i32\n\
              let index: <a: access>(self: Borrow<a><self>)\n\
              (key: i32): Borrow<a><i32> = {\n\
@@ -1009,7 +1009,7 @@ mod tests {
         compile_source(
             "let Index = core.ops.Index\n\
              let bag = struct { value: i32 }\n\
-             extend(bag, Index<i32>) {\n\
+             extend<bag, Index<i32>> {\n\
              let Output = i32\n\
              let index: <a: access>(self: Borrow<a><self>)\n\
              (key: i32): Borrow<a><i32> = {\n\

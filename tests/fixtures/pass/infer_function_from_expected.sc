@@ -5,6 +5,6 @@ let main: (): i32 = {
   if(value == 42) { 42 } else: { 0 }
 }
 
-test("infer_function_from_expected.sc") {
+test<"infer_function_from_expected.sc"> {
   std.test.assert(main() == 42)
 }

@@ -23,6 +23,6 @@ let main: (): i32 = {
   values[0] + values[1] + values[2]
 }
 
-test("array_iterator_mut.sc") {
+test<"array_iterator_mut.sc"> {
   std.test.assert(main() == 42)
 }

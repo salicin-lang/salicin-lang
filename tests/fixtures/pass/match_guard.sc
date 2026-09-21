@@ -13,6 +13,6 @@ let classify: (value: number): i32 = {
 
 let main: (): i32 = { classify(number.value { value: 42 }) }
 
-test("match_guard.sc") {
+test<"match_guard.sc"> {
   std.test.assert(main() == 42)
 }

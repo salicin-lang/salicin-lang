@@ -2,7 +2,7 @@ let resource = struct { value: i32 }
 let pair = struct { left: resource, right: resource }
 let nested = struct { pair: pair, tail: resource }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let checked = 1 / self.value
@@ -44,6 +44,6 @@ let main: (): i32 = {
   42
 }
 
-test("drop_partial_field.sc") {
+test<"drop_partial_field.sc"> {
   std.test.assert(main() == 42)
 }

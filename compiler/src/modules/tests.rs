@@ -332,7 +332,7 @@ fn preserves_self_and_associated_types_inside_traits_and_extensions() {
              convert: (self: Borrow<self>)(value: self): output\n\
              }\n\
              pub(package) let number = struct { value: i32 }\n\
-             extend(number, convert) {\n\
+             extend<number, convert> {\n\
              let output = i32\n\
              let a = self\n\
              let b = a\n\
@@ -434,7 +434,7 @@ fn preserves_generic_extend_parameters_while_qualifying_the_target() {
             "src/api.sc",
             &["api"],
             "pub(package) let cell: <t: type> = struct { value: t }\n\
-             extend(cell<t>) {\n\
+             extend<cell<t>> {\n\
              let new: (move value: t): cell<t> = {  cell{ value: value } }\n\
              let take: (move self)(): t = {  self.value }\n\
              }\n",
@@ -477,7 +477,7 @@ fn reinfers_cross_module_extend_pattern_sorts_after_resolution() {
         unit(
             "src/main.sc",
             &[],
-            "extend(api.handle<a><t>) {}\nlet main = { (): i32 =>  0 }\n",
+            "extend<api.handle<a><t>> {}\nlet main = { (): i32 =>  0 }\n",
             true,
         ),
         unit(
@@ -705,7 +705,7 @@ let Add = root.fake
 let never = root.fake
 
 let number = struct { value: i32 }
-extend(number, Add<number>) {
+extend<number, Add<number>> {
   let Output = i32
   let add: (self)(rhs: number): i32 = {  self.value + rhs.value }
 }
@@ -1388,7 +1388,7 @@ fn rejects_traits_that_are_narrower_than_public_where_predicates() {
         "src/lib.sc",
         &[],
         "let hidden = trait {}\n\
-             pub let expose: <t: type>(value: t): t requires(t is hidden) = {  value }\n",
+             pub let expose: <t: type>(value: t): t requires<t is hidden> = {  value }\n",
         true,
     )])
     .unwrap_err();
@@ -1409,7 +1409,7 @@ fn rejects_traits_that_are_narrower_than_constrained_extension_members() {
         &[],
         "let hidden = trait {}\n\
              pub let cell: <t: type> = struct { pub value: t }\n\
-             extend(cell<t>)<requires: t is hidden> {\n\
+             extend<cell<t>><requires: t is hidden> {\n\
              let take: (move self)(): t = {  self.value }\n\
              }\n",
         true,
@@ -1555,7 +1555,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         &[],
         "use core.ops.Add as plus\n\
              let number = struct { value: i32 }\n\
-             extend(number, plus<number>) {\n\
+             extend<number, plus<number>> {\n\
              let output = number\n\
              let add: (self)(rhs: number): number = {  number{ value: self.value + rhs.value } }\n\
              }\n",
@@ -1576,9 +1576,9 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
              let legacy_coalesce = core.ops.Coalesce\n\
              let maybe: <t: type> = enum { Some(t), None }\n\
              let legacy_maybe: <t: type> = enum { Some(t), None }\n\
-             extend(maybe<t>, Chain) {}\n\
-             extend(maybe<t>, ops_coalesce) {}\n\
-             extend(legacy_maybe<t>, legacy_coalesce) {}\n",
+             extend<maybe<t>, Chain> {}\n\
+             extend<maybe<t>, ops_coalesce> {}\n\
+             extend<legacy_maybe<t>, legacy_coalesce> {}\n",
         true,
     )])
     .unwrap();
@@ -1602,9 +1602,9 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
                           let number = struct { value: i32 }\n\
              let suspended: with<async>(): i32 = {  0 }\n\
              let invoke: with<async>(move action: with<async>(): i32): i32 = {  action() }\n\
-             extend(number, Semigroup) {\n\
+             extend<number, Semigroup> {\n\
              let combine: (move left: number, move right: number): number = {  number{ value: left.value + right.value } }\n}\n\
-             extend(number, Monoid) {\n\
+             extend<number, Monoid> {\n\
              let empty: (): number = {  number{ value: 0 } }\n}\n",
             true,
         )])
@@ -1672,7 +1672,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         "operator.sc",
         &[],
         "let number = struct { value: i32 }\n\
-             extend(number, Add<number>) {\n\
+             extend<number, Add<number>> {\n\
              let Output = number\n\
              let add: (self)(rhs: number): number = {  self }\n\
              }\n",
@@ -1688,7 +1688,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         "flow.sc",
         &[],
         "let maybe: <t: type> = enum { Some(t), None }\n\
-             extend(maybe<t>, Chain) {}\n",
+             extend<maybe<t>, Chain> {}\n",
         true,
     )])
     .unwrap_err();
@@ -1713,7 +1713,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         "algebra.sc",
         &[],
         "let number = struct { value: i32 }\n\
-             extend(number, Semigroup) {\n\
+             extend<number, Semigroup> {\n\
              let combine: (move left: number, move right: number): number = {  left }\n}\n",
         true,
     )])
@@ -1727,7 +1727,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         "functional.sc",
         &[],
         "let number = struct { value: i32 }\n\
-             extend(number, Functor) {}\n",
+             extend<number, Functor> {}\n",
         true,
     )])
     .unwrap_err();

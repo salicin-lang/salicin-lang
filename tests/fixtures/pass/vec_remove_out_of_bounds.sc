@@ -5,6 +5,6 @@ let main: (): i32 = {
   values.remove(0)
 }
 
-test("vec_remove_out_of_bounds.sc") {
+test<"vec_remove_out_of_bounds.sc"> {
   std.test.assert(main() == 42)
 }

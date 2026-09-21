@@ -4,8 +4,8 @@ let branch = struct { leaf: leaf }
 
 let tree = struct { branch: branch }
 
-extend(branch, Copyable) {}
+extend<branch, Copyable> {}
 
-extend(tree, Copyable) {}
+extend<tree, Copyable> {}
 
 let main: (): i32 = { 42 }

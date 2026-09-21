@@ -21,6 +21,6 @@ let main: (): i32 = {
   )
 }
 
-test("logical_newlines.sc") {
+test<"logical_newlines.sc"> {
   std.test.assert(main() == 42)
 }

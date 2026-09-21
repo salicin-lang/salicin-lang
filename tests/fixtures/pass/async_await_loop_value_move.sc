@@ -5,7 +5,7 @@ let marker = struct {
   drops: Ptr<mut><i32>
   }
 
-extend(marker, Droppable) {
+extend<marker, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -18,7 +18,7 @@ let step = struct {
   drops: Ptr<mut><i32>
   }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = marker;
 
   let poll: <r: region>
@@ -58,6 +58,6 @@ let main: (): i32 = {
   40 + unsafe { *drops_ptr }
 }
 
-test("async_await_loop_value_move.sc") {
+test<"async_await_loop_value_move.sc"> {
   std.test.assert(main() == 42)
 }

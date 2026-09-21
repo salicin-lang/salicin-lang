@@ -17,6 +17,6 @@ let main: (): i32 = {
   classify(-1) + classify(41) + select(false) - 22
 }
 
-test("match_scalar.sc") {
+test<"match_scalar.sc"> {
   std.test.assert(main() == 42)
 }

@@ -35,6 +35,6 @@ let main: (): i32 = {
   }
 }
 
-test("ctfe_composite_globals.sc") {
+test<"ctfe_composite_globals.sc"> {
   std.test.assert(main() == 42)
 }

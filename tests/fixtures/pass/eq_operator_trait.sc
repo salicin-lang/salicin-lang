@@ -2,7 +2,7 @@ let Eq = core.ops.Eq
 
 let token = struct { value: i32 }
 
-extend(token, Eq<token>) {
+extend<token, Eq<token>> {
   let eq: (self: Borrow<self>)(rhs: Borrow<token>): bool = { self.value == rhs.value }
 }
 
@@ -13,6 +13,6 @@ let main: (): i32 = {
   if(left == same && left != different) { 42 } else: { 0 }
 }
 
-test("eq_operator_trait.sc") {
+test<"eq_operator_trait.sc"> {
   std.test.assert(main() == 42)
 }

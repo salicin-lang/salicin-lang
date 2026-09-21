@@ -6,6 +6,6 @@ let main: (): i32 = {
   slice[2]
 }
 
-test("slice_index_out_of_bounds.sc") {
+test<"slice_index_out_of_bounds.sc"> {
   std.test.assert(main() == 42)
 }

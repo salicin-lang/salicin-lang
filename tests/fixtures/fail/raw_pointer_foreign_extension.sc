@@ -1,4 +1,4 @@
-extend(Ptr<a><t>) {
+extend<Ptr<a><t>> {
   let identity: (self)(): Ptr<a><t> = { self }
 }
 

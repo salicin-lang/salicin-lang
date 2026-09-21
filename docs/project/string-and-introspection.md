@@ -259,9 +259,9 @@ when the `alloc` package is absent:
 /// Owning, growable, well-formed UTF-8 text.
 pub let String: type = builtin()
 
-extend(String, core.marker.Movable) {}
+extend<String, core.marker.Movable> {}
 
-extend(String, core.marker.Droppable) {
+extend<String, core.marker.Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = builtin()
 }
 ```
@@ -381,7 +381,7 @@ lowering or string operation selected by spelling is a contract violation.
 Public methods are ordinary source wrappers wherever possible:
 
 ```salicin
-extend(String) {
+extend<String> {
   let new: (): String = {
     string_new()
   }
@@ -543,7 +543,7 @@ ordinary type:
 pub let test: <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () = builtin()
 ```
 
-The top-level `test("name") { ... }` syntax supplies `name` as compiler
+The top-level `test<"name"> { ... }` syntax supplies `name` as compiler
 metadata to the validated contract. The body
 returns unit and may fail only through `throwing<String>`. Registration names
 are read from `CtfeValue::String`, encoded deterministically for symbols when

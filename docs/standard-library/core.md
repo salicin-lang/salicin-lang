@@ -19,10 +19,11 @@ The same private root module declares
 `pub let foreign: <abi: abi>: never = builtin()`,
 `pub let foreign: <abi: abi, symbol: String>: never = builtin()`, and
 `pub let test: <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () = builtin()`,
-and the generic `requires(condition: bool, body)` function-body guard.
+and the generic `requires<condition>` function-body guard, whose effect and result compile
+parameters are inferred while its body remains a trailing brace runtime parameter.
 These are canonical syntax
 contracts for foreign initializers and test registrations. `c` is the member of the finite
-`abi` sort selected by `foreign(c)`; `test("name")` consumes its ordinary string
+`abi` sort selected by `foreign<c>`; `test<"name">` consumes its ordinary string
 literal in syntax before lowering the structured-failure action.
 
 ## Modules
@@ -107,7 +108,7 @@ Arithmetic and bitwise protocols accept their operands with automatic passing an
 ```sc fragment
 let Add = core.ops.Add
 
-extend(Number, Add<Number>) {
+extend<Number, Add<Number>> {
   let Output = Number
   let add: (self)
     (rhs: Number): Number = { ... }
@@ -120,7 +121,7 @@ negates its result:
 ```sc fragment
 let Eq = core.ops.Eq
 
-extend(Number, Eq<Number>) {
+extend<Number, Eq<Number>> {
   let eq: (self: Borrow<self>)
     (rhs: Borrow<Number>): bool = { self.value == rhs.value }
 }
@@ -134,7 +135,7 @@ the method once; an `Unordered` result makes each operator false:
 let PartialOrd = core.ops.PartialOrd
 let PartialOrdering = core.ops.PartialOrdering
 
-extend(Number, PartialOrd<Number>) {
+extend<Number, PartialOrd<Number>> {
   let partial_cmp: (self: Borrow<self>)
     (rhs: Borrow<Number>): PartialOrdering = { ... }
 }
@@ -253,10 +254,10 @@ pub let abi = sort<1> {
 }
 ```
 
-Inside a compiler-owned `requires(...)` guard, `left is right` selects the `is`
+Inside a compiler-owned `requires<...>` guard, `left is right` selects the `is`
 relation between the classifiers of its operands. `type` implements
 `Is<constraint>`, allowing function guards such as
-`requires(T is Copyable)` and extension compile-time groups such as
+`requires<T is Copyable>` and extension compile-time groups such as
 `<requires: T is Copyable>`.
 
 `effect` classifies one nominal effect identity; `effects` classifies a normalized zero-or-more
@@ -427,12 +428,12 @@ pub let match: <Input: type, Output: type, e: effects, ...cases: parameters> wit
 pub let for: <e: effects, Iterable: type, Iter: type, Item: type> with<e>
   (move iterable: Iterable)
   {move body: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(Item): ()}: ()
-requires(
+requires<
   Iterable is core.iter.IntoIterator &&
   Iterable.IntoIter == Iter &&
   Iter is core.iter.Iterator &&
   Iter.Item == Item
-)
+>
 ```
 
 Here `try` removes only `throwing<E>`, `unsafe` removes only the `unsafety` requirement, and both forward
@@ -554,7 +555,7 @@ These declarations use constructor sorts such as `<Value: type>: type` on the tr
 not as ordinary trait parameters. Traits with a matching constructor subject can be implemented for
 generic nominal constructors. Method implementations are registered as generic function templates
 and validated, for example
-`extend(Carrier, Functor) { let map: <e: effects, A: type, B: type>(self: Carrier<A>)(transform: with<e>(A): B): Carrier<B> = { ... } }`.
+`extend<Carrier, Functor> { let map: <e: effects, A: type, B: type>(self: Carrier<A>)(transform: with<e>(A): B): Carrier<B> = { ... } }`.
 Receiver methods
 dispatch from concrete nominal instances, so `Carrier<i32>{value: 41}.map(add_one)` selects the
 `Carrier: Functor` implementation and instantiates the generic method template. Constructor

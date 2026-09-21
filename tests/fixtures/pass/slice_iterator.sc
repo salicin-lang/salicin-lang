@@ -12,6 +12,6 @@ let main: (): i32 = {
   total
 }
 
-test("slice_iterator.sc") {
+test<"slice_iterator.sc"> {
   std.test.assert(main() == 42)
 }

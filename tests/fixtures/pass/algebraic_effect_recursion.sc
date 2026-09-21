@@ -18,6 +18,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_recursion.sc") {
+test<"algebraic_effect_recursion.sc"> {
   std.test.assert(main() == 42)
 }

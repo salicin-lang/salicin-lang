@@ -6,6 +6,11 @@ subset.
 
 ## Unreleased
 
+- **Breaking:** Syntax-owned compile-time metadata now consistently uses angle
+  groups: `test<"name"> { ... }`, callable-signature
+  `requires<T is Trait>`, `extend<Target, Trait>`, and
+  `foreign<c, "symbol">`. Their former parenthesized spellings are removed;
+  parentheses, square brackets, and braces remain runtime groups.
 - **Breaking:** Named callable signatures now precede `=`, as in
   `let add: (x: i32): i32 = { x + 1 }`, while anonymous/local callable values
   retain outer braces and `=>`. Callable types remain `(T): R`;

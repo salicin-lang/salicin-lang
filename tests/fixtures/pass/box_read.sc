@@ -1,7 +1,7 @@
 let Box = alloc.Box
 
 let read_box: <t: type>(boxed: Borrow<Box<t>>): t
-requires(t is Copyable) = { boxed.read() }
+requires<t is Copyable> = { boxed.read() }
 
 let main: (): i32 = {
   let mut boxed = Box.new<T: i32>(0)
@@ -17,6 +17,6 @@ let main: (): i32 = {
   first + second + read_box(zero)
 }
 
-test("box_read.sc") {
+test<"box_read.sc"> {
   std.test.assert(main() == 42)
 }

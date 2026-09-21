@@ -20,6 +20,6 @@ let main: (): i32 = {
   point.value
 }
 
-test("unified_callable_brace_call.sc") {
+test<"unified_callable_brace_call.sc"> {
   std.test.assert(main() == 42)
 }

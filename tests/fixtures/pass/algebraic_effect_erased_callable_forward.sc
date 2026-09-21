@@ -7,7 +7,7 @@ let resource = struct {
   drops: Ptr<mut><i32>,
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -122,6 +122,6 @@ let main: (): i32 = {
   resumed + abandoned + discarded + mutated + mutated_abandoned + with_input + drop_count - 196
 }
 
-test("algebraic_effect_erased_callable_forward.sc") {
+test<"algebraic_effect_erased_callable_forward.sc"> {
   std.test.assert(main() == 42)
 }

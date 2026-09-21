@@ -21,6 +21,6 @@ let main: (): i32 = {
   first + second + third + fourth
 }
 
-test("try_full_container_unchanged.sc") {
+test<"try_full_container_unchanged.sc"> {
   std.test.assert(main() == 42)
 }

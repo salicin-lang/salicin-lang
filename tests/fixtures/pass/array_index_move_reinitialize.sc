@@ -7,6 +7,6 @@ let main: (): i32 = {
   values[0] + values[1]
 }
 
-test("array_index_move_reinitialize.sc") {
+test<"array_index_move_reinitialize.sc"> {
   std.test.assert(main() == 42)
 }

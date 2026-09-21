@@ -15,7 +15,7 @@ let marker = struct {
   amount: i32
 }
 
-extend(marker, Droppable) {
+extend<marker, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -24,7 +24,7 @@ extend(marker, Droppable) {
   }
 }
 
-extend(first, Droppable) {
+extend<first, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -33,7 +33,7 @@ extend(first, Droppable) {
   }
 }
 
-extend(second, Droppable) {
+extend<second, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -42,7 +42,7 @@ extend(second, Droppable) {
   }
 }
 
-extend(first, Future<()>) {
+extend<first, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -52,7 +52,7 @@ extend(first, Future<()>) {
   }
 }
 
-extend(second, Future<()>) {
+extend<second, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -101,6 +101,6 @@ let main: (): i32 = {
   }
 }
 
-test("async_await_control_cancel.sc") {
+test<"async_await_control_cancel.sc"> {
   std.test.assert(main() == 42)
 }

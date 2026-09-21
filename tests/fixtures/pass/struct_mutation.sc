@@ -6,6 +6,6 @@ let main: (): i32 = {
   counter.value
 }
 
-test("struct_mutation.sc") {
+test<"struct_mutation.sc"> {
   std.test.assert(main() == 42)
 }

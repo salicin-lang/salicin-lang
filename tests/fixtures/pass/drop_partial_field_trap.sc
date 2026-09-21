@@ -1,7 +1,7 @@
 let resource = struct { value: i32 }
 let pair = struct { left: resource, right: resource }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let trapped = 1 / self.value
@@ -16,6 +16,6 @@ let main: (): i32 = {
   0
 }
 
-test("drop_partial_field_trap.sc") {
+test<"drop_partial_field_trap.sc"> {
   std.test.assert(main() == 42)
 }

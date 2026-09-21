@@ -15,6 +15,6 @@ let main: (): i32 = {
   success + failure
 }
 
-test("raise_result.sc") {
+test<"raise_result.sc"> {
   std.test.assert(main() == 42)
 }

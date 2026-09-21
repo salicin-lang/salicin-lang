@@ -71,6 +71,6 @@ let main: (): i32 = {
   }
 }
 
-test("string_mutation.sc") {
+test<"string_mutation.sc"> {
   std.test.assert(main() == 42)
 }

@@ -88,7 +88,7 @@ fn emit_ir_build_and_run_reuse_the_same_validated_binary_cache_entry() {
 #[test]
 fn test_list_reuses_cached_ordered_test_names() {
     let temporary = TestDirectory::new();
-    let source = temporary.write("tests.sc", "test(\"alpha\") { }\n");
+    let source = temporary.write("tests.sc", "test<\"alpha\"> { }\n");
     let cache = temporary.create_dir("cache");
     let first = salic()
         .arg("test")
@@ -297,7 +297,7 @@ fn cache_reuses_byte_identical_ir_across_checkout_relocation_and_command_targets
         );
         project.write(
             "src/main.sc",
-            "let main: (): i32 = { shared.answer() }\ntest(\"answer\") { () }\n",
+            "let main: (): i32 = { shared.answer() }\ntest<\"answer\"> { () }\n",
         );
         project.write(
             "src/lib.sc",
@@ -641,7 +641,7 @@ fn built_in_test_runner_links_one_binary_and_reports_the_failing_name() {
     );
     workspace.write(
         "dep/src/lib.sc",
-        "test(\"dependency test must not run\") { std.test.fail(\"must not run\") }\n",
+        "test<\"dependency test must not run\"> { std.test.fail(\"must not run\") }\n",
     );
     let app = workspace.create_dir("app");
     workspace.write(
@@ -654,7 +654,7 @@ fn built_in_test_runner_links_one_binary_and_reports_the_failing_name() {
          [dependencies]\n\
          dep = { path = \"../dep\" }\n",
     );
-    workspace.write("app/src/main.sc", "test(\"primary package test\") { () }\n");
+    workspace.write("app/src/main.sc", "test<\"primary package test\"> { () }\n");
     let package = salic()
         .arg("test")
         .arg(app)
@@ -680,13 +680,13 @@ fn throwing_test_failures_report_all_messages_and_reject_unhandled_effects() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "structured.sc",
-        "test(\"messaged\") {\n\
+        "test<\"messaged\"> {\n\
            core.error.throw(\"盐: expected 42\")\n\
          }\n\
-         test(\"empty message\") {\n\
+         test<\"empty message\"> {\n\
            core.error.throw(\"\")\n\
          }\n\
-         test(\"later registration\") {\n\
+         test<\"later registration\"> {\n\
            core.error.throw(\"later still ran\")\n\
          }\n",
     );
@@ -709,7 +709,7 @@ fn throwing_test_failures_report_all_messages_and_reject_unhandled_effects() {
     let unrelated = temporary.write(
         "unrelated.sc",
         "let unrelated = effect { escape: (): () }\n\
-             test(\"wrong effect\") {\n\
+             test<\"wrong effect\"> {\n\
              unrelated.escape()\n\
              ()\n\
              }\n",
@@ -758,7 +758,7 @@ fn standard_test_assertions_evaluate_once_and_report_stable_messages() {
              let error = std.test.expect_err<i64, i64>(error_value)\n\
              std.test.assert(some + ok == 42 && error == 7 && counter == 2)\n\
              }\n\
-             test(\"common assertions pass\") { common_assertions_pass() }\n",
+             test<\"common assertions pass\"> { common_assertions_pass() }\n",
     );
     let passed = salic()
         .arg("test")
@@ -797,14 +797,14 @@ fn standard_test_assertions_evaluate_once_and_report_stable_messages() {
              let value: core.Result<i64><i64> = core.Result.Ok(11)\n\
              let _ = std.test.expect_err<i64, i64>(value)\n\
              }\n\
-             test(\"assert\") { fail_assert() }\n\
-             test(\"assert_eq\") { fail_assert_eq() }\n\
-             test(\"assert_ne\") { fail_assert_ne() }\n\
-             test(\"expect_some\") { fail_expect_some() }\n\
-             test(\"expect_none\") { fail_expect_none() }\n\
-             test(\"expect_ok\") { fail_expect_ok() }\n\
-             test(\"expect_err\") { fail_expect_err() }\n\
-             test(\"fail\") { std.test.fail(\"explicit failure\") }\n",
+             test<\"assert\"> { fail_assert() }\n\
+             test<\"assert_eq\"> { fail_assert_eq() }\n\
+             test<\"assert_ne\"> { fail_assert_ne() }\n\
+             test<\"expect_some\"> { fail_expect_some() }\n\
+             test<\"expect_none\"> { fail_expect_none() }\n\
+             test<\"expect_ok\"> { fail_expect_ok() }\n\
+             test<\"expect_err\"> { fail_expect_err() }\n\
+             test<\"fail\"> { std.test.fail(\"explicit failure\") }\n",
     );
     let failed = salic()
         .arg("test")
@@ -836,9 +836,9 @@ fn test_listing_filtering_counts_and_duplicate_names_are_deterministic() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "selection.sc",
-        "test(\"zeta\") { std.test.fail(\"zeta failed\") }\n\
-         test(\"alpha\") { () }\n\
-         test(\"alphabet\") { std.test.fail(\"alphabet failed\") }\n",
+        "test<\"zeta\"> { std.test.fail(\"zeta failed\") }\n\
+         test<\"alpha\"> { () }\n\
+         test<\"alphabet\"> { std.test.fail(\"alphabet failed\") }\n",
     );
 
     let listed = salic()
@@ -923,8 +923,8 @@ fn test_listing_filtering_counts_and_duplicate_names_are_deterministic() {
 
     let same_source = temporary.write(
         "duplicate.sc",
-        "test(\"same name\") { () }\n\
-         test(\"same name\") { () }\n",
+        "test<\"same name\"> { () }\n\
+         test<\"same name\"> { () }\n",
     );
     let same_source_rejected = salic()
         .args(["test", "--list"])
@@ -954,8 +954,8 @@ fn test_listing_filtering_counts_and_duplicate_names_are_deterministic() {
         "salicin.toml",
         "[package]\nname = \"duplicate-tests\"\nversion = \"0.1.0\"\nedition = \"2026\"\n",
     );
-    duplicate.write("src/main.sc", "test(\"same name\") { () }\n");
-    duplicate.write("src/other.sc", "test(\"same name\") { () }\n");
+    duplicate.write("src/main.sc", "test<\"same name\"> { () }\n");
+    duplicate.write("src/other.sc", "test<\"same name\"> { () }\n");
     let rejected = salic()
         .args(["test", "--list"])
         .arg(&duplicate.0)
@@ -982,7 +982,7 @@ fn structured_test_abort_runs_owned_cleanup_once() {
     let source = temporary.write(
         "cleanup.sc",
         "pub let resource = struct { pub counter: Ptr<mut><i32> }\n\
-             extend(resource, Droppable) {\n\
+             extend<resource, Droppable> {\n\
              let drop: (self: Borrow<mut><self>)(): () = {\n\
              unsafe { *self.counter = *self.counter + 1 }\n\
              }\n\

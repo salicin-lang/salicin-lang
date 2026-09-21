@@ -6,7 +6,7 @@ let OwnedItem = core.iter.OwnedItem
 let values = struct { done: bool }
 let choice = enum { Some(i32), None }
 
-extend(values, Iterator) {
+extend<values, Iterator> {
   let Item = OwnedItem<choice>;
 
   let next: <r: region>(self: Borrow<mut><r><self>)
@@ -20,7 +20,7 @@ extend(values, Iterator) {
   }
 }
 
-extend(values, IntoIterator) {
+extend<values, IntoIterator> {
   let Iter = values;
   let into_iter: (move self)(): values = { self }
 }

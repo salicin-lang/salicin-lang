@@ -21,7 +21,7 @@ pub let IoErrorKind = enum {
   Other,
 }
 
-extend(IoErrorKind, core.marker.Copyable) {}
+extend<IoErrorKind, core.marker.Copyable> {}
 
 /// A portable failure classification plus an optional signed host code.
 ///
@@ -35,11 +35,11 @@ pub let IoError = struct {
 /// Lossless storage for one process argument.
 pub let ProcessArgument = struct { bytes: alloc.vec.Vec<u8> }
 
-extend(ProcessArgument) {
+extend<ProcessArgument> {
   let into_bytes: (move self)(): alloc.vec.Vec<u8> = {  self.bytes }
 }
 
-extend(IoError) {
+extend<IoError> {
   let kind: (self: Borrow<self>)(): IoErrorKind = {  self.failure }
   let raw_code: <r: region>
     (self: Borrow<r><self>)
@@ -57,7 +57,7 @@ let host_read: (
   length: u64,
   failure: Ptr<mut><i32>,
   raw_code: Ptr<mut><i32>,
-): i64 = foreign(c, "sali_host_read")
+): i64 = foreign<c, "sali_host_read">
 
 let host_write: (
   descriptor: i32,
@@ -65,34 +65,34 @@ let host_write: (
   length: u64,
   failure: Ptr<mut><i32>,
   raw_code: Ptr<mut><i32>,
-): i64 = foreign(c, "sali_host_write")
+): i64 = foreign<c, "sali_host_write">
 
-let host_argument_count: (): u64 = foreign(c, "sali_host_argument_count")
-let host_argument_length: (index: u64): u64 = foreign(c, "sali_host_argument_length")
-let host_argument_byte: (index: u64, offset: u64): u8 = foreign(c, "sali_host_argument_byte")
-let host_open: (
+let host_argument_count: (): u64 = foreign<c, "sali_host_argument_count">
+  let host_argument_length: (index: u64): u64 = foreign<c, "sali_host_argument_length">
+  let host_argument_byte: (index: u64, offset: u64): u8 = foreign<c, "sali_host_argument_byte">
+  let host_open: (
   path: Ptr<u8>,
   flags: i32,
   failure: Ptr<mut><i32>,
   raw_code: Ptr<mut><i32>,
-): i32 = foreign(c, "sali_host_open")
-let host_close: (
+): i32 = foreign<c, "sali_host_open">
+  let host_close: (
   descriptor: i32,
   failure: Ptr<mut><i32>,
   raw_code: Ptr<mut><i32>,
-): i32 = foreign(c, "sali_host_close")
-let host_flush: (
+): i32 = foreign<c, "sali_host_close">
+  let host_flush: (
   descriptor: i32,
   failure: Ptr<mut><i32>,
   raw_code: Ptr<mut><i32>,
-): i32 = foreign(c, "sali_host_flush")
-let host_seek: (
+): i32 = foreign<c, "sali_host_flush">
+  let host_seek: (
   descriptor: i32,
   offset: i64,
   origin: i32,
   failure: Ptr<mut><i32>,
   raw_code: Ptr<mut><i32>,
-): i64 = foreign(c, "sali_host_seek")
+): i64 = foreign<c, "sali_host_seek">
 
 let decode_error_kind: (value: i32): IoErrorKind = {
   if(value == 0) { NotFound }
@@ -417,7 +417,7 @@ pub let arguments: with<io>(): core.Result<IoError><alloc.vec.Vec<String>> = {
 
 /// Portable origins for File seeks.
 pub let SeekFrom = enum { Start, Current, End }
-extend(SeekFrom, core.marker.Copyable) {}
+extend<SeekFrom, core.marker.Copyable> {}
 
 /// Validated options for opening one native File.
 pub let OpenOptions = struct {
@@ -428,9 +428,9 @@ pub let OpenOptions = struct {
   create: bool,
   create_new: bool,
 }
-extend(OpenOptions, core.marker.Copyable) {}
+extend<OpenOptions, core.marker.Copyable> {}
 
-extend(OpenOptions) {
+extend<OpenOptions> {
   let read_only: (): OpenOptions = {
     OpenOptions { read: true, write: false, append: false, truncate: false, create: false, create_new: false }
   }
@@ -562,7 +562,7 @@ pub let open: with<io>
   }
 }
 
-extend(File) {
+extend<File> {
   let read: with<io>
     (self: Borrow<mut><self>)
     (buffer: Borrow<mut><core.memory.Slice<u8>>): core.Result<IoError><u64> = {
@@ -658,7 +658,7 @@ extend(File) {
   }
 }
 
-extend(File, core.marker.Droppable) {
+extend<File, core.marker.Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let descriptor = unsafe { *self.descriptor }

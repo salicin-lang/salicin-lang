@@ -2,7 +2,7 @@ let unsafety = core.unsafe.unsafety
 
 let resource = struct { counter: Ptr<mut><i32> }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -15,7 +15,7 @@ let consume: (move resource: resource): () = { () }
 
 let relocate: <t: type>
   (move value: t): t
-requires(t is Movable) = {
+requires<t is Movable> = {
   value
 }
 
@@ -53,6 +53,6 @@ let main: (): i32 = {
   }
 }
 
-test("async_cold_cancel.sc") {
+test<"async_cold_cancel.sc"> {
   std.test.assert(main() == 42)
 }

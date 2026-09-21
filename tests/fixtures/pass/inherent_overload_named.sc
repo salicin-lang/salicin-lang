@@ -1,6 +1,6 @@
 let counter = struct { value: i32 }
 
-extend(counter) {
+extend<counter> {
   let add: (self: Borrow<self>)(left: i32): i32 = { self.value + left }
   let add: (self: Borrow<self>)(right: i32): i32 = { self.value + right + 1 }
 
@@ -13,6 +13,6 @@ let main: (): i32 = {
   counter.add(right: 21)
 }
 
-test("inherent_overload_named.sc") {
+test<"inherent_overload_named.sc"> {
   std.test.assert(main() == 42)
 }

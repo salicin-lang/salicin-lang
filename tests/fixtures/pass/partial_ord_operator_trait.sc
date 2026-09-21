@@ -3,7 +3,7 @@ let PartialOrdering = core.ops.PartialOrdering
 
 let number = struct { value: i32, unordered: bool }
 
-extend(number, PartialOrd<number>) {
+extend<number, PartialOrd<number>> {
   let partial_cmp: (self: Borrow<self>)
     (rhs: Borrow<number>): PartialOrdering = {
     if(self.unordered || rhs.unordered) { Unordered }
@@ -29,6 +29,6 @@ let main: (): i32 = {
   }
 }
 
-test("partial_ord_operator_trait.sc") {
+test<"partial_ord_operator_trait.sc"> {
   std.test.assert(main() == 42)
 }

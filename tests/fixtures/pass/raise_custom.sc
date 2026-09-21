@@ -7,7 +7,7 @@ let stored = enum {
   failure(bool),
 }
 
-extend(stored, Raise) {
+extend<stored, Raise> {
   let Output = i32;
   let Error = bool;
 
@@ -42,6 +42,6 @@ let main: (): i32 = {
   success + failure
 }
 
-test("raise_custom.sc") {
+test<"raise_custom.sc"> {
   std.test.assert(main() == 42)
 }

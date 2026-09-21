@@ -7,6 +7,6 @@ let main: (): i32 = {
   42
 }
 
-test("vec_reserve_overflow.sc") {
+test<"vec_reserve_overflow.sc"> {
   std.test.assert(main() == 42)
 }

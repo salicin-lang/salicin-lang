@@ -16,7 +16,7 @@ pub let Monad = trait<self: <Value: type>: type><requires: self is Applicative> 
 }
 
 /// Implements `Functor` for `Option`.
-extend(core.option.Option, Functor) {
+extend<core.option.Option, Functor> {
   let map: <e: effects, A: type, B: type> with<e>
     (self: core.Option<A>)
     (transform: with<e>(A) :B): core.Option<B> = {
@@ -28,7 +28,7 @@ extend(core.option.Option, Functor) {
 }
 
 /// Implements `Applicative` for `Option`.
-extend(core.option.Option, Applicative) {
+extend<core.option.Option, Applicative> {
   let pure: <A: type>
     (value: A): core.Option<A> = {
     core.Option.Some(value)
@@ -50,7 +50,7 @@ extend(core.option.Option, Applicative) {
 }
 
 /// Implements `Monad` for `Option`.
-extend(core.option.Option, Monad) {
+extend<core.option.Option, Monad> {
   let flat_map: <e: effects, A: type, B: type> with<e>
     (self: core.Option<A>)
     (next: with<e>(A) :core.Option<B>): core.Option<B> = {
@@ -62,7 +62,7 @@ extend(core.option.Option, Monad) {
 }
 
 /// Implements `Functor` for `Result<error>`.
-extend(core.result.Result<Error>, Functor) {
+extend<core.result.Result<Error>, Functor> {
   let map: <e: effects, A: type, B: type> with<e>
     (self: core.Result<Error><A>)
     (transform: with<e>(A) :B): core.Result<Error><B> = {
@@ -74,7 +74,7 @@ extend(core.result.Result<Error>, Functor) {
 }
 
 /// Implements `Applicative` for `Result<error>`.
-extend(core.result.Result<Error>, Applicative) {
+extend<core.result.Result<Error>, Applicative> {
   let pure: <A: type>
     (value: A): core.Result<Error><A> = {
     core.Result.Ok(value)
@@ -96,7 +96,7 @@ extend(core.result.Result<Error>, Applicative) {
 }
 
 /// Implements `Monad` for `Result<error>`.
-extend(core.result.Result<Error>, Monad) {
+extend<core.result.Result<Error>, Monad> {
   let flat_map: <e: effects, A: type, B: type> with<e>
     (self: core.Result<Error><A>)
     (next: with<e>(A) :core.Result<Error><B>): core.Result<Error><B> = {

@@ -2,7 +2,7 @@ let Add = core.ops.Add
 
 let number = struct { value: i32 }
 
-extend(number, Add<number>) {
+extend<number, Add<number>> {
   let Output = number;
   let add: (self)(rhs: number): number = { number { value: self.value + rhs.value } }
 }
@@ -12,6 +12,6 @@ let main: (): i32 = {
   answer.value
 }
 
-test("add_trait_nominal_pair.sc") {
+test<"add_trait_nominal_pair.sc"> {
   std.test.assert(main() == 42)
 }

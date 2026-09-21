@@ -6,7 +6,7 @@ let step = struct {
   remaining: Ptr<mut><i32>
   }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = bool;
 
   let poll: <r: region>
@@ -33,7 +33,7 @@ let ready_step = struct {
   remaining: Ptr<mut><i32>
   }
 
-extend(ready_step, Future<()>) {
+extend<ready_step, Future<()>> {
   let Output = bool;
 
   let poll: <r: region>
@@ -102,6 +102,6 @@ let main: (): i32 = {
   first + second + third + fourth + immediate_ready - 1
 }
 
-test("async_await_loop_backedge.sc") {
+test<"async_await_loop_backedge.sc"> {
   std.test.assert(main() == 42)
 }

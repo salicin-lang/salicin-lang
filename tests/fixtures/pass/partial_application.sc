@@ -5,6 +5,6 @@ let main: (): i32 = {
   add_two(40)
 }
 
-test("partial_application.sc") {
+test<"partial_application.sc"> {
   std.test.assert(main() == 42)
 }

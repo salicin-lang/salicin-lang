@@ -4,7 +4,7 @@ let stop = effect {
 
 let resource = struct { counter: Ptr<mut><i32> }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -38,6 +38,6 @@ let main: (): i32 = {
   result + drops
 }
 
-test("algebraic_effect_continuation_resume_drop.sc") {
+test<"algebraic_effect_continuation_resume_drop.sc"> {
   std.test.assert(main() == 42)
 }

@@ -4,7 +4,7 @@ let read = trait {
 
 let cell: <t: type> = struct { value: t }
 
-extend(cell<i32>, read) {
+extend<cell<i32>, read> {
   let read: (self: Borrow<self>)(): i32 = { self.value }
 }
 
@@ -13,6 +13,6 @@ let main: (): i32 = {
   cell.read()
 }
 
-test("trait_generic_nominal_impl.sc") {
+test<"trait_generic_nominal_impl.sc"> {
   std.test.assert(main() == 42)
 }

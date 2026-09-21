@@ -8,6 +8,6 @@ let write: with<state<i32>>(value: i32): () = { state<i32>.put(value) }
 
 let main: (): i32 = { 42 }
 
-test("algebraic_effect_operations.sc") {
+test<"algebraic_effect_operations.sc"> {
   std.test.assert(main() == 42)
 }

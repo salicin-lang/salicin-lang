@@ -13,6 +13,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_nearest_handler.sc") {
+test<"algebraic_effect_nearest_handler.sc"> {
   std.test.assert(main() == 42)
 }

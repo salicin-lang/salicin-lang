@@ -41,8 +41,8 @@ fn parses_brace_first_named_callables_and_bodyless_requirements() {
 fn parses_named_builtin_foreign_effect_and_requirement_metadata() {
     let program = parse(
         "let intrinsic: (value: i32): i32 = builtin()\n\
-         let c_abs: (value: i32): i32 = foreign(c, \"abs\")\n\
-         let constrained: <T: type>(value: T): T requires(T is Copy) = { value }\n",
+         let c_abs: (value: i32): i32 = foreign<c, \"abs\">\n\
+         let constrained: <T: type>(value: T): T requires<T is Copy> = { value }\n",
     )
     .expect("callable metadata must remain inside the outer braces");
     let Item::Function(intrinsic) = &program.items[0] else {
@@ -58,6 +58,55 @@ fn parses_named_builtin_foreign_effect_and_requirement_metadata() {
         panic!("expected constrained function");
     };
     assert_eq!(constrained.where_predicates.len(), 1);
+}
+
+#[test]
+fn rejects_parenthesized_compile_time_metadata() {
+    for (source, expected) in [
+        ("test(\"name\") {}\n", "`<` after `test`"),
+        (
+            "let constrained: <T: type>(value: T): T requires(T is Copy) = { value }\n",
+            "`<` after `requires`",
+        ),
+        ("extend(Target) {}\n", "`<` after `extend`"),
+        (
+            "let c_abs: (value: i32): i32 = foreign(c, \"abs\")\n",
+            "`<` after `foreign`",
+        ),
+    ] {
+        let error = parse(source).expect_err("parenthesized metadata must be rejected");
+        assert!(
+            error.message.contains(expected),
+            "`{source}` did not report `{expected}`: {}",
+            error.message
+        );
+    }
+}
+
+#[test]
+fn splits_nested_angle_closers_in_compile_time_metadata() {
+    let program = parse(
+        "let constrained: <T: type>(value: T): T requires<T is Trait<Inner<T>>> = { value }\n\
+         let compact: <T: type>(value: T): T requires<T is Copy>= { value }\n\
+         let nested_compact: <T: type>(value: T): T requires<T is Trait<T>>= { value }\n\
+         extend<Outer<Inner<T>>, Trait<Inner<T>>><requires: T is Trait<Inner<T>>> {}\n",
+    )
+    .expect("metadata groups must split merged angle closers");
+
+    let Item::Function(function) = &program.items[0] else {
+        panic!("expected constrained function");
+    };
+    assert_eq!(function.where_predicates.len(), 1);
+    for item in &program.items[1..3] {
+        let Item::Function(function) = item else {
+            panic!("expected constrained function");
+        };
+        assert_eq!(function.where_predicates.len(), 1);
+    }
+    let Item::Extend(extension) = &program.items[3] else {
+        panic!("expected constrained extension");
+    };
+    assert_eq!(extension.where_predicates.len(), 1);
 }
 
 #[test]
@@ -303,7 +352,7 @@ fn prefix_with_requires_a_callable_operand_and_accepts_an_empty_row() {
 #[test]
 fn parses_contextual_test_declarations_as_private_unit_throwing_functions() {
     let program =
-        parse("test(\"arithmetic works\") {\n  core.error.throw(\"broken\")\n}\n").unwrap();
+        parse("test<\"arithmetic works\"> {\n  core.error.throw(\"broken\")\n}\n").unwrap();
     let [Item::Function(test)] = program.items.as_slice() else {
         panic!("expected one test function");
     };
@@ -326,13 +375,13 @@ fn parses_contextual_test_declarations_as_private_unit_throwing_functions() {
     );
     assert_eq!(program.item_visibilities, [Visibility::Private]);
 
-    let visible = parse("pub test(\"arithmetic\") { () }\n")
+    let visible = parse("pub test<\"arithmetic\"> { () }\n")
         .expect_err("test declarations must remain runner-private");
     assert!(visible.message.contains("cannot have visibility"));
     let identifier = parse("test arithmetic { true }\n")
         .expect_err("test registration names must be string literals");
-    assert!(identifier.message.contains("`(` after `test`"));
-    let empty = parse("test(\"\") { () }\n").expect_err("test names must be useful");
+    assert!(identifier.message.contains("`<` after `test`"));
+    let empty = parse("test<\"\"> { () }\n").expect_err("test names must be useful");
     assert!(empty.message.contains("cannot be empty"));
 }
 
@@ -448,7 +497,7 @@ fn parses_name_side_compile_parameters_and_rejects_runtime_groups() {
 
     for source in [
         "let identity(value: i32): i32 { value }\n",
-        "let value = struct {}\nextend(value) { let read(self: Borrow<self>)(): i32 => { 0 } }\n",
+        "let value = struct {}\nextend<value> { let read(self: Borrow<self>)(): i32 => { 0 } }\n",
     ] {
         let error = parse(source).unwrap_err();
         assert!(!error.message.is_empty());
@@ -920,7 +969,7 @@ fn parses_dotted_type_paths() {
 
 #[test]
 fn rejects_visibility_where_it_is_not_supported_yet() {
-    let extension = parse("pub extend(thing) {}\n").unwrap_err();
+    let extension = parse("pub extend<thing> {}\n").unwrap_err();
     assert!(extension
         .message
         .contains("`extend` declarations cannot have visibility"));
@@ -928,7 +977,7 @@ fn rejects_visibility_where_it_is_not_supported_yet() {
     let trait_member = parse("let protocol = trait { pub f: (value: i32): i32 }\n").unwrap_err();
     assert!(trait_member.message.contains("visibility on trait members"));
 
-    let extend_member = parse("extend(thing) { pub(package) let answer = 42 }\n").unwrap_err();
+    let extend_member = parse("extend<thing> { pub(package) let answer = 42 }\n").unwrap_err();
     assert!(extend_member.message.contains("extend members"));
 }
 
@@ -1124,7 +1173,7 @@ fn rejects_parenthesized_type_trait_effect_associated_and_schema_applications() 
     for source in [
         "let read = (value: Option(i32)): i32 { 0 }\n",
         "let cell: <t: type> = struct { value: t }\nlet read = (value: cell(i32)): i32 { 0 }\n",
-        "let marker: <t: type> =(self: type) trait {}\nextend(i32, marker(i32)) {}\n",
+        "let marker: <t: type> =(self: type) trait {}\nextend<i32, marker(i32)> {}\n",
         "let state: <t: type> = effect {}\nlet read = with<state(i32)>(): i32 { 0 }\n",
         "let read = (value: Chain.Rebind(i32)): i32 { 0 }\n",
         "let handle: <Value: type, Answer: type> =...Clauses(Value, Answer) (value: Value): Answer\n",
@@ -1254,7 +1303,7 @@ fn parses_c_struct_representation_independently_of_derives() {
 fn parses_empty_structs_as_types_that_can_be_extended() {
     let program = parse(
         "let marker = struct {}\n\
-             extend(marker) {\n\
+             extend<marker> {\n\
              let answer: (): i32 = {  42 }\n\
              }\n",
     )
@@ -1451,7 +1500,7 @@ fn parses_parenthesized_associated_constant_values() {
     let program = parse(
         "let future = trait { Output: type }\n\
          let step = struct {}\n\
-         extend(step, future) { let Output = (); }\n",
+         extend<step, future> { let Output = (); }\n",
     )
     .unwrap();
     let Item::Extend(definition) = &program.items[2] else {
@@ -1770,8 +1819,8 @@ fn rejects_reserved_compile_parameter_names() {
 #[test]
 fn parses_bounded_c_foreign_declarations() {
     let program = parse(
-        "pub let c_abs: (value: i32): i32 = foreign(c, \"abs\")\n\
-             let strlen: (value: Ptr<u8>): usize = foreign(c)\n",
+        "pub let c_abs: (value: i32): i32 = foreign<c, \"abs\">\n\
+             let strlen: (value: Ptr<u8>): usize = foreign<c>\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -1802,23 +1851,23 @@ fn parses_bounded_c_foreign_declarations() {
 
     for (source, expected) in [
         (
-            "let value = foreign(c)\n",
+            "let value = foreign<c>\n",
             "requires one runtime parameter group",
         ),
         (
-            "let identity: <t: type>(value: t): t = foreign(c)\n",
+            "let identity: <t: type>(value: t): t = foreign<c>\n",
             "cannot be generic",
         ),
         (
-            "let abs: (value: i32) = foreign(c)\n",
+            "let abs: (value: i32) = foreign<c>\n",
             "an explicit result type",
         ),
         (
-            "let abs: with<unsafety>(value: i32): i32 = foreign(c)\n",
+            "let abs: with<unsafety>(value: i32): i32 = foreign<c>\n",
             "cannot declare effects",
         ),
         (
-            "let abs: (value: i32): i32 = foreign(c, \"\")\n",
+            "let abs: (value: i32): i32 = foreign<c, \"\">\n",
             "non-empty ASCII linker symbol",
         ),
     ] {
@@ -1837,7 +1886,7 @@ fn rejects_runtime_parameters_on_generic_data_and_legacy_extend_headers() {
     assert!(data.message.contains("runtime parameters"));
 
     let extension = parse("extend cell {}\n").unwrap_err();
-    assert!(extension.message.contains("`(` after `extend`"));
+    assert!(extension.message.contains("`<` after `extend`"));
 }
 
 #[test]
@@ -2383,7 +2432,7 @@ fn struct_declaration_creates_a_nominal_constructor() {
 fn rejects_legacy_brace_local_named_signatures() {
     for source in [
         "let answer = { (): i32 42 }\n",
-        "extend(cell) { let read = { (self: Borrow<self>)(): i32 self.value } }\n",
+        "extend<cell> { let read = { (self: Borrow<self>)(): i32 self.value } }\n",
     ] {
         let error = parse(source).unwrap_err();
         assert!(!error.message.is_empty(), "{error:?}");
@@ -3212,7 +3261,7 @@ fn parses_complete_builtin_definition_markers() {
              pub let scalar: type = builtin()\n\
              pub let family: <t: type><l: usize>: type = builtin()\n\
              pub let intrinsic: <t: type>(value: t): t = builtin()\n\
-             extend(i32, Add<i32>) {\n\
+             extend<i32, Add<i32>> {\n\
              let Output = i32\n\
              let add: (self)(rhs: i32): i32 = builtin()\n\
              }\n",
@@ -3260,7 +3309,7 @@ fn rejects_malformed_builtin_definition_markers() {
         "let value: i32 = builtin()\n",
         "let intrinsic = (value: i32) builtin()\n",
         "let scalar: type = builtin(1)\n",
-        "extend(i32) { let constant = builtin() }\n",
+        "extend<i32> { let constant = builtin() }\n",
     ] {
         assert!(parse(source).is_err(), "{source}");
     }
@@ -3554,7 +3603,7 @@ fn rejects_every_removed_if_while_and_do_alias() {
 fn rejects_parenthesized_trait_and_extension_requires_groups() {
     for source in [
         "let marker = trait {}\nlet bounded = trait(requires: self is marker) {}\n",
-        "let marker = trait {}\nlet cell = struct {}\nextend(cell)(requires: cell is marker) {}\n",
+        "let marker = trait {}\nlet cell = struct {}\nextend<cell>(requires: cell is marker) {}\n",
     ] {
         assert!(
             parse(source).is_err(),
@@ -3746,7 +3795,7 @@ fn array_type_preserves_curried_compile_parameter_groups() {
 fn parses_extend_methods_associated_functions_constants_and_trait_refs() {
     let program = parse(
         "let a = struct { value: i32 }\n\
-             extend(a, foo) {\n\
+             extend<a, foo> {\n\
              let reset: (self: Borrow<mut><self>)(): () = { }\n\
              let answer: i32 = 42\n\
              let make: (value: i32): a = {  a{ value: value } }\n\
@@ -3803,7 +3852,7 @@ fn parses_extend_methods_associated_functions_constants_and_trait_refs() {
 #[test]
 fn parses_compile_parameters_on_extend_functions() {
     let program = parse(
-        "extend(a) {\n\
+        "extend<a> {\n\
              let convert: <t: type>(self: Borrow<self>)(value: t): t = {  value }\n\
              let make: <t: type>(value: t): t = {  value }\n\
              }\n",
@@ -3832,7 +3881,7 @@ fn parses_compile_parameters_on_extend_functions() {
 fn infers_extend_pattern_parameters_from_constructor_sorts() {
     let program = parse(
         "let cell: <t: type> = struct { value: t }\n\
-             extend(cell<t>)<requires: t is Copyable> {\n\
+             extend<cell<t>><requires: t is Copyable> {\n\
              let get: (self: Borrow<self>)(): t = {  self.value }\n}\n",
     )
     .unwrap();
@@ -3851,7 +3900,7 @@ fn infers_extend_pattern_parameters_from_constructor_sorts() {
     let program = parse(
         "let Result: <Error: type><T: type> = enum { Ok(T), Err(Error) }\n\
              let Chain = trait {}\n\
-             extend(Result<Error><T>, Chain) {}\n",
+             extend<Result<Error><T>, Chain> {}\n",
     )
     .unwrap();
     let Item::Extend(extension) = &program.items[2] else {
@@ -3874,8 +3923,8 @@ fn infers_extend_pattern_parameters_from_constructor_sorts() {
 fn qualified_extend_roots_are_not_inferred_as_parameters() {
     let program = parse(
         "let Functor = trait<self: <Value: type>: type> {}\n\
-             extend(core.option.Option, Functor) {}\n\
-             extend(core.result.Result<Error>, Functor) {}\n",
+             extend<core.option.Option, Functor> {}\n\
+             extend<core.result.Result<Error>, Functor> {}\n",
     )
     .unwrap();
     let Item::Extend(option) = &program.items[1] else {
@@ -3893,7 +3942,7 @@ fn qualified_extend_roots_are_not_inferred_as_parameters() {
 fn parses_multiline_constraint_guards_without_inference_placeholders() {
     let program = parse(
         "let choose: <t: type>(copy value: t): t\n\
-             requires(t is Copyable && t is marker<i32> && t.item == t) = { value }\n",
+             requires<t is Copyable && t is marker<i32> && t.item == t> = { value }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -3924,10 +3973,10 @@ fn lowers_compile_time_constraint_guards_to_trait_predicates() {
     let program = parse(
         "let Copyable = trait {}\n\
              let cell: <t: type> = struct { value: t }\n\
-             let duplicate: <t: type>(value: t): (t, t) requires(t is Copyable) = { \n\
+             let duplicate: <t: type>(value: t): (t, t) requires<t is Copyable> = { \n\
              (value, value)\n\
              }\n\
-             extend(cell<t>, Copyable)<requires: t is Copyable> {}\n",
+             extend<cell<t>, Copyable><requires: t is Copyable> {}\n",
     )
     .unwrap();
 
@@ -3952,7 +4001,7 @@ fn lowers_compile_time_constraint_guards_to_trait_predicates() {
 
 #[test]
 fn constraint_guards_require_is_evidence_before_projection_equalities() {
-    let error = parse("let read: <t: type>(value: t): t requires(t.item == i32) = {  value }\n")
+    let error = parse("let read: <t: type>(value: t): t requires<t.item == i32> = {  value }\n")
         .expect_err("a projection without trait evidence must fail");
     assert!(error
         .message
@@ -3969,7 +4018,7 @@ fn constraint_guards_require_is_evidence_before_projection_equalities() {
 fn parses_generic_associated_type_equalities() {
     let program = parse(
             "let lend: <t: type>(value: t): t\n\
-             requires(t is lender && t.item<a: access><r: region> == Borrow<a><r><i32>) = { value }\n",
+             requires<t is lender && t.item<a: access><r: region> == Borrow<a><r><i32>> = { value }\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -3995,19 +4044,19 @@ fn parses_generic_associated_type_equalities() {
 fn rejects_invalid_extend_receivers() {
     let cases = [
         (
-            "extend(a) { let invalid: (self, value: i32)(): () = { } }\n",
+            "extend<a> { let invalid: (self, value: i32)(): () = { } }\n",
             "only parameter",
         ),
         (
-            "extend(a) { let invalid: (self): () = { } }\n",
+            "extend<a> { let invalid: (self): () = { } }\n",
             "requires an explicit parameter group",
         ),
         (
-            "extend(a) { let invalid: (value: i32)(self)(): () = { } }\n",
+            "extend<a> { let invalid: (value: i32)(self)(): () = { } }\n",
             "first parameter group",
         ),
         (
-            "extend(a) { let invalid: (self)(self)(): () = { } }\n",
+            "extend<a> { let invalid: (self)(self)(): () = { } }\n",
             "at most one",
         ),
     ];
@@ -4025,7 +4074,7 @@ fn rejects_invalid_extend_receivers() {
 #[test]
 fn parses_borrow_and_move_receivers_with_explicit_following_groups() {
     let program = parse(
-        "extend(a) {\n\
+        "extend<a> {\n\
              let inspect: (self: Borrow<self>)(): i32 = {  self.value }\n\
              let replace: (move self)(value: i32)(other: i32): a = {  a{ value: value + other } }\n\
              }\n",
@@ -4062,13 +4111,13 @@ fn rejects_receivers_outside_extend_and_invalid_extend_members() {
     let receiver = parse("let invalid: (self: a)(): () = { }\n").unwrap_err();
     assert!(receiver.message.contains("only allowed in extend"));
 
-    let mutable = parse("extend(a) { let mut answer = 42 }\n").unwrap_err();
+    let mutable = parse("extend<a> { let mut answer = 42 }\n").unwrap_err();
     assert!(mutable.message.contains("let mut"));
 
-    let data = parse("extend(a) { let nested = struct { value: i32 } }\n").unwrap_err();
+    let data = parse("extend<a> { let nested = struct { value: i32 } }\n").unwrap_err();
     assert!(data.message.contains("data declarations"));
 
-    let missing = parse("extend(a) { let answer: i32\n}\n").unwrap_err();
+    let missing = parse("extend<a> { let answer: i32\n}\n").unwrap_err();
     assert!(missing.message.contains("expected `=`"));
 }
 

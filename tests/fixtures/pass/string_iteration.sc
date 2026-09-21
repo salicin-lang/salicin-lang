@@ -51,6 +51,6 @@ let main: (): i32 = {
   }
 }
 
-test("string_iteration.sc") {
+test<"string_iteration.sc"> {
   std.test.assert(main() == 42)
 }

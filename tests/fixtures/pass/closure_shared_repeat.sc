@@ -4,6 +4,6 @@ let main: (): i32 = {
   add_base(1) + add_base(1)
 }
 
-test("closure_shared_repeat.sc") {
+test<"closure_shared_repeat.sc"> {
   std.test.assert(main() == 42)
 }

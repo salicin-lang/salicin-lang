@@ -11,6 +11,6 @@ let main: (): i32 = {
   total
 }
 
-test("continue.sc") {
+test<"continue.sc"> {
   std.test.assert(main() == 42)
 }

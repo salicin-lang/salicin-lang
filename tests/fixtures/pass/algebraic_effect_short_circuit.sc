@@ -11,6 +11,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_short_circuit.sc") {
+test<"algebraic_effect_short_circuit.sc"> {
   std.test.assert(main() == 42)
 }

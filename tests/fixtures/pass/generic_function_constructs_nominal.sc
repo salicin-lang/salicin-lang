@@ -7,6 +7,6 @@ let main: (): i32 = {
   wrapped.value
 }
 
-test("generic_function_constructs_nominal.sc") {
+test<"generic_function_constructs_nominal.sc"> {
   std.test.assert(main() == 42)
 }

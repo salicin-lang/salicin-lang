@@ -14,7 +14,7 @@ let counter = struct {
   value: i32,
 }
 
-extend(counter) {
+extend<counter> {
   let plus: (self: Borrow<self>)
     (amount: i32): i32 = {
     self.value + amount
@@ -30,6 +30,6 @@ let main: (): i32 = {
   if(precedence == 40) { counter.plus(1) } else: { 0 }
 }
 
-test("explicit_call_groups.sc") {
+test<"explicit_call_groups.sc"> {
   std.test.assert(main() == 42)
 }

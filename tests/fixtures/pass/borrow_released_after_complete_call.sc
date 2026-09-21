@@ -9,6 +9,6 @@ let main: (): i32 = {
   snapshot + consume(boxed) - 42
 }
 
-test("borrow_released_after_complete_call.sc") {
+test<"borrow_released_after_complete_call.sc"> {
   std.test.assert(main() == 42)
 }

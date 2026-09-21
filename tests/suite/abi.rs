@@ -154,10 +154,10 @@ let Record = struct(c) {
   next: Ptr<u8>,
 }
 
-let c_record_size: (): u64 = foreign(c)
-let c_record_align: (): u64 = foreign(c)
-let c_verify_record: (record: Ptr<Record>): i32 = foreign(c)
-let c_fill_record: (record: Ptr<mut><Record>): () = foreign(c)
+let c_record_size: (): u64 = foreign<c>
+let c_record_align: (): u64 = foreign<c>
+let c_verify_record: (record: Ptr<Record>): i32 = foreign<c>
+let c_fill_record: (record: Ptr<mut><Record>): () = foreign<c>
 
 let main: (): i32 = {
   let byte: u8 = 31
@@ -259,18 +259,18 @@ fn c_ffi_scalars_and_raw_pointers_link_and_run_natively() {
 #[test]
 fn c_ffi_integer_widths_match_c_parameters_and_returns() {
     let source = r#"
-let c_i8: (): i8 = foreign(c)
-let c_i16: (): i16 = foreign(c)
-let c_i32: (): i32 = foreign(c)
-let c_i64: (): i64 = foreign(c)
-let c_i128: (): i128 = foreign(c)
-let c_isize: (): isize = foreign(c)
-let c_u8: (): u8 = foreign(c)
-let c_u16: (): u16 = foreign(c)
-let c_u32: (): u32 = foreign(c)
-let c_u64: (): u64 = foreign(c)
-let c_u128: (): u128 = foreign(c)
-let c_usize: (): usize = foreign(c)
+let c_i8: (): i8 = foreign<c>
+let c_i16: (): i16 = foreign<c>
+let c_i32: (): i32 = foreign<c>
+let c_i64: (): i64 = foreign<c>
+let c_i128: (): i128 = foreign<c>
+let c_isize: (): isize = foreign<c>
+let c_u8: (): u8 = foreign<c>
+let c_u16: (): u16 = foreign<c>
+let c_u32: (): u32 = foreign<c>
+let c_u64: (): u64 = foreign<c>
+let c_u128: (): u128 = foreign<c>
+let c_usize: (): usize = foreign<c>
 let c_accept: (
   a: i8,
   b: i16,
@@ -284,7 +284,7 @@ let c_accept: (
   j: u64,
   k: u128,
   l: usize,
-): i32 = foreign(c)
+): i32 = foreign<c>
 
 let main: (): i32 = {
   unsafe {

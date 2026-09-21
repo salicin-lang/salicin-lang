@@ -7,6 +7,6 @@ let main: (): i32 = {
   if(answer ?? false) { 42 } else: { 0 }
 }
 
-test("chain_success_type_changes.sc") {
+test<"chain_success_type_changes.sc"> {
   std.test.assert(main() == 42)
 }

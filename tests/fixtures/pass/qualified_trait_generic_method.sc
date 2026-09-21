@@ -4,11 +4,11 @@ let read = trait {
 
 let cell: <t: type> = struct { value: t }
 
-extend(cell<i32>, read) {
+extend<cell<i32>, read> {
   let read: (self: Borrow<self>)(): i32 = { self.value }
 }
 
-extend(cell<t>) {
+extend<cell<t>> {
   let take: (move self)(): t = { self.value }
 }
 
@@ -19,6 +19,6 @@ let main: (): i32 = {
   read + taken - 42
 }
 
-test("qualified_trait_generic_method.sc") {
+test<"qualified_trait_generic_method.sc"> {
   std.test.assert(main() == 42)
 }

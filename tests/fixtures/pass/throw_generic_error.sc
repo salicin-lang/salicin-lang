@@ -11,6 +11,6 @@ let main: (): i32 = {
   result ?? 42
 }
 
-test("throw_generic_error.sc") {
+test<"throw_generic_error.sc"> {
   std.test.assert(main() == 42)
 }

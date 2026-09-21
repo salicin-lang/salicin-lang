@@ -10,6 +10,6 @@ let main: (): i32 = {
   read(pointer)
 }
 
-test("raw_pointer_read.sc") {
+test<"raw_pointer_read.sc"> {
   std.test.assert(main() == 42)
 }

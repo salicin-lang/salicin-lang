@@ -9,6 +9,6 @@ let result_value: (): Result<bool><i32> = { Result.Ok(boxed { value: 22 })?.valu
 
 let main: (): i32 = { (option_value() ?? 0) + (result_value() ?? 0) }
 
-test("chain_inferred_inputs.sc") {
+test<"chain_inferred_inputs.sc"> {
   std.test.assert(main() == 42)
 }

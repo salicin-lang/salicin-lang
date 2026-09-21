@@ -11,7 +11,7 @@ let counter = struct {
   drops: Ptr<mut><i32>,
 }
 
-extend(counter, Droppable) {
+extend<counter, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -20,7 +20,7 @@ extend(counter, Droppable) {
   }
 }
 
-extend(counter, Iterator) {
+extend<counter, Iterator> {
   let Item = OwnedItem<i32>;
 
   let next: <r: region>
@@ -36,7 +36,7 @@ extend(counter, Iterator) {
   }
 }
 
-extend(counter, IntoIterator) {
+extend<counter, IntoIterator> {
   let Iter = counter;
 
   let into_iter: (move self)
@@ -76,6 +76,6 @@ let main: (): i32 = {
   (success ?? 0) + (failure ?? 0) + drop_count - 2
 }
 
-test("for_failure_cleanup.sc") {
+test<"for_failure_cleanup.sc"> {
   std.test.assert(main() == 42)
 }

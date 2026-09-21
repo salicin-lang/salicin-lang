@@ -11,6 +11,6 @@ let main: (): i32 = {
   if(count == 1) { answer } else: { 0 }
 }
 
-test("coalesce_result_err_fallback.sc") {
+test<"coalesce_result_err_fallback.sc"> {
   std.test.assert(main() == 42)
 }

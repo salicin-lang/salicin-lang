@@ -1,6 +1,6 @@
 let resource = struct { value: i32 }
 
-extend(resource) {
+extend<resource> {
   let increment: (self: Borrow<mut><self>)
     (): i32 = {
     self.value = self.value + 1
@@ -8,7 +8,7 @@ extend(resource) {
   }
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let checked = 1 / self.value
@@ -18,6 +18,6 @@ extend(resource, Droppable) {
 
 let main: (): i32 = { resource { value: 41 }.increment() }
 
-test("inherent_temporary_mut_resource_receiver.sc") {
+test<"inherent_temporary_mut_resource_receiver.sc"> {
   std.test.assert(main() == 42)
 }

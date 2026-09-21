@@ -9,7 +9,7 @@ let read = effect {
 
 let adder = struct { base: i32 }
 
-extend(adder) {
+extend<adder> {
   let add: (self)(value: i32): i32 = { self.base + value }
 }
 
@@ -33,6 +33,6 @@ let main: (): i32 = {
   result + arguments
 }
 
-test("algebraic_effect_optional_call.sc") {
+test<"algebraic_effect_optional_call.sc"> {
   std.test.assert(main() == 42)
 }

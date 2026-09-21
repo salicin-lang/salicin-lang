@@ -75,6 +75,6 @@ let main: (): i32 = {
   42
 }
 
-test("collection_algorithms.sc") {
+test<"collection_algorithms.sc"> {
   std.test.assert(main() == 42)
 }

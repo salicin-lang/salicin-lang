@@ -16,6 +16,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_function_alias.sc") {
+test<"algebraic_effect_function_alias.sc"> {
   std.test.assert(main() == 42)
 }

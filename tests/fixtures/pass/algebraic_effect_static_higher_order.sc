@@ -20,6 +20,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_static_higher_order.sc") {
+test<"algebraic_effect_static_higher_order.sc"> {
   std.test.assert(main() == 42)
 }

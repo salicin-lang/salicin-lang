@@ -3,11 +3,11 @@ let mark = enum {
   Empty,
 }
 
-extend(mark, Copyable) {}
+extend<mark, Copyable> {}
 
 let pixel = struct { value: i32 }
 
-extend(pixel, Copyable) {}
+extend<pixel, Copyable> {}
 
 let score: (mark: mark): i32 = {
   match(mark) {
@@ -22,6 +22,6 @@ let main: (): i32 = {
   score(mark) + score(mark) + pixels[0].value + pixels[1].value
 }
 
-test("copy_nominal_enum_array.sc") {
+test<"copy_nominal_enum_array.sc"> {
   std.test.assert(main() == 42)
 }

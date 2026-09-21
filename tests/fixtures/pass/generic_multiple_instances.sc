@@ -8,6 +8,6 @@ let main: (): i32 = {
   }
 }
 
-test("generic_multiple_instances.sc") {
+test<"generic_multiple_instances.sc"> {
   std.test.assert(main() == 42)
 }

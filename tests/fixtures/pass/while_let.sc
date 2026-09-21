@@ -2,7 +2,7 @@ let Option = core.Option
 
 let counter = struct { current: i32, end: i32 }
 
-extend(counter) {
+extend<counter> {
   let next: (self: Borrow<mut><self>)
     (): Option<i32> = {
     if(self.current < self.end) {
@@ -32,6 +32,6 @@ let main: (): i32 = {
   total
 }
 
-test("while_let.sc") {
+test<"while_let.sc"> {
   std.test.assert(main() == 42)
 }

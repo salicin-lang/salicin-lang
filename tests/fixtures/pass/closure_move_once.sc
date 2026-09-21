@@ -8,6 +8,6 @@ let main: (): i32 = {
   once()
 }
 
-test("closure_move_once.sc") {
+test<"closure_move_once.sc"> {
   std.test.assert(main() == 42)
 }

@@ -32,6 +32,6 @@ let main: (): i32 = {
   result + fallbacks
 }
 
-test("algebraic_effect_coalesce.sc") {
+test<"algebraic_effect_coalesce.sc"> {
   std.test.assert(main() == 42)
 }

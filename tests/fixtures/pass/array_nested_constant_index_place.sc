@@ -6,6 +6,6 @@ let main: (): i32 = {
   pair.values[0] + pair.values[1]
 }
 
-test("array_nested_constant_index_place.sc") {
+test<"array_nested_constant_index_place.sc"> {
   std.test.assert(main() == 42)
 }

@@ -7,6 +7,6 @@ let main: (): i32 = {
   local + 2
 }
 
-test("do_function_boundary.sc") {
+test<"do_function_boundary.sc"> {
   std.test.assert(main() == 42)
 }

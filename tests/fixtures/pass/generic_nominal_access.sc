@@ -20,6 +20,6 @@ let main: (): i32 = {
   read(cell.value)
 }
 
-test("generic_nominal_access.sc") {
+test<"generic_nominal_access.sc"> {
   std.test.assert(main() == 42)
 }

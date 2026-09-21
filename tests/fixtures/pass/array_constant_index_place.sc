@@ -13,6 +13,6 @@ let main: (): i32 = {
   first + alias + values[1] - 20
 }
 
-test("array_constant_index_place.sc") {
+test<"array_constant_index_place.sc"> {
   std.test.assert(main() == 42)
 }

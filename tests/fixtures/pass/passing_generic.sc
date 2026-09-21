@@ -1,7 +1,7 @@
 let token = struct { value: i32 }
 let holder: <t: type> = struct { value: t }
 
-extend(holder<t>) {
+extend<holder<t>> {
   let into: <m: <p: parameters>: parameters>(m self)(): t = { self.value }
 }
 
@@ -23,6 +23,6 @@ let main: (): i32 = {
   copied + moved_number + moved.value + explicit.value + from_method
 }
 
-test("passing_generic.sc") {
+test<"passing_generic.sc"> {
   std.test.assert(main() == 42)
 }

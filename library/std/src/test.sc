@@ -6,7 +6,7 @@ let host_report: (
   has_message: u8,
   data: Ptr<u8>,
   length: u64,
-): i32 = foreign(c, "sali_host_test_report")
+): i32 = foreign<c, "sali_host_test_report">
 
 let send: (
   index: u64,
@@ -74,7 +74,7 @@ pub let AssertionDebug = trait {
   assertion_debug: (self: Borrow<self>)(): core.string.String
 }
 
-extend(bool, AssertionDebug) {
+extend<bool, AssertionDebug> {
   let assertion_debug: (self: Borrow<self>)
     (): core.string.String = {
     let value: bool = self
@@ -82,7 +82,7 @@ extend(bool, AssertionDebug) {
   }
 }
 
-extend(core.string.UnicodeScalar, AssertionDebug) {
+extend<core.string.UnicodeScalar, AssertionDebug> {
   let assertion_debug: (self: Borrow<self>)
     (): core.string.String = {
     let mut writer = alloc.string.StringWriter.new()
@@ -91,7 +91,7 @@ extend(core.string.UnicodeScalar, AssertionDebug) {
   }
 }
 
-extend(core.string.str, AssertionDebug) {
+extend<core.string.str, AssertionDebug> {
   let assertion_debug: (self: Borrow<self>)
     (): core.string.String = {
     let mut writer = alloc.string.StringWriter.new()
@@ -106,7 +106,7 @@ extend(core.string.str, AssertionDebug) {
   }
 }
 
-extend(core.string.String, AssertionDebug) {
+extend<core.string.String, AssertionDebug> {
   let assertion_debug: (self: Borrow<self>)
     (): core.string.String = {
     let mut writer = alloc.string.StringWriter.new()
@@ -115,7 +115,7 @@ extend(core.string.String, AssertionDebug) {
   }
 }
 
-extend(u64, AssertionDebug) {
+extend<u64, AssertionDebug> {
   let assertion_debug: (self: Borrow<self>)
     (): core.string.String = {
     let mut writer = alloc.string.StringWriter.new()
@@ -124,7 +124,7 @@ extend(u64, AssertionDebug) {
   }
 }
 
-extend(u128, AssertionDebug) {
+extend<u128, AssertionDebug> {
   let assertion_debug: (self: Borrow<self>)
     (): core.string.String = {
     let mut writer = alloc.string.StringWriter.new()
@@ -133,7 +133,7 @@ extend(u128, AssertionDebug) {
   }
 }
 
-extend(i64, AssertionDebug) {
+extend<i64, AssertionDebug> {
   let assertion_debug: (self: Borrow<self>)
     (): core.string.String = {
     let mut writer = alloc.string.StringWriter.new()
@@ -142,7 +142,7 @@ extend(i64, AssertionDebug) {
   }
 }
 
-extend(i128, AssertionDebug) {
+extend<i128, AssertionDebug> {
   let assertion_debug: (self: Borrow<self>)
     (): core.string.String = {
     let mut writer = alloc.string.StringWriter.new()
@@ -185,7 +185,7 @@ let unexpected_value_message: (
 pub let assert_eq: <T: type> with<core.error.throwing<core.string.String>>
   (left: T)
   (right: T): ()
-requires(T is core.cmp.Eq<T> && T is AssertionDebug) = {
+requires<T is core.cmp.Eq<T> && T is AssertionDebug> = {
   if(!(left == right)) {
     let left_text = left.assertion_debug()
     let right_text = right.assertion_debug()
@@ -198,7 +198,7 @@ requires(T is core.cmp.Eq<T> && T is AssertionDebug) = {
 pub let assert_ne: <T: type> with<core.error.throwing<core.string.String>>
   (left: T)
   (right: T): ()
-requires(T is core.cmp.Eq<T> && T is AssertionDebug) = {
+requires<T is core.cmp.Eq<T> && T is AssertionDebug> = {
   if(left == right) {
     let value_text = left.assertion_debug()
     let message = inequality_message(value_text)
@@ -218,7 +218,7 @@ pub let expect_some: <T: type> with<core.error.throwing<core.string.String>>
 /// Requires `None`, formatting an unexpected payload exactly once.
 pub let expect_none: <T: type> with<core.error.throwing<core.string.String>>
   (move value: core.Option<T>): ()
-requires(T is AssertionDebug) = {
+requires<T is AssertionDebug> = {
   match(value) {
     None => (),
     Some(value) => do {
@@ -234,7 +234,7 @@ requires(T is AssertionDebug) = {
 /// Extracts `Ok`, formatting an unexpected error exactly once.
 pub let expect_ok: <Error: type, T: type> with<core.error.throwing<core.string.String>>
   (move value: core.Result<Error><T>): T
-requires(Error is AssertionDebug) = {
+requires<Error is AssertionDebug> = {
   match(value) {
     Ok(value) => value,
     Err(error) => do {
@@ -250,7 +250,7 @@ requires(Error is AssertionDebug) = {
 /// Extracts `Err`, formatting an unexpected success value exactly once.
 pub let expect_err: <Error: type, T: type> with<core.error.throwing<core.string.String>>
   (move value: core.Result<Error><T>): Error
-requires(T is AssertionDebug) = {
+requires<T is AssertionDebug> = {
   match(value) {
     Err(error) => error,
     Ok(value) => do {

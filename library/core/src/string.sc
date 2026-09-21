@@ -261,7 +261,7 @@ pub let StrScalars = struct {
   next_index: u64,
 }
 
-extend(StrBytes, core.iter.Iterator) {
+extend<StrBytes, core.iter.Iterator> {
   let Item = core.iter.OwnedItem<u8>;
   let next: <r: region>
     (self: Borrow<mut><r><self>)
@@ -277,12 +277,12 @@ extend(StrBytes, core.iter.Iterator) {
   }
 }
 
-extend(StrBytes, core.iter.IntoIterator) {
+extend<StrBytes, core.iter.IntoIterator> {
   let Iter = StrBytes
   let into_iter: (move self)(): StrBytes = {  self }
 }
 
-extend(StrScalars, core.iter.Iterator) {
+extend<StrScalars, core.iter.Iterator> {
   let Item = core.iter.OwnedItem<UnicodeScalar>;
   let next: <r: region>
     (self: Borrow<mut><r><self>)
@@ -324,12 +324,12 @@ extend(StrScalars, core.iter.Iterator) {
   }
 }
 
-extend(StrScalars, core.iter.IntoIterator) {
+extend<StrScalars, core.iter.IntoIterator> {
   let Iter = StrScalars
   let into_iter: (move self)(): StrScalars = {  self }
 }
 
-extend(str) {
+extend<str> {
   /// Validates borrowed bytes and returns a text view with the same region.
   let from_utf8: <r: region>
     (bytes: Borrow<r><Slice<u8>>): core.Option<Borrow<r><str>> = {
@@ -465,14 +465,14 @@ extend(str) {
   }
 }
 
-extend(str, core.cmp.Eq<str>) {
+extend<str, core.cmp.Eq<str>> {
   let eq: (self: Borrow<self>)
     (other: Borrow<str>): bool = {
     text_equal(self, other)
   }
 }
 
-extend(str, core.cmp.PartialOrd<str>) {
+extend<str, core.cmp.PartialOrd<str>> {
   let partial_cmp: (
     self: Borrow<self>,
   )
@@ -489,9 +489,9 @@ pub let UnicodeScalar = struct {
   value: u32,
 }
 
-extend(UnicodeScalar, core.marker.Copyable) {}
+extend<UnicodeScalar, core.marker.Copyable> {}
 
-extend(UnicodeScalar, core.cmp.Eq<UnicodeScalar>) {
+extend<UnicodeScalar, core.cmp.Eq<UnicodeScalar>> {
   /// Compares scalar values by numeric code point.
   let eq: (self: Borrow<self>)
     (other: Borrow<UnicodeScalar>): bool = {
@@ -499,7 +499,7 @@ extend(UnicodeScalar, core.cmp.Eq<UnicodeScalar>) {
   }
 }
 
-extend(UnicodeScalar) {
+extend<UnicodeScalar> {
   /// Constructs a scalar from its numeric value, rejecting surrogates and
   /// values above the Unicode codespace.
   let from_u32: (value: u32): core.Option<UnicodeScalar> = {
@@ -666,13 +666,13 @@ pub let string_into_raw_parts: with<core.unsafe.unsafety>
   parts
 }
 
-extend(String, core.literal.StringLiteral) {
+extend<String, core.literal.StringLiteral> {
   let Output = String
 
   let from_string_literal: <length: usize>(move utf8: Array<u8><length>): Output = builtin()
 }
 
-extend(String) {
+extend<String> {
   /// Creates an empty String without allocating.
   let new: (): String = {  "" }
 
@@ -820,7 +820,7 @@ extend(String) {
   }
 }
 
-extend(String, core.cmp.Eq<String>) {
+extend<String, core.cmp.Eq<String>> {
   let eq: (self: Borrow<self>)
     (other: Borrow<String>): bool = {
     let left = self.as_str()
@@ -829,7 +829,7 @@ extend(String, core.cmp.Eq<String>) {
   }
 }
 
-extend(String, core.cmp.PartialOrd<String>) {
+extend<String, core.cmp.PartialOrd<String>> {
   let partial_cmp: (
     self: Borrow<self>,
   )
@@ -840,7 +840,7 @@ extend(String, core.cmp.PartialOrd<String>) {
   }
 }
 
-extend(String, core.marker.Droppable) {
+extend<String, core.marker.Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     if(self.storage_capacity != 0) {

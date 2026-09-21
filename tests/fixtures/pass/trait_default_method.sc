@@ -5,20 +5,20 @@ let read = trait {
 
 let number = struct { value: i32 }
 
-extend(number, read) {
+extend<number, read> {
   let read: (self: Borrow<self>)(): i32 = { self.value }
 }
 
 let override = struct {}
 
-extend(override, read) {
+extend<override, read> {
   let read: (self: Borrow<self>)(): i32 = { 0 }
   let doubled: (self: Borrow<self>)(): i32 = { 42 }
 }
 
 let cell: <t: type> = struct { value: t }
 
-extend(cell<t>, read)<requires: t is read> {
+extend<cell<t>, read><requires: t is read> {
   let read: (self: Borrow<self>)(): i32 = { self.value.read() }
 }
 
@@ -30,7 +30,7 @@ let take = trait {
 
 let boxed = struct { value: i32 }
 
-extend(boxed, take) {
+extend<boxed, take> {
   let Item = i32;
   let take: (move self)(): i32 = { self.value }
 }
@@ -43,6 +43,6 @@ let main: (): i32 = {
   cell.doubled() + overridden.doubled() + boxed.forward() - 84
 }
 
-test("trait_default_method.sc") {
+test<"trait_default_method.sc"> {
   std.test.assert(main() == 42)
 }

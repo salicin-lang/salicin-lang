@@ -39,6 +39,6 @@ let main: (): i32 = {
   first + second
 }
 
-test("raw_pointer_borrow.sc") {
+test<"raw_pointer_borrow.sc"> {
   std.test.assert(main() == 42)
 }

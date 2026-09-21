@@ -14,6 +14,6 @@ let main: (): i32 = {
   }
 }
 
-test("condition.sc") {
+test<"condition.sc"> {
   std.test.assert(main() == 42)
 }

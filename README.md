@@ -52,7 +52,7 @@ salic test main.sc --filter arithmetic
 Tests use compile-time registrations and are linked into one runner:
 
 ```sc fragment
-test("arithmetic") {
+test<"arithmetic"> {
   std.test.assert(20 + 22 == 42)
 }
 ```

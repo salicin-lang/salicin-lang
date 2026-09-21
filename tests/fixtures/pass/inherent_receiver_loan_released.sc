@@ -1,6 +1,6 @@
 let number = struct { value: i32 }
 
-extend(number) {
+extend<number> {
   let read: (self: Borrow<self>)(): i32 = { self.value }
   let take: (move self)(): i32 = { self.value }
 }
@@ -11,6 +11,6 @@ let main: (): i32 = {
   first + number.take()
 }
 
-test("inherent_receiver_loan_released.sc") {
+test<"inherent_receiver_loan_released.sc"> {
   std.test.assert(main() == 42)
 }

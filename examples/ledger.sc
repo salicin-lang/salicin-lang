@@ -26,7 +26,7 @@ let Account = trait {
   snapshot: (self: Borrow<self>)(): i32
 }
 
-extend(Ledger, Account) {
+extend<Ledger, Account> {
   let credit: (self: Borrow<mut><self>)
     (amount: i32): () = {
     self.balance = self.balance + amount
@@ -49,7 +49,7 @@ let Batch = struct {
   index: i32,
 }
 
-extend(Batch, Iterator) {
+extend<Batch, Iterator> {
   let Item = OwnedItem<Transaction>;
 
   let next: <r: region>
@@ -67,7 +67,7 @@ extend(Batch, Iterator) {
   }
 }
 
-extend(Batch, IntoIterator) {
+extend<Batch, IntoIterator> {
   let Iter = Batch;
 
   let into_iter: (move self)

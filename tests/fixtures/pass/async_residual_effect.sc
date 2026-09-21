@@ -11,7 +11,7 @@ let request: with<ask>
 }
 
 let poll_once: <e: effects, f: type, t: type> with<e>
-  (future: Borrow<mut><f>): Poll<t> requires(f is Future<e> && f.Output == t) = {
+  (future: Borrow<mut><f>): Poll<t> requires<f is Future<e> && f.Output == t> = {
   future.poll()
 }
 
@@ -31,6 +31,6 @@ let main: (): i32 = {
   }
 }
 
-test("async_residual_effect.sc") {
+test<"async_residual_effect.sc"> {
   std.test.assert(main() == 42)
 }

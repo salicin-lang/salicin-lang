@@ -10,6 +10,6 @@ let main: (): i32 = {
   }
 }
 
-test("core_result_err.sc") {
+test<"core_result_err.sc"> {
   std.test.assert(main() == 42)
 }

@@ -21,7 +21,7 @@ let inferred_same: <t: type>(value: Borrow<t>): Borrow<t> = { borrow(value) }
 
 let inferred_forward: <r: region>(pair: Borrow<r><pair>): Borrow<r><i32> = { inferred_left(pair) }
 
-extend(pair) {
+extend<pair> {
   let right_ref: <r: region>(pair: Borrow<r><pair>): Borrow<r><i32> = { borrow(pair.right) }
 
   let right_method: <r: region>(self: Borrow<r><self>)(): Borrow<r><i32> = { borrow(self.right) }
@@ -34,11 +34,11 @@ extend(pair) {
   let inferred_left_mut: (self: Borrow<mut><self>)(): Borrow<mut><i32> = { borrow<mut>(self.left) }
 }
 
-extend(holder<t>) {
+extend<holder<t>> {
   let get: <r: region>(self: Borrow<r><self>)(): Borrow<r><t> = { borrow(self.value) }
 }
 
-extend(pair, right_view) {
+extend<pair, right_view> {
   let view: <r: region>(self: Borrow<r><self>)(): Borrow<r><i32> = { borrow(self.right) }
 }
 
@@ -68,6 +68,6 @@ let main: (): i32 = {
   before + pair_value.left
 }
 
-test("returned_borrow.sc") {
+test<"returned_borrow.sc"> {
   std.test.assert(main() == 42)
 }

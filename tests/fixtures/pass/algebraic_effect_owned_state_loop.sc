@@ -25,6 +25,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_owned_state_loop.sc") {
+test<"algebraic_effect_owned_state_loop.sc"> {
   std.test.assert(main() == 42)
 }

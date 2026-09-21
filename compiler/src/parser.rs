@@ -168,7 +168,7 @@ impl Parser {
                 uses.extend(self.use_declaration(visibility)?);
             } else if self.at_context_ident("extern") {
                 return Err(self.error_here(
-                    "grouped `extern` declarations have been removed; use `let name = (...): result foreign(c, \"symbol\")`",
+                    "grouped `extern` declarations have been removed; use `let name: (...): result = foreign<c, \"symbol\">`",
                 ));
             } else if self.at_context_ident("test") {
                 if visibility != Visibility::Private {
@@ -238,7 +238,7 @@ impl Parser {
 
     fn test_declaration(&mut self) -> Result<Function, ParseError> {
         self.advance();
-        self.expect(&TokenKind::LParen, "`(` after `test`")?;
+        self.expect(&TokenKind::Less, "`<` after `test`")?;
         let TokenKind::String(name) = self.current().kind.clone() else {
             return Err(self.error_here("test name must be a string literal"));
         };
@@ -246,7 +246,7 @@ impl Parser {
             return Err(self.error_here("test name cannot be empty"));
         }
         self.advance();
-        self.expect(&TokenKind::RParen, "`)` after test name")?;
+        self.expect_group_close(&TokenKind::Greater, "`>` after test name")?;
         if !self.at(&TokenKind::LBrace) {
             return Err(self.error_here("expected a trailing braced test body"));
         }
@@ -622,13 +622,13 @@ impl Parser {
 
         if self.at(&TokenKind::Where) {
             return Err(self.error_here(
-                "colon-style `where` predicates were removed; write `= requires(t is trait) ...`",
+                "colon-style `where` predicates were removed; write `requires<t is trait> = ...`",
             ));
         }
         let mut where_predicates = Vec::new();
         if self.at_context_ident("requires") {
             self.advance();
-            where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
+            where_predicates.extend(self.constraint_arguments("`<` after `requires`")?);
         }
         self.take_newlines_if_followed_by(&[TokenKind::Equal]);
 
@@ -684,7 +684,7 @@ impl Parser {
             }
             if compile_groups.is_empty() && groups.is_empty() {
                 return Err(self.error_here(
-                    "`foreign(...)` defines a function declaration and requires one runtime parameter group",
+                    "`foreign<...>` defines a function declaration and requires one runtime parameter group",
                 ));
             }
             if !compile_groups.is_empty() {
@@ -697,7 +697,7 @@ impl Parser {
             }
             if annotation.is_none() {
                 return Err(self.error_here(
-                    "foreign functions require an explicit result type before `= foreign(...)`",
+                    "foreign functions require an explicit result type before `= foreign<...>`",
                 ));
             }
             if has_effect_clause {
@@ -857,11 +857,11 @@ impl Parser {
         declaration_name: &str,
     ) -> Result<ForeignFunction, ParseError> {
         self.advance();
-        self.expect(&TokenKind::LParen, "`(` after `foreign`")?;
+        self.expect(&TokenKind::Less, "`<` after `foreign`")?;
         let abi = self.expect_ident("a foreign ABI name")?;
         if abi != "c" {
             return Err(self.error_here(format!(
-                "unsupported foreign ABI `{abi}`; only `foreign(c)` is available"
+                "unsupported foreign ABI `{abi}`; only `foreign<c>` is available"
             )));
         }
         let link_name = if self.take(&TokenKind::Comma) {
@@ -875,7 +875,7 @@ impl Parser {
         } else {
             declaration_name.to_owned()
         };
-        self.expect(&TokenKind::RParen, "`)` after `foreign` initializer")?;
+        self.expect_group_close(&TokenKind::Greater, "`>` after `foreign` initializer")?;
         if !foreign_link_name_is_valid(&link_name) {
             return Err(self.error_here(format!(
                 "foreign link name `{link_name}` must be a non-empty ASCII linker symbol"
@@ -1317,20 +1317,20 @@ impl Parser {
 
     fn extend_definition(&mut self) -> Result<ExtendDef, ParseError> {
         self.expect(&TokenKind::Extend, "`extend`")?;
-        self.expect(&TokenKind::LParen, "`(` after `extend`")?;
+        self.expect(&TokenKind::Less, "`<` after `extend`")?;
         let target = self.type_expr()?;
         let trait_ref = if self.take(&TokenKind::Comma) {
             Some(self.type_expr()?)
         } else {
             None
         };
-        self.expect(&TokenKind::RParen, "`)` after extend arguments")?;
+        self.expect_group_close(&TokenKind::Greater, "`>` after extend arguments")?;
         self.take_newlines_if_followed_by(&[TokenKind::LBrace]);
         let where_predicates = if self.requires_compile_group_follows() {
             self.requires_compile_argument_group()?
         } else if self.at(&TokenKind::Less) {
             return Err(self.error_here(
-                "extension requirements must be adjacent: `extend(Type)<requires: predicate>`",
+                "extension requirements must be adjacent: `extend<Type><requires: predicate>`",
             ));
         } else if self.at(&TokenKind::Where) {
             return Err(self.error_here(
@@ -1342,7 +1342,7 @@ impl Parser {
         self.take_newlines_if_followed_by(&[TokenKind::LBrace]);
         self.expect(
             &TokenKind::LBrace,
-            "trailing implementation block after `extend(...)`",
+            "trailing implementation block after `extend<...>`",
         )?;
         self.skip_separators();
 
@@ -1419,13 +1419,13 @@ impl Parser {
         }
         if self.at(&TokenKind::Where) {
             return Err(self.error_here(
-                "colon-style extension-member predicates were removed; write `= requires(t is trait) ...`",
+                "colon-style extension-member predicates were removed; write `requires<t is trait> = ...`",
             ));
         }
         let mut where_predicates = Vec::new();
         if self.at_context_ident("requires") {
             self.advance();
-            where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
+            where_predicates.extend(self.constraint_arguments("`<` after `requires`")?);
         }
         self.take_newlines_if_followed_by(&[TokenKind::Equal]);
         if !self.at(&TokenKind::Equal) && (!compile_groups.is_empty() || !groups.is_empty())
@@ -1502,8 +1502,9 @@ impl Parser {
         &mut self,
         opening_description: &str,
     ) -> Result<Vec<WherePredicate>, ParseError> {
-        self.expect(&TokenKind::LParen, opening_description)?;
-        self.constraint_expressions_until_rparen()
+        self.expect(&TokenKind::Less, opening_description)?;
+        self.skip_newlines();
+        self.constraint_expressions_until(TokenKind::Greater)
     }
 
     fn requires_compile_argument_group(&mut self) -> Result<Vec<WherePredicate>, ParseError> {
@@ -1518,18 +1519,16 @@ impl Parser {
         self.constraint_expressions_until(TokenKind::Greater)
     }
 
-    fn constraint_expressions_until_rparen(&mut self) -> Result<Vec<WherePredicate>, ParseError> {
-        self.constraint_expressions_until(TokenKind::RParen)
-    }
-
     fn constraint_expressions_until(
         &mut self,
         close: TokenKind,
     ) -> Result<Vec<WherePredicate>, ParseError> {
         let mut predicates = Vec::new();
+        self.skip_newlines();
         loop {
             self.constraint_expression(&mut predicates)?;
             if self.take(&TokenKind::AndAnd) || self.take(&TokenKind::Comma) {
+                self.skip_newlines();
                 if self.at(&close) {
                     break;
                 }
@@ -1537,6 +1536,7 @@ impl Parser {
             }
             break;
         }
+        self.skip_newlines();
         self.expect_group_close(&close, "after compile-time constraints")?;
         Ok(predicates)
     }
@@ -2189,23 +2189,36 @@ impl Parser {
     }
 
     fn expect_group_close(&mut self, close: &TokenKind, context: &str) -> Result<(), ParseError> {
-        if close == &TokenKind::Greater && self.at(&TokenKind::Shr) {
-            self.split_current_shift_right();
+        if close == &TokenKind::Greater
+            && matches!(
+                self.current().kind,
+                TokenKind::GreaterEqual | TokenKind::Shr | TokenKind::ShrEqual
+            )
+        {
+            self.split_current_angle_close();
         }
         self.expect(close, context)
     }
 
-    fn split_current_shift_right(&mut self) {
+    fn split_current_angle_close(&mut self) {
         let token = self.current().clone();
-        debug_assert_eq!(token.kind, TokenKind::Shr);
+        debug_assert!(matches!(
+            token.kind,
+            TokenKind::GreaterEqual | TokenKind::Shr | TokenKind::ShrEqual
+        ));
         let mut first = token.clone();
         first.kind = TokenKind::Greater;
         first.end_byte = first.start_byte + 1;
         first.end_column = first.column + 1;
         let mut second = token;
-        second.kind = TokenKind::Greater;
         second.start_byte += 1;
         second.column += 1;
+        second.kind = match second.kind {
+            TokenKind::GreaterEqual => TokenKind::Equal,
+            TokenKind::Shr => TokenKind::Greater,
+            TokenKind::ShrEqual => TokenKind::GreaterEqual,
+            _ => unreachable!(),
+        };
         self.tokens[self.index] = first;
         self.tokens.insert(self.index + 1, second);
     }
@@ -3219,15 +3232,15 @@ impl Parser {
             }
             if self.tokens.get(self.index + offset).is_some_and(
                 |token| matches!(&token.kind, TokenKind::Ident(name) if name == "requires"),
-            ) && self.at_offset(offset + 1, &TokenKind::LParen)
+            ) && self.at_offset(offset + 1, &TokenKind::Less)
             {
                 self.skip_newlines();
             }
         }
         let mut where_predicates = Vec::new();
-        if self.at_context_ident("requires") && self.at_offset(1, &TokenKind::LParen) {
+        if self.at_context_ident("requires") && self.at_offset(1, &TokenKind::Less) {
             self.advance();
-            where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
+            where_predicates.extend(self.constraint_arguments("`<` after `requires`")?);
             self.take_newlines_if_followed_by(&[TokenKind::Equal, TokenKind::FatArrow]);
         }
         if self.at(&TokenKind::FatArrow) {
@@ -4406,7 +4419,7 @@ impl Parser {
                     >= 1
                 && self.previous().end_byte == self.current().start_byte
             {
-                self.split_current_shift_right();
+                self.split_current_angle_close();
                 break;
             }
             let operator = if self.take(&TokenKind::Shl) {

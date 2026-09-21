@@ -5,6 +5,6 @@ let main: (): i32 = {
   identity(value) + value
 }
 
-test("inferred_copy_i32.sc") {
+test<"inferred_copy_i32.sc"> {
   std.test.assert(main() == 42)
 }

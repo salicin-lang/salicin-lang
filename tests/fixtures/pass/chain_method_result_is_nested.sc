@@ -2,7 +2,7 @@ let Option = core.Option
 
 let boxed = struct { value: i32 }
 
-extend(boxed) {
+extend<boxed> {
   let optional: (move self)(): Option<i32> = { Option<i32>.Some(self.value) }
 }
 
@@ -14,6 +14,6 @@ let main: (): i32 = {
   }
 }
 
-test("chain_method_result_is_nested.sc") {
+test<"chain_method_result_is_nested.sc"> {
   std.test.assert(main() == 42)
 }

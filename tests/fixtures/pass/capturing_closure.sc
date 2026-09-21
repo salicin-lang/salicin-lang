@@ -4,6 +4,6 @@ let main: (): i32 = {
   add_base(2)
 }
 
-test("capturing_closure.sc") {
+test<"capturing_closure.sc"> {
   std.test.assert(main() == 42)
 }

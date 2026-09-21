@@ -1,6 +1,6 @@
 let pair: <a: type, b: type> = struct { first: a, second: b }
 
-extend(pair<y, x>) {
+extend<pair<y, x>> {
   let new: (move first: y, move second: x): pair<y, x> = { pair { first: first, second: second } }
   let take_first: (move self)(): y = { self.first }
 }
@@ -10,6 +10,6 @@ let main: (): i32 = {
   pair.take_first()
 }
 
-test("generic_inherent_reordered.sc") {
+test<"generic_inherent_reordered.sc"> {
   std.test.assert(main() == 42)
 }

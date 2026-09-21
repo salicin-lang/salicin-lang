@@ -22,6 +22,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_borrow_parameters.sc") {
+test<"algebraic_effect_borrow_parameters.sc"> {
   std.test.assert(main() == 42)
 }

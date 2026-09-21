@@ -5,6 +5,6 @@ let run: (base: i32): i32 = {
 
 let main: (): i32 = { run(40) }
 
-test("closure_capture_parameter.sc") {
+test<"closure_capture_parameter.sc"> {
   std.test.assert(main() == 42)
 }

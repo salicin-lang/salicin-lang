@@ -928,8 +928,8 @@ fn rejects_malformed_control_contracts() {
             (
                 "for",
                 EDITION_2026_CONTROL.replace(
-                    "    Iter.Item == Item",
-                    "    Iter.Item == bool",
+                    "  Iter.Item == Item",
+                    "  Iter.Item == bool",
                 ),
             ),
         ] {

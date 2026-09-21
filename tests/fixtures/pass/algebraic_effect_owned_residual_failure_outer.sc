@@ -10,7 +10,7 @@ let state = struct {
   drops: Ptr<mut><i32>,
 }
 
-extend(state, Droppable) {
+extend<state, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -54,6 +54,6 @@ let main: (): i32 = {
   (success ?? 0) + (failure ?? 5) + drop_count + 14
 }
 
-test("algebraic_effect_owned_residual_failure_outer.sc") {
+test<"algebraic_effect_owned_residual_failure_outer.sc"> {
   std.test.assert(main() == 42)
 }

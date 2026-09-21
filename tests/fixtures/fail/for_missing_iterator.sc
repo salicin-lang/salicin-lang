@@ -3,7 +3,7 @@ let IntoIterator = core.iter.IntoIterator
 let iterable = struct {}
 let iter = struct {}
 
-extend(iterable, IntoIterator) {
+extend<iterable, IntoIterator> {
   let Iter = iter;
   let into_iter: (move self)
     (): iter = { iter {}

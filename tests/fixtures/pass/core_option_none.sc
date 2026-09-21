@@ -8,6 +8,6 @@ let main: (): i32 = {
   }
 }
 
-test("core_option_none.sc") {
+test<"core_option_none.sc"> {
   std.test.assert(main() == 42)
 }

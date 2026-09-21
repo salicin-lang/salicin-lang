@@ -2,7 +2,7 @@ let Add = core.ops.Add
 
 let number = struct { value: i32 }
 
-extend(number, Add<number>) {
+extend<number, Add<number>> {
   let Output = number;
   let add: (self)(rhs: number): number = { number { value: self.value + rhs.value } }
 }
@@ -20,6 +20,6 @@ let main: (): i32 = {
   if(left_count == 1 && right_count == 1) { answer.value } else: { 0 }
 }
 
-test("add_trait_operands_once.sc") {
+test<"add_trait_operands_once.sc"> {
   std.test.assert(main() == 42)
 }

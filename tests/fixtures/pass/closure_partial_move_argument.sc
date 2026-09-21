@@ -13,6 +13,6 @@ let main: (): i32 = {
   pending(1)
 }
 
-test("closure_partial_move_argument.sc") {
+test<"closure_partial_move_argument.sc"> {
   std.test.assert(main() == 42)
 }

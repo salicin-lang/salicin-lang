@@ -9,7 +9,7 @@ let resource = struct {
   value: i32,
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -73,6 +73,6 @@ let main: (): i32 = {
   ignored + invoked + calls + effectful + unsafety + drops
 }
 
-test("capturing_callable_bridge.sc") {
+test<"capturing_callable_bridge.sc"> {
   std.test.assert(main() == 42)
 }

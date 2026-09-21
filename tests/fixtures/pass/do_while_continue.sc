@@ -13,6 +13,6 @@ let main: (): i32 = {
   total
 }
 
-test("do_while_continue.sc") {
+test<"do_while_continue.sc"> {
   std.test.assert(main() == 42)
 }

@@ -5,6 +5,6 @@ let main: (): i32 = {
   consume(value)
 }
 
-test("explicit_move_i32_once.sc") {
+test<"explicit_move_i32_once.sc"> {
   std.test.assert(main() == 42)
 }

@@ -1,6 +1,6 @@
 let counter = struct { value: i32 }
 
-extend(counter) {
+extend<counter> {
   let set: (self: Borrow<mut><self>)
     (value: i32)
     (extra: i32): i32 = {

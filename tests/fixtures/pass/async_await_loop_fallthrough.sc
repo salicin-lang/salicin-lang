@@ -5,7 +5,7 @@ let step = struct {
   remaining: Ptr<mut><i32>
   }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = bool;
 
   let poll: <r: region>
@@ -63,6 +63,6 @@ let main: (): i32 = {
   implicit_value + explicit_value + unsafe { *fallthroughs_ptr } - 2
 }
 
-test("async_await_loop_fallthrough.sc") {
+test<"async_await_loop_fallthrough.sc"> {
   std.test.assert(main() == 42)
 }

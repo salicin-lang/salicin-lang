@@ -5,6 +5,6 @@ let main: (): i32 = {
   identity_i32(42)
 }
 
-test("generic_type_application_partial.sc") {
+test<"generic_type_application_partial.sc"> {
   std.test.assert(main() == 42)
 }

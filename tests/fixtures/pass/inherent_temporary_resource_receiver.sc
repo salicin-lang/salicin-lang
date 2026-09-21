@@ -1,10 +1,10 @@
 let resource = struct { value: i32 }
 
-extend(resource) {
+extend<resource> {
   let read: (self: Borrow<self>)(): i32 = { self.value }
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let checked = 1 / self.value
@@ -14,6 +14,6 @@ extend(resource, Droppable) {
 
 let main: (): i32 = { resource { value: 42 }.read() }
 
-test("inherent_temporary_resource_receiver.sc") {
+test<"inherent_temporary_resource_receiver.sc"> {
   std.test.assert(main() == 42)
 }

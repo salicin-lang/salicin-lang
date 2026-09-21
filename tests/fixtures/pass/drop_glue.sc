@@ -5,7 +5,7 @@ let choice = enum {
   None,
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     self.value = 0
@@ -17,6 +17,6 @@ let main: (): i32 = {
   42
 }
 
-test("drop_glue.sc") {
+test<"drop_glue.sc"> {
   std.test.assert(main() == 42)
 }

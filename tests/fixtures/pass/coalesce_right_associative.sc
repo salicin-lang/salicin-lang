@@ -6,6 +6,6 @@ let main: (): i32 = {
   first ?? second ?? 0
 }
 
-test("coalesce_right_associative.sc") {
+test<"coalesce_right_associative.sc"> {
   std.test.assert(main() == 42)
 }

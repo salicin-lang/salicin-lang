@@ -6,6 +6,6 @@ let main: (): i32 = {
   pair.left + pair.right
 }
 
-test("positional_constructor.sc") {
+test<"positional_constructor.sc"> {
   std.test.assert(main() == 42)
 }

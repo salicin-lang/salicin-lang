@@ -9,7 +9,7 @@ let lend = trait {
 
 let cell = struct { value: i32 }
 
-extend(cell, lend) {
+extend<cell, lend> {
   let Item = view<i32>;
 
   let view: <a: access, r: region>
@@ -35,6 +35,6 @@ let main: (): i32 = {
   read(final_value)
 }
 
-test("gat_borrow_family.sc") {
+test<"gat_borrow_family.sc"> {
   std.test.assert(main() == 42)
 }

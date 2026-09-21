@@ -7,7 +7,7 @@ pub let decimal: (
   parse_i64_radix(value, 10)
 }
 
-test("decimal parser accepts signed input") {
+test<"decimal parser accepts signed input"> {
   let input: String = "-17"
   let view = input.as_str()
   match(decimal(view)) {
@@ -16,7 +16,7 @@ test("decimal parser accepts signed input") {
   }
 }
 
-test("decimal parser rejects trailing text") {
+test<"decimal parser rejects trailing text"> {
   let input: String = "12x"
   let view = input.as_str()
   match(decimal(view)) {

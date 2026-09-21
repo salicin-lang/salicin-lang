@@ -4,7 +4,7 @@ let decide = effect {
 
 let event = enum { value { value: i32 }, Empty }
 
-extend(event, Copyable) {}
+extend<event, Copyable> {}
 
 let accepted: with<decide>
   (value: i32): bool = {
@@ -36,6 +36,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_match_guard.sc") {
+test<"algebraic_effect_match_guard.sc"> {
   std.test.assert(main() == 42)
 }

@@ -26,6 +26,6 @@ let main: (): i32 = {
   from_some + from_none + from_ok + from_err
 }
 
-test("core_inferred_variants.sc") {
+test<"core_inferred_variants.sc"> {
   std.test.assert(main() == 42)
 }

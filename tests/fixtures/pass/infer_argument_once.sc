@@ -11,6 +11,6 @@ let main: (): i32 = {
   if(count == 1) { value } else: { 0 }
 }
 
-test("infer_argument_once.sc") {
+test<"infer_argument_once.sc"> {
   std.test.assert(main() == 42)
 }

@@ -6,6 +6,6 @@ let main: (): i32 = {
   make<t: i32>(value: inferred)
 }
 
-test("infer_named_arguments.sc") {
+test<"infer_named_arguments.sc"> {
   std.test.assert(main() == 42)
 }

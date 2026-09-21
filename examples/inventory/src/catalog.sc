@@ -16,7 +16,7 @@ pub let Summary = struct {
   pub name_bytes: u64,
 }
 
-extend(Inventory) {
+extend<Inventory> {
   let new: (): Inventory = {
     Inventory { products: Vec<model.Product>.new() }
   }
@@ -27,7 +27,7 @@ extend(Inventory) {
   }
 }
 
-extend(Inventory, Summarize) {
+extend<Inventory, Summarize> {
   let summarize: (move self)
     (): Summary = {
     let mut owner = self
@@ -44,7 +44,7 @@ extend(Inventory, Summarize) {
   }
 }
 
-test("inventory combines arrays slices vectors and Unicode") {
+test<"inventory combines arrays slices vectors and Unicode"> {
   let expected_name_bytes: Array<u64><2> = [1, 3]
   let byte_view = expected_name_bytes.as_slice()
   let first_bytes: u64 = match(byte_view.first()) {

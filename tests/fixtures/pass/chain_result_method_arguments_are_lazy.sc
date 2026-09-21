@@ -2,7 +2,7 @@ let Result = core.Result
 
 let adder = struct { base: i32 }
 
-extend(adder) {
+extend<adder> {
   let add: (self)(value: i32): i32 = { self.base + value }
 }
 
@@ -17,6 +17,6 @@ let main: (): i32 = {
   if(count == 0) { answer } else: { 0 }
 }
 
-test("chain_result_method_arguments_are_lazy.sc") {
+test<"chain_result_method_arguments_are_lazy.sc"> {
   std.test.assert(main() == 42)
 }

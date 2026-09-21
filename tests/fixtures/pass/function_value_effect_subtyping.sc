@@ -8,6 +8,6 @@ let main: (): i32 = {
   unsafe { invoke(pure)() }
 }
 
-test("function_value_effect_subtyping.sc") {
+test<"function_value_effect_subtyping.sc"> {
   std.test.assert(main() == 42)
 }

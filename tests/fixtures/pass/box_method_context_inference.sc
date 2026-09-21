@@ -12,6 +12,6 @@ let main: (): i32 = {
   }
 }
 
-test("box_method_context_inference.sc") {
+test<"box_method_context_inference.sc"> {
   std.test.assert(main() == 42)
 }

@@ -1,6 +1,6 @@
 let resource = struct { value: i32 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = { () }
 }
 

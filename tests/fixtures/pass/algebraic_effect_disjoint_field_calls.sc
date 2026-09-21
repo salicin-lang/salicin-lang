@@ -8,7 +8,7 @@ let state = struct {
   drops: Ptr<mut><i32>,
 }
 
-extend(state, Droppable) {
+extend<state, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -53,6 +53,6 @@ let main: (): i32 = {
   resumed + abandoned + drop_count - 42
 }
 
-test("algebraic_effect_disjoint_field_calls.sc") {
+test<"algebraic_effect_disjoint_field_calls.sc"> {
   std.test.assert(main() == 42)
 }

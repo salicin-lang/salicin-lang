@@ -1,6 +1,6 @@
 let resource = struct { value: i32 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let trapped = 1 / self.value
@@ -21,6 +21,6 @@ let escape: (): i32 = {
 
 let main: (): i32 = { escape() }
 
-test("closure_partial_early_trap.sc") {
+test<"closure_partial_early_trap.sc"> {
   std.test.assert(main() == 42)
 }

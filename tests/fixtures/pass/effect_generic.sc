@@ -7,6 +7,6 @@ let main: (): i32 = {
   forward(20) + forward<pure>(20) + unsafe { forward<e: unsafety>(2) }
 }
 
-test("effect_generic.sc") {
+test<"effect_generic.sc"> {
   std.test.assert(main() == 42)
 }

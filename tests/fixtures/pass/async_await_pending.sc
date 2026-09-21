@@ -3,7 +3,7 @@ let Future = core.async.Future
 
 let step = struct { polls: i32 }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -35,6 +35,6 @@ let main: (): i32 = {
   first + second - 1
 }
 
-test("async_await_pending.sc") {
+test<"async_await_pending.sc"> {
   std.test.assert(main() == 42)
 }

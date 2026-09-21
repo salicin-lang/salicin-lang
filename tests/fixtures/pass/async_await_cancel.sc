@@ -5,7 +5,7 @@ let unsafety = core.unsafe.unsafety
 let step = struct { counter: Ptr<mut><i32> }
 let resource = struct { counter: Ptr<mut><i32> }
 
-extend(step, Droppable) {
+extend<step, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -14,7 +14,7 @@ extend(step, Droppable) {
   }
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -25,7 +25,7 @@ extend(resource, Droppable) {
 
 let consume: (move resource: resource): () = { () }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -73,6 +73,6 @@ let main: (): i32 = {
   }
 }
 
-test("async_await_cancel.sc") {
+test<"async_await_cancel.sc"> {
   std.test.assert(main() == 42)
 }

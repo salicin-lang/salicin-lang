@@ -1,12 +1,12 @@
 let Index = core.ops.Index
 
 let resource = struct { value: i32 }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = { }
 }
 
 let bag = struct { value: resource }
-extend(bag, Index<i32>) {
+extend<bag, Index<i32>> {
   let Output = resource;
   let index: <a: access>(self: Borrow<a><self>)
     (key: i32): Borrow<a><resource> = {

@@ -6,6 +6,6 @@ let main: (): i32 = {
   if(flag.value) { answer.value } else: { 0 }
 }
 
-test("generic_nominal_multiple_instances.sc") {
+test<"generic_nominal_multiple_instances.sc"> {
   std.test.assert(main() == 42)
 }

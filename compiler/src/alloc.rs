@@ -1555,7 +1555,7 @@ mod tests {
     #[test]
     fn rejects_box_read_without_its_copy_proof() {
         let source = alloc_source().replacen(
-            ": T requires(T is Copyable) = {\n  unsafe {",
+            ": T requires<T is Copyable> = {\n  unsafe {",
             ": T = {\n  unsafe {",
             1,
         );
@@ -1567,7 +1567,7 @@ mod tests {
     #[test]
     fn rejects_box_write_without_its_copy_proof() {
         let source = alloc_source().replacen(
-            "let box_write: <T: type>\n  (boxed: Borrow<mut><Box<T>>)\n  (copy value: T): () requires(T is Copyable) = {\n  unsafe {",
+            "let box_write: <T: type>\n  (boxed: Borrow<mut><Box<T>>)\n  (copy value: T): () requires<T is Copyable> = {\n  unsafe {",
             "let box_write: <T: type>\n  (boxed: Borrow<mut><Box<T>>)\n  (copy value: T): () = {\n  unsafe {",
             1,
         );
@@ -1624,8 +1624,8 @@ mod tests {
     #[test]
     fn rejects_a_malformed_vec_drop_extension() {
         let source = alloc_source().replacen(
-            "extend(Vec<T>, Droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let drop: (self: Borrow<mut><self>)\n    (): () = {",
-            "extend(Vec<T>, Droppable) {\n  /// Drops all initialized elements and deallocates storage.\n  let release: (self: Borrow<mut><self>)\n    (): () = {",
+            "extend<Vec<T>, Droppable> {\n  /// Drops all initialized elements and deallocates storage.\n  let drop: (self: Borrow<mut><self>)\n    (): () = {",
+            "extend<Vec<T>, Droppable> {\n  /// Drops all initialized elements and deallocates storage.\n  let release: (self: Borrow<mut><self>)\n    (): () = {",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))

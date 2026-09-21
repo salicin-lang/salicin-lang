@@ -8,6 +8,6 @@ let main: (): i32 = {
   0
 }
 
-test("raw_allocator_invalid_alignment.sc") {
+test<"raw_allocator_invalid_alignment.sc"> {
   std.test.assert(main() == 42)
 }

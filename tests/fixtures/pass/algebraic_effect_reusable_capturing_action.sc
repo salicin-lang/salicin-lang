@@ -18,6 +18,6 @@ let main: (): i32 = {
   run(action)(2)
 }
 
-test("algebraic_effect_reusable_capturing_action.sc") {
+test<"algebraic_effect_reusable_capturing_action.sc"> {
   std.test.assert(main() == 42)
 }

@@ -1947,7 +1947,7 @@ mod tests {
     #[test]
     fn unicode_tokens_expose_utf8_and_utf16_ranges() {
         let analysis = analyze(
-            "let 变量 = 1\nlet symbol = { (value: i32): i32 => foreign(c, \"😀\") }\n",
+            "let 变量 = 1\nlet symbol = { (value: i32): i32 => foreign<c, \"😀\"> }\n",
             DocumentTarget::Library,
         );
         let name = analysis
@@ -2085,7 +2085,7 @@ mod tests {
     #[test]
     fn semantic_index_covers_source_identities_references_and_ambiguity() {
         let module = Vec::new();
-        let source = "let Option = core.Option\nlet read = trait {\n  read: (self: Borrow<self>)(): i32\n}\n\nlet cell = struct { value: i32 }\nlet event = enum { value { value: i32 }, empty }\n\nlet choose: (value: i32): i32 = {  value }\nlet choose: (other: u64): u64 = {  other }\n\nextend(cell, read) {\n  let read: (self: Borrow<self>)(): i32 = {  self.value }\n}\n\nlet answer: (value: cell): i32 = { \n  choose(value: value.read())\n}\n";
+        let source = "let Option = core.Option\nlet read = trait {\n  read: (self: Borrow<self>)(): i32\n}\n\nlet cell = struct { value: i32 }\nlet event = enum { value { value: i32 }, empty }\n\nlet choose: (value: i32): i32 = {  value }\nlet choose: (other: u64): u64 = {  other }\n\nextend<cell, read> {\n  let read: (self: Borrow<self>)(): i32 = {  self.value }\n}\n\nlet answer: (value: cell): i32 = { \n  choose(value: value.read())\n}\n";
         let analysis = analyze_workspace(
             &[EditorSource {
                 path: "src/lib.sc",
@@ -2123,7 +2123,7 @@ mod tests {
             .find(|symbol| symbol.kind == SemanticSymbolKind::ExtensionMember)
             .expect("extension member");
         assert!(
-            extension_member.range.start.byte > source.find("extend(cell, read)").unwrap(),
+            extension_member.range.start.byte > source.find("extend<cell, read>").unwrap(),
             "implementation identity must point at the member declaration, not the trait reference"
         );
         let alias = index
@@ -2619,7 +2619,7 @@ mod tests {
             Err(RenameError::BindingConflict)
         );
 
-        let foreign = "let c_value: (): i32 = foreign(c)\n";
+        let foreign = "let c_value: (): i32 = foreign<c>\n";
         let foreign_session = WorkspaceSession::new(
             &[EditorSource {
                 path: "src/lib.sc",

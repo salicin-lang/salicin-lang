@@ -14,6 +14,6 @@ let main: (): i32 = {
   values[0] + values[1]
 }
 
-test("raw_allocator_inferred.sc") {
+test<"raw_allocator_inferred.sc"> {
   std.test.assert(main() == 42)
 }

@@ -2,7 +2,7 @@
 
 Status: implemented and verified bounded C ABI
 
-Salicin exposes C-owned functions through `foreign(c, ...)` and C-compatible
+Salicin exposes C-owned functions through `foreign<c, ...>` and C-compatible
 data through `struct(c)`. These forms share the native Clang target selected
 by the compiler driver, but they are intentionally separate: a type having C
 layout does not imply that it may be passed by value through a foreign call.
@@ -47,8 +47,8 @@ A foreign declaration:
 - has an explicit result;
 - has no explicit `throwing` or custom effect;
 - implicitly requires `unsafety` at every call;
-- uses `foreign(c)` for the local declaration name or
-  `foreign(c, "symbol")` for an explicit validated ASCII C symbol.
+- uses `foreign<c>` for the local declaration name or
+  `foreign<c, "symbol">` for an explicit validated ASCII C symbol.
 
 Variadic functions are not supported. Duplicate C link names and names
 reserved for the Salicin runtime are rejected before LLVM emission.

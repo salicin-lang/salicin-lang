@@ -3,7 +3,7 @@ let resource = struct {
   drops: Ptr<mut><i32>,
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -39,6 +39,6 @@ let main: (): i32 = {
   total + drop_count - 3
 }
 
-test("array_iterator_resource.sc") {
+test<"array_iterator_resource.sc"> {
   std.test.assert(main() == 42)
 }

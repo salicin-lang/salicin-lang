@@ -7,7 +7,7 @@ let resource = struct {
   value: i32
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -21,7 +21,7 @@ let step = struct {
   polled: bool
 }
 
-extend(step, Droppable) {
+extend<step, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -30,7 +30,7 @@ extend(step, Droppable) {
   }
 }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -95,6 +95,6 @@ let main: (): i32 = {
   }
 }
 
-test("async_await_retained_resource_drop.sc") {
+test<"async_await_retained_resource_drop.sc"> {
   std.test.assert(main() == 42)
 }

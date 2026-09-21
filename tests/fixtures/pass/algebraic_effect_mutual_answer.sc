@@ -23,6 +23,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_mutual_answer.sc") {
+test<"algebraic_effect_mutual_answer.sc"> {
   std.test.assert(main() == 42)
 }

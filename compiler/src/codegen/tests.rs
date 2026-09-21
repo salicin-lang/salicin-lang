@@ -271,7 +271,7 @@ fn validates_delimiters_for_direct_indirect_and_partial_calls() {
         "let identity: <t: type>(value: t): t = {  value }\n\
              let main: (): i32 = {  identity(i32)(42) }\n",
         "let cell: <t: type> = struct { value: t }\n\
-             extend(cell<t>) {\n\
+             extend<cell<t>> {\n\
              let make: <u: type>(value: t)(marker: u): cell<t> = {  cell<t>{ value: value } }\n\
              }\n\
              let main: (): i32 = {  cell.make(t: i32)(u: bool)(42)(true).value }\n",
@@ -322,12 +322,12 @@ let main: (): i32 = {  identity<42> }
     for source in [
         r#"
 let cell = struct { value: i32 }
-extend(cell) { let make: (value: i32): i32 = {  value } }
+extend<cell> { let make: (value: i32): i32 = {  value } }
 let main: (): i32 = {  cell.make<42> }
 "#,
         r#"
 let cell = struct { value: i32 }
-extend(cell) { let read: (move self)(offset: i32): i32 = {  self.value + offset } }
+extend<cell> { let read: (move self)(offset: i32): i32 = {  self.value + offset } }
 let main: (): i32 = {  cell{ value: 1 }.read<42> }
 "#,
     ] {
@@ -420,7 +420,7 @@ fn inferred_and_explicit_type_arguments_share_instance_cache_keys() {
 fn generic_inherent_extensions_materialize_members_per_nominal_instance() {
     let program = crate::parser::parse(
         "let cell: <t: type> = struct { value: t }\n\
-             extend(cell<t>) {\n\
+             extend<cell<t>> {\n\
              let new: (move value: t): cell<t> = {  cell{ value: value } }\n\
              let take: (move self)(): t = {  self.value }\n\
              }\n\
@@ -462,7 +462,7 @@ fn generic_nominals_accept_compile_time_usize_arguments() {
 let buffer: <t: type><l: usize> = struct {
   values: Array<t><l>,
 }
-extend(buffer<t><l>) {
+extend<buffer<t><l>> {
   let second: (self: Borrow<self>)(): t = {  self.values[1] }
 }
 let main: (): i32 = {
@@ -1446,8 +1446,8 @@ let Result = core.Result
 let throwing = core.error.throwing
 
 let failure = struct { code: i32 }
-extend(failure, Copyable) {}
-extend(failure) {
+extend<failure, Copyable> {}
+extend<failure> {
   let raise: with<throwing<bool>>(self: Borrow<self>)(): i32 = {  throw(true) }
 }
 let main: (): i32 = {
@@ -1603,8 +1603,8 @@ fn named_arguments_select_inherent_member_overloads() {
     let ir = compile_text(
         r#"
 let counter = struct { value: i32 }
-extend(counter, Copyable) {}
-extend(counter) {
+extend<counter, Copyable> {}
+extend<counter> {
   let add: (self: Borrow<self>)(left: i32): i32 = {  self.value + left }
   let add: (self: Borrow<self>)(right: i32): i32 = {  self.value + right + 1 }
   let make: (left: i32): counter = {  counter{ value: left } }
@@ -1625,7 +1625,7 @@ let main: (): i32 = {
     let positional = compile_text(
         r#"
 let counter = struct { value: i32 }
-extend(counter) {
+extend<counter> {
   let add: (self: Borrow<self>)(left: i32): i32 = {  self.value + left }
   let add: (self: Borrow<self>)(right: i32): i32 = {  self.value + right }
 }
@@ -1643,8 +1643,8 @@ let Result = core.Result
 let throwing = core.error.throwing
 
 let counter = struct { value: i32 }
-extend(counter, Copyable) {}
-extend(counter) {
+extend<counter, Copyable> {}
+extend<counter> {
   let read: with<throwing<bool>>(self: Borrow<self>)(fail: bool): i32 = {
 if(fail) { throw(true) } else: { self.value }
   }
@@ -1662,7 +1662,7 @@ let main: (): i32 = {
     compile_text(
         r#"
 let counter = struct { value: i32 }
-extend(counter) {
+extend<counter> {
   let choose: <t: type>(left: t): t = {  left }
   let choose: <t: type>(right: t): t = {  right }
   let add: <t: type>(self: Borrow<self>)(left: t): t = {  left }
@@ -1678,7 +1678,7 @@ let main: (): i32 = {
     compile_text(
         r#"
 let cell: <t: type> = struct { value: t }
-extend(cell<t>) {
+extend<cell<t>> {
   let choose: (left: t): t = {  left }
   let choose: (right: t): t = {  right }
   let add: (self: Borrow<self>)(left: t): t = {  left }
@@ -1703,7 +1703,7 @@ let select = trait {
   make: (right: i32): i32;
 }
 let counter = struct { value: i32 }
-extend(counter, select) {
+extend<counter, select> {
   let pick: (self: Borrow<self>)(left: i32): i32 = {  self.value + left }
   let pick: (self: Borrow<self>)(right: i32): i32 = {  self.value + right + 1 }
   let make: (left: i32): i32 = {  left }
@@ -1721,7 +1721,7 @@ let select = trait {
   pick: (self: Borrow<self>)(right: i32): i32;
 }
 let counter = struct { value: i32 }
-extend(counter, select) {
+extend<counter, select> {
   let pick: (self: Borrow<self>)(left: i32): i32 = {  self.value + left }
   let pick: (self: Borrow<self>)(right: i32): i32 = {  self.value + right }
 }
@@ -1743,8 +1743,8 @@ let select = trait {
   pick: (self: Borrow<self>)(right: i32): i32 = right + 1;
 }
 let counter = struct { value: i32 }
-extend(counter, select) {}
-let select: <t: type>(value: Borrow<t>): i32 requires(t is select) = {
+extend<counter, select> {}
+let select: <t: type>(value: Borrow<t>): i32 requires<t is select> = {
   value.pick(right: 41)
 }
 let main: (): i32 = {  select(counter{ value: 0 }) }
@@ -1759,7 +1759,7 @@ let select = trait {
   pick: (self: Borrow<self>)(right: i32): i32;
 }
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, select) {
+extend<cell<t>, select> {
   let pick: (self: Borrow<self>)(left: i32): i32 = {  left }
   let pick: (self: Borrow<self>)(right: i32): i32 = {  right + 1 }
 }
@@ -1773,10 +1773,10 @@ let main: (): i32 = {  cell<i32>{ value: 0 }.pick(right: 41) }
 let left = trait { pick: (self: Borrow<self>)(left: i32): i32; }
 let right = trait { pick: (self: Borrow<self>)(right: i32): i32; }
 let counter = struct { value: i32 }
-extend(counter, left) {
+extend<counter, left> {
   let pick: (self: Borrow<self>)(left: i32): i32 = {  self.value + left }
 }
-extend(counter, right) {
+extend<counter, right> {
   let pick: (self: Borrow<self>)(right: i32): i32 = {  self.value + right + 1 }
 }
 let main: (): i32 = {  counter{ value: 20 }.pick(right: 21) }
@@ -1895,7 +1895,7 @@ let apply = trait {
   apply: <t: type>(move self)(move value: t): t
 }
 let boxed = struct { value: i32 }
-extend(boxed, apply) {
+extend<boxed, apply> {
   let apply: <t: type>(move self)(move value: t): t = {
 value
   }
@@ -1950,7 +1950,7 @@ let choose = trait {
   choose: <value: type>(self: Borrow<self>)(move value: value): value
 }
 let boxed: <t: type> = struct { value: t }
-extend(boxed<i32>, choose) {
+extend<boxed<i32>, choose> {
   let choose: <result: type>(self: Borrow<self>)(move value: result): result = {
     value
   }
@@ -1966,7 +1966,7 @@ let choose = trait {
   choose: <value: type>(self: Borrow<self>)(move value: value): value
 }
 let boxed: <t: type> = struct { value: t }
-extend(boxed<item>, choose) {
+extend<boxed<item>, choose> {
   let choose: <result: type>(self: Borrow<self>)(move value: result): result = {
     value
   }
@@ -1985,7 +1985,7 @@ let run = trait {
   run: <e: effects>with<e>(self: Borrow<self>)(action: (): i32): i32
 }
 let runner = struct {}
-extend(runner, run) {
+extend<runner, run> {
   let run: <f: effects> with<f>(self: Borrow<self>)(action: (): i32): i32 = {
     action()
   }
@@ -2001,7 +2001,7 @@ let first = trait {
   first: <n: usize>(self: Borrow<self>)(values: Array<i32><n>): i32
 }
 let picker = struct {}
-extend(picker, first) {
+extend<picker, first> {
   let first: <l: usize>(self: Borrow<self>)(values: Array<i32><l>): i32 = {
     42
   }
@@ -2016,12 +2016,12 @@ let main: (): i32 = {  picker{}.first<1>([42]) }
 let copy = core.Copyable
 let select = trait {
   select: <value: type>(self: Borrow<self>)(move value: value): value
-    requires(value is Copyable)
+    requires<value is Copyable>
 }
 let selector = struct {}
-extend(selector, select) {
+extend<selector, select> {
   let select: <result: type>(self: Borrow<self>)(move value: result): result
-    requires(result is Copyable) = { value }
+    requires<result is Copyable> = { value }
 }
 let main: (): i32 = {  selector{}.select<i32>(42) }
 "#,
@@ -2035,7 +2035,7 @@ let view = trait {
     (self: Borrow<a><r><self>)(): Borrow<a><r><i32>
 }
 let cell = struct { value: i32 }
-extend(cell, view) {
+extend<cell, view> {
   let view: <b: access><s: region>(self: Borrow<b><s><self>)(): Borrow<b><s><i32> = {
     borrow<b>(self.value)
   }
@@ -2057,7 +2057,7 @@ let identity = trait {
     value
 }
 let unit = struct {}
-extend(unit, identity) {}
+extend<unit, identity> {}
 let main: (): i32 = {  unit{}.identity<i32>(42) }
 "#,
     )
@@ -2073,9 +2073,9 @@ let select = trait {
   select: <value: type>(self: Borrow<self>)(move value: value): value
 }
 let selector = struct {}
-extend(selector, select) {
+extend<selector, select> {
   let select: <result: type>(self: Borrow<self>)(move value: result): result
-    requires(result is Copyable) = { value }
+    requires<result is Copyable> = { value }
 }
 let main: (): i32 = {  0 }
 "#,
@@ -2096,7 +2096,7 @@ let choose = trait<self: <item: type>: type> {
     (move value: value): self<value>
 }
 let boxed: <t: type> = struct { value: t }
-extend(boxed, choose) {
+extend<boxed, choose> {
   let choose: <result: type>(move self: boxed<result>)
     (move value: result): boxed<result> = {
     boxed<result>{ value: value }
@@ -2118,7 +2118,7 @@ let choose = trait {
   choose: <value: type>(self: Borrow<self>)(move value: value): value
 }
 let boxed: <t: type> = struct { value: t }
-extend(boxed<item>, choose) {
+extend<boxed<item>, choose> {
   let choose: <item: type>(self: Borrow<self>)(move value: item): item = {
     value
   }
@@ -2143,16 +2143,16 @@ let has_item = trait {
 }
 let select = trait {
   select: <value: type>(self: Borrow<self>)(move value: value): value
-    requires(value is has_item && value.Item == i32)
+    requires<value is has_item && value.Item == i32>
 }
 let wrapped = struct { value: i32 }
-extend(wrapped, has_item) {
+extend<wrapped, has_item> {
   let Item = i32
 }
 let selector = struct {}
-extend(selector, select) {
+extend<selector, select> {
   let select: <result: type>(self: Borrow<self>)(move value: result): result
-    requires(result is has_item && result.Item == i32) = {
+    requires<result is has_item && result.Item == i32> = {
     value
   }
 }
@@ -2172,7 +2172,7 @@ let choose = trait {
   choose: <value: type>(self: Borrow<self>)(): i32
 }
 let selector = struct {}
-extend(selector, choose) {
+extend<selector, choose> {
   let choose: <length: usize>(self: Borrow<self>)(): i32 = {  42 }
 }
 let main: (): i32 = {  0 }
@@ -2289,7 +2289,7 @@ let Coalesce = core.flow.Coalesce
 
 let choice = enum { present(i32), missing }
 
-extend(choice, Coalesce) {
+extend<choice, Coalesce> {
   let Item = i32
   let coalesce: <e: effects> with<e>
     (self)
@@ -2346,7 +2346,7 @@ let Chain = core.flow.Chain
 let boxed = struct { value: i32 }
 let maybe: <t: type> = enum { Some(t), None }
 
-extend(maybe<boxed>, Chain) {
+extend<maybe<boxed>, Chain> {
   let Item = boxed
   let Rebind = maybe
   let chain: <e: effects, u: type> with<e>
@@ -2445,11 +2445,11 @@ let Chain = core.flow.Chain
 let boxed = struct { value: i32 }
 let maybe: <t: type> = enum { Some(t), None }
 
-extend(boxed) {
+extend<boxed> {
   let plus: (self)(amount: i32): i32 = {  self.value + amount }
 }
 
-extend(maybe<boxed>, Chain) {
+extend<maybe<boxed>, Chain> {
   let Item = boxed
   let Rebind = maybe
   let chain: <e: effects, u: type> with<e>
@@ -2510,7 +2510,7 @@ let Chain = core.flow.Chain
 let boxed = struct { value: i32 }
 let maybe: <t: type> = enum { Some(t), None }
 
-extend(maybe<t>, Chain) {
+extend<maybe<t>, Chain> {
   let Item = t
   let Rebind = maybe
   let chain: <e: effects, u: type> with<e>
@@ -3017,11 +3017,11 @@ let counter = struct { value: usize }
 let measurable = trait {
   measure: (move self)(): usize
 }
-extend(counter) {
+extend<counter> {
   let new: (value: usize): counter = {  counter{ value: value } }
   let add: (move self)(amount: usize): usize = {  self.value + amount }
 }
-extend(counter, measurable) {
+extend<counter, measurable> {
   let measure: (move self)(): usize = {  self.value }
 }
 let select: (left: usize): usize = {  left }
@@ -3106,7 +3106,7 @@ let main: (): i32 = {  0 }
 
     let foreign = compile_text(
         r#"
-let abs: (value: i32): i32 = foreign(c)
+let abs: (value: i32): i32 = foreign<c>
 let foreign_length: (): usize = {  abs(1); 1 }
 let read: (values: Array<i32><foreign_length()>): i32 = {  values[0] }
 let main: (): i32 = {  0 }
@@ -3360,7 +3360,7 @@ let main: (): i32 = {  0 }
     let custom_drop = compile_text(
         r#"
 let resource = struct { value: usize }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = { }
 }
 let invalid_length: (): usize = {
@@ -3810,11 +3810,11 @@ fn where_bound_validation_rolls_back_assumed_trait_implementations() {
     let program = crate::parser::parse(
         "let measure = trait { measure: (self: Borrow<self>)(): i32 }\n\
              let measured_value = struct { value: i32 }\n\
-             extend(measured_value, measure) {\n\
+             extend<measured_value, measure> {\n\
              let measure: (self: Borrow<self>)(): i32 = {  self.value }\n\
              }\n\
              let read: <t: type>(value: Borrow<t>): i32\n\
-             requires(t is measure) = { value.measure() }\n\
+             requires<t is measure> = { value.measure() }\n\
              let main: (): i32 = {  let value = measured_value{ value: 42 }; read(value) }\n",
     )
     .expect("where-bound method source must parse");
@@ -3871,7 +3871,7 @@ fn rejects_invalid_generic_nominal_forms_without_instantiating_them() {
         ),
         (
             "let cell: <t: type> = struct { value: t }\n\
-             extend(cell) { let answer = 42 }\n\
+             extend<cell> { let answer = 42 }\n\
              let main: (): i32 = {  42 }\n",
             "generic extend target `cell` is not supported",
         ),
@@ -4628,7 +4628,7 @@ fn inherent_members_inherit_the_target_api_boundary_for_leak_checks() {
         r#"
 let hidden = struct {}
 pub let public = struct {}
-extend(public) {
+extend<public> {
   let reveal: (self: Borrow<self>)() = {  hidden{} }
   let secret = hidden{}
 }
@@ -4650,7 +4650,7 @@ fn generic_inherent_member_boundaries_include_concrete_type_arguments() {
         r#"
 let hidden = struct { value: i32 }
 pub let cell: <t: type> = struct { pub value: t }
-         extend(cell<t>) {
+         extend<cell<t>> {
            let new: (move value: t): cell<t> = {  cell{ value: value } }
   let take: (move self)(): t = {  self.value }
 }
@@ -4688,7 +4688,7 @@ pub let convert = trait {
   Output: type
   convert: (self: Borrow<self>)(): Output
 }
-extend(public, convert) {
+extend<public, convert> {
   let Output = hidden
   let convert: (self: Borrow<self>)(): hidden = {  hidden{} }}
 let main: (): i32 = {  0 }
@@ -4709,7 +4709,7 @@ pub let convert = trait {
   Output: type
   convert: (self: Borrow<self>)(): Output
 }
-extend(private, convert) {
+extend<private, convert> {
   let Output = hidden
   let convert: (self: Borrow<self>)(): hidden = {  hidden{} }}
 let main: (): i32 = {  0 }
@@ -4726,22 +4726,22 @@ let read = trait {
   read: (self: Borrow<self>)(): i32
 }
 let leaf = struct { value: i32 }
-extend(leaf, read) {
+extend<leaf, read> {
   let read: (self: Borrow<self>)(): i32 = {  self.value }
 }
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, read)<requires: t is read> {
+extend<cell<t>, read><requires: t is read> {
   let read: (self: Borrow<self>)(): i32 = {  self.value.read() }
 }
 
 let read_cell: <t: type>(cell: Borrow<cell<t>>): i32
-requires(t is read) = { cell.read() }
+requires<t is read> = { cell.read() }
 
 let value = trait {
   Item: type
   take: (move self)(): Item
 }
-extend(cell<t>, value) {
+extend<cell<t>, value> {
   let Item = t
   let take: (move self)(): t = {  self.value }
 }
@@ -4764,7 +4764,7 @@ let read = trait {
 }
 let leaf = struct { value: i32 }
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, read)<requires: t is read> {
+extend<cell<t>, read><requires: t is read> {
   let read: (self: Borrow<self>)(): i32 = {  self.value.read() }
 }
 let main: (): i32 = {
@@ -4784,10 +4784,10 @@ let read = trait {
   read: (self: Borrow<self>)(): i32
 }
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, read) {
+extend<cell<t>, read> {
   let read: (self: Borrow<self>)(): i32 = {  1 }
 }
-extend(cell<t>, read) {
+extend<cell<t>, read> {
   let read: (self: Borrow<self>)(): i32 = {  2 }
 }
 let main: (): i32 = {  0 }
@@ -4804,10 +4804,10 @@ let convert: <to: type> = trait {
   convert: (self: Borrow<self>)(): to
 }
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, convert<i32>) {
+extend<cell<t>, convert<i32>> {
   let convert: (self: Borrow<self>)(): i32 = {  1 }
 }
-extend(cell<t>, convert<i64>) {
+extend<cell<t>, convert<i64>> {
   let convert: (self: Borrow<self>)(): i64 = {  2 }
 }
 let main: (): i32 = {
@@ -4822,9 +4822,9 @@ let main: (): i32 = {
         r#"
 let convert: <to: type> = trait { convert: (self: Borrow<self>)(): to }
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, convert<t>)<requires: t is Copyable> {
+extend<cell<t>, convert<t>><requires: t is Copyable> {
   let convert: (self: Borrow<self>)(): t = {  self.value }}
-extend(cell<i32>, convert<i64>) {
+extend<cell<i32>, convert<i64>> {
   let convert: (self: Borrow<self>)(): i64 = {  42 }
 }
 let main: (): i32 = {  42 }
@@ -4836,10 +4836,10 @@ let main: (): i32 = {  42 }
         r#"
 let convert: <to: type> = trait { convert: (self: Borrow<self>)(): to }
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, convert<i32>) {
+extend<cell<t>, convert<i32>> {
   let convert: (self: Borrow<self>)(): i32 = {  1 }
 }
-extend(cell<i32>, convert<i32>) {
+extend<cell<i32>, convert<i32>> {
   let convert: (self: Borrow<self>)(): i32 = {  2 }
 }
 let main: (): i32 = {  42 }
@@ -4847,10 +4847,10 @@ let main: (): i32 = {  42 }
         r#"
 let convert: <to: type> = trait { convert: (self: Borrow<self>)(): to }
 let cell: <t: type> = struct { value: t }
-extend(cell<i32>, convert<i32>) {
+extend<cell<i32>, convert<i32>> {
   let convert: (self: Borrow<self>)(): i32 = {  2 }
 }
-extend(cell<t>, convert<i32>) {
+extend<cell<t>, convert<i32>> {
   let convert: (self: Borrow<self>)(): i32 = {  1 }
 }
 let main: (): i32 = {  42 }
@@ -4865,7 +4865,7 @@ let main: (): i32 = {  42 }
         r#"
 let read = trait { read: (self: Borrow<self>)(): i32 }
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, read)<requires: t is read> {
+extend<cell<t>, read><requires: t is read> {
   let read: (self: Borrow<self>)(): i32 = {  self.value.read() }
 }
 let main: (): i32 = {  42 }
@@ -4877,7 +4877,7 @@ let main: (): i32 = {  42 }
         r#"
 let read = trait { read: (self: Borrow<self>)(): i32 }
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, read) {
+extend<cell<t>, read> {
   let read: (self: Borrow<self>)(): i64 = {  0 }
 }
 let main: (): i32 = {  42 }
@@ -4892,7 +4892,7 @@ let main: (): i32 = {  42 }
         r#"
 let read = trait { read: (self: Borrow<self>)(): i32 }
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, read) {
+extend<cell<t>, read> {
   let read: (self: Borrow<self>)(): i32 = {  missing }
 }
 let main: (): i32 = {  42 }
@@ -4909,7 +4909,7 @@ fn generic_copy_and_drop_extensions_follow_concrete_instance_semantics() {
     compile_text(
         r#"
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, Copyable)<requires: t is Copyable> {}
+extend<cell<t>, Copyable><requires: t is Copyable> {}
 let sum: (copy cell: cell<i32>): i32 = {  cell.value }
 let main: (): i32 = {
   let cell = cell{ value: 42 }
@@ -4926,7 +4926,7 @@ let maybe: <t: type> = enum {
   Some(t),
   None,
 }
-extend(maybe<t>, Copyable)<requires: t is Copyable> {}
+extend<maybe<t>, Copyable><requires: t is Copyable> {}
 let read: (copy value: maybe<i32>): i32 = {  match(value) {
   Some(number) => number,
   None => 0,
@@ -4943,10 +4943,10 @@ let main: (): i32 = {
     compile_text(
         r#"
 let resource = struct { value: i32 }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  self.value = 0 }}
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, Copyable)<requires: t is Copyable> {}
+extend<cell<t>, Copyable><requires: t is Copyable> {}
 let main: (): i32 = {
   let cell = cell{ value: resource{ value: 42 } }
   let moved = cell
@@ -4959,10 +4959,10 @@ let main: (): i32 = {
     let invalid = compile_text(
         r#"
 let resource = struct { value: i32 }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  self.value = 0 }}
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, Copyable) {}
+extend<cell<t>, Copyable> {}
 let main: (): i32 = {  42 }
 "#,
     )
@@ -4974,8 +4974,8 @@ let main: (): i32 = {  42 }
     let conflict = compile_text(
         r#"
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, Copyable)<requires: t is Copyable> {}
-extend(cell<t>, Droppable) {
+extend<cell<t>, Copyable><requires: t is Copyable> {}
+extend<cell<t>, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let main: (): i32 = {
   let cell = cell{ value: 42 }
@@ -4991,7 +4991,7 @@ let main: (): i32 = {
     let foreign_copy = compile_resolved_with_origins(
         r#"
 pub let cell: <t: type> = struct { value: t }
-extend(cell<t>, Copyable)<requires: t is Copyable> {}
+extend<cell<t>, Copyable><requires: t is Copyable> {}
 let main: (): i32 = {  42 }
 "#,
         vec![
@@ -5008,7 +5008,7 @@ let main: (): i32 = {  42 }
     let foreign_drop = compile_resolved_with_origins(
         r#"
 pub let cell: <t: type> = struct { value: t }
-extend(cell<t>, Droppable) {
+extend<cell<t>, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let main: (): i32 = {  42 }
 "#,
@@ -5026,7 +5026,7 @@ let main: (): i32 = {  42 }
     let missing_drop = compile_text(
         r#"
 let cell: <t: type> = struct { value: t }
-extend(cell<t>, Droppable) {}
+extend<cell<t>, Droppable> {}
 let main: (): i32 = {  42 }
 "#,
     )
@@ -5210,7 +5210,7 @@ fn source_backed_copy_nominals_support_reads_and_parameter_modes() {
     compile_text(
         r#"
 let pair = struct { left: i32, right: i32 }
-extend(pair, Copyable) {}
+extend<pair, Copyable> {}
 let inferred: (value: pair): i32 = {  value.left + value.right }
 let explicit: (copy value: pair): i32 = {  value.left + value.right }
 
@@ -5231,8 +5231,8 @@ fn source_backed_drop_is_exclusive_local_and_not_directly_callable() {
     let conflict = compile_text(
         r#"
 let resource = struct { value: i32 }
-extend(resource, Copyable) {}
-extend(resource, Droppable) {
+extend<resource, Copyable> {}
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let main: (): i32 = {  0 }
 "#,
@@ -5245,7 +5245,7 @@ let main: (): i32 = {  0 }
     let orphan = compile_resolved_with_origins(
         r#"
 pub let resource = struct { value: i32 }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let main: (): i32 = {  0 }
 "#,
@@ -5263,7 +5263,7 @@ let main: (): i32 = {  0 }
     let direct = compile_text(
         r#"
 let resource = struct { value: i32 }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let main: (): i32 = {
   let mut value = resource{ value: 0 }
@@ -5286,7 +5286,7 @@ pub let read = trait {
   read: (self: Borrow<self>)(): i32
 }
 pub let foreign = struct { value: i32 }
-extend(foreign, read) {
+extend<foreign, read> {
   let read: (self: Borrow<self>)(): i32 = {  self.value }
 }
 let main: (): i32 = {  0 }
@@ -5309,7 +5309,7 @@ pub let read = trait {
   read: (self: Borrow<self>)(): i32
 }
 pub let cell: <t: type> = struct { value: t }
-extend(cell<t>, read) {
+extend<cell<t>, read> {
   let read: (self: Borrow<self>)(): i32 = {  0 }
 }
 let main: (): i32 = {  0 }
@@ -5333,7 +5333,7 @@ fn emits_recursive_drop_glue_from_source_backed_drop() {
 let resource = struct { value: i32 }
 let wrapper = struct { resource: resource, plain: i32 }
 let choice = enum { Some(wrapper), None }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  self.value = 0 }}
 let main: (): i32 = {
   let value = choice.Some(wrapper{ resource: resource{ value: 42 }, plain: 1 })
@@ -5377,7 +5377,7 @@ fn permits_struct_and_enum_projection_drop_but_keeps_custom_drop_complete() {
         r#"
 let resource = struct { value: i32 }
 let wrapper = struct { resource: resource, plain: i32 }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let main: (): i32 = {
   let wrapper = wrapper{ resource: resource{ value: 1 }, plain: 0 }
@@ -5391,7 +5391,7 @@ let main: (): i32 = {
     let custom_drop_field = compile_text(
         r#"
 let resource = struct { value: i32 }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let consume_i32: (move value: i32): () = {  () }
 let main: (): i32 = {
@@ -5410,7 +5410,7 @@ let main: (): i32 = {
         r#"
 let resource = struct { value: i32 }
 let choice = enum { Some(resource), None }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let main: (): i32 = {  match(choice.Some(resource{ value: 1 })) {
   Some(resource) => 1,
@@ -5424,9 +5424,9 @@ let main: (): i32 = {  match(choice.Some(resource{ value: 1 })) {
         r#"
 let resource = struct { value: i32 }
 let choice = enum { Some(resource), None }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
-extend(choice, Droppable) {
+extend<choice, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let main: (): i32 = {  match(choice.Some(resource{ value: 1 })) {
   Some(resource) => 1,
@@ -5442,7 +5442,7 @@ let main: (): i32 = {  match(choice.Some(resource{ value: 1 })) {
     compile_text(
         r#"
 let choice = enum { Some(i32), None }
-extend(choice, Droppable) {
+extend<choice, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let main: (): i32 = {  match(choice.Some(1)) {
   whole if true => 1,
@@ -5456,7 +5456,7 @@ let main: (): i32 = {  match(choice.Some(1)) {
         r#"
 let resource = struct { value: i32 }
 let choice = enum { Some(resource), None }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let main: (): i32 = {  match(choice.Some(resource{ value: 1 })) {
   Some(resource) if false => 1,
@@ -5472,9 +5472,9 @@ let main: (): i32 = {  match(choice.Some(resource{ value: 1 })) {
 let resource = struct { value: i32 }
 let wrapper = struct { resource: resource }
 let choice = enum { Some(wrapper), None }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
-extend(wrapper, Droppable) {
+extend<wrapper, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let main: (): i32 = {  match(choice.Some(wrapper{ resource: resource{ value: 1 } })) {
   Some(wrapper(resource: resource)) => 1,
@@ -5494,7 +5494,7 @@ fn explicit_move_still_consumes_a_copy_nominal() {
     let errors = compile_text(
         r#"
 let pair = struct { left: i32, right: i32 }
-extend(pair, Copyable) {}
+extend<pair, Copyable> {}
 let consume: (move value: pair): i32 = {  value.left + value.right }
 let main: (): i32 = {
   let pair = pair{ left: 19, right: 23 }
@@ -5807,10 +5807,10 @@ let outer = struct { inner: inner }
 let choice = enum { empty, value { value: outer }, named { value: inner } }
 let holder = struct { values: Array<outer><2> }
 
-extend(holder, Copyable) {}
-extend(choice, Copyable) {}
-extend(outer, Copyable) {}
-extend(inner, Copyable) {}
+extend<holder, Copyable> {}
+extend<choice, Copyable> {}
+extend<outer, Copyable> {}
+extend<inner, Copyable> {}
 let main: (): i32 = {
   let values = [outer{ inner: inner{ value: 19 } }, outer{ inner: inner{ value: 23 } }]
   let holder = holder{ values: values }
@@ -5835,7 +5835,7 @@ fn rejects_non_structural_copy_and_does_not_generalize_concrete_instances() {
         r#"
 let token = struct { value: i32 }
 let invalid = struct { token: token }
-extend(invalid, Copyable) {}
+extend<invalid, Copyable> {}
 let main: (): i32 = {  0 }
 "#,
     )
@@ -5848,7 +5848,7 @@ let main: (): i32 = {  0 }
     let concrete = compile_text(
         r#"
 let cell: <t: type> = struct { value: t }
-extend(cell<i32>, Copyable) {}
+extend<cell<i32>, Copyable> {}
 let consume: (value: cell<bool>): bool = {  value.value }
 let main: (): i32 = {
   let cell = cell<bool>{ value: true }
@@ -5866,7 +5866,7 @@ fn copy_diagnostics_render_concrete_generic_source_types() {
     let parameter = compile_text(
         r#"
 let cell: <t: type> = struct { value: t }
-extend(cell<i32>, Copyable) {}
+extend<cell<i32>, Copyable> {}
 let read: (copy cell: cell<i64>): i64 = {  cell.value }
 let main: (): i32 = {  0 }
 "#,
@@ -5888,7 +5888,7 @@ let main: (): i32 = {  0 }
         r#"
 let token = struct { value: i32 }
 let cell: <t: type> = struct { value: t }
-extend(cell<token>, Copyable) {}
+extend<cell<token>, Copyable> {}
 let main: (): i32 = {  0 }
 "#,
     )
@@ -6287,7 +6287,7 @@ let main: (): i32 = {
 let ask = effect { value: (): i32 }
 let readable = trait { read: with<ask>[move self](): i32 }
 let cell = struct { value: i32 }
-extend(cell, readable) {
+extend<cell, readable> {
   let read: with<ask>[move self](): i32 = {  self.value + ask.value() }
 }
 let forward: with<ask>(value: cell): i32 = {  value.read() }
@@ -6305,7 +6305,7 @@ let main: (): i32 = {
         r#"
 let Option = core.Option
 let cell = struct { value: i32 }
-extend(cell) {
+extend<cell> {
   let add: (move self){left: i32}(right: i32): i32 = {  self.value + left + right }
 }
 let read: (value: Option<cell>): Option<i32> = {  value?.add{left: 1}(1) }
@@ -7019,7 +7019,7 @@ let reader = struct { pointer: Ptr<i32> }
 let read = trait {
   read: with<unsafe>(self: Borrow<self>)(): i32
 }
-extend(reader, read) {
+extend<reader, read> {
   let read: with<unsafe>(self: Borrow<self>)(): i32 = {  *self.pointer }
 }
 let main: (): i32 = {
@@ -7039,7 +7039,7 @@ let reader = struct { pointer: Ptr<i32> }
 let read = trait {
   read: with<unsafe>(self: Borrow<self>)(): i32
 }
-extend(reader, read) {
+extend<reader, read> {
   let read: (self: Borrow<self>)(): i32 = {  unsafe { *self.pointer } }
 }
 let main: (): i32 = {  0 }
@@ -7273,7 +7273,7 @@ fn effect_parameters_specialize_inherent_methods() {
 let unsafe = core.unsafe.unsafety
 
 let value = struct { value: i32 }
-extend(value) {
+extend<value> {
   let tagged: <e: effects> with<e>(self: Borrow<self>)(): i32 = {  self.value }
 }
 let main: (): i32 = {
@@ -7551,7 +7551,7 @@ fn rejects_calling_a_resource_partial_application_twice() {
     let errors = compile_text(
         r#"
 let resource = struct { value: i32 }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let finish: (move resource: resource)(value: i32): i32 = {  value }
 let main: (): i32 = {
@@ -7625,7 +7625,7 @@ fn emits_kind_discriminated_inherent_receiver_abis() {
     let ir = compile_text(
         r#"
 let counter = struct { value: i32 }
-extend(counter) {
+extend<counter> {
   let read: (self: Borrow<self>)(): i32 = {  self.value }
   let reset: (self: Borrow<mut><self>)(): () = {  self.value = 0 }
   let take: (move self)(): i32 = {  self.value }
@@ -7709,7 +7709,7 @@ fn brace_groups_elaborate_for_methods_partials_and_constructors() {
     compile_text(
         r#"
 let Box = struct { value: i32 }
-extend(Box) {
+extend<Box> {
   let plus: (self: Borrow<self>){right: i32}: i32 = {  self.value + right }
 }
 let pair: (left: i32){right: i32}: i32 = {  left + right }
@@ -7948,7 +7948,7 @@ let Convert: <Rhs: type> = trait {
   convert: (self: Borrow<self>)(move rhs: Rhs): Output
 }
 let Number = struct { value: i32 }
-extend(Number, Convert<i32>) {
+extend<Number, Convert<i32>> {
   let Output = i32
   let convert: (self: Borrow<self>)(move rhs: i32): i32 = {  self.value + rhs }
 }
@@ -8046,7 +8046,7 @@ fn higher_kinded_trait_inheritance_requires_constructor_supertraits() {
 let applicative = trait<self: <value: type>: type><requires: self is functor> {
   pure: <a: type>(move value: a): self<a> }
 let carrier: <t: type> = struct { value: t }
-extend(carrier, applicative) {
+extend<carrier, applicative> {
   let pure: <a: type>(move value: a): carrier<a> = {
 carrier<a>{ value: value }
   }}
@@ -8070,11 +8070,11 @@ let main: (): i32 = {  0 }
 let applicative = trait<self: <value: type>: type><requires: self is functor> {
   pure: <a: type>(move value: a): self<a> }
 let carrier: <t: type> = struct { value: t }
-extend(carrier, applicative) {
+extend<carrier, applicative> {
   let pure: <a: type>(move value: a): carrier<a> = {
 carrier<a>{ value: value }
   }}
-	extend(carrier, functor) {
+	extend<carrier, functor> {
 	  let map: <e: effects, a: type, b: type>(
 	    move self: carrier<a>,
 	  )(
@@ -8095,9 +8095,9 @@ fn generic_functions_accept_explicit_type_constructor_arguments() {
         r#"
 let monad = trait<self: <value: type>: type> {}
 let carrier: <t: type> = struct { value: t }
-extend(carrier, monad) {}
+extend<carrier, monad> {}
 let keep: <m: <value: type>: type, a: type>(move value: m<a>): m<a>
-requires(m is monad) = {
+requires<m is monad> = {
   value
 }
 
@@ -8171,8 +8171,8 @@ fn constructor_trait_implementation_headers_support_marker_traits() {
 let higher = trait<self: <value: type>: type> {}
 let tagged: <tag: type> = trait<self: <value: type>: type>{}
 let carrier: <t: type> = struct { value: t }
-extend(carrier, higher) {}
-extend(carrier, tagged<i32>) {}
+extend<carrier, higher> {}
+extend<carrier, tagged<i32>> {}
 let main: (): i32 = {  0 }
 "#,
     )
@@ -8225,7 +8225,7 @@ fn constructor_trait_implementation_methods_register_generic_templates() {
 	  ): self<b> with<e>
 	}
 let carrier: <t: type> = struct { value: t }
-	extend(carrier, functor) {
+	extend<carrier, functor> {
 	  let map: <e: effects, a: type, b: type>(
 	    move self: carrier<a>,
 	  )(
@@ -8290,7 +8290,7 @@ fn constructor_trait_receiver_methods_dispatch_from_instances() {
 	  ): self<b> with<e>
 	}
 let carrier: <t: type> = struct { value: t }
-	extend(carrier, functor) {
+	extend<carrier, functor> {
 	  let map: <e: effects, a: type, b: type>(
 	    move self: carrier<a>,
 	  )(
@@ -8507,8 +8507,8 @@ fn constructor_trait_implementation_headers_report_current_limits() {
             r#"
 let higher = trait<self: <value: type>: type> {}
 let carrier: <t: type> = struct { value: t }
-extend(carrier, higher) {}
-extend(carrier, higher) {}
+extend<carrier, higher> {}
+extend<carrier, higher> {}
 let main: (): i32 = {  0 }
 "#,
             "duplicate constructor trait implementation",
@@ -8517,7 +8517,7 @@ let main: (): i32 = {  0 }
             r#"
 let higher = trait<self: <left: type, right: type>: type> {}
 let carrier: <t: type> = struct { value: t }
-extend(carrier, higher) {}
+extend<carrier, higher> {}
 let main: (): i32 = {  0 }
 "#,
             "expects sort `(type, type): type`",
@@ -8526,7 +8526,7 @@ let main: (): i32 = {  0 }
             r#"
 let curried = trait<self: <left: type><right: type>: type> {}
 let flat: <left: type, right: type> = struct { left: left, right: right }
-extend(flat, curried) {}
+extend<flat, curried> {}
 let main: (): i32 = {  0 }
 "#,
             "has sort `(type, type): type`",
@@ -8541,7 +8541,7 @@ let main: (): i32 = {  0 }
 	  ): self<b> with<e>
 	}
 let carrier: <t: type> = struct { value: t }
-extend(carrier, functor) {}
+extend<carrier, functor> {}
 let main: (): i32 = {  0 }
 "#,
             "requires a body",
@@ -8569,7 +8569,7 @@ fn lowers_core_add_trait_to_a_static_call() {
         r#"
 let Add = core.ops.Add
 let number = struct { value: i32 }
-extend(number, Add<number>) {
+extend<number, Add<number>> {
   let Output = i32
   let add: (self)(rhs: number): i32 = {  self.value + rhs.value }
 }
@@ -8601,19 +8601,19 @@ let Mul = core.ops.Mul
 let Div = core.ops.Div
 let Rem = core.ops.Rem
 let number = struct { value: i32 }
-extend(number, Sub<number>) {
+extend<number, Sub<number>> {
   let Output = number
   let sub: (self)(rhs: number): number = {  number{ value: self.value - rhs.value } }
 }
-extend(number, Mul<number>) {
+extend<number, Mul<number>> {
   let Output = number
   let mul: (self)(rhs: number): number = {  number{ value: self.value * rhs.value } }
 }
-extend(number, Div<number>) {
+extend<number, Div<number>> {
   let Output = number
   let div: (self)(rhs: number): number = {  number{ value: self.value / rhs.value } }
 }
-extend(number, Rem<number>) {
+extend<number, Rem<number>> {
   let Output = number
   let rem: (self)(rhs: number): number = {  number{ value: self.value % rhs.value } }
 }
@@ -8653,7 +8653,7 @@ fn lowers_core_eq_and_ne_to_one_borrowing_static_call() {
         r#"
 let eq = core.ops.Eq
 let number = struct { value: i32 }
-extend(number, eq<number>) {
+extend<number, eq<number>> {
   let eq: (self: Borrow<self>)(rhs: Borrow<number>): bool = {  self.value == rhs.value }
 }
 let main: (): i32 = {
@@ -8683,7 +8683,7 @@ fn lowers_partial_ord_operators_through_four_state_results() {
 let partial_ord = core.ops.PartialOrd
 let partial_ordering = core.ops.PartialOrdering
 let number = struct { value: i32, unordered: bool }
-extend(number, partial_ord<number>) {
+extend<number, partial_ord<number>> {
   let partial_cmp: (self: Borrow<self>)(rhs: Borrow<number>): partial_ordering = {
 if(self.unordered || rhs.unordered) { Unordered }
 else: { if(self.value < rhs.value) { Less }
@@ -8727,15 +8727,15 @@ let Neg = core.ops.Neg
 let Not = core.ops.Not
 let number = struct { value: i32 }
 let flag = struct { value: bool }
-extend(number, Neg) {
+extend<number, Neg> {
   let Output = i32
   let neg: (self)(): i32 = {  -self.value }}
-extend(flag, Not) {
+extend<flag, Not> {
   let Output = i32
   let not: (self)(): i32 = {  if(self.value) { 0 } else: { 42 } }
 }
-let negate: <t: type>(move value: t): t requires(t is Neg && t.Output == t) = {  -value }
-let invert: <t: type>(move value: t): t requires(t is Not && t.Output == t) = {  !value }
+let negate: <t: type>(move value: t): t requires<t is Neg && t.Output == t> = {  -value }
+let invert: <t: type>(move value: t): t requires<t is Not && t.Output == t> = {  !value }
 let main: (): i32 = {  if(invert(false)) {
   !flag{ value: false } + -number{ value: 0 } + negate(0)
 } else: { 0 } }
@@ -8768,28 +8768,28 @@ let BitXor = core.ops.BitXor
 let Shl = core.ops.Shl
 let Shr = core.ops.Shr
 let bits = struct { value: i32 }
-extend(bits, BitAnd<bits>) {
+extend<bits, BitAnd<bits>> {
   let Output = bits
   let bit_and: (self)(rhs: bits): bits = {  bits{ value: self.value & rhs.value } }
 }
-extend(bits, BitOr<bits>) {
+extend<bits, BitOr<bits>> {
   let Output = bits
   let bit_or: (self)(rhs: bits): bits = {  bits{ value: self.value | rhs.value } }
 }
-extend(bits, BitXor<bits>) {
+extend<bits, BitXor<bits>> {
   let Output = bits
   let bit_xor: (self)(rhs: bits): bits = {  bits{ value: self.value ^ rhs.value } }
 }
-extend(bits, Shl<bits>) {
+extend<bits, Shl<bits>> {
   let Output = bits
   let shl: (self)(rhs: bits): bits = {  bits{ value: self.value << rhs.value } }
 }
-extend(bits, Shr<bits>) {
+extend<bits, Shr<bits>> {
   let Output = bits
   let shr: (self)(rhs: bits): bits = {  bits{ value: self.value >> rhs.value } }
 }
 let mask: <t: type>(move left: t)(move right: t): t
-requires(t is BitAnd<t> && t.Output == t) = { left & right }
+requires<t is BitAnd<t> && t.Output == t> = { left & right }
 let unsigned_shift: (value: u32): u32 = {  value >> 2 }
 let main: (): i32 = {
   let masked = mask(bits{ value: 6 })(bits{ value: 3 })
@@ -8846,7 +8846,7 @@ fn unary_operator_traits_report_missing_output_and_auto_move_errors() {
         r#"
 let Neg = core.ops.Neg
 let number = struct { value: i32 }
-extend(number, Neg) {
+extend<number, Neg> {
   let Output = i32
   let neg: (self)(): i32 = {  -self.value }}
 let main: (): bool = {  -number{ value: 1 } }
@@ -8863,7 +8863,7 @@ let main: (): bool = {  -number{ value: 1 } }
         r#"
 let Neg = core.ops.Neg
 let resource = struct { value: i32 }
-extend(resource, Neg) {
+extend<resource, Neg> {
   let Output = resource
   let neg: (self)(): resource = {  self }}
 let main: (): i32 = {
@@ -8948,7 +8948,7 @@ fn a_unique_operator_candidate_must_match_the_expected_output() {
         r#"
 let Add = core.ops.Add
 let number = struct { value: i32 }
-extend(number, Add<i32>) {
+extend<number, Add<i32>> {
   let Output = bool
   let add: (self)(rhs: i32): bool = {  self.value == rhs }
 }
@@ -8969,7 +8969,7 @@ fn uninhabited_operator_output_coerces_when_no_exact_output_exists() {
         r#"
 let Sub = core.ops.Sub
 let number = struct { value: i32 }
-extend(number, Sub<i32>) {
+extend<number, Sub<i32>> {
   let Output = never
   let sub: (self)(rhs: i32): never = {  loop {} }
 }
@@ -8985,11 +8985,11 @@ fn exact_operator_output_takes_precedence_over_uninhabited_output() {
         r#"
 let Sub = core.ops.Sub
 let number = struct { value: i32 }
-extend(number, Sub<i32>) {
+extend<number, Sub<i32>> {
   let Output = never
   let sub: (self)(rhs: i32): never = {  loop {} }
 }
-extend(number, Sub<i64>) {
+extend<number, Sub<i64>> {
   let Output = i32
   let sub: (self)(rhs: i64): i32 = {  42 }
 }
@@ -9027,11 +9027,11 @@ fn operator_candidates_probe_bindings_in_nonempty_rhs_blocks() {
         r#"
 let Sub = core.ops.Sub
 let number = struct { value: i32 }
-extend(number, Sub<i32>) {
+extend<number, Sub<i32>> {
   let Output = i32
   let sub: (self)(rhs: i32): i32 = {  self.value - rhs }
 }
-extend(number, Sub<bool>) {
+extend<number, Sub<bool>> {
   let Output = i32
   let sub: (self)(rhs: bool): i32 = {  if(rhs) { 42 } else: { 0 } }
 }
@@ -9072,7 +9072,7 @@ fn non_add_output_participates_in_outer_generic_inference() {
         r#"
 let Sub = core.ops.Sub
 let number = struct { value: i32 }
-extend(number, Sub<i32>) {
+extend<number, Sub<i32>> {
   let Output = i64
   let sub: (self)(rhs: i32): i64 = {  42 }
 }
@@ -9097,7 +9097,7 @@ fn add_output_participates_in_outer_generic_inference() {
         r#"
 let Add = core.ops.Add
 let number = struct { value: i32 }
-extend(number, Add<i32>) {
+extend<number, Add<i32>> {
   let Output = i32
   let add: (self)(rhs: i32): i32 = {  self.value + rhs }
 }
@@ -9119,11 +9119,11 @@ fn add_literal_range_eliminates_incompatible_rhs_candidates() {
         r#"
 let Add = core.ops.Add
 let number = struct { value: i32 }
-extend(number, Add<i32>) {
+extend<number, Add<i32>> {
   let Output = i64
   let add: (self)(rhs: i32): i64 = {  0 }
 }
-extend(number, Add<i64>) {
+extend<number, Add<i64>> {
   let Output = i64
   let add: (self)(rhs: i64): i64 = {  rhs }
 }
@@ -9160,7 +9160,7 @@ fn add_lowering_is_independent_of_inferred_producer_declaration_order() {
         r#"
 let Add = core.ops.Add
 let number = struct { value: i32 }
-extend(number, Add<number>) {
+extend<number, Add<number>> {
   let Output = number
   let add: (self)(rhs: number): number = {  number{ value: self.value + rhs.value } }
 }
@@ -9201,11 +9201,11 @@ fn add_reports_when_no_ambiguous_candidate_has_the_expected_output() {
         r#"
 let Add = core.ops.Add
 let number = struct { value: i32 }
-extend(number, Add<i32>) {
+extend<number, Add<i32>> {
   let Output = bool
   let add: (self)(rhs: i32): bool = {  false }
 }
-extend(number, Add<i64>) {
+extend<number, Add<i64>> {
   let Output = bool
   let add: (self)(rhs: i64): bool = {  true }
 }
@@ -9229,7 +9229,7 @@ let factory: <t: type> = trait {
   make: (self: Borrow<self>)(move value: t): Output
 }
 let maker = struct { seed: i32 }
-extend(maker, factory<i32>) {
+extend<maker, factory<i32>> {
   let Output = cell<i32>
   let make: (self: Borrow<self>)(move value: i32): cell<i32> = {  cell<i32>{ value: value + self.seed } }
 }
@@ -9256,7 +9256,7 @@ let construct: <t: type> = trait {
   construct: (move value: t): self
 }
 let number = struct { value: i32 }
-extend(number, construct<i32>) {
+extend<number, construct<i32>> {
   let construct: (move value: i32): number = {  number{ value: value } }
 }
 let main: (): i32 = {  number.construct(42).value }
@@ -9298,10 +9298,10 @@ let answer = trait {
   answer: (self: Borrow<self>)(): i32
 }
 let number = struct { value: i32 }
-extend(number, answer) {
+extend<number, answer> {
   let answer: (self: Borrow<self>)(): i32 = {  1 }
 }
-extend(number) {
+extend<number> {
   let answer: (self: Borrow<self>)(): i32 = {  self.value }
 }
 let main: (): i32 = {
@@ -9329,7 +9329,7 @@ fn rejects_unsupported_gats_and_associated_cycles() {
 	  Item: <t: type>: type
 	}
 	let node = struct { value: i32 }
-	extend(node, generic) {
+	extend<node, generic> {
 	  let Item = i32
 		}
 		let main: (): i32 = {  0 }
@@ -9343,7 +9343,7 @@ let cycle = trait {
   b: type
 }
 let node = struct { value: i32 }
-extend(node, cycle) {
+extend<node, cycle> {
   let a = b
   let b = a
 }
@@ -9375,7 +9375,7 @@ let read = trait {
   read: (self: Borrow<self>)(): i32
 }
 let number = struct { value: i32 }
-extend(number, read) {
+extend<number, read> {
   let read: (value: Borrow<number>)(): i32 = {  value.value }
 }
 let main: (): i32 = {  0 }
@@ -9398,8 +9398,8 @@ let read = trait {
   read: (self: Borrow<self>)(): i32
 }
 let number = struct { value: i32 }
-extend(number, read) {}
-extend(number, read) {
+extend<number, read> {}
+extend<number, read> {
   let read: (self: Borrow<self>)(): i32 = {  self.value }
 }
 let main: (): i32 = {  0 }
@@ -9443,10 +9443,10 @@ let reader = trait {
   read: (self: Borrow<self>)(copy value: cell<i32>): i32
 }
 let host = struct { value: i32 }
-extend(host, reader) {
+extend<host, reader> {
   let read: (self: Borrow<self>)(copy value: cell<i32>): i32 = {  self.value + value.value }
 }
-extend(cell<i32>, Copyable) {}
+extend<cell<i32>, Copyable> {}
 let main: (): i32 = {
   let host = host{ value: 19 }
   let cell = cell<i32>{ value: 23 }
@@ -9462,11 +9462,11 @@ fn structural_move_accepts_resources_and_generic_relocation() {
     compile_text(
         r#"
 let resource = struct { value: i32 }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }
 }
 let relocate: <t: type>(move value: t): t
-requires(t is Movable) = {
+requires<t is Movable> = {
   value
 }
 
@@ -9611,13 +9611,13 @@ let Poll = core.async.Poll
 let Future = core.async.Future
 let number = struct {}
 let flag = struct {}
-extend(number, Future<()>) {
+extend<number, Future<()>> {
   let Output = i32
   let poll: <r: region>(self: Borrow<mut><r><self>)(): Poll<i32> = {
     Poll<i32>.Ready(42)
   }
 }
-extend(flag, Future<()>) {
+extend<flag, Future<()>> {
   let Output = bool
   let poll: <r: region>(self: Borrow<mut><r><self>)(): Poll<bool> = {
     Poll<bool>.Ready(true)
@@ -9679,7 +9679,7 @@ let Poll = core.async.Poll
 let Future = core.async.Future
 
 let poll_once: <e: effects, f: type, t: type> with<e>(future: Borrow<mut><f>): Poll<t>
-requires(f is Future<e> && f.Output == t) = {
+requires<f is Future<e> && f.Output == t> = {
   future.poll()
 }
 
@@ -9803,7 +9803,7 @@ fn emits_resource_array_drop_glue_for_unconstructed_layout_fields() {
     let ir = compile_text(
         r#"
 let payload = struct { value: i32 }
-extend(payload, Droppable) {
+extend<payload, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let holder = struct { values: Array<payload><1> }
 let main: (): i32 = {  42 }
@@ -9827,7 +9827,7 @@ fn substitutes_self_in_associated_function_parameters_and_results() {
     compile_text(
         r#"
 let boxed = struct { value: i32 }
-extend(boxed) {
+extend<boxed> {
   let identity: (value: self): self = {  value }
 }
 let main: (): i32 = {  boxed.identity(boxed{ value: 42 }).value }
@@ -9841,7 +9841,7 @@ fn keeps_same_named_method_and_associated_function_symbols_distinct() {
     let ir = compile_text(
         r#"
 let number = struct { raw: i32 }
-extend(number) {
+extend<number> {
   let value: (self: Borrow<self>)(): i32 = {  self.raw }
   let value: (): i32 = {  2 }
 }
@@ -10002,11 +10002,11 @@ fn lowers_for_through_validated_iteration_lang_items() {
                       let into_iterator = core.iter.IntoIterator\n\
                       let owned_item = core.iter.OwnedItem\n\
                       let counter = struct { current: i32, end: i32 }\n\
-             extend(counter) {\n\
+             extend<counter> {\n\
              let into_iter: (self: Borrow<self>)(): i32 = {  self.current }\n\
              let next: (self: Borrow<self>)(): bool = {  false }\n\
              }\n\
-             extend(counter, iterator) {\n\
+             extend<counter, iterator> {\n\
              let Item = owned_item<i32>;\n\
              let next: <r: region>(self: Borrow<mut><r><self>)(): Option<i32> = { \n\
              if(self.current < self.end) {\n\
@@ -10015,7 +10015,7 @@ fn lowers_for_through_validated_iteration_lang_items() {
              Some(value)\n\
              } else: { None }\n\
              }\n}\n\
-             extend(counter, into_iterator) {\n\
+             extend<counter, into_iterator> {\n\
              let Iter = counter\n\
              let into_iter: (move self)(): counter = {  self }\n}\n\
              let main: (): i32 = { \n\
@@ -10089,7 +10089,7 @@ let Option = core.Option
 let Result = core.Result
 
 let payload = struct { value: i32, nested: Option<i32> }
-extend(payload) {
+extend<payload> {
   let add: (self: Borrow<self>)(amount: i32): i32 = {  self.value + amount }
 }
 let read: (value: Option<payload>): Option<i32> = {  value?.value }
@@ -10136,7 +10136,7 @@ let main: (): i32 = {  0 }
         (
             r#"
 let payload = struct { value: i32 }
-extend(payload) { let reset: (self: Borrow<mut><self>)(): i32 = {  self.value } }
+extend<payload> { let reset: (self: Borrow<mut><self>)(): i32 = {  self.value } }
 let read: (value: Option<payload>): Option<i32> = {  value?.reset() }
 let main: (): i32 = {  0 }
 "#,
@@ -10145,7 +10145,7 @@ let main: (): i32 = {  0 }
         (
             r#"
 let payload = struct { value: i32 }
-extend(payload) { let add: (self: Borrow<self>)(x: i32)(y: i32): i32 = {  self.value + x + y } }
+extend<payload> { let add: (self: Borrow<self>)(x: i32)(y: i32): i32 = {  self.value + x + y } }
 let read: (value: Option<payload>): Option<i32> = {  value?.add(1) }
 let main: (): i32 = {  0 }
 "#,
@@ -10574,7 +10574,7 @@ fn cleanup_plan_commits_guarded_pattern_transfers_after_variant_refinement() {
 let resource = struct { value: i32 }
 let bundle = struct { left: resource, right: resource }
 let choice = enum { Some(bundle), None }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let consume: (move value: resource): () = {  () }
 let inspect: (move choice: choice): i32 = {  match(choice) {
@@ -10723,7 +10723,7 @@ let make: (): choice = {  choice.value { value: payload{ value: 7 } } }
     let array_plan = cleanup_plan_text(
         r#"
 let payload = struct { value: i32 }
-extend(payload, Copyable) {}
+extend<payload, Copyable> {}
 let make: (): Array<payload><2> = {  [payload{ value: 1 }, payload{ value: 2 }] }
 "#,
         "make",
@@ -10757,9 +10757,9 @@ fn cleanup_plan_pre_registers_complete_owned_move_path_forests() {
     let plan = cleanup_plan_text(
         r#"
 let empty = struct {}
-extend(empty, Copyable) {}
+extend<empty, Copyable> {}
 let pair = struct { left: i32, right: empty }
-extend(pair, Copyable) {}
+extend<pair, Copyable> {}
 let choice = enum { first { next: pair }, second(i32), unit }
 let inspect: (move empty: empty, move pair: pair, move choice: choice, move values: Array<pair><3>, alias: Borrow<pair>): () = {  () }
 "#,
@@ -10854,7 +10854,7 @@ let take: (): payload = {  pair{ left: payload{ value: 1 }, right: payload{ valu
     let index_plan = cleanup_plan_text(
         r#"
 let payload = struct { value: i32 }
-extend(payload, Copyable) {}
+extend<payload, Copyable> {}
 let take: (): payload = {  [payload{ value: 1 }, payload{ value: 2 }][1] }
 "#,
         "take",
@@ -11140,7 +11140,7 @@ let make: (): choice = {  choice.pair(payload{ value: 1 }, return(choice.pair(pa
     let array_plan = cleanup_plan_text(
         r#"
 let payload = struct { value: i32 }
-extend(payload, Copyable) {}
+extend<payload, Copyable> {}
 let make: (): Array<payload><2> = {  [payload{ value: 1 }, return([payload{ value: 2 }, payload{ value: 3 }])] }
 "#,
         "make",
@@ -11371,7 +11371,7 @@ let run: (): i32 = {
     let closure = cleanup_plan_text(
         r#"
 let resource = struct { value: i32 }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let consume: (move value: resource): () = {  () }
 let run: (): () = {
@@ -11391,7 +11391,7 @@ fn cleanup_plan_transfers_and_consumes_callable_alias_environments() {
     let plan = cleanup_plan_text(
         r#"
 let resource = struct { value: i32 }
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let finish: (move resource: resource)(value: i32): i32 = {  value }
 let main: (): i32 = {
@@ -11498,7 +11498,7 @@ let absurd: (move holder: holder): i32 = {  holder.value }
     let index_plan = cleanup_plan_text(
         r#"
 let empty = enum {}
-extend(empty, Copyable) {}
+extend<empty, Copyable> {}
 let identity: (move values: Array<empty><1>): Array<empty><1> = {  values }
 let absurd: (move values: Array<empty><1>): i32 = {  identity(values)[0] }
 "#,
@@ -11862,7 +11862,7 @@ fn cleanup_plan_classifies_drop_paths_and_conditional_flags_from_types() {
     let conditional = cleanup_plan_text(
         r#"
 let boxed = struct { value: i32 }
-extend(boxed, Droppable) {
+extend<boxed, Droppable> {
   let drop: (self: Borrow<mut><self>)(): () = {  () }}
 let consume: (move value: boxed): () = {  () }
 let finish: (flag: bool): () = {
@@ -11894,7 +11894,7 @@ let finish: (flag: bool): () = {
     let copy = cleanup_plan_text(
         r#"
 let plain = struct { value: i32 }
-extend(plain, Copyable) {}
+extend<plain, Copyable> {}
 let finish: (): () = {  let value = plain{ value: 42 }; () }
 "#,
         "finish",
@@ -12050,7 +12050,7 @@ fn array_literals_dispatch_through_user_trait_implementations() {
         r#"
 let total = struct { value: i32 }
 
-extend(total, ArrayLiteral<i32>) {
+extend<total, ArrayLiteral<i32>> {
   let Output = total
 
   let from_array_literal: <length: usize>(move values: Array<i32><length>): Output = {
@@ -12073,7 +12073,7 @@ fn string_literals_dispatch_to_byte_arrays_and_user_types() {
         r#"
 let tag = struct { first: u8 }
 
-extend(tag, StringLiteral) {
+extend<tag, StringLiteral> {
   let Output = tag
 
   let from_string_literal: <length: usize>(move utf8: Array<u8><length>): Output = {

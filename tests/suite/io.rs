@@ -32,7 +32,7 @@ let main: (): i32 = { 42 }"#,
 
 #[test]
 fn explicit_close_failure_invalidates_before_the_single_host_attempt() {
-    let source = r#"let close_calls: (): i32 = foreign(c, "close_calls")
+    let source = r#"let close_calls: (): i32 = foreign<c, "close_calls">
 
 let abandon: with<std.io.io>(path: Borrow<core.string.str>): () = {
   match(std.io.open(path)(std.io.OpenOptions.read_only())) { Ok(value) => (), Err(_) => (), }

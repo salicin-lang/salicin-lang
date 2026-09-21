@@ -10,6 +10,6 @@ let main: (): i32 = {
   result ?? 42
 }
 
-test("throw_unit_error.sc") {
+test<"throw_unit_error.sc"> {
   std.test.assert(main() == 42)
 }

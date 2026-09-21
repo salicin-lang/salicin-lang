@@ -11,6 +11,6 @@ let main: (): i32 = {
   first + read + second
 }
 
-test("reinit_after_root_move.sc") {
+test<"reinit_after_root_move.sc"> {
   std.test.assert(main() == 42)
 }

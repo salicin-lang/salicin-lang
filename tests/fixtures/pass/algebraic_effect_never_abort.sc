@@ -14,6 +14,6 @@ let main: (): i32 = {
   }
 }
 
-test("algebraic_effect_never_abort.sc") {
+test<"algebraic_effect_never_abort.sc"> {
   std.test.assert(main() == 42)
 }

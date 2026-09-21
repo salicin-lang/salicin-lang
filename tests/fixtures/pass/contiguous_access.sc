@@ -107,6 +107,6 @@ let main: (): i32 = {
   }
 }
 
-test("contiguous_access.sc") {
+test<"contiguous_access.sc"> {
   std.test.assert(main() == 42)
 }

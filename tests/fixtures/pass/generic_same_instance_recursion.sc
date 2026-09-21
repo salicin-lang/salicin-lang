@@ -10,6 +10,6 @@ let bounce: <t: type>
 
 let main: (): i32 = { bounce<i32>(42)(true) }
 
-test("generic_same_instance_recursion.sc") {
+test<"generic_same_instance_recursion.sc"> {
   std.test.assert(main() == 42)
 }

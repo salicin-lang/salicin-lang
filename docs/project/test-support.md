@@ -11,7 +11,7 @@ common assertion vocabulary.
 A registration remains a top-level, source-ordered declaration:
 
 ```salicin
-test("parses a count") {
+test<"parses a count"> {
   std.test.assert(parse_count() == 3)
 }
 ```

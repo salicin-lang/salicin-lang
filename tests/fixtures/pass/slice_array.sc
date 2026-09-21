@@ -14,6 +14,6 @@ let main: (): i32 = {
   }
 }
 
-test("slice_array.sc") {
+test<"slice_array.sc"> {
   std.test.assert(main() == 42)
 }

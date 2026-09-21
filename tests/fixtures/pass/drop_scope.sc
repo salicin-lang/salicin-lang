@@ -4,7 +4,7 @@ let choice = enum {
   None,
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let checked = 1 / self.value
@@ -51,6 +51,6 @@ let main: (): i32 = {
   early() + looped() + inspect(choice.Some(resource { value: 1 })) + 39
 }
 
-test("drop_scope.sc") {
+test<"drop_scope.sc"> {
   std.test.assert(main() == 42)
 }

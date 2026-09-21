@@ -730,8 +730,8 @@ mod tests {
 
     #[test]
     fn formats_delimiters_where_clauses_and_expression_continuations() {
-        let source = "let marker = trait {}\nlet duplicate: <t: type>(value: t): t requires(t is Copyable && t is marker) = { \nvalue\n}\n\nlet add: (\nleft: i32,\nright: i32,\n): i32 = { \nleft +\nright\n}\n\nlet main: (): i32 = { \nlet values = [\n40,\n2,\n]\nlet grouped =\n(values[0] + values[1])\nadd(\nvalues[0],\nvalues[1],\n) + grouped - 42\n}\n";
-        let expected = "let marker = trait {}\nlet duplicate: <t: type>\n  (value: t): t requires(t is Copyable && t is marker) = {\n  value\n}\n\nlet add: (\n  left: i32,\n  right: i32,\n): i32 = {\n  left +\n    right\n}\n\nlet main: (): i32 = {\n  let values = [\n    40,\n    2,\n  ]\n  let grouped =\n    (values[0] + values[1])\n  add(\n    values[0],\n    values[1],\n  ) + grouped - 42\n}\n";
+        let source = "let marker = trait {}\nlet duplicate: <t: type>(value: t): t requires<t is Copyable && t is marker> = { \nvalue\n}\n\nlet add: (\nleft: i32,\nright: i32,\n): i32 = { \nleft +\nright\n}\n\nlet main: (): i32 = { \nlet values = [\n40,\n2,\n]\nlet grouped =\n(values[0] + values[1])\nadd(\nvalues[0],\nvalues[1],\n) + grouped - 42\n}\n";
+        let expected = "let marker = trait {}\nlet duplicate: <t: type>\n  (value: t): t requires<t is Copyable && t is marker> = {\n  value\n}\n\nlet add: (\n  left: i32,\n  right: i32,\n): i32 = {\n  left +\n    right\n}\n\nlet main: (): i32 = {\n  let values = [\n    40,\n    2,\n  ]\n  let grouped =\n    (values[0] + values[1])\n  add(\n    values[0],\n    values[1],\n  ) + grouped - 42\n}\n";
         let formatted = format_source(source).expect("format syntax continuations");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -785,8 +785,8 @@ mod tests {
 
     #[test]
     fn preserves_minimal_syntax_contract_tokens_idempotently() {
-        let source = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell: <t: type> = struct { value: t }\nextend(cell<t>)<requires: t is marker> {\n}\nlet guarded: <t: type>(value: t): t requires(t is marker) = { \nvalue\n}\ntest(\"minimal contracts\") {\nlet value = 1\n}\n";
-        let expected = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell: <t: type> = struct { value: t }\nextend(cell<t>)<requires: t is marker> {\n}\nlet guarded: <t: type>\n  (value: t): t requires(t is marker) = {\n  value\n}\ntest(\"minimal contracts\") {\n  let value = 1\n}\n";
+        let source = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell: <t: type> = struct { value: t }\nextend<cell<t>><requires: t is marker> {\n}\nlet guarded: <t: type>(value: t): t requires<t is marker> = { \nvalue\n}\ntest<\"minimal contracts\"> {\nlet value = 1\n}\n";
+        let expected = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell: <t: type> = struct { value: t }\nextend<cell<t>><requires: t is marker> {\n}\nlet guarded: <t: type>\n  (value: t): t requires<t is marker> = {\n  value\n}\ntest<\"minimal contracts\"> {\n  let value = 1\n}\n";
         let formatted = format_source(source).expect("format minimal syntax contracts");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -797,7 +797,7 @@ mod tests {
 
     #[test]
     fn preserves_trait_and_effect_member_declarations_idempotently() {
-        let source = "let marker = trait {}\nlet protocol = trait {\nItem: <r: region>: type\nArgs: <T: type>: parameters\nread: <T: type>(self)(value: T): T requires(T is marker) = value\n}\nlet state = effect {\nget: (): i32\n}\n";
+        let source = "let marker = trait {}\nlet protocol = trait {\nItem: <r: region>: type\nArgs: <T: type>: parameters\nread: <T: type>(self)(value: T): T requires<T is marker> = value\n}\nlet state = effect {\nget: (): i32\n}\n";
         let formatted = format_source(source).expect("format trait and effect declarations");
         parse(&formatted).expect("formatted member declarations must reparse");
         assert_eq!(

@@ -1,6 +1,6 @@
 let payload = struct { value: i32 }
 
-extend(payload, Copyable) {}
+extend<payload, Copyable> {}
 
 let event = enum {
   value { value: payload },
@@ -19,6 +19,6 @@ let classify: (event: event): i32 = {
 
 let main: (): i32 = { classify(event.value { value: payload { value: 42 } }) }
 
-test("match_guard_copy_binding.sc") {
+test<"match_guard_copy_binding.sc"> {
   std.test.assert(main() == 42)
 }

@@ -6,6 +6,6 @@ let main: (): i32 = {
   42
 }
 
-test("borrowed_unit_is_abi_erased.sc") {
+test<"borrowed_unit_is_abi_erased.sc"> {
   std.test.assert(main() == 42)
 }

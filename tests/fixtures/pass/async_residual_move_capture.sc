@@ -10,7 +10,7 @@ let resource = struct {
   drops: Ptr<mut><i32>
   }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -29,7 +29,7 @@ let consume: (move resource: resource): i32 = {
 }
 
 let poll_once: <e: effects, f: type, t: type> with<e>
-  (future: Borrow<mut><f>): Poll<t> requires(f is Future<e> && f.Output == t) = {
+  (future: Borrow<mut><f>): Poll<t> requires<f is Future<e> && f.Output == t> = {
   future.poll()
 }
 
@@ -62,6 +62,6 @@ let main: (): i32 = {
   if(result == 42 && drop_count == 1) { 42 } else: { 0 }
 }
 
-test("async_residual_move_capture.sc") {
+test<"async_residual_move_capture.sc"> {
   std.test.assert(main() == 42)
 }

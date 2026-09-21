@@ -6,6 +6,6 @@ let main: (): i32 = {
   value
 }
 
-test("while_mutation.sc") {
+test<"while_mutation.sc"> {
   std.test.assert(main() == 42)
 }

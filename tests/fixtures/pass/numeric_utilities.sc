@@ -103,6 +103,6 @@ let main: (): i32 = {
   }
 }
 
-test("numeric_utilities.sc") {
+test<"numeric_utilities.sc"> {
   std.test.assert(main() == 42)
 }

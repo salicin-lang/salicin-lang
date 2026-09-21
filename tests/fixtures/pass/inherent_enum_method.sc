@@ -3,7 +3,7 @@ let choice = enum {
   Empty,
 }
 
-extend(choice) {
+extend<choice> {
   let unwrap: (move self)
     (): i32 = {
     match(self) {
@@ -18,6 +18,6 @@ let main: (): i32 = {
   choice.unwrap()
 }
 
-test("inherent_enum_method.sc") {
+test<"inherent_enum_method.sc"> {
   std.test.assert(main() == 42)
 }

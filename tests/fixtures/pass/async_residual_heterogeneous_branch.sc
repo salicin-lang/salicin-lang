@@ -27,7 +27,7 @@ let retained = struct {
   offset: i32,
 }
 
-extend(first, Droppable) {
+extend<first, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -36,7 +36,7 @@ extend(first, Droppable) {
   }
 }
 
-extend(second, Droppable) {
+extend<second, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -45,7 +45,7 @@ extend(second, Droppable) {
   }
 }
 
-extend(retained, Droppable) {
+extend<retained, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -54,7 +54,7 @@ extend(retained, Droppable) {
   }
 }
 
-extend(first, Future<()>) {
+extend<first, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -69,7 +69,7 @@ extend(first, Future<()>) {
   }
 }
 
-extend(second, Future<()>) {
+extend<second, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -233,6 +233,6 @@ let main: (): i32 = {
   }
 }
 
-test("async_residual_heterogeneous_branch.sc") {
+test<"async_residual_heterogeneous_branch.sc"> {
   std.test.assert(main() == 42)
 }

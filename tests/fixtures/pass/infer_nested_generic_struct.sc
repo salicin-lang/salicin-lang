@@ -6,6 +6,6 @@ let main: (): i32 = {
   outer.value.value
 }
 
-test("infer_nested_generic_struct.sc") {
+test<"infer_nested_generic_struct.sc"> {
   std.test.assert(main() == 42)
 }

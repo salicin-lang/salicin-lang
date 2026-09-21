@@ -11,14 +11,14 @@ pub let Array: <T: type>
 pub let Slice: <T: type>: type = builtin()
 
 /// Routes fixed-size Array brackets through the source-defined indexing protocol.
-extend(Array<T><l>, Index<usize>) {
+extend<Array<T><l>, Index<usize>> {
   let Output = T
   let index: <a: access>(self: Borrow<a><self>)
     (key: usize): Borrow<a><T> = builtin()
 }
 
 /// Provides access operations shared with slices and vectors.
-extend(Array<T><l>) {
+extend<Array<T><l>> {
   /// Borrows all elements as a Slice with the same source region.
   let as_slice: <a: access = shared>
     (self: Borrow<a><self>)
@@ -126,7 +126,7 @@ extend(Array<T><l>) {
 }
 
 /// Provides equality-based membership for fixed-size arrays.
-extend(Array<T><l>)<requires: T is core.marker.Copyable && T is core.cmp.Eq<T>> {
+extend<Array<T><l>><requires: T is core.marker.Copyable && T is core.cmp.Eq<T>> {
   /// Returns whether this Array contains an element equal to `needle`.
   let contains: (self: Borrow<self>)
     (copy needle: T): bool = {
@@ -136,7 +136,7 @@ extend(Array<T><l>)<requires: T is core.marker.Copyable && T is core.cmp.Eq<T>> 
 }
 
 /// Provides copy-based mutation for fixed-size arrays.
-extend(Array<T><l>)<requires: T is core.marker.Copyable> {
+extend<Array<T><l>><requires: T is core.marker.Copyable> {
   /// Replaces every element with a copy of `value`.
   let fill: (self: Borrow<mut><self>)
     (copy value: T): () = {
@@ -160,7 +160,7 @@ extend(Array<T><l>)<requires: T is core.marker.Copyable> {
 }
 
 /// Provides operations on a borrowed contiguous sequence.
-extend(Slice<T>) {
+extend<Slice<T>> {
   /// Returns the number of elements in this Slice.
   let len: <a: access = shared>
     (self: Borrow<a><self>)
@@ -343,7 +343,7 @@ extend(Slice<T>) {
 }
 
 /// Provides equality-based membership for borrowed slices.
-extend(Slice<T>)<requires: T is core.marker.Copyable && T is core.cmp.Eq<T>> {
+extend<Slice<T>><requires: T is core.marker.Copyable && T is core.cmp.Eq<T>> {
   /// Returns whether this Slice contains an element equal to `needle`.
   let contains: (self: Borrow<self>)
     (copy needle: T): bool = {
@@ -368,7 +368,7 @@ extend(Slice<T>)<requires: T is core.marker.Copyable && T is core.cmp.Eq<T>> {
 }
 
 /// Provides copy-based mutation for borrowed contiguous sequences.
-extend(Slice<T>)<requires: T is core.marker.Copyable> {
+extend<Slice<T>><requires: T is core.marker.Copyable> {
   /// Replaces every element with a copy of `value`.
   let fill: (self: Borrow<mut><self>)
     (copy value: T): () = {
@@ -458,7 +458,7 @@ extend(Slice<T>)<requires: T is core.marker.Copyable> {
 }
 
 /// Routes bracket access through the source-defined indexing protocol.
-extend(Slice<T>, Index<u64>) {
+extend<Slice<T>, Index<u64>> {
   let Output = T
   let index: <a: access>
     (self: Borrow<a><self>)
@@ -476,7 +476,7 @@ pub let ptr: <a: access = shared>
   <T: type>(value: Borrow<a><T>): Ptr<a><T> = builtin()
 
 /// Provides operations shared by raw pointers at either access.
-extend(Ptr<a><T>) {
+extend<Ptr<a><T>> {
   /// Returns the pointer `index` elements after this pointer.
   let offset: with<core.unsafe.unsafety>
     (self)
@@ -488,7 +488,7 @@ extend(Ptr<a><T>) {
 }
 
 /// Provides operations that require mutable raw-pointer access.
-extend(Ptr<mut><T>) {
+extend<Ptr<mut><T>> {
   /// Initializes storage that is currently uninitialized.
   let init: with<core.unsafe.unsafety>
     (self)

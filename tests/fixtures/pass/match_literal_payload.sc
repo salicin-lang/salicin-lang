@@ -28,6 +28,6 @@ let main: (): i32 = {
     classify(input.pair(pair { left: 10, flag: true }))
 }
 
-test("match_literal_payload.sc") {
+test<"match_literal_payload.sc"> {
   std.test.assert(main() == 42)
 }

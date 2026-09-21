@@ -9,7 +9,7 @@ pub let Sign = enum {
 // values and `checked_into` require representation-changing compiler support,
 // but their complete public contracts remain declared here.
 
-extend(i8) {
+extend<i8> {
   let min: (self)
     (other: i8): i8 = {
     if(self < other) { self } else: { other }
@@ -43,7 +43,7 @@ extend(i8) {
   let checked_into: <Output: type>(self)(): core.Option<Output> = builtin()
 }
 
-extend(i16) {
+extend<i16> {
   let min: (self)
     (other: i16): i16 = {
     if(self < other) { self } else: { other }
@@ -77,7 +77,7 @@ extend(i16) {
   let checked_into: <Output: type>(self)(): core.Option<Output> = builtin()
 }
 
-extend(i32) {
+extend<i32> {
   let min: (self)
     (other: i32): i32 = {
     if(self < other) { self } else: { other }
@@ -111,7 +111,7 @@ extend(i32) {
   let checked_into: <Output: type>(self)(): core.Option<Output> = builtin()
 }
 
-extend(i64) {
+extend<i64> {
   let min: (self)
     (other: i64): i64 = {
     if(self < other) { self } else: { other }
@@ -145,7 +145,7 @@ extend(i64) {
   let checked_into: <Output: type>(self)(): core.Option<Output> = builtin()
 }
 
-extend(i128) {
+extend<i128> {
   let min: (self)
     (other: i128): i128 = {
     if(self < other) { self } else: { other }
@@ -179,7 +179,7 @@ extend(i128) {
   let checked_into: <Output: type>(self)(): core.Option<Output> = builtin()
 }
 
-extend(isize) {
+extend<isize> {
   let min: (self)
     (other: isize): isize = {
     if(self < other) { self } else: { other }
@@ -213,7 +213,7 @@ extend(isize) {
   let checked_into: <Output: type>(self)(): core.Option<Output> = builtin()
 }
 
-extend(u8) {
+extend<u8> {
   let min: (self)
     (other: u8): u8 = {
     if(self < other) { self } else: { other }
@@ -243,7 +243,7 @@ extend(u8) {
   let checked_into: <Output: type>(self)(): core.Option<Output> = builtin()
 }
 
-extend(u16) {
+extend<u16> {
   let min: (self)
     (other: u16): u16 = {
     if(self < other) { self } else: { other }
@@ -273,7 +273,7 @@ extend(u16) {
   let checked_into: <Output: type>(self)(): core.Option<Output> = builtin()
 }
 
-extend(u32) {
+extend<u32> {
   let min: (self)
     (other: u32): u32 = {
     if(self < other) { self } else: { other }
@@ -303,7 +303,7 @@ extend(u32) {
   let checked_into: <Output: type>(self)(): core.Option<Output> = builtin()
 }
 
-extend(u64) {
+extend<u64> {
   let min: (self)
     (other: u64): u64 = {
     if(self < other) { self } else: { other }
@@ -333,7 +333,7 @@ extend(u64) {
   let checked_into: <Output: type>(self)(): core.Option<Output> = builtin()
 }
 
-extend(u128) {
+extend<u128> {
   let min: (self)
     (other: u128): u128 = {
     if(self < other) { self } else: { other }
@@ -363,7 +363,7 @@ extend(u128) {
   let checked_into: <Output: type>(self)(): core.Option<Output> = builtin()
 }
 
-extend(usize) {
+extend<usize> {
   let min: (self)
     (other: usize): usize = {
     if(self < other) { self } else: { other }

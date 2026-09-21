@@ -30,6 +30,6 @@ let main: (): i32 = {
   if(propagation_ok && throw_ok && value == 42) { 42 } else: { 0 }
 }
 
-test("do_try_boundary.sc") {
+test<"do_try_boundary.sc"> {
   std.test.assert(main() == 42)
 }

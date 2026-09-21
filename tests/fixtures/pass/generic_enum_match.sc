@@ -12,6 +12,6 @@ let unwrap: (move value: maybe<i32>): i32 = {
 
 let main: (): i32 = { unwrap(maybe<i32>.Some(42)) }
 
-test("generic_enum_match.sc") {
+test<"generic_enum_match.sc"> {
   std.test.assert(main() == 42)
 }

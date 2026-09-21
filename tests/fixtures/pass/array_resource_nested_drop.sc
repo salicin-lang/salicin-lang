@@ -1,7 +1,7 @@
 let resource = struct { counter: Ptr<mut><i32> }
 let batch = struct { values: Array<resource><2> }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -29,6 +29,6 @@ let main: (): i32 = {
   40 + drops
 }
 
-test("array_resource_nested_drop.sc") {
+test<"array_resource_nested_drop.sc"> {
   std.test.assert(main() == 42)
 }

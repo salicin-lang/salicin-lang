@@ -1,6 +1,6 @@
 let resource = struct { counter: Ptr<mut><i32> }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -31,6 +31,6 @@ let main: (): i32 = {
   38 + drops
 }
 
-test("array_resource_temporary_index.sc") {
+test<"array_resource_temporary_index.sc"> {
   std.test.assert(main() == 42)
 }

@@ -4,6 +4,6 @@ let main: (): i32 = {
   add(1)(1)
 }
 
-test("closure_curried_capture.sc") {
+test<"closure_curried_capture.sc"> {
   std.test.assert(main() == 42)
 }

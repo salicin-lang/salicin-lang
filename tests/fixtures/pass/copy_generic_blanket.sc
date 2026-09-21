@@ -1,6 +1,6 @@
 let cell: <t: type> = struct { value: t }
 
-extend(cell<t>, Copyable)<requires: t is Copyable> {}
+extend<cell<t>, Copyable><requires: t is Copyable> {}
 
 let read_twice: (copy cell: cell<cell<i32>>): i32 = {
   let duplicate = cell
@@ -14,6 +14,6 @@ let main: (): i32 = {
   read_twice(outer) + duplicate.value.value - 42
 }
 
-test("copy_generic_blanket.sc") {
+test<"copy_generic_blanket.sc"> {
   std.test.assert(main() == 42)
 }

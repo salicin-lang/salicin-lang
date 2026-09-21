@@ -5,13 +5,13 @@ let produce = trait {
 
 let value = struct { value: i32 }
 
-extend(value, produce) {
+extend<value, produce> {
   let Item = i32;
   let produce: (self: Borrow<self>)(): i32 = { self.value }
 }
 
 let require_bool: <t: type>(value: Borrow<t>): bool
-  requires(t is produce && t.Item == bool) = { value.produce() }
+  requires<t is produce && t.Item == bool> = { value.produce() }
 
 let main: (): i32 = {
   let value = value { value: 42 }

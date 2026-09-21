@@ -13,6 +13,6 @@ let main: (): i32 = {
   if(count == 1) { answer } else: { 0 }
 }
 
-test("chain_lhs_once.sc") {
+test<"chain_lhs_once.sc"> {
   std.test.assert(main() == 42)
 }

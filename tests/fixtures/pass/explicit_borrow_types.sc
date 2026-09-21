@@ -3,7 +3,7 @@ let cell: <t: type> = struct { value: t }
 
 let read: <t: type>
   (cell: Borrow<cell<t>>): t
-requires(t is Copyable) = {
+requires<t is Copyable> = {
   let alias: Borrow<cell<t>> = borrow(cell)
   alias.value
 }
@@ -19,6 +19,6 @@ let main: (): i32 = {
   mutable.left + mutable.right + read(cell: cell { value: 1 }) - 1
 }
 
-test("explicit_borrow_types.sc") {
+test<"explicit_borrow_types.sc"> {
   std.test.assert(main() == 42)
 }

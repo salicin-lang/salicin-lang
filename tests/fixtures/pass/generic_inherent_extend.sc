@@ -1,6 +1,6 @@
 let cell: <t: type> = struct { value: t }
 
-extend(cell<t>) {
+extend<cell<t>> {
   let new: (move value: t): cell<t> = { cell { value: value } }
   let take: (move self)(): t = { self.value }
   let replace: (self: Borrow<mut><self>)
@@ -17,6 +17,6 @@ let main: (): i32 = {
   left + explicit.take()
 }
 
-test("generic_inherent_extend.sc") {
+test<"generic_inherent_extend.sc"> {
   std.test.assert(main() == 42)
 }

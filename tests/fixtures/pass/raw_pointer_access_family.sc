@@ -13,6 +13,6 @@ let main: (): i32 = {
   }
 }
 
-test("raw_pointer_access_family.sc") {
+test<"raw_pointer_access_family.sc"> {
   std.test.assert(main() == 42)
 }

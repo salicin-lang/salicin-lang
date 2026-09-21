@@ -80,7 +80,7 @@ An erased `Continuation<Input, Output>` or
 `EffectCallable<Input, Output, Answer>` is an owned four-pointer record:
 entry, drop entry, environment, and active flag. Invocation clears the flag
 before transferring the environment; abandonment invokes the drop entry.
-These records are compiler-private native values and cannot cross `foreign(c)`.
+These records are compiler-private native values and cannot cross `foreign<c>`.
 
 ## Tail Calls
 

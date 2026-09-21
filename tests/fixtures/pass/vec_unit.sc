@@ -15,6 +15,6 @@ let main: (): i32 = {
   }
 }
 
-test("vec_unit.sc") {
+test<"vec_unit.sc"> {
   std.test.assert(main() == 42)
 }

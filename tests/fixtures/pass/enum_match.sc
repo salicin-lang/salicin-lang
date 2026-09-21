@@ -12,6 +12,6 @@ let read: (value: answer): i32 = {
 
 let main: (): i32 = { read(answer.value { value: 42 }) }
 
-test("enum_match.sc") {
+test<"enum_match.sc"> {
   std.test.assert(main() == 42)
 }

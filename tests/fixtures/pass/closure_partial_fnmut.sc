@@ -10,6 +10,6 @@ let main: (): i32 = {
   first + second - 42
 }
 
-test("closure_partial_fnmut.sc") {
+test<"closure_partial_fnmut.sc"> {
   std.test.assert(main() == 42)
 }

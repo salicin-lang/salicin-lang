@@ -1,7 +1,7 @@
 let resource = struct { value: i32 }
 let holder = struct { resource: resource, tail: resource }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let trapped = 1 / self.value
@@ -19,6 +19,6 @@ let main: (): i32 = {
   0
 }
 
-test("drop_mut_borrow_field_trap.sc") {
+test<"drop_mut_borrow_field_trap.sc"> {
   std.test.assert(main() == 42)
 }

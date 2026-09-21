@@ -24,6 +24,6 @@ let main: (): i32 = {
   }
 }
 
-test("vec_ordered_copy.sc") {
+test<"vec_ordered_copy.sc"> {
   std.test.assert(main() == 42)
 }

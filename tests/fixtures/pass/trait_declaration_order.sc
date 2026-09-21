@@ -1,4 +1,4 @@
-extend(number, read) {
+extend<number, read> {
   let read: (self: Borrow<self>)(): i32 = { self.value }
 }
 
@@ -13,6 +13,6 @@ let main: (): i32 = {
   number.read()
 }
 
-test("trait_declaration_order.sc") {
+test<"trait_declaration_order.sc"> {
   std.test.assert(main() == 42)
 }

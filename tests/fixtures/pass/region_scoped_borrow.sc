@@ -6,7 +6,7 @@ let read: <r: region>
 
 let generic_read: <r: region, t: type>
   (cell: Borrow<r><cell<t>>): t
-requires(t is Copyable) = {
+requires<t is Copyable> = {
   let alias: Borrow<r><cell<t>> = borrow(cell)
   alias.value
 }
@@ -18,6 +18,6 @@ let main: (): i32 = {
   read(value) + generic_read(cell: cell { value: 22 })
 }
 
-test("region_scoped_borrow.sc") {
+test<"region_scoped_borrow.sc"> {
   std.test.assert(main() == 42)
 }

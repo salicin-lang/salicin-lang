@@ -5,6 +5,6 @@ let main: (): i32 = {
   42
 }
 
-test("infer_nonempty_block.sc") {
+test<"infer_nonempty_block.sc"> {
   std.test.assert(main() == 42)
 }

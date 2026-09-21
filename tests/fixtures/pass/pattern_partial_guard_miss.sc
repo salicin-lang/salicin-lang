@@ -21,6 +21,6 @@ let main: (): i32 = {
   }
 }
 
-test("pattern_partial_guard_miss.sc") {
+test<"pattern_partial_guard_miss.sc"> {
   std.test.assert(main() == 42)
 }

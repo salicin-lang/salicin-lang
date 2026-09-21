@@ -8,6 +8,6 @@ let main: (): i32 = {
   snapshot + boxed.value - 42
 }
 
-test("shared_borrow_call.sc") {
+test<"shared_borrow_call.sc"> {
   std.test.assert(main() == 42)
 }

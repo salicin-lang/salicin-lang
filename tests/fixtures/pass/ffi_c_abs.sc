@@ -1,4 +1,4 @@
-let abs: (value: i32): i32 = foreign(c)
+let abs: (value: i32): i32 = foreign<c>
 
 let main: (): i32 = {
   unsafe {
@@ -6,6 +6,6 @@ let main: (): i32 = {
   }
 }
 
-test("ffi_c_abs.sc") {
+test<"ffi_c_abs.sc"> {
   std.test.assert(main() == 42)
 }

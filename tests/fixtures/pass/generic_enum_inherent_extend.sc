@@ -3,7 +3,7 @@ let maybe: <t: type> = enum {
   None,
 }
 
-extend(maybe<t>) {
+extend<maybe<t>> {
   let unwrap_or: (move self)
     (move fallback: t): t = {
     match(self) {
@@ -18,6 +18,6 @@ let main: (): i32 = {
   value.unwrap_or(0)
 }
 
-test("generic_enum_inherent_extend.sc") {
+test<"generic_enum_inherent_extend.sc"> {
   std.test.assert(main() == 42)
 }

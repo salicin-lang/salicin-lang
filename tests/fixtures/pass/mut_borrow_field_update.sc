@@ -11,6 +11,6 @@ let main: (): i32 = {
   counter.value
 }
 
-test("mut_borrow_field_update.sc") {
+test<"mut_borrow_field_update.sc"> {
   std.test.assert(main() == 42)
 }

@@ -11,6 +11,6 @@ let main: (): i32 = {
   }
 }
 
-test("function_value_effect_generic.sc") {
+test<"function_value_effect_generic.sc"> {
   std.test.assert(main() == 42)
 }

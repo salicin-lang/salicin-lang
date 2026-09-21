@@ -28,6 +28,6 @@ let main: (): i32 = {
   first + second + third + fourth
 }
 
-test("core_multiple_instances.sc") {
+test<"core_multiple_instances.sc"> {
   std.test.assert(main() == 42)
 }

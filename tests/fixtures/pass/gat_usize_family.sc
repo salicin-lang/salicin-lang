@@ -8,7 +8,7 @@ let keep = trait {
 
 let marker = struct {}
 
-extend(marker, keep) {
+extend<marker, keep> {
   let Output = fixed;
 
   let keep: <l: usize>
@@ -22,6 +22,6 @@ let main: (): i32 = {
   values[0] + values[1]
 }
 
-test("gat_usize_family.sc") {
+test<"gat_usize_family.sc"> {
   std.test.assert(main() == 42)
 }

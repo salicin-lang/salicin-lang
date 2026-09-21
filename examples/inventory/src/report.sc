@@ -13,7 +13,7 @@ pub let render: (value: catalog.Summary): core.string.String = {
   writer.finish()
 }
 
-test("report output is deterministic") {
+test<"report output is deterministic"> {
   let value = catalog.Summary { count: 2, total: 41, name_bytes: 4 }
   let actual = render(value)
   let expected: String = "items=2\ntotal=41\nname_bytes=4\n"

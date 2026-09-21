@@ -7,7 +7,7 @@ let step = struct {
   polled: bool
 }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -31,6 +31,6 @@ let main: (): i32 = {
   first + second
 }
 
-test("async_spin_executor.sc") {
+test<"async_spin_executor.sc"> {
   std.test.assert(main() == 42)
 }

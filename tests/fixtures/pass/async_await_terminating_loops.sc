@@ -6,7 +6,7 @@ let step = struct {
   value: i32
 }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -30,7 +30,7 @@ let condition = struct {
   value: bool
 }
 
-extend(condition, Future<()>) {
+extend<condition, Future<()>> {
   let Output = bool;
 
   let poll: <r: region>
@@ -108,6 +108,6 @@ let main: (): i32 = {
     condition_ready - 4
 }
 
-test("async_await_terminating_loops.sc") {
+test<"async_await_terminating_loops.sc"> {
   std.test.assert(main() == 42)
 }

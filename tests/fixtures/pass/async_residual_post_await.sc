@@ -10,7 +10,7 @@ let step = struct {
   value: i32,
 }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -52,6 +52,6 @@ let main: (): i32 = {
   }
 }
 
-test("async_residual_post_await.sc") {
+test<"async_residual_post_await.sc"> {
   std.test.assert(main() == 42)
 }

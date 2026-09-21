@@ -26,6 +26,6 @@ let main: (): i32 = {
   }
 }
 
-test("c_struct_layout.sc") {
+test<"c_struct_layout.sc"> {
   std.test.assert(main() == 42)
 }

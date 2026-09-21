@@ -11,6 +11,6 @@ let main: (): i32 = {
   if(count == 0) { answer } else: { 0 }
 }
 
-test("coalesce_option_some_short_circuit.sc") {
+test<"coalesce_option_some_short_circuit.sc"> {
   std.test.assert(main() == 42)
 }

@@ -1,6 +1,6 @@
 let answer = struct { answer: i32 }
 
-extend(answer) {
+extend<answer> {
   let answer = 2
 }
 
@@ -9,6 +9,6 @@ let main: (): i32 = {
   value.answer + answer.answer
 }
 
-test("inherent_associated_field_same_name.sc") {
+test<"inherent_associated_field_same_name.sc"> {
   std.test.assert(main() == 42)
 }

@@ -7,7 +7,7 @@ let resource = struct {
   drops: Ptr<mut><i32>,
 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -22,7 +22,7 @@ let step = struct {
   resource: resource,
 }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -123,6 +123,6 @@ let main: (): i32 = {
   if(success == 42 && failure == 42 && drop_count == 2) { 42 } else: { 0 }
 }
 
-test("async_residual_failure_tail_await.sc") {
+test<"async_residual_failure_tail_await.sc"> {
   std.test.assert(main() == 42)
 }

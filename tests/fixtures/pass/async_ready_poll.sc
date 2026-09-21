@@ -4,7 +4,7 @@ let unsafety = core.unsafe.unsafety
 
 let resource = struct { counter: Ptr<mut><i32> }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -50,6 +50,6 @@ let main: (): i32 = {
   }
 }
 
-test("async_ready_poll.sc") {
+test<"async_ready_poll.sc"> {
   std.test.assert(main() == 42)
 }

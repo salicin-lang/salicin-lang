@@ -91,6 +91,6 @@ let main: (): i32 = {
   }
 }
 
-test("defer_control.sc") {
+test<"defer_control.sc"> {
   std.test.assert(main() == 42)
 }

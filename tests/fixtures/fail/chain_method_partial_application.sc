@@ -2,7 +2,7 @@ let Option = core.Option
 
 let number = struct { value: i32 }
 
-extend(number) {
+extend<number> {
   let plus: (self: Borrow<self>)(x: i32)(y: i32): i32 = { self.value + x + y }
 }
 

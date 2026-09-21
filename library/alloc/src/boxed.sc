@@ -26,7 +26,7 @@ let box_into_raw: <T: type>
 
 /// Copies the boxed value out of `boxed`.
 let box_read: <T: type>
-  (boxed: Borrow<Box<T>>): T requires(T is Copyable) = {
+  (boxed: Borrow<Box<T>>): T requires<T is Copyable> = {
   unsafe {
     *boxed.pointer
   }
@@ -35,7 +35,7 @@ let box_read: <T: type>
 /// Copies `value` over the current boxed value.
 let box_write: <T: type>
   (boxed: Borrow<mut><Box<T>>)
-  (copy value: T): () requires(T is Copyable) = {
+  (copy value: T): () requires<T is Copyable> = {
   unsafe {
     *boxed.pointer = value
   }
@@ -78,7 +78,7 @@ let box_as_ref: <a: access, r: region, T: type>
 }
 
 /// Provides inherent constructors and accessors for `Box`.
-extend(Box<T>) {
+extend<Box<T>> {
   /// Allocates a new Box containing `value`.
   let new: (value: T): Box<T> = {  box_new(value) }
   /// Rebuilds unique ownership from a pointer returned by `Box.into_raw`.
@@ -103,7 +103,7 @@ extend(Box<T>) {
 }
 
 /// Provides copy-only value accessors for `Box`.
-extend(Box<T>)<requires: T is Copyable> {
+extend<Box<T>><requires: T is Copyable> {
   /// Copies the boxed value out of this Box.
   let read: (self: Borrow<self>)(): T = {  box_read(self) }
   /// Copies `value` over the current boxed value.
@@ -119,7 +119,7 @@ let box_deallocate: <T: type>
 }
 
 /// Drops the owned value and releases its heap allocation.
-extend(Box<T>, Droppable) {
+extend<Box<T>, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let pointer = self.pointer

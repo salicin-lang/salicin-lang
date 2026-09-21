@@ -887,7 +887,7 @@ edition = "2026"
     project.write(
         "src/api.sc",
         "pub(package) let cell: <t: type> = struct { value: t }\n\
-             extend(cell<t>) {\n\
+             extend<cell<t>> {\n\
              let new: (move value: t): cell<t> = { cell{ value: value } }\n\
              let take: (move self)(): t = { self.value }\n\
              }\n",
@@ -922,12 +922,12 @@ edition = "2026"
              choose: <value_type: type>(self: Borrow<self>)(move value: value_type): value_type\n\
              }\n\
              pub(package) let cell = struct {}\n\
-             extend(cell, choose) {\n\
+             extend<cell, choose> {\n\
              let choose: <result: type>(self: Borrow<self>)(move value: result): result = {\n\
              value\n\
              }\n\
              }\n\
-             extend(cell) {\n\
+             extend<cell> {\n\
              let new: (): cell = { cell{} }\n\
              }\n",
     );
@@ -971,7 +971,7 @@ dep = { path = "../dep" }
     );
     project.write(
         "app/src/main.sc",
-        "extend(dep.cell<t>) {\n\
+        "extend<dep.cell<t>> {\n\
              let take: (move self)(): t = { self.value }\n\
              }\n\
              let main: (): i32 = { 0 }\n",
@@ -1096,7 +1096,7 @@ fn standard_library_acceptance_balances_allocations_on_return_and_throw() {
     let directory = TestDirectory::new();
     let source = directory.write(
         "main.sc",
-        r#"let live_allocations: (): i64 = foreign(c, "live_allocations")
+        r#"let live_allocations: (): i64 = foreign<c, "live_allocations">
 
 let exercise: with<core.error.throwing<core.string.String>>(fail: bool): () = {
   let mut writer = alloc.string.StringWriter.new()

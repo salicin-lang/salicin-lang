@@ -2,7 +2,7 @@ let Result = core.Result
 
 let boxed = struct { value: i32 }
 
-extend(boxed) {
+extend<boxed> {
   let checked: (move self)(): Result<bool><i32> = { Result<bool><i32>.Ok(self.value) }
 }
 

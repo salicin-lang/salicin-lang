@@ -4,7 +4,7 @@ let check = effect {
 
 let resource = struct { counter: Ptr<mut><i32> }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -40,6 +40,6 @@ let main: (): i32 = {
   result + drops
 }
 
-test("algebraic_effect_noncopy_wildcard_guard.sc") {
+test<"algebraic_effect_noncopy_wildcard_guard.sc"> {
   std.test.assert(main() == 42)
 }

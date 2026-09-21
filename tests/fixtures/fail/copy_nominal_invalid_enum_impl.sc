@@ -5,6 +5,6 @@ let message = enum {
   Empty,
 }
 
-extend(message, Copyable) {}
+extend<message, Copyable> {}
 
 let main: (): i32 = { 42 }

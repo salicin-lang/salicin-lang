@@ -4,6 +4,6 @@ let main: (): i32 = {
   values[index]
 }
 
-test("dynamic_array_oob.sc") {
+test<"dynamic_array_oob.sc"> {
   std.test.assert(main() == 42)
 }

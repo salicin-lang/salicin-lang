@@ -22,6 +22,6 @@ let main: (): i32 = {
   result + total + padding
 }
 
-test("algebraic_effect_reusable_fn_mut_action.sc") {
+test<"algebraic_effect_reusable_fn_mut_action.sc"> {
   std.test.assert(main() == 42)
 }

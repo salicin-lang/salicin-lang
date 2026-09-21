@@ -15,6 +15,6 @@ let main: (): i32 = {
   }
 }
 
-test("pattern_partial_pass.sc") {
+test<"pattern_partial_pass.sc"> {
   std.test.assert(main() == 42)
 }

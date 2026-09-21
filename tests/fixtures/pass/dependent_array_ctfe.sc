@@ -10,6 +10,6 @@ let first: (values: Array<i32><factorial(3)>): i32 = { values[0] }
 
 let main: (): i32 = { first([42, 0, 0, 0, 0, 0]) }
 
-test("dependent_array_ctfe.sc") {
+test<"dependent_array_ctfe.sc"> {
   std.test.assert(main() == 42)
 }

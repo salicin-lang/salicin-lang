@@ -13,6 +13,6 @@ let main: (): i32 = {
   consume(boxed)
 }
 
-test("reinit_loop_backedge.sc") {
+test<"reinit_loop_backedge.sc"> {
   std.test.assert(main() == 42)
 }

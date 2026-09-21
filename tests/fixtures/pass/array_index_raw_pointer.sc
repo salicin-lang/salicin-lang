@@ -7,6 +7,6 @@ let main: (): i32 = {
   values[0] + second
 }
 
-test("array_index_raw_pointer.sc") {
+test<"array_index_raw_pointer.sc"> {
   std.test.assert(main() == 42)
 }

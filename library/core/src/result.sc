@@ -9,7 +9,7 @@ pub let Result: <Error: type>
 
 /// Common inspection, borrowing, transformation, fallback, and projection
 /// operations for success-or-error values.
-extend(Result<Error><T>) {
+extend<Result<Error><T>> {
   /// Returns whether this Result contains a success value.
   let is_ok: (self: Borrow<self>)
     (): bool = {
@@ -107,7 +107,7 @@ extend(Result<Error><T>) {
 }
 
 /// Provides `?.` chaining for `Result`.
-extend(Result<Error><T>, core.flow.Chain) {
+extend<Result<Error><T>, core.flow.Chain> {
   /// The success payload type.
   let Item = T
   /// Rebuilds `Result<Error>` around a transformed success type.
@@ -125,7 +125,7 @@ extend(Result<Error><T>, core.flow.Chain) {
 }
 
 /// Provides `??` fallback evaluation for `Result`.
-extend(Result<Error><T>, core.flow.Coalesce) {
+extend<Result<Error><T>, core.flow.Coalesce> {
   /// The success payload type returned by coalescing.
   let Item = T
 
@@ -141,7 +141,7 @@ extend(Result<Error><T>, core.flow.Coalesce) {
 }
 
 /// Provides postfix `!` extraction for `Result`.
-extend(Result<Error><T>, core.flow.Unwrap) {
+extend<Result<Error><T>, core.flow.Unwrap> {
   let Output = T
 
   let unwrap: (move self): T = {
@@ -155,7 +155,7 @@ extend(Result<Error><T>, core.flow.Unwrap) {
 }
 
 /// Provides postfix `!` effect raising for `Result`.
-extend(Result<E><T>, core.flow.Raise) {
+extend<Result<E><T>, core.flow.Raise> {
   let Output = T
   let Error = E
 

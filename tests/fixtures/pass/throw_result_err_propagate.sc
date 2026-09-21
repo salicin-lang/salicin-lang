@@ -12,6 +12,6 @@ let main: (): i32 = {
   result ?? 42
 }
 
-test("throw_result_err_propagate.sc") {
+test<"throw_result_err_propagate.sc"> {
   std.test.assert(main() == 42)
 }

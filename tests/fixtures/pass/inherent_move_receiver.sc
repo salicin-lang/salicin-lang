@@ -1,6 +1,6 @@
 let payload = struct { value: i32 }
 
-extend(payload) {
+extend<payload> {
   let into_value: (move self)(): i32 = { self.value }
 }
 
@@ -9,6 +9,6 @@ let main: (): i32 = {
   payload.into_value()
 }
 
-test("inherent_move_receiver.sc") {
+test<"inherent_move_receiver.sc"> {
   std.test.assert(main() == 42)
 }

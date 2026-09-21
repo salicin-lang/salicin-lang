@@ -4,11 +4,11 @@ let answer = trait {
 
 let number = struct { value: i32 }
 
-extend(number, answer) {
+extend<number, answer> {
   let answer: (self: Borrow<self>)(): i32 = { 1 }
 }
 
-extend(number) {
+extend<number> {
   let answer: (self: Borrow<self>)(): i32 = { self.value }
 }
 
@@ -17,6 +17,6 @@ let main: (): i32 = {
   number.answer()
 }
 
-test("trait_inherent_precedence.sc") {
+test<"trait_inherent_precedence.sc"> {
   std.test.assert(main() == 42)
 }

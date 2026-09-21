@@ -10,6 +10,6 @@ let main: (): scalar = {
   left.value + right.value
 }
 
-test("type_constructor_alias.sc") {
+test<"type_constructor_alias.sc"> {
   std.test.assert(main() == 42)
 }

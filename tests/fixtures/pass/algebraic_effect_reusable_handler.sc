@@ -35,6 +35,6 @@ let main: (): i32 = {
   if(order == 12) { answer } else: { 0 }
 }
 
-test("algebraic_effect_reusable_handler.sc") {
+test<"algebraic_effect_reusable_handler.sc"> {
   std.test.assert(main() == 42)
 }

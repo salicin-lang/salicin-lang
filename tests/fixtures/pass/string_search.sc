@@ -79,6 +79,6 @@ let main: (): i32 = {
   }
 }
 
-test("string_search.sc") {
+test<"string_search.sc"> {
   std.test.assert(main() == 42)
 }

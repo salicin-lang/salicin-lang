@@ -18,6 +18,6 @@ let main: (): i32 = {
   }
 }
 
-test("pattern_partial_effect.sc") {
+test<"pattern_partial_effect.sc"> {
   std.test.assert(main() == 42)
 }

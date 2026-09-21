@@ -3,9 +3,9 @@ let Add = core.ops.Add
 
 let number = struct { value: i32 }
 
-extend(number, Copyable) {}
+extend<number, Copyable> {}
 
-extend(number, Add<number>) {
+extend<number, Add<number>> {
   let Output = number;
   let add: (self)
     (rhs: number): number = {
@@ -20,6 +20,6 @@ let main: (): i32 = {
   left.value + right.value + answer.value
 }
 
-test("add_trait_copy_operands_reusable.sc") {
+test<"add_trait_copy_operands_reusable.sc"> {
   std.test.assert(main() == 42)
 }

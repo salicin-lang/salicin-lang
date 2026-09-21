@@ -11,6 +11,6 @@ let main: (): i32 = {
   pair.left + pair.right
 }
 
-test("disjoint_mut_field_borrows.sc") {
+test<"disjoint_mut_field_borrows.sc"> {
   std.test.assert(main() == 42)
 }

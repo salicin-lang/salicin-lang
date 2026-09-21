@@ -1,6 +1,6 @@
 let number = struct { raw: i32 }
 
-extend(number) {
+extend<number> {
   let reset: (self: Borrow<mut><self>)
     (value: i32): () = {
     self.raw = value
@@ -20,6 +20,6 @@ let main: (): i32 = {
   sum + method + temporary + associated - 84
 }
 
-test("qualified_inherent_method.sc") {
+test<"qualified_inherent_method.sc"> {
   std.test.assert(main() == 42)
 }

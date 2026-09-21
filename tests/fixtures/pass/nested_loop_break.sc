@@ -9,6 +9,6 @@ let main: (): i32 = {
   }
 }
 
-test("nested_loop_break.sc") {
+test<"nested_loop_break.sc"> {
   std.test.assert(main() == 42)
 }

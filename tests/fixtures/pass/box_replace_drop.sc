@@ -2,7 +2,7 @@ let Box = alloc.Box
 
 let resource = struct { counter: Ptr<mut><i32>, value: i32 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     unsafe {
@@ -33,6 +33,6 @@ let main: (): i32 = {
   40 + drops
 }
 
-test("box_replace_drop.sc") {
+test<"box_replace_drop.sc"> {
   std.test.assert(main() == 42)
 }

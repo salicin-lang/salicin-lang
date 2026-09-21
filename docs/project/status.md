@@ -14,7 +14,7 @@ current capability inventory. It does not record release history; see the
 - monomorphization of generic functions, nominals, extensions, and trait implementations;
 - deterministic HIR and LLVM IR generation;
 - native checking, IR emission, building, and running;
-- compile-time `test("name") { ... }` registrations collected into one native
+- compile-time `test<"name"> { ... }` registrations collected into one native
   runner by `salic test`, with source-order execution, source-backed
   unit-returning `throwing<String>` bodies, owned UTF-8 failure messages,
   all-failure reporting,
@@ -230,7 +230,7 @@ Implemented type-system features include:
 - curried compile-time and runtime parameter groups;
 - labeled arguments, overload selection, and declaration-directed Brace groups;
 - generic nominal types, aliases, inherent extensions, and trait implementations;
-- call-shaped `extend(target) { ... }` and `extend(target, trait) { ... }`
+- call-shaped `extend<target> { ... }` and `extend<target, trait> { ... }`
   declarations whose generic binders and sorts are inferred by destructuring
   the target type constructor, including after cross-module resolution;
 - associated types and generic associated constructors;
@@ -367,7 +367,7 @@ Implemented data and control features include:
 - target-layout `struct(c)` data with recursive field validation for integers,
   raw pointers, non-zero fixed arrays, nested C structs, and concrete generic
   instances;
-- per-declaration `foreign(c)` and `foreign(c, "symbol")` definitions with
+- per-declaration `foreign<c>` and `foreign<c, "symbol">` definitions with
   default linker names, bounded scalar/raw-pointer C signatures, and implicit
   `unsafety` call requirements;
 - tuple, struct, enum, literal, binding, and wildcard patterns;

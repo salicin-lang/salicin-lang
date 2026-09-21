@@ -10,6 +10,6 @@ let preserve: <t: type>
 
 let main: (): i32 = { preserve<i32>(42) }
 
-test("generic_validation_rollback.sc") {
+test<"generic_validation_rollback.sc"> {
   std.test.assert(main() == 42)
 }

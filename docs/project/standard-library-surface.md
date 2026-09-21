@@ -196,7 +196,7 @@ effects, I/O, and assertions are excluded.
 
 Compiler-recognized syntax may resolve a validated language item without
 making its spelling an unqualified user name. In particular, operator tokens,
-`?.`, `??`, structured control, `foreign(c)`, and `test("name")` do not expand
+`?.`, `??`, structured control, `foreign<c>`, and `test<"name">` do not expand
 the prelude.
 
 ## Ownership and borrowing

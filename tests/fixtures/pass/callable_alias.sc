@@ -1,6 +1,6 @@
 let resource = struct { value: i32 }
 
-extend(resource, Droppable) {
+extend<resource, Droppable> {
   let drop: (self: Borrow<mut><self>)
     (): () = {
     let checked = 1 / self.value
@@ -31,6 +31,6 @@ let main: (): i32 = {
   moved_closure(moved_partial(moved_resource_partial(1)))
 }
 
-test("callable_alias.sc") {
+test<"callable_alias.sc"> {
   std.test.assert(main() == 42)
 }

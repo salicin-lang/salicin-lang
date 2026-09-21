@@ -14,6 +14,6 @@ let main: (): i32 = {
   select(pair { left: 40, right: 42 })
 }
 
-test("struct_match.sc") {
+test<"struct_match.sc"> {
   std.test.assert(main() == 42)
 }

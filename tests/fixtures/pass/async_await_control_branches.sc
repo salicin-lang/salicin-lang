@@ -6,7 +6,7 @@ let step = struct {
   value: i32
 }
 
-extend(step, Future<()>) {
+extend<step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -26,7 +26,7 @@ let other_step = struct {
   value: i32
 }
 
-extend(other_step, Future<()>) {
+extend<other_step, Future<()>> {
   let Output = i32;
 
   let poll: <r: region>
@@ -93,6 +93,6 @@ let main: (): i32 = {
   first + second
 }
 
-test("async_await_control_branches.sc") {
+test<"async_await_control_branches.sc"> {
   std.test.assert(main() == 42)
 }

@@ -7,6 +7,6 @@ let main: (): i32 = {
   42
 }
 
-test("box_nested_and_unit.sc") {
+test<"box_nested_and_unit.sc"> {
   std.test.assert(main() == 42)
 }

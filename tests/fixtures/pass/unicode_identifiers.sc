@@ -10,6 +10,6 @@ let main: (): i32 = {
   加法(café)(2)
 }
 
-test("unicode_identifiers.sc") {
+test<"unicode_identifiers.sc"> {
   std.test.assert(main() == 42)
 }

@@ -16,6 +16,6 @@ let main: (): i32 = {
   (success ?? 0) + (failure ?? 0)
 }
 
-test("do_forwards_failure.sc") {
+test<"do_forwards_failure.sc"> {
   std.test.assert(main() == 42)
 }

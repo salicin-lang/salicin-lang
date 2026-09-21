@@ -17,6 +17,6 @@ let main: (): i32 = {
   from_some + from_none
 }
 
-test("infer_generic_enum_variant.sc") {
+test<"infer_generic_enum_variant.sc"> {
   std.test.assert(main() == 42)
 }

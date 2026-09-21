@@ -5,6 +5,6 @@ let main: (): i32 = {
   pair.left + pair.right
 }
 
-test("struct_fields.sc") {
+test<"struct_fields.sc"> {
   std.test.assert(main() == 42)
 }

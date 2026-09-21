@@ -13,6 +13,6 @@ let main: (): i32 = {
   42
 }
 
-test("raw_pointer_offset_unit.sc") {
+test<"raw_pointer_offset_unit.sc"> {
   std.test.assert(main() == 42)
 }

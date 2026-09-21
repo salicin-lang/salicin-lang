@@ -5,6 +5,6 @@ let main: (): i32 = {
   choose_after_zero(42)
 }
 
-test("infer_runtime_partial.sc") {
+test<"infer_runtime_partial.sc"> {
   std.test.assert(main() == 42)
 }

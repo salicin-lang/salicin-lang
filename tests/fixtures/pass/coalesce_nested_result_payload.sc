@@ -6,6 +6,6 @@ let main: (): i32 = {
   inner ?? 0
 }
 
-test("coalesce_nested_result_payload.sc") {
+test<"coalesce_nested_result_payload.sc"> {
   std.test.assert(main() == 42)
 }
