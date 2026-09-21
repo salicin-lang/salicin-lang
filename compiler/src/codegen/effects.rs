@@ -741,12 +741,8 @@ impl Analyzer {
                     .return_continuations
                     .borrow_mut()
                     .insert(return_name.clone(), identity.clone());
-                let body = analyzer.transform_handler_expr(
-                    done_body,
-                    handler.clone(),
-                    None,
-                    identity,
-                );
+                let body =
+                    analyzer.transform_handler_expr(done_body, handler.clone(), None, identity);
                 handler
                     .return_continuations
                     .borrow_mut()
@@ -767,12 +763,8 @@ impl Analyzer {
         return_continuations
             .borrow_mut()
             .insert(return_name.clone(), final_continuation.clone());
-        let transformed = self.transform_handler_expr(
-            action_body,
-            handler,
-            None,
-            final_continuation,
-        );
+        let transformed =
+            self.transform_handler_expr(action_body, handler, None, final_continuation);
         return_continuations.borrow_mut().remove(&return_name);
         let transformed = match transformed {
             Ok(expression) => expression,
