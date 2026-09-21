@@ -20,8 +20,8 @@ source must parse before indentation proceeds.
 
 Consequently, the formatter:
 
-- only inserts source lines when expanding directly nested brace expressions
-  or leading runs of closing braces;
+- only inserts source lines when expanding directly nested brace expressions,
+  multiline callable parameter groups, or leading runs of closing braces;
 - never changes token spelling, string contents, comment delimiters or
   non-layout content, semicolons, or other delimiters;
 - canonicalizes one space before a Brace application opener;
@@ -32,6 +32,9 @@ Consequently, the formatter:
 - tracks `()` and `[]` delimiter depth within the current braced region;
 - adds one continuation level to parser-identified parameter groups,
   Brace groups and operator continuations;
+- places every runtime parameter group on its own line when a named function
+  or method body is multiline, while preserving compact single-line functions
+  and the significant layout of local closures;
 - adds one continuation level to subsequent `where` predicates;
 - expands directly nested semantic braced regions and leading closing-brace runs into
   one visible block level per line;

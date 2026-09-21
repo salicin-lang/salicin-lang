@@ -531,7 +531,7 @@ fn formatter_is_idempotent_checks_without_writing_and_formats_packages() {
         output_text(&formatted)
     );
     let expected =
-        "let main = { (): i32 =>\n  // keep { here\n  if(true) {\n    42\n  } else: {\n    0\n  }\n}\n";
+        "let main = {\n  (): i32 =>\n  // keep { here\n  if(true) {\n    42\n  } else: {\n    0\n  }\n}\n";
     assert_eq!(fs::read_to_string(&source).unwrap(), expected);
     let checked = salic()
         .args(["fmt", "--check"])

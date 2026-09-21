@@ -19,6 +19,9 @@ subset.
   `Name: type`; extension implementations retain `let`. Handlers use
   `.handle(action) { Operation(...) => ..., Return(...) => ... }`; the former
   `action:` and `done:` fields are removed.
+- The source formatter now places runtime parameter groups on separate lines
+  for multiline named functions and methods while preserving compact
+  single-line functions and local closure layout.
 - **Breaking:** Removed the `comptime` keyword. Angle brackets now exclusively
   declare and supply compile-time groups; `()`, `[]`, and `{}` exclusively
   declare and supply runtime groups, and mixed-stage groups are invalid.
