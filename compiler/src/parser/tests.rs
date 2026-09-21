@@ -99,10 +99,8 @@ fn parses_only_braced_anonymous_and_pattern_callables() {
 
 #[test]
 fn parses_explicit_partial_pattern_closures_with_fat_arrows() {
-    let program = parse(
-        "let choose = { partial Some(value) if value > 0 => value }\n",
-    )
-    .expect("explicit partial pattern closure must parse");
+    let program = parse("let choose = { partial Some(value) if value > 0 => value }\n")
+        .expect("explicit partial pattern closure must parse");
     let Item::Global(binding) = &program.items[0] else {
         panic!("expected closure-valued global");
     };
