@@ -1,5 +1,4 @@
-let invalid = { <t: type>
-  (value: t): t =>
+let invalid: <t: type> = { (value: t): t =>
   let first = value
   value
 }

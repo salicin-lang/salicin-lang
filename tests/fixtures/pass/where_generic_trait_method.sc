@@ -1,4 +1,4 @@
-let convert = <to: type> trait {
+let convert: <to: type> = trait {
   convert: (self: Borrow<self>)(): to
 }
 
@@ -8,8 +8,7 @@ extend(value, convert<i32>) {
   let convert = { (self: Borrow<self>)(): i32 => self.value }
 }
 
-let convert = { <t: type>
-  (value: Borrow<t>): i32
+let convert: <t: type> = { (value: Borrow<t>): i32
   requires(t is convert<i32>) => value.convert() }
 
 let main = {

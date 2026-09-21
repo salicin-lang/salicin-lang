@@ -48,8 +48,7 @@ extend(second, Droppable) {
 extend(first, Future<()>) {
   let Output = i32;
 
-  let poll = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let poll: <r: region> = { (self: Borrow<mut><r><self>)
     (): Poll<i32> =>
     Poll<i32>.Pending
   }
@@ -58,8 +57,7 @@ extend(first, Future<()>) {
 extend(second, Future<()>) {
   let Output = i32;
 
-  let poll = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let poll: <r: region> = { (self: Borrow<mut><r><self>)
     (): Poll<i32> =>
     Poll<i32>.Pending
   }

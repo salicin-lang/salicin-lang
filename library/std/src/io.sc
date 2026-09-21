@@ -41,8 +41,7 @@ extend(ProcessArgument) {
 
 extend(IoError) {
   let kind = { (self: Borrow<self>)(): IoErrorKind =>  self.failure }
-  let raw_code = { <r: region>
-    (self: Borrow<r><self>)(): Borrow<r><core.Option<i32>> =>
+  let raw_code: <r: region> = { (self: Borrow<r><self>)(): Borrow<r><core.Option<i32>> =>
     borrow(self.host_code)
   }
 }

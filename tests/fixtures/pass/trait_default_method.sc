@@ -16,7 +16,7 @@ extend(override, read) {
   let doubled = { (self: Borrow<self>)(): i32 => 42 }
 }
 
-let cell = <t: type> struct { value: t }
+let cell: <t: type> = struct { value: t }
 
 extend(cell<t>, read)<requires: t is read> {
   let read = { (self: Borrow<self>)(): i32 => self.value.read() }

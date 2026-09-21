@@ -24,7 +24,7 @@ the contract requires it. Conditions are eager where their source order requires
 Conceptually, `if` has this shape:
 
 ```sc fragment
-let if = { <e: effects, T: type> with<e>
+let if: <e: effects, T: type> = { with<e>
   (condition: bool)
   {move then: with<e>(): T}
   {move else: with<e>(): T}: T

@@ -515,8 +515,8 @@ mod tests {
 
     #[test]
     fn access_compile_parameters_select_shared_or_mutable_borrowing() {
-        let source = "let inspect = { <a: access>(value: Borrow<a><i32>): i32 =>  value }\n\
-             let borrow_value = { <a: access, r: region, t: type>\n\
+        let source = "let inspect: <a: access> = { (value: Borrow<a><i32>): i32 =>  value }\n\
+             let borrow_value: <a: access, r: region, t: type> = { \n\
              (value: Borrow<a><r><t>): Borrow<a><r><t> =>  borrow<a>(value) }\n\
              let main = { (): i32 => \n\
              let mut left = 20\n\
@@ -533,7 +533,7 @@ mod tests {
     fn closed_types_can_parameterize_compile_time_functions() {
         let source = "let optimization = enum { size, speed }\n\
              let select_bool = { (b: bool)(value: i32): i32 =>  value }\n\
-             let select_optimization = { <o: optimization>(value: i32): i32 =>  value }\n\
+             let select_optimization: <o: optimization> = { (value: i32): i32 =>  value }\n\
              let main = { (): i32 => \n\
              select_bool(true)(20) +\n\
              select_bool(false)(1) +\n\
@@ -545,7 +545,7 @@ mod tests {
 
     #[test]
     fn closed_compile_time_parameters_use_declared_defaults() {
-        let source = "let select = { <b: bool = false>(value: i32): i32 =>  value }\n\
+        let source = "let select: <b: bool = false> = { (value: i32): i32 =>  value }\n\
              let main = { (): i32 =>  select(42) }\n";
         compile_source(source).expect("closed compile-time defaults should be normalized by type");
     }
@@ -554,7 +554,7 @@ mod tests {
     fn closed_compile_time_defaults_are_checked_against_their_type() {
         let errors = compile_source(
             "let optimization = enum { size, speed }\n\
-             let select = { <o: optimization = true>(value: i32): i32 =>  value }\n\
+             let select: <o: optimization = true> = { (value: i32): i32 =>  value }\n\
              let main = { (): i32 =>  select(42) }\n",
         )
         .unwrap_err();
@@ -565,7 +565,7 @@ mod tests {
 
     #[test]
     fn parameter_modifiers_are_type_checked_after_instantiation() {
-        let source = "let decorate = { <b: bool>(b value: i32): i32 =>  value }\n\
+        let source = "let decorate: <b: bool> = { (b value: i32): i32 =>  value }\n\
              let main = { (): i32 =>  decorate<true>(42) }\n";
         let errors = compile_source(source).unwrap_err();
         assert!(errors.iter().any(|error| {
@@ -577,9 +577,9 @@ mod tests {
     #[test]
     fn parameter_modifier_functions_can_be_forwarded_generically() {
         let source = "use core.sorts.parameters\n\
-             let modifier_identity = { <m: <p: parameters>: parameters> =>  m }\n\
-             let apply = { <m: <p: parameters>: parameters, t: type>(m value: t): t =>  value }\n\
-             let forward = { <m: <p: parameters>: parameters, t: type>(m value: t): t => \n\
+             let modifier_identity: <m: <p: parameters>: parameters> = { =>  m }\n\
+             let apply: <m: <p: parameters>: parameters, t: type> = { (m value: t): t =>  value }\n\
+             let forward: <m: <p: parameters>: parameters, t: type> = { (m value: t): t => \n\
              apply<modifier_identity<m>, t>(value)\n\
              }\n\
              let main = { (): i32 => \n\
@@ -627,7 +627,7 @@ mod tests {
             ),
             (
                 "generic",
-                "let identity = { <t: type>(value: t): t =>  value }\n\
+                "let identity: <t: type> = { (value: t): t =>  value }\n\
              let main = { (): i32 =>  identity() }\n",
                 2,
                 26,
@@ -853,12 +853,12 @@ mod tests {
 
     #[test]
     fn generic_inherent_methods_accept_member_compile_parameters() {
-        let source = "let cell = <t: type> struct { value: t }\n\
+        let source = "let cell: <t: type> = struct { value: t }\n\
              extend(cell<t>) {\n\
-             let make = { <u: type>(move value: t)(marker: u): cell<t> => \n\
+             let make: <u: type> = { (move value: t)(marker: u): cell<t> => \n\
              cell<t>{ value: value }\n\
              }\n\
-             let view = { <a: access>(self: Borrow<a><self>)(): Borrow<a><t> => \n\
+             let view: <a: access> = { (self: Borrow<a><self>)(): Borrow<a><t> => \n\
              borrow<a>(self.value)\n\
              }\n\
              }\n\
@@ -890,12 +890,12 @@ mod tests {
     fn slice_is_a_non_prelude_unsized_core_type() {
         check_library_source(
             "let Slice = core.memory.Slice\n\
-             let inspect = { <r: region>(values: Borrow<r><Slice<i32>>): u64 =>  0 }\n",
+             let inspect: <r: region> = { (values: Borrow<r><Slice<i32>>): u64 =>  0 }\n",
         )
         .expect("borrowed slice types should be accepted");
 
         let diagnostics = check_library_source(
-            "let inspect = { <r: region>(values: Borrow<r><Slice<i32>>): u64 =>  0 }\n",
+            "let inspect: <r: region> = { (values: Borrow<r><Slice<i32>>): u64 =>  0 }\n",
         )
         .expect_err("slice must require an ordinary standard-library alias");
         assert!(diagnostics
@@ -907,7 +907,7 @@ mod tests {
     fn arrays_unsize_to_region_bound_slice_borrows() {
         let ir = compile_source(
             "let Slice = core.memory.Slice\n\
-             let view = { <r: region>\n\
+             let view: <r: region> = { \n\
              (values: Borrow<r><Array<i32><3>>): Borrow<r><Slice<i32>> =>\n\
              borrow(values)\n\
              }\n\
@@ -926,7 +926,7 @@ mod tests {
     fn slice_methods_preserve_length_and_element_borrow_access() {
         let ir = compile_source(
             "let Slice = core.memory.Slice\n\
-             let inspect = { <r: region>\n\
+             let inspect: <r: region> = { \n\
              (values: Borrow<r><Slice<i32>>): i32 =>\n\
              let item = values.at(1)\n\
              if(values.len() == 3) { item } else: { 0 }\n\
@@ -970,7 +970,7 @@ mod tests {
              let bag = struct { value: i32 }\n\
              extend(bag, Index<i32>) {\n\
              let Output = i32\n\
-             let index = { <a: access>\n\
+             let index: <a: access> = { \n\
              (self: Borrow<a><self>)\n\
              (key: i32): Borrow<a><i32> =>\n\
              borrow<a>(self.value)\n\
@@ -993,7 +993,7 @@ mod tests {
              let bag = struct { value: i32 }\n\
              extend(bag, Index<i32>) {\n\
              let Output = i32\n\
-             let index = { <a: access>\n\
+             let index: <a: access> = { \n\
              (self: Borrow<a><self>)\n\
              (key: i32): Borrow<a><i32> =>\n\
              borrow<a>(self.value)\n\
@@ -1016,7 +1016,7 @@ mod tests {
              let bag = struct { value: i32 }\n\
              extend(bag, Index<i32>) {\n\
              let Output = i32\n\
-             let index = { <a: access>\n\
+             let index: <a: access> = { \n\
              (self: Borrow<a><self>)\n\
              (key: i32): Borrow<a><i32> =>\n\
              borrow<a>(self.value)\n\

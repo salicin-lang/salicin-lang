@@ -10,8 +10,7 @@ extend(value, produce) {
   let produce = { (self: Borrow<self>)(): i32 => self.value }
 }
 
-let require_bool = { <t: type>
-  (value: Borrow<t>): bool
+let require_bool: <t: type> = { (value: Borrow<t>): bool
   requires(t is produce && t.Item == bool) => value.produce() }
 
 let main = {

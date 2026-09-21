@@ -269,8 +269,7 @@ pub let StrScalars = struct {
 
 extend(StrBytes, core.iter.Iterator) {
   let Item = core.iter.OwnedItem<u8>;
-  let next = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let next: <r: region> = { (self: Borrow<mut><r><self>)
     (): core.Option<u8> =>
     let bytes = unsafe { raw_str_bytes(self.value) }
     if(self.next_index == bytes.len()) {
@@ -290,8 +289,7 @@ extend(StrBytes, core.iter.IntoIterator) {
 
 extend(StrScalars, core.iter.Iterator) {
   let Item = core.iter.OwnedItem<UnicodeScalar>;
-  let next = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let next: <r: region> = { (self: Borrow<mut><r><self>)
     (): core.Option<UnicodeScalar> =>
     let bytes = unsafe { raw_str_bytes(self.value) }
     if(self.next_index == bytes.len()) {
@@ -337,8 +335,7 @@ extend(StrScalars, core.iter.IntoIterator) {
 
 extend(str) {
   /// Validates borrowed bytes and returns a text view with the same region.
-  let from_utf8 = { <r: region>
-    (bytes: Borrow<r><Slice<u8>>): core.Option<Borrow<r><str>> =>
+  let from_utf8: <r: region> = { (bytes: Borrow<r><Slice<u8>>): core.Option<Borrow<r><str>> =>
     if(is_valid_utf8(bytes)) {
       core.Option.Some(unsafe { raw_str(bytes) })
     } else: {
@@ -364,8 +361,7 @@ extend(str) {
   let is_empty = { (self: Borrow<self>)(): bool =>  self.len() == 0 }
 
   /// Exposes the validated bytes with the same source region.
-  let as_bytes = { <r: region>
-    (self: Borrow<r><self>)(): Borrow<r><Slice<u8>> =>
+  let as_bytes: <r: region> = { (self: Borrow<r><self>)(): Borrow<r><Slice<u8>> =>
     unsafe {
       raw_str_bytes(self)
     }
@@ -390,8 +386,7 @@ extend(str) {
 
   /// Returns the byte range as a view when both endpoints are UTF-8
   /// boundaries. The returned view retains this view's source region.
-  let get = { <r: region>
-    (self: Borrow<r><self>)
+  let get: <r: region> = { (self: Borrow<r><self>)
     (start: u64, end: u64): core.Option<Borrow<r><str>> =>
     if(start > end ||
       !self.is_char_boundary(start) ||
@@ -617,8 +612,7 @@ let string_reserve = {
   }
 }
 
-let string_copy_from_str = { <r: region>
-  (value: Borrow<r><str>): String =>
+let string_copy_from_str: <r: region> = { (value: Borrow<r><str>): String =>
   let length = value.len()
   if(length == 0) {
     ""
@@ -695,8 +689,7 @@ pub let string_into_raw_parts = { with<core.unsafe.unsafety>
 extend(String, core.literal.StringLiteral) {
   let Output = String
 
-  let from_string_literal = { <length: usize>
-    (move utf8: Array<u8><length>): Output => builtin() }
+  let from_string_literal: <length: usize> = { (move utf8: Array<u8><length>): Output => builtin() }
 }
 
 extend(String) {
@@ -714,8 +707,7 @@ extend(String) {
   }
 
   /// Copies borrowed validated text into a new owning String.
-  let from_str = { <r: region>
-    (value: Borrow<r><str>): String =>
+  let from_str: <r: region> = { (value: Borrow<r><str>): String =>
     string_copy_from_str(value)
   }
 
@@ -744,8 +736,7 @@ extend(String) {
   }
 
   /// Borrows this String as immutable validated UTF-8.
-  let as_str = { <r: region>
-    (self: Borrow<r><self>)
+  let as_str: <r: region> = { (self: Borrow<r><self>)
     (): Borrow<r><str> =>
     unsafe {
       let bytes = raw_slice(self.data, self.length, borrow(self))
@@ -754,8 +745,7 @@ extend(String) {
   }
 
   /// Appends borrowed validated UTF-8 text.
-  let push_str = { <r: region>
-    (self: Borrow<mut><self>)
+  let push_str: <r: region> = { (self: Borrow<mut><self>)
     (value: Borrow<r><str>): () =>
     let bytes = value.as_bytes()
     let length = bytes.len()

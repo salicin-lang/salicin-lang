@@ -1,5 +1,5 @@
 let cell = struct { value: i32 }
-let read = { <t: type>(value: Borrow<t>): i32 => 42 }
+let read: <t: type> = { (value: Borrow<t>): i32 => 42 }
 
 let main = { (): i32 => read(cell { value: 42 }) }
 

@@ -1,6 +1,6 @@
 /// Represents either a successful value or an error payload.
-pub let Result = <Error: type>
-  <T: type> enum {
+pub let Result: <Error: type>
+  <T: type> = enum {
   /// Contains the successful value.
   Ok(T),
   /// Contains the error value.
@@ -27,15 +27,14 @@ extend(Result<Error><T>) {
   }
 
   /// Projects this borrowed Result into borrowed success and error payloads.
-  let as_ref = { <a: access, r: region>
-    (self: Borrow<a><r><self>)
+  let as_ref: <a: access, r: region> = { (self: Borrow<a><r><self>)
     (): Result<Borrow<a><r><Error>><Borrow<a><r><T>> =>
     match(self) { Ok(value) => Result.Ok(borrow<a>(value)), Err(error) => Result.Err(borrow<a>(error)),
     }
   }
 
   /// Transforms `Ok` once and preserves `Err`.
-  let map = { <e: effects, U: type>with<e>
+  let map: <e: effects, U: type> = { with<e>
     (move self)
     (move transform: with<e>(T) :U): Result<Error><U> =>
     match(self) { Ok(value) => Result.Ok(transform(value)), Err(error) => Result.Err(error),
@@ -43,7 +42,7 @@ extend(Result<Error><T>) {
   }
 
   /// Transforms `Err` once and preserves `Ok`.
-  let map_error = { <e: effects, MappedError: type>with<e>
+  let map_error: <e: effects, MappedError: type> = { with<e>
     (move self)
     (move transform: with<e>(Error) :MappedError): Result<MappedError><T> =>
     match(self) { Ok(value) => Result.Ok(value), Err(error) => Result.Err(transform(error)),
@@ -51,7 +50,7 @@ extend(Result<Error><T>) {
   }
 
   /// Runs `next` once for `Ok` and preserves `Err`.
-  let and_then = { <e: effects, U: type>with<e>
+  let and_then: <e: effects, U: type> = { with<e>
     (move self)
     (move next: with<e>(T) :Result<Error><U>): Result<Error><U> =>
     match(self) { Ok(value) => next(value), Err(error) => Result.Err(error),
@@ -67,7 +66,7 @@ extend(Result<Error><T>) {
   }
 
   /// Extracts `Ok` or evaluates `fallback` exactly once for `Err`.
-  let unwrap_or_else = { <e: effects>with<e>
+  let unwrap_or_else: <e: effects> = { with<e>
     (move self)
     (move fallback: with<e>(Error) :T): T =>
     match(self) { Ok(value) => value, Err(error) => fallback(error),
@@ -99,7 +98,7 @@ extend(Result<Error><T>, core.flow.Chain) {
   let Rebind = Result<Error>;
 
   /// Applies `transform` to `Ok` and propagates `Err`.
-  let chain = { <e: effects, U: type>with<e>
+  let chain: <e: effects, U: type> = { with<e>
     (self)
     (transform: with<e>(T) :U): Result<Error><U> =>
     match(self) { Ok(value) => Result.Ok(transform(value)), Err(error) => Result.Err(error),
@@ -113,7 +112,7 @@ extend(Result<Error><T>, core.flow.Coalesce) {
   let Item = T
 
   /// Extracts `Ok` or evaluates `fallback` for `Err`.
-  let coalesce = { <e: effects>with<e>
+  let coalesce: <e: effects> = { with<e>
     (self)
     (fallback: with<e>() :T): T =>
     match(self) { Ok(value) => value, Err(_) => fallback(),

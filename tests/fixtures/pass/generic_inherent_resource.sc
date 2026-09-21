@@ -10,7 +10,7 @@ extend(resource, Droppable) {
   }
 }
 
-let cell = <t: type> struct { value: t }
+let cell: <t: type> = struct { value: t }
 
 extend(cell<t>) {
   let new = { (move value: t): cell<t> => cell { value: value } }

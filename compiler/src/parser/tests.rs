@@ -8,7 +8,7 @@ fn parses_brace_first_named_callables_and_bodyless_requirements() {
          let sum: i32 = x + y\n\
          sum\n\
          }\n\
-         let id = { <T: type>(value: T): T => value }\n\
+         let id: <T: type> = { (value: T): T => value }\n\
          let protocol = trait {\n\
          required: (self)(value: i32): i32;\n\
          defaulted: (self)(): i32 = 42;\n\
@@ -43,7 +43,7 @@ fn parses_braced_builtin_foreign_effect_and_requirement_metadata() {
     let program = parse(
         "let intrinsic = { (value: i32): i32 => builtin() }\n\
          let c_abs = { (value: i32): i32 => foreign(c, \"abs\") }\n\
-         let constrained = { <T: type>(value: T): T requires(T is Copy) => value }\n",
+         let constrained: <T: type> = { (value: T): T requires(T is Copy) => value }\n",
     )
     .expect("callable metadata must remain inside the outer braces");
     let Item::Function(intrinsic) = &program.items[0] else {
@@ -176,7 +176,7 @@ fn brace_calls_treat_pattern_arms_as_one_callable_argument() {
 #[test]
 fn parses_callable_effect_operations_and_generated_handle_calls() {
     let program = parse(
-        "let state_effect = <S: type> effect {\n\
+        "let state_effect: <S: type> = effect {\n\
          get: (): S\n\
          put: (value: S): ()\n\
          }\n\
@@ -255,7 +255,7 @@ fn reserves_generated_handle_argument_names_but_allows_return_operations() {
 #[test]
 fn parses_prefix_effect_callable_declarations_and_types() {
     let program = parse(
-        "let apply = { <e: effects>with<e>\n\
+        "let apply: <e: effects> = { with<e>\n\
              (action: with<e>(i32): i32)\n\
              (value: i32): i32 => action(value) }\n\
              let pure = { (value: i32): i32 =>  value }\n",
@@ -425,9 +425,28 @@ fn parses_globals_and_curried_functions() {
 }
 
 #[test]
-fn rejects_name_side_declaration_signature_groups() {
+fn parses_name_side_compile_parameters_and_rejects_runtime_groups() {
+    let program = parse(
+        "let Identity: <T: type>: type = T\n\
+         let Cell: <T: type> = struct { value: T }\n\
+         let identity: <T: type> = { (value: T): T => value }\n\
+         let brace_local: <T: type> = { (value: T): T => value }\n",
+    )
+    .expect("named compile-time parameters must precede `=`");
+    for item in &program.items {
+        match item {
+            Item::Function(function) => assert_eq!(function.compile_groups[0][0].name, "T"),
+            Item::Struct(definition) => {
+                assert_eq!(definition.compile_groups[0][0].name, "T")
+            }
+            Item::TypeAlias(definition) => {
+                assert_eq!(definition.compile_groups[0][0].name, "T")
+            }
+            _ => panic!("expected a generic declaration"),
+        }
+    }
+
     for source in [
-        "let identity<T: type>(value: T): T { value }\n",
         "let identity(value: i32): i32 { value }\n",
         "let value = struct {}\nextend(value) { let read(self: Borrow<self>)(): i32 => { 0 } }\n",
     ] {
@@ -440,6 +459,20 @@ fn rejects_name_side_declaration_signature_groups() {
             error.message
         );
     }
+
+    let error = parse("let Identity = <T: type>: type T\n").unwrap_err();
+    assert!(error
+        .message
+        .contains("compile-time parameters precede `=`"));
+
+    let error =
+        parse("let identity: <T: type> = { <U: type>(value: T): T => value }\n").unwrap_err();
+    assert!(error
+        .message
+        .contains("cannot appear both before `=` and inside a callable brace"));
+
+    let error = parse("let Identity<T: type>: type = T\n").unwrap_err();
+    assert!(error.message.contains("follow `:` before `=`"));
 
     let error = parse("let protocol = trait { read(self: Borrow<self>)(): i32 }\n").unwrap_err();
     assert!(error
@@ -911,8 +944,8 @@ fn rejects_visibility_where_it_is_not_supported_yet() {
 #[test]
 fn separates_compile_time_and_runtime_parameter_groups() {
     let program = parse(
-        "let identity = { <t: type>(value: t): t =>  value }\n\
-             let staged = { <t: type><u: type>(value: t): u =>  value }\n",
+        "let identity: <t: type> = { (value: t): t =>  value }\n\
+             let staged: <t: type><u: type> = { (value: t): u =>  value }\n",
     )
     .unwrap();
 
@@ -962,7 +995,7 @@ fn void_is_not_a_unit_type_alias() {
 #[test]
 fn preserves_all_function_group_delimiters_and_tight_calls() {
     let program = parse(
-        "let combine = { <t: type>[left: t]{right: t}(last: t): t =>  last }\n\
+        "let combine: <t: type> = { [left: t]{right: t}(last: t): t =>  last }\n\
              let value = combine<i32>[1]{2}(3)\n",
     )
     .unwrap();
@@ -1068,7 +1101,7 @@ fn splits_nested_angle_closers_from_shift_tokens() {
 #[test]
 fn parses_angle_type_applications_and_official_type_forms() {
     let program = parse(
-        "let apply = { <t: type>(value: Borrow<mut><Option<Array<t><2>>>): with<io>(t): Ptr<t> }\n",
+        "let apply: <t: type> = { (value: Borrow<mut><Option<Array<t><2>>>): with<io>(t): Ptr<t> }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -1099,11 +1132,11 @@ fn parses_angle_type_applications_and_official_type_forms() {
 fn rejects_parenthesized_type_trait_effect_associated_and_schema_applications() {
     for source in [
         "let read = (value: Option(i32)): i32 { 0 }\n",
-        "let cell = <t: type> struct { value: t }\nlet read = (value: cell(i32)): i32 { 0 }\n",
-        "let marker = <t: type>(self: type) trait {}\nextend(i32, marker(i32)) {}\n",
-        "let state = <t: type> effect {}\nlet read = with<state(i32)>(): i32 { 0 }\n",
+        "let cell: <t: type> = struct { value: t }\nlet read = (value: cell(i32)): i32 { 0 }\n",
+        "let marker: <t: type> =(self: type) trait {}\nextend(i32, marker(i32)) {}\n",
+        "let state: <t: type> = effect {}\nlet read = with<state(i32)>(): i32 { 0 }\n",
         "let read = (value: Chain.Rebind(i32)): i32 { 0 }\n",
-        "let handle = <Value: type, Answer: type> ...Clauses(Value, Answer) (value: Value): Answer\n",
+        "let handle: <Value: type, Answer: type> =...Clauses(Value, Answer) (value: Value): Answer\n",
     ] {
         assert!(parse(source).is_err(), "legacy application parsed: {source}");
     }
@@ -1134,10 +1167,10 @@ fn ordinary_user_source_allows_pascal_case_names() {
 
 #[test]
 fn with_callable_operands_are_parenthesized() {
-    parse("let apply = { <t: type>(): with<io>(t): t }\n")
+    parse("let apply: <t: type> = { (): with<io>(t): t }\n")
         .expect("a parenthesized callable operand is canonical");
     for source in [
-        "let apply = <t: type>(): with<io>[(t): t]\n",
+        "let apply: <t: type> =(): with<io>[(t): t]\n",
         "let apply = with<io><t: type>():{(t): t}\n",
     ] {
         assert!(
@@ -1149,7 +1182,7 @@ fn with_callable_operands_are_parenthesized() {
 
 #[test]
 fn preserves_multiple_compile_parameters_in_one_group() {
-    let program = parse("let choose = { <t: type, u: type>(value: t): u =>  value }\n").unwrap();
+    let program = parse("let choose: <t: type, u: type> = { (value: t): u =>  value }\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected generic function");
     };
@@ -1166,8 +1199,8 @@ fn preserves_multiple_compile_parameters_in_one_group() {
 #[test]
 fn parses_generic_structs_and_enums() {
     let program = parse(
-        "let cell = <t: type> struct { value: t }\n\
-             let maybe = <t: type> enum {\n\
+        "let cell: <t: type> = struct { value: t }\n\
+             let maybe: <t: type> = enum {\n\
              some(t),\n\
              named { value: t },\n\
              none,\n\
@@ -1330,7 +1363,7 @@ fn parses_colon_trait_and_effect_members_without_semicolons() {
 #[test]
 fn preserves_generic_traits_and_trait_member_defaults() {
     let program = parse(
-        "let convert = <t: type> trait {\n\
+        "let convert: <t: type> = trait {\n\
              convert: <u: type>(self: Borrow<self>)(value: u): t = value\n\
              output: <v: type>: type\n\
              }\n",
@@ -1782,7 +1815,7 @@ fn parses_bounded_c_foreign_declarations() {
             "requires one runtime parameter group",
         ),
         (
-            "let identity = { <t: type>(value: t): t => foreign(c) }\n",
+            "let identity: <t: type> = { (value: t): t => foreign(c) }\n",
             "no compile groups",
         ),
         (
@@ -1809,7 +1842,7 @@ fn parses_bounded_c_foreign_declarations() {
 
 #[test]
 fn rejects_runtime_parameters_on_generic_data_and_legacy_extend_headers() {
-    let data = parse("let bad = <t: type>(value: t) struct { value: t }\n").unwrap_err();
+    let data = parse("let bad: <t: type> =(value: t) struct { value: t }\n").unwrap_err();
     assert!(data.message.contains("outer callable brace"));
 
     let extension = parse("extend cell {}\n").unwrap_err();
@@ -2864,7 +2897,7 @@ fn rejects_legacy_mut_borrow_token_sequence() {
 #[test]
 fn parses_region_parameters_and_borrow_regions() {
     let program = parse(
-        "let choose = { <r: region>(value: Borrow<r><i32>): Borrow<r><i32> =>  borrow(value) }\n",
+        "let choose: <r: region> = { (value: Borrow<r><i32>): Borrow<r><i32> =>  borrow(value) }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -2895,7 +2928,7 @@ fn parses_region_parameters_and_borrow_regions() {
 #[test]
 fn parses_access_parameters_in_borrow_modes_types_and_expressions() {
     let program = parse(
-        "let identity = { <a: access, r: region, t: type>\n\
+        "let identity: <a: access, r: region, t: type> = { \n\
              (value: Borrow<a><r><t>): Borrow<a><r><t> => borrow<a>(value) }\n",
     )
     .unwrap();
@@ -2935,7 +2968,7 @@ fn parses_access_parameters_in_borrow_modes_types_and_expressions() {
 fn parses_closed_types_as_compile_parameter_types() {
     let program = parse(
         "let optimization = enum { size, speed }\n\
-             let select = { <b: bool, o: optimization>(value: i32): i32 =>  value }\n",
+             let select: <b: bool, o: optimization> = { (value: i32): i32 =>  value }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[1] else {
@@ -2954,7 +2987,7 @@ fn parses_closed_types_as_compile_parameter_types() {
 #[test]
 fn parses_string_as_an_ordinary_named_type() {
     let program = parse(
-        "let register = { <name: string>(move body: with<core.error.throwing<core.string.String>>(): ()): () => builtin() }\n",
+        "let register: <name: string> = { (move body: with<core.error.throwing<core.string.String>>(): ()): () => builtin() }\n",
     )
     .unwrap();
     let [Item::Function(function)] = program.items.as_slice() else {
@@ -2987,7 +3020,7 @@ fn parses_string_as_an_ordinary_named_type() {
 #[test]
 fn parses_parameter_modifier_functions_in_prefix_position() {
     let program = parse(
-        "let identity = { <m: <p: parameters>: parameters, t: type>(m value: t): t =>  value }\n",
+        "let identity: <m: <p: parameters>: parameters, t: type> = { (m value: t): t =>  value }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -3001,7 +3034,7 @@ fn parses_parameter_modifier_functions_in_prefix_position() {
 #[test]
 fn parses_parameter_prefixes_as_composable_modifiers() {
     let program = parse(
-            "let decorate = { <b: bool, m: <p: parameters>: parameters>(b m value: i32): i32 =>  value }\n",
+            "let decorate: <b: bool, m: <p: parameters>: parameters> = { (b m value: i32): i32 =>  value }\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -3014,7 +3047,7 @@ fn parses_parameter_prefixes_as_composable_modifiers() {
 #[test]
 fn parses_parameter_modifier_function_kind() {
     let program = parse(
-        "let identity = { <m: <p: parameters>: parameters, t: type>(m value: t): t =>  value }\n",
+        "let identity: <m: <p: parameters>: parameters, t: type> = { (m value: t): t =>  value }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -3027,8 +3060,8 @@ fn parses_parameter_modifier_function_kind() {
 #[test]
 fn parses_effect_parameters_in_with_clauses() {
     let program = parse(
-        "let tagged = { <e: effects>with<e>(value: i32): i32 =>  value }\n\
-             let combined = { <e: effects>with<unsafety, e>(value: i32): i32 =>  value }\n",
+        "let tagged: <e: effects> = { with<e>(value: i32): i32 =>  value }\n\
+             let combined: <e: effects> = { with<unsafety, e>(value: i32): i32 =>  value }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -3045,21 +3078,21 @@ fn parses_effect_parameters_in_with_clauses() {
     );
     assert_eq!(combined.effects.parameters, vec!["e"]);
 
-    let error = parse("let box = <e: effects> struct { value: i32 }\n").unwrap_err();
+    let error = parse("let box: <e: effects> = struct { value: i32 }\n").unwrap_err();
     assert!(error
         .message
         .contains("effect parameters belong to functions"));
 
-    let error = parse("let bad = { <e: effects>with<e>(value: e): i32 =>  0 }\n").unwrap_err();
+    let error = parse("let bad: <e: effects> = { with<e>(value: e): i32 =>  0 }\n").unwrap_err();
     assert!(error.message.contains("cannot be used as a runtime type"));
 
-    let error = parse("let old = { <e: effects>(value: i32): i32(e) =>  value }\n").unwrap_err();
+    let error = parse("let old: <e: effects> = { (value: i32): i32(e) =>  value }\n").unwrap_err();
     assert!(!error.message.is_empty());
 }
 
 #[test]
 fn parses_compiler_owned_constraint_fragments_and_rejects_defaults() {
-    let program = parse("let inspect = { <c: constraint>(): () =>  () }\n").unwrap();
+    let program = parse("let inspect: <c: constraint> = { (): () =>  () }\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -3068,11 +3101,11 @@ fn parses_compiler_owned_constraint_fragments_and_rejects_defaults() {
         Sort::Fragment(crate::ast::StaticFragmentKind::constraint())
     );
 
-    let constraint = parse("let bad = { <c: constraint = value>(): () =>  () }\n").unwrap_err();
+    let constraint = parse("let bad: <c: constraint = value> = { (): () =>  () }\n").unwrap_err();
     assert!(constraint
         .message
         .contains("defaults for constraint fragments are not supported"));
-    let runtime = parse("let bad = { <c: constraint>(value: c): () =>  () }\n").unwrap_err();
+    let runtime = parse("let bad: <c: constraint> = { (value: c): () =>  () }\n").unwrap_err();
     assert!(
         runtime
             .message
@@ -3081,7 +3114,7 @@ fn parses_compiler_owned_constraint_fragments_and_rejects_defaults() {
         runtime.message
     );
 
-    let ordinary = parse("let inspect = { <d: declaration>(): () =>  () }\n").unwrap();
+    let ordinary = parse("let inspect: <d: declaration> = { (): () =>  () }\n").unwrap();
     let Item::Function(function) = &ordinary.items[0] else {
         panic!("expected function");
     };
@@ -3130,7 +3163,7 @@ fn parses_trait_self_effect_parameter_in_member_rows() {
 fn parses_compiler_provided_sort_and_control_contract_declarations() {
     let program = parse(
         "pub let unsafety = effect {}\n\
-             pub let throwing = <error: type> effect { raise: (move error: error): never }\n\
+             pub let throwing: <error: type> = effect { raise: (move error: error): never }\n\
              pub let type: sort<2>\n\
              pub let effect: sort<2>\n\
              pub let effects: sort<2>\n\
@@ -3141,7 +3174,7 @@ fn parses_compiler_provided_sort_and_control_contract_declarations() {
              /// exclusive mutable access.\n\
              mut\n\
              }\n\
-             pub let do = { <e: effects, t: type>with<e>(move action: with<e>(): t): t }\n",
+             pub let do: <e: effects, t: type> = { with<e>(move action: with<e>(): t): t }\n",
     )
     .unwrap();
     assert!(matches!(
@@ -3187,8 +3220,8 @@ fn parses_complete_builtin_definition_markers() {
     let program = parse(
         "let builtin = { (): never => builtin() }\n\
              pub let scalar: type = builtin()\n\
-             pub let family = <t: type><l: usize>: type builtin()\n\
-             pub let intrinsic = { <t: type>(value: t): t => builtin() }\n\
+             pub let family: <t: type><l: usize>: type = builtin()\n\
+             pub let intrinsic: <t: type> = { (value: t): t => builtin() }\n\
              extend(i32, Add<i32>) {\n\
              let Output = i32\n\
              let add = { (self)(rhs: i32): i32 => builtin() }\n\
@@ -3246,12 +3279,12 @@ fn rejects_malformed_builtin_definition_markers() {
 #[test]
 fn parses_variadic_match_control_contract() {
     let program = parse(
-        "pub let match = { <\n\
+        "pub let match: <\n\
              Input: type,\n\
              Output: type,\n\
              e: effects,\n\
              ...cases: parameters,\n\
-             >with<e>\n\
+             > = { with<e>\n\
              (move input: Input)\n\
              ...cases: Output }\n",
     )
@@ -3382,7 +3415,7 @@ fn parses_nominal_marker_effect_declarations_and_callable_rows() {
 #[test]
 fn parses_parameterized_algebraic_effect_operations() {
     let program = parse(
-        "let state = <s: type> effect {\n\
+        "let state: <s: type> = effect {\n\
              get: (): s\n\
              put: (move value: s): ()\n\
              }\n\
@@ -3437,7 +3470,7 @@ fn permits_effect_operation_overloads_only_by_parameter_names() {
 #[test]
 fn parses_function_shaped_handlers_with_contextual_clause_parameters() {
     let program = parse(
-        "let state = <s: type> effect { get: (): s }\n\
+        "let state: <s: type> = effect { get: (): s }\n\
              let main = { (): i32 => \n\
              state<i32>.handle {\n\
              get: { (resume) => resume(42) },\n\
@@ -3464,7 +3497,7 @@ fn parses_function_shaped_handlers_with_contextual_clause_parameters() {
 #[test]
 fn parses_effects_as_part_of_callable_signatures() {
     let program = parse(
-            "let apply = { <e: effects>with<e>(action: with<e>(i32): i32)(value: i32): i32 =>  value }\n",
+            "let apply: <e: effects> = { with<e>(action: with<e>(i32): i32)(value: i32): i32 =>  value }\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -3479,14 +3512,14 @@ fn parses_effects_as_part_of_callable_signatures() {
     ));
 
     let old =
-        parse("let apply = { <e: effects>(action: (i32) {i32(e}))(value: i32): i32 =>  value }\n")
+        parse("let apply: <e: effects> = { (action: (i32) {i32(e}))(value: i32): i32 =>  value }\n")
             .unwrap_err();
     assert!(!old.message.is_empty());
 }
 
 #[test]
 fn rejects_parameter_modifier_parameters_on_data_declarations() {
-    let error = parse("let wrapper = <m: <p: parameters>: parameters> struct { value: i32 }\n")
+    let error = parse("let wrapper: <m: <p: parameters>: parameters> = struct { value: i32 }\n")
         .unwrap_err();
     assert!(error
         .message
@@ -3688,8 +3721,8 @@ fn array_length_must_be_a_restricted_static_expression() {
 #[test]
 fn array_type_preserves_curried_compile_parameter_groups() {
     let program = parse(
-        "pub let Array = <T: type><l: usize>: type\n\
-             let first = { <l: usize>(values: Array<i32><l>): i32 =>  values[0] }\n",
+        "pub let Array: <T: type><l: usize>: type\n\
+             let first: <l: usize> = { (values: Array<i32><l>): i32 =>  values[0] }\n",
     )
     .unwrap();
 
@@ -3781,8 +3814,8 @@ fn parses_extend_methods_associated_functions_constants_and_trait_refs() {
 fn parses_compile_parameters_on_extend_functions() {
     let program = parse(
         "extend(a) {\n\
-             let convert = { <t: type>(self: Borrow<self>)(value: t): t =>  value }\n\
-             let make = { <t: type>(value: t): t =>  value }\n\
+             let convert: <t: type> = { (self: Borrow<self>)(value: t): t =>  value }\n\
+             let make: <t: type> = { (value: t): t =>  value }\n\
              }\n",
     )
     .unwrap();
@@ -3808,7 +3841,7 @@ fn parses_compile_parameters_on_extend_functions() {
 #[test]
 fn infers_extend_pattern_parameters_from_constructor_sorts() {
     let program = parse(
-        "let cell = <t: type> struct { value: t }\n\
+        "let cell: <t: type> = struct { value: t }\n\
              extend(cell<t>)<requires: t is Copyable> {\n\
              let get = { (self: Borrow<self>)(): t =>  self.value }\n}\n",
     )
@@ -3826,7 +3859,7 @@ fn infers_extend_pattern_parameters_from_constructor_sorts() {
     );
 
     let program = parse(
-        "let Result = <Error: type><T: type> enum { Ok(T), Err(Error) }\n\
+        "let Result: <Error: type><T: type> = enum { Ok(T), Err(Error) }\n\
              let Chain = trait {}\n\
              extend(Result<Error><T>, Chain) {}\n",
     )
@@ -3869,7 +3902,7 @@ fn qualified_extend_roots_are_not_inferred_as_parameters() {
 #[test]
 fn parses_multiline_constraint_guards_without_inference_placeholders() {
     let program = parse(
-        "let choose = { <t: type>(copy value: t): t\n\
+        "let choose: <t: type> = { (copy value: t): t\n\
              requires(t is Copyable && t is marker<i32> && t.item == t) => value }\n",
     )
     .unwrap();
@@ -3900,8 +3933,8 @@ fn parses_multiline_constraint_guards_without_inference_placeholders() {
 fn lowers_compile_time_constraint_guards_to_trait_predicates() {
     let program = parse(
         "let Copyable = trait {}\n\
-             let cell = <t: type> struct { value: t }\n\
-             let duplicate = { <t: type>(value: t): (t, t) requires(t is Copyable) => \n\
+             let cell: <t: type> = struct { value: t }\n\
+             let duplicate: <t: type> = { (value: t): (t, t) requires(t is Copyable) => \n\
              (value, value)\n\
              }\n\
              extend(cell<t>, Copyable)<requires: t is Copyable> {}\n",
@@ -3929,13 +3962,13 @@ fn lowers_compile_time_constraint_guards_to_trait_predicates() {
 
 #[test]
 fn constraint_guards_require_is_evidence_before_projection_equalities() {
-    let error = parse("let read = { <t: type>(value: t): t requires(t.item == i32) =>  value }\n")
+    let error = parse("let read: <t: type> = { (value: t): t requires(t.item == i32) =>  value }\n")
         .expect_err("a projection without trait evidence must fail");
     assert!(error
         .message
         .contains("must follow an `is` constraint for the same subject"));
 
-    let error = parse("let read = { <t: type>(value: t): t where t: Copyable =>  value }\n")
+    let error = parse("let read: <t: type> = { (value: t): t where t: Copyable =>  value }\n")
         .expect_err("colon-style predicates must fail");
     assert!(error
         .message
@@ -3945,7 +3978,7 @@ fn constraint_guards_require_is_evidence_before_projection_equalities() {
 #[test]
 fn parses_generic_associated_type_equalities() {
     let program = parse(
-            "let lend = { <t: type>(value: t): t\n\
+            "let lend: <t: type> = { (value: t): t\n\
              requires(t is lender && t.item<a: access><r: region> == Borrow<a><r><i32>) => value }\n",
         )
         .unwrap();
@@ -4059,7 +4092,7 @@ fn reports_a_source_location() {
 #[test]
 fn parses_type_families_and_type_constructor_aliases() {
     let program = parse(
-        "let family = <t: type>: type box<t>;\n\
+        "let family: <t: type>: type = box<t>;\n\
              let constructor: <element: type>: type = box;\n\
              let scalar: type = i32\n",
     )
@@ -4095,9 +4128,9 @@ fn parses_type_families_and_type_constructor_aliases() {
 #[test]
 fn parses_constructor_compile_parameter_sorts() {
     let program = parse(
-            "let use = { <f: <element: type>: type>(move value: f<i32>): f<i32> =>  value }\n\
-             let curried = { <f: <element: type><length: usize>: type>(): i32 =>  0 }\n\
-              let effects = { <e: <error: type>: effect>with<e<bool>>(move action: with<e<bool>>(): i32): i32 =>  action() }\n\
+            "let use: <f: <element: type>: type> = { (move value: f<i32>): f<i32> =>  value }\n\
+             let curried: <f: <element: type><length: usize>: type> = { (): i32 =>  0 }\n\
+              let effects: <e: <error: type>: effect> = { with<e<bool>>(move action: with<e<bool>>(): i32): i32 =>  action() }\n\
               let functor = trait<self: <value: type>: type> {\n\
              map: <e: effects, a: type, b: type>with<e>(move self: self<a>)(move transform: with<e>(a): b): self<b>\n\
              }\n\

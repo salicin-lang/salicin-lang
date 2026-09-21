@@ -5,13 +5,13 @@ pub let suspension = effect {
 }
 
 /// Result of polling an asynchronous computation once.
-pub let Poll = <T: type> enum {
+pub let Poll: <T: type> = enum {
   Pending,
   Ready(T)
 }
 
 /// A cold asynchronous computation with residual effect row `E`.
-pub let Future = <e: effects> trait<requires: self is Movable> {
+pub let Future: <e: effects> = trait<requires: self is Movable> {
   Output: type
 
   poll: <r: region>with<e>(self: Borrow<mut><r><self>)(): Poll<Output>
@@ -23,10 +23,10 @@ pub let Executor = trait {
 }
 
 /// Constructs a cold compiler-generated future without running `action`.
-pub let async = { <e: effects, F: type, T: type>{move action: with<core.async.suspension, e>() :T}: F requires(F is Future<e> && F.Output == T) => builtin() }
+pub let async: <e: effects, F: type, T: type> = { {move action: with<core.async.suspension, e>() :T}: F requires(F is Future<e> && F.Output == T) => builtin() }
 
 /// Suspends the enclosing async computation until `future` is Ready.
-pub let await = { <e: effects, F: type, T: type>with<core.async.suspension, e>
+pub let await: <e: effects, F: type, T: type> = { with<core.async.suspension, e>
   (move future: F): T requires(F is Future<e> && F.Output == T) =>
   let mut current = future
   loop {

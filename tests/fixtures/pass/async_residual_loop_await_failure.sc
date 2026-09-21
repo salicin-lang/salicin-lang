@@ -21,8 +21,7 @@ extend(step, Droppable) {
 extend(step, Future<()>) {
   let Output = bool;
 
-  let poll = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let poll: <r: region> = { (self: Borrow<mut><r><self>)
     (): Poll<bool> =>
     Poll<bool>.Ready(self.done)
   }

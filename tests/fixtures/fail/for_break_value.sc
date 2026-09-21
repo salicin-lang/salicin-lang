@@ -8,8 +8,7 @@ let once = struct { done: bool }
 
 extend(once, Iterator) {
   let Item = OwnedItem<i32>;
-  let next = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let next: <r: region> = { (self: Borrow<mut><r><self>)
     (): Option<i32> =>
     if(self.done) {
       None

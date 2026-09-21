@@ -8,13 +8,13 @@ extend(leaf, read) {
   let read = { (self: Borrow<self>)(): i32 => self.value }
 }
 
-let cell = <t: type> struct { value: t }
+let cell: <t: type> = struct { value: t }
 
 extend(cell<t>, read)<requires: t is read> {
   let read = { (self: Borrow<self>)(): i32 => self.value.read() }
 }
 
-let read_cell = { <t: type>(cell: Borrow<cell<t>>): i32
+let read_cell: <t: type> = { (cell: Borrow<cell<t>>): i32
   requires(t is read) => cell.read() }
 
 let value = trait {

@@ -21,7 +21,7 @@ literal's outer braces:
 ```salicin
 let read = { with<io>(path: str): String => ... }
 
-let apply = { <e: effects> with<e>
+let apply: <e: effects> = { with<e>
   (action: with<e>(i32): i32)
   (value: i32): i32 =>
   action(value)

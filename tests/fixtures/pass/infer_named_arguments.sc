@@ -1,4 +1,4 @@
-let make = { <t: type>(value: t): t => value }
+let make: <t: type> = { (value: t): t => value }
 let subtract = { (left: i32, right: i32): i32 => left - right }
 
 let main = {

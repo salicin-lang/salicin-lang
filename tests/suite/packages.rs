@@ -1289,7 +1289,7 @@ extend(number, secret) {
 }
 pub let make = { (): number => number{ value: 21 } }
 pub let maybe = { (): Option<number> => Option<number>.Some(make()) }
-pub let reveal = { <t: type>(move number: number): i32 => number.reveal() }
+pub let reveal: <t: type> = { (move number: number): i32 => number.reveal() }
 pub let answer = { (): i32 =>
   let number = make()
   number.reveal()
@@ -1411,14 +1411,14 @@ pub let maybe = { (value: i32): Option<i32> => Option<i32>.Some(value) }
 
     workspace.write(
         "app/src/fake.sc",
-        r#"pub let Option = <T: type> enum { Some(T), None }
+        r#"pub let Option: <T: type> = enum { Some(T), None }
 pub let make_option = { (): Option<i32> => Option<i32>.Some(42) }
 
-pub let Add = <Rhs: type> trait {
+pub let Add: <Rhs: type> = trait {
   Output: type
   add: (move self)(move rhs: Rhs): Output
 }
-pub let Sub = <Rhs: type> trait {
+pub let Sub: <Rhs: type> = trait {
   Output: type
   sub: (move self)(move rhs: Rhs): Output
 }
@@ -1500,7 +1500,7 @@ pub let make_number = { (value: i32): Number => Number{ value: value } }
 
     workspace.write(
         "app/src/main.sc",
-        "use root.fake as option\nlet value = { <T: type>(): i32 => 42 }\nlet main = { (): i32 => value<option>() }\n",
+        "use root.fake as option\nlet value: <T: type> = { (): i32 => 42 }\nlet main = { (): i32 => value<option>() }\n",
     );
     let module_option = salic()
         .arg("check")

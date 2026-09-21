@@ -55,8 +55,7 @@ let Batch = struct {
 extend(Batch, Iterator) {
   let Item = OwnedItem<Transaction>;
 
-  let next = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let next: <r: region> = { (self: Borrow<mut><r><self>)
     (): Option<Transaction> =>
     let transaction: Option<Transaction> = match(self.index) {
       0 => Some(Transaction.Credit(30)),

@@ -1,4 +1,4 @@
-let wrong = <t: type>: type t
+let wrong: <t: type>: type = t
 
 let lend = trait {
   Item: <a: access>: type

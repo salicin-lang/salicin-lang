@@ -1,8 +1,8 @@
-let convert = <to: type> trait {
+let convert: <to: type> = trait {
   convert: (self: Borrow<self>)(): to
 }
 
-let cell = <t: type> struct { value: t }
+let cell: <t: type> = struct { value: t }
 
 extend(cell<t>, convert<i32>) {
   let convert = { (self: Borrow<self>)(): i32 => 42 }

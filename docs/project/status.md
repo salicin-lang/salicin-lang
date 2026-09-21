@@ -196,7 +196,7 @@ Implemented lexical and declaration features include:
 - explicit erased inputs for those syntax declarations:
   the one- and two-argument `foreign` overloads select the finite
   `abi.c` value, while
-  `pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`
+  `pub let test: <name: String> = { {move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`
   receives the UTF-8 name and unit-returning throwing body;
   `core.requires` receives a compile-time boolean and delayed function body.
   Trait and extension requirements remain labeled boolean header parameters,

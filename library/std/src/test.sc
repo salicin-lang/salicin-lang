@@ -196,7 +196,7 @@ let unexpected_value_message = {
 }
 
 /// Requires two values to compare equal. Each operand is evaluated once.
-pub let assert_eq = { <T: type>with<core.error.throwing<core.string.String>>
+pub let assert_eq: <T: type> = { with<core.error.throwing<core.string.String>>
   (left: T)
   (right: T): ()
   requires(T is core.cmp.Eq<T> && T is AssertionDebug) =>
@@ -209,7 +209,7 @@ pub let assert_eq = { <T: type>with<core.error.throwing<core.string.String>>
 }
 
 /// Requires two values to compare unequal. Each operand is evaluated once.
-pub let assert_ne = { <T: type>with<core.error.throwing<core.string.String>>
+pub let assert_ne: <T: type> = { with<core.error.throwing<core.string.String>>
   (left: T)
   (right: T): ()
   requires(T is core.cmp.Eq<T> && T is AssertionDebug) =>
@@ -221,14 +221,14 @@ pub let assert_ne = { <T: type>with<core.error.throwing<core.string.String>>
 }
 
 /// Extracts `Some`, failing when the Option is empty.
-pub let expect_some = { <T: type>with<core.error.throwing<core.string.String>>
+pub let expect_some: <T: type> = { with<core.error.throwing<core.string.String>>
   (move value: core.Option<T>): T =>
   match(value) { Some(value) => value, None => fail("expect_some failed: found none"),
   }
 }
 
 /// Requires `None`, formatting an unexpected payload exactly once.
-pub let expect_none = { <T: type>with<core.error.throwing<core.string.String>>
+pub let expect_none: <T: type> = { with<core.error.throwing<core.string.String>>
   (move value: core.Option<T>): ()
   requires(T is AssertionDebug) =>
   match(value) {
@@ -243,7 +243,7 @@ pub let expect_none = { <T: type>with<core.error.throwing<core.string.String>>
 }
 
 /// Extracts `Ok`, formatting an unexpected error exactly once.
-pub let expect_ok = { <Error: type, T: type>with<core.error.throwing<core.string.String>>
+pub let expect_ok: <Error: type, T: type> = { with<core.error.throwing<core.string.String>>
   (move value: core.Result<Error><T>): T
   requires(Error is AssertionDebug) =>
   match(value) {
@@ -258,7 +258,7 @@ pub let expect_ok = { <Error: type, T: type>with<core.error.throwing<core.string
 }
 
 /// Extracts `Err`, formatting an unexpected success value exactly once.
-pub let expect_err = { <Error: type, T: type>with<core.error.throwing<core.string.String>>
+pub let expect_err: <Error: type, T: type> = { with<core.error.throwing<core.string.String>>
   (move value: core.Result<Error><T>): Error
   requires(T is AssertionDebug) =>
   match(value) {

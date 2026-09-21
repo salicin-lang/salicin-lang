@@ -1,8 +1,8 @@
-let pair = <k: type, v: type> struct { key: k, value: v }
+let pair: <k: type, v: type> = struct { key: k, value: v }
 
 let pair_alias: <key: type, value: type>: type = pair
 
-let holds = <item: type> trait {
+let holds: <item: type> = trait {
   get: (self: Borrow<self>)(): item
 }
 
@@ -10,8 +10,7 @@ extend(pair<i32, bool>, holds<item: i32>) {
   let get = { (self: Borrow<self>)(): i32 => self.key }
 }
 
-let read = { <t: type>
-  (value: Borrow<t>): i32
+let read: <t: type> = { (value: Borrow<t>): i32
   requires(t is holds<item: i32>) =>
   value.get()
 }

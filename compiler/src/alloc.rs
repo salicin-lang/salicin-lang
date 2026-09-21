@@ -182,7 +182,7 @@ fn validate_program(edition: Edition, program: &Program) -> Result<(), AllocBund
         match &program.items[0] {
             Item::Struct(definition) if valid_box(definition) => {}
             _ => diagnostics.push(
-                "alloc box must have shape `pub let Box = <T: type> struct { pointer: Ptr<mut><T> }`"
+                "alloc box must have shape `pub let Box: <T: type> = struct { pointer: Ptr<mut><T> }`"
                     .to_owned(),
             ),
         }
@@ -1567,8 +1567,8 @@ mod tests {
     #[test]
     fn rejects_box_write_without_its_copy_proof() {
         let source = alloc_source().replacen(
-            "let box_write = { <T: type>(boxed: Borrow<mut><Box<T>>)(copy value: T): () requires(T is Copyable) =>\n  unsafe {",
-            "let box_write = { <T: type>(boxed: Borrow<mut><Box<T>>)(copy value: T): () =>\n  unsafe {",
+            "let box_write: <T: type> = { (boxed: Borrow<mut><Box<T>>)(copy value: T): () requires(T is Copyable) =>\n  unsafe {",
+            "let box_write: <T: type> = { (boxed: Borrow<mut><Box<T>>)(copy value: T): () =>\n  unsafe {",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))
@@ -1591,8 +1591,8 @@ mod tests {
     #[test]
     fn rejects_box_into_raw_without_ownership_transfer() {
         let source = alloc_source().replacen(
-            "let box_into_raw = { <T: type>\n  (move boxed: Box<T>): Ptr<mut><T>",
-            "let box_into_raw = { <T: type>\n  (boxed: Borrow<Box<T>>): Ptr<mut><T>",
+            "let box_into_raw: <T: type> = {\n  (move boxed: Box<T>): Ptr<mut><T>",
+            "let box_into_raw: <T: type> = {\n  (boxed: Borrow<Box<T>>): Ptr<mut><T>",
             1,
         );
         let error = validate_program(Edition::Edition2026, &parse_alloc(&source))

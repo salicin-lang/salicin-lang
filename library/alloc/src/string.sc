@@ -88,8 +88,7 @@ extend(StringWriter) {
   }
 
   /// Borrows the text written so far.
-  let as_str = { <r: region>
-    (self: Borrow<r><self>)
+  let as_str: <r: region> = { (self: Borrow<r><self>)
     (): Borrow<r><core.string.str> =>
     self.value.as_str()
   }

@@ -1,4 +1,4 @@
-let bomb = <t: type> struct { marker: t, divisor: i32 }
+let bomb: <t: type> = struct { marker: t, divisor: i32 }
 
 extend(bomb<t>, Droppable) {
   let drop = {

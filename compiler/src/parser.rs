@@ -489,11 +489,17 @@ impl Parser {
         self.expect(&TokenKind::Let, "`let`")?;
         let mutable = self.take(&TokenKind::Mut);
         let name = self.declaration_name()?;
+        self.effect_parameters_in_scope.clear();
+        let compile_groups = self.named_compile_parameter_groups()?;
+
+        if mutable && !compile_groups.is_empty() {
+            return Err(self.error_here("`let mut` cannot declare a generic function or type"));
+        }
 
         let rhs_signature = self.take(&TokenKind::Equal);
         if rhs_signature && self.callable_declaration_brace_follows() {
             return self
-                .braced_function(name, mutable, false, &[], true)
+                .braced_function(name, mutable, false, &[], true, compile_groups)
                 .map(Item::Function);
         }
         if rhs_signature && self.runtime_parameter_group_follows() {
@@ -507,8 +513,14 @@ impl Parser {
             return Err(self.error_here("declaration signature groups must follow `=`"));
         }
 
+        if rhs_signature && self.group_starts_with_compile_parameter() {
+            return Err(self.error_here(
+                "named declaration compile-time parameters precede `=`",
+            ));
+        }
+
         let (compile_groups, groups, mut effects, has_callable_boundary, mut has_effect_clause) =
-            self.declaration_groups(false, &[])?;
+            self.declaration_groups(false, &[], compile_groups)?;
 
         if rhs_signature
             && !compile_groups.is_empty()
@@ -972,7 +984,9 @@ impl Parser {
             index += 1;
         }
         match self.tokens.get(index).map(|token| &token.kind) {
-            Some(TokenKind::Less | TokenKind::Ellipsis) => true,
+            Some(
+                TokenKind::Less | TokenKind::Ellipsis | TokenKind::Colon | TokenKind::FatArrow,
+            ) => true,
             Some(TokenKind::Ident(name)) if name == "with" => true,
             Some(TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace) => {
                 let Some(end) = self.group_end(index) else {
@@ -1006,6 +1020,7 @@ impl Parser {
         allow_receiver: bool,
         outer_effect_parameters: &[String],
         allow_foreign: bool,
+        compile_groups: Vec<Vec<CompileParam>>,
     ) -> Result<Function, ParseError> {
         if mutable {
             return Err(self.error_here("`let mut` cannot declare a function"));
@@ -1014,8 +1029,17 @@ impl Parser {
         let body_start_byte = self.body_start_byte(self.index + 1);
         self.expect(&TokenKind::LBrace, "outer callable `{`")?;
         self.skip_separators();
+        if !compile_groups.is_empty() && self.group_starts_with_compile_parameter() {
+            return Err(self.error_here(
+                "compile-time parameters cannot appear both before `=` and inside a callable brace",
+            ));
+        }
         let (compile_groups, groups, mut effects, has_callable_boundary, mut has_effect_clause) =
-            self.declaration_groups(allow_receiver, outer_effect_parameters)?;
+            self.declaration_groups(
+                allow_receiver,
+                outer_effect_parameters,
+                compile_groups,
+            )?;
         if allow_receiver {
             self.validate_receiver_groups(&name, &groups)?;
         }
@@ -1185,7 +1209,7 @@ impl Parser {
                 mut effects,
                 has_callable_boundary,
                 _has_effect_clause,
-            ) = self.declaration_groups(false, &[])?;
+            ) = self.declaration_groups(false, &[], Vec::new())?;
             if !operation_compile_groups.is_empty() {
                 return Err(self.error_here(
                     "compile-time parameters on effect operations are not supported yet",
@@ -1294,6 +1318,26 @@ impl Parser {
         self.take_newlines_if_followed_by(&[TokenKind::Equal]);
         self.expect(&TokenKind::Equal, "`=` in type alias")?;
         let target = self.type_expr()?;
+        let target = match target {
+            Type::Named(target_name, target_arguments)
+                if target_arguments.is_empty()
+                    && !compile_groups.is_empty()
+                    && !compile_groups
+                        .iter()
+                        .flatten()
+                        .any(|parameter| parameter.name == target_name) =>
+            {
+                Type::Named(
+                    target_name,
+                    compile_groups
+                        .iter()
+                        .flatten()
+                        .map(|parameter| Type::Named(parameter.name.clone(), Vec::new()))
+                        .collect(),
+                )
+            }
+            target => target,
+        };
         Ok(Item::TypeAlias(TypeAliasDef {
             name,
             compile_groups,
@@ -1401,6 +1445,51 @@ impl Parser {
         };
         self.advance();
         Ok(name)
+    }
+
+    fn named_compile_parameter_groups(
+        &mut self,
+    ) -> Result<Vec<Vec<CompileParam>>, ParseError> {
+        if self.group_starts_with_compile_parameter() {
+            return Err(self.error_here(
+                "named declaration compile-time parameters follow `:` before `=`",
+            ));
+        }
+        if !self.at(&TokenKind::Colon) {
+            return Ok(Vec::new());
+        }
+        let mut group_start = self.index + 1;
+        while matches!(
+            self.tokens.get(group_start).map(|token| &token.kind),
+            Some(TokenKind::Newline)
+        ) {
+            group_start += 1;
+        }
+        if !matches!(
+            self.tokens.get(group_start).map(|token| &token.kind),
+            Some(TokenKind::Less)
+        ) {
+            return Ok(Vec::new());
+        }
+        self.advance();
+        self.skip_newlines();
+        let mut groups = Vec::new();
+        while self.group_starts_with_compile_parameter() {
+            let parameters = self.compile_parameter_group()?;
+            self.effect_parameters_in_scope.extend(
+                parameters
+                    .iter()
+                    .filter(|parameter| parameter.kind.is_effect_classifier())
+                    .map(|parameter| parameter.name.clone()),
+            );
+            groups.push(parameters);
+            self.take_newlines_if_followed_by(&[
+                TokenKind::Less,
+                TokenKind::Colon,
+                TokenKind::Equal,
+            ]);
+        }
+        Ok(groups)
     }
 
     fn sort_level_literal(&mut self) -> Result<u64, ParseError> {
@@ -1566,10 +1655,12 @@ impl Parser {
             return Err(self.error_at(&mutable, "extend members cannot be declared with `let mut`"));
         }
         let name = self.expect_ident("an extend member name")?;
+        self.effect_parameters_in_scope.clear();
+        let compile_groups = self.named_compile_parameter_groups()?;
         let rhs_signature = self.take(&TokenKind::Equal);
         if rhs_signature && self.callable_declaration_brace_follows() {
             return self
-                .braced_function(name, false, true, &[], false)
+                .braced_function(name, false, true, &[], false, compile_groups)
                 .map(ExtendMember::Function);
         }
         if rhs_signature && self.runtime_parameter_group_follows() {
@@ -1583,8 +1674,13 @@ impl Parser {
             return Err(self.error_here("declaration signature groups must follow `=`"));
         }
 
+        if rhs_signature && self.group_starts_with_compile_parameter() {
+            return Err(self.error_here(
+                "named declaration compile-time parameters precede `=`",
+            ));
+        }
         let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
-            self.declaration_groups(true, &[])?;
+            self.declaration_groups(true, &[], compile_groups)?;
         if rhs_signature && !groups.is_empty() {
             return Err(
                 self.error_here("method declarations use an outer callable brace after `=`")
@@ -1919,12 +2015,20 @@ impl Parser {
         &mut self,
         allow_receiver: bool,
         outer_effect_parameters: &[String],
+        initial_compile_groups: Vec<Vec<CompileParam>>,
     ) -> Result<DeclarationGroups, ParseError> {
         self.effect_parameters_in_scope.clear();
         self.effect_parameters_in_scope
             .extend(outer_effect_parameters.iter().cloned());
-        let mut compile_groups: Vec<Vec<CompileParam>> = Vec::new();
-        let mut compile_group_delimiters = Vec::new();
+        let mut compile_groups = initial_compile_groups;
+        let mut compile_group_delimiters = vec![GroupDelimiter::Angle; compile_groups.len()];
+        self.effect_parameters_in_scope.extend(
+            compile_groups
+                .iter()
+                .flatten()
+                .filter(|parameter| parameter.kind.is_effect_classifier())
+                .map(|parameter| parameter.name.clone()),
+        );
         let mut runtime_groups = Vec::new();
         let mut runtime_group_delimiters = Vec::new();
 
@@ -3324,7 +3428,7 @@ impl Parser {
         let name = self.expect_ident("a trait member name")?;
         self.expect(&TokenKind::Colon, "`:` after trait member name")?;
         let (compile_groups, groups, mut effects, has_callable_boundary, _) =
-            self.declaration_groups(true, outer_effect_parameters)?;
+            self.declaration_groups(true, outer_effect_parameters, Vec::new())?;
         let associated_kind = if groups.is_empty() {
             if compile_groups.is_empty() && self.take(&TokenKind::Type) {
                 Some(AssociatedKind::Type)

@@ -1,5 +1,5 @@
 /// Protocol used by indexed place syntax.
-pub let Index = <Key: type> trait {
+pub let Index: <Key: type> = trait {
   /// Element type selected by the key.
   Output: type
 

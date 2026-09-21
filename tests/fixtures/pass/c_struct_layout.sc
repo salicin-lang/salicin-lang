@@ -9,7 +9,7 @@ let header = struct(c) {
   next: Ptr<u8>,
 }
 
-let pair = <t: type> struct(c) {
+let pair: <t: type> = struct(c) {
   left: t,
   right: t,
 }

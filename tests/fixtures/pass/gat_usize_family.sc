@@ -1,4 +1,4 @@
-let fixed = <l: usize>: type Array<i32><l>;
+let fixed: <l: usize>: type = Array<i32><l>;
 
 let keep = trait {
   Output: <l: usize>: type
@@ -11,8 +11,7 @@ let marker = struct {}
 extend(marker, keep) {
   let Output = fixed;
 
-  let keep = { <l: usize>
-    (move value: Array<i32><l>): Array<i32><l> =>
+  let keep: <l: usize> = { (move value: Array<i32><l>): Array<i32><l> =>
     value
   }
 }

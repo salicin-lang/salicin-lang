@@ -278,6 +278,7 @@ struct LineSyntax {
     is_where_predicate: bool,
     last: Option<TokenKind>,
     delimiter_indent: usize,
+    compile_parameter_indent: usize,
     brace_depth: usize,
     continuation: usize,
 }
@@ -302,6 +303,7 @@ fn analyze_layout(source: &str, source_layout: &SourceLayout) -> Result<Vec<Line
         .copied()
         .collect::<HashSet<_>>();
     let mut delimiter_depth = 0usize;
+    let mut compile_parameter_depth = 0usize;
     let mut brace_depth = 0usize;
     let mut brace_delimiter_baselines = vec![0usize];
     let tokens = lex(source).map_err(|error| error.to_string())?;
@@ -323,6 +325,9 @@ fn analyze_layout(source: &str, source_layout: &SourceLayout) -> Result<Vec<Line
                     .unwrap_or_default(),
             );
             line.brace_depth = brace_depth;
+            line.compile_parameter_indent = compile_parameter_depth.saturating_sub(usize::from(
+                compile_parameter_depth != 0 && token.kind == TokenKind::Greater,
+            ));
         }
         if parameter_groups.contains(&token.start_byte) {
             line.has_parameter_group = true;
@@ -343,6 +348,7 @@ fn analyze_layout(source: &str, source_layout: &SourceLayout) -> Result<Vec<Line
         }
         line.code_token_count += 1;
         line.last = Some(token.kind.clone());
+        let starts_compile_parameter_group = parameter_groups.contains(&token.start_byte);
         match token.kind {
             TokenKind::LBrace => {
                 brace_delimiter_baselines.push(delimiter_depth);
@@ -358,6 +364,12 @@ fn analyze_layout(source: &str, source_layout: &SourceLayout) -> Result<Vec<Line
             TokenKind::LParen | TokenKind::LBracket => delimiter_depth += 1,
             TokenKind::RParen | TokenKind::RBracket => {
                 delimiter_depth = delimiter_depth.saturating_sub(1);
+            }
+            TokenKind::Less if starts_compile_parameter_group || compile_parameter_depth != 0 => {
+                compile_parameter_depth += 1;
+            }
+            TokenKind::Greater if compile_parameter_depth != 0 => {
+                compile_parameter_depth -= 1;
             }
             _ => {}
         }
@@ -380,8 +392,17 @@ fn analyze_layout(source: &str, source_layout: &SourceLayout) -> Result<Vec<Line
             && !continues_declaration
             && line.first.is_some()
             && previous_last.as_ref().is_some_and(is_continuation_operator)
-            && line.delimiter_indent == 0;
-        line.continuation = usize::from(line.brace_depth == 0 && continues_declaration)
+            && line.delimiter_indent == 0
+            && line.compile_parameter_indent == 0;
+        let compile_parameter_indent = line
+            .compile_parameter_indent
+            .saturating_sub(usize::from(line.is_parameter_group));
+        line.continuation = compile_parameter_indent
+            + usize::from(
+                compile_parameter_indent == 0
+                    && line.brace_depth == 0
+                    && continues_declaration,
+            )
             + usize::from(operator_continuation);
         if line.is_where_predicate && index != 0 {
             line.continuation = 1;
@@ -569,20 +590,24 @@ mod tests {
 
     #[test]
     fn indents_parameter_groups_and_match_arms() {
-        let source = "let apply = { <e: effects> with<e>\n(action: with<e>(i32): i32)\n(value: i32): i32 =>  action(value) }\n\nlet main = { (): i32 => \nmatch(true) {\ntrue => match(false) {\nfalse => apply()(42),\ntrue => 0,\n},\nfalse => 0,\n}\n}\n";
-        let expected = "let apply = { <e: effects> with<e>\n  (action: with<e>(i32): i32)\n  (value: i32): i32 =>  action(value) }\n\nlet main = {\n  (): i32 =>\n  match(true) {\n    true => match(false) {\n      false => apply()(42),\n      true => 0,\n    },\n    false => 0,\n  }\n}\n";
+        let source = "let apply: <e: effects> = { with<e>\n(action: with<e>(i32): i32)\n(value: i32): i32 =>  action(value) }\n\nlet main = { (): i32 => \nmatch(true) {\ntrue => match(false) {\nfalse => apply()(42),\ntrue => 0,\n},\nfalse => 0,\n}\n}\n";
+        let expected = "let apply: <e: effects> = { with<e>\n  (action: with<e>(i32): i32)\n  (value: i32): i32 =>  action(value) }\n\nlet main = {\n  (): i32 =>\n  match(true) {\n    true => match(false) {\n      false => apply()(42),\n      true => 0,\n    },\n    false => 0,\n  }\n}\n";
         let formatted = format_source(source).expect("format continuations");
         assert_eq!(formatted, expected);
         assert_eq!(
             format_source(&formatted).expect("format output again"),
             formatted
         );
+
+        let source = "let pair: <\nleft: type,\nright: type,\n> = struct { left: left, right: right }\n";
+        let expected = "let pair: <\n  left: type,\n  right: type,\n> = struct { left: left, right: right }\n";
+        assert_eq!(format_source(source).unwrap(), expected);
     }
 
     #[test]
     fn expands_inline_arms_when_a_match_already_spans_lines() {
-        let source = "let next = { <r: region>\n(batch: Borrow<mut><r><Batch>)\n(): Option<Transaction> =>\nlet transaction: Option<Transaction> = match(batch.index) { 0 => Some(Transaction.Credit(30)), 1 => Some(Transaction.Debit(8)), _ => None,\n}\ntransaction\n}\n";
-        let expected = "let next = { <r: region>\n  (batch: Borrow<mut><r><Batch>)\n  (): Option<Transaction> =>\n  let transaction: Option<Transaction> = match(batch.index) {\n    0 => Some(Transaction.Credit(30)),\n    1 => Some(Transaction.Debit(8)),\n    _ => None,\n  }\n  transaction\n}\n";
+        let source = "let next: <r: region> = { \n(batch: Borrow<mut><r><Batch>)\n(): Option<Transaction> =>\nlet transaction: Option<Transaction> = match(batch.index) { 0 => Some(Transaction.Credit(30)), 1 => Some(Transaction.Debit(8)), _ => None,\n}\ntransaction\n}\n";
+        let expected = "let next: <r: region> = {\n  (batch: Borrow<mut><r><Batch>)\n  (): Option<Transaction> =>\n  let transaction: Option<Transaction> = match(batch.index) {\n    0 => Some(Transaction.Credit(30)),\n    1 => Some(Transaction.Debit(8)),\n    _ => None,\n  }\n  transaction\n}\n";
         let formatted = format_source(source).expect("format multiline match arms");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -612,8 +637,8 @@ mod tests {
 
     #[test]
     fn formats_delimiters_where_clauses_and_expression_continuations() {
-        let source = "let marker = trait {}\nlet duplicate = { <t: type>(value: t): t requires(t is Copyable && t is marker) => \nvalue\n}\n\nlet add = { (\nleft: i32,\nright: i32,\n): i32 => \nleft +\nright\n}\n\nlet main = { (): i32 => \nlet values = [\n40,\n2,\n]\nlet grouped =\n(values[0] + values[1])\nadd(\nvalues[0],\nvalues[1],\n) + grouped - 42\n}\n";
-        let expected = "let marker = trait {}\nlet duplicate = { <t: type>\n  (value: t): t requires(t is Copyable && t is marker) =>\n  value\n}\n\nlet add = {\n  (\n    left: i32,\n    right: i32,\n  ): i32 =>\n  left +\n    right\n}\n\nlet main = {\n  (): i32 =>\n  let values = [\n    40,\n    2,\n  ]\n  let grouped =\n    (values[0] + values[1])\n  add(\n    values[0],\n    values[1],\n  ) + grouped - 42\n}\n";
+        let source = "let marker = trait {}\nlet duplicate: <t: type> = { (value: t): t requires(t is Copyable && t is marker) => \nvalue\n}\n\nlet add = { (\nleft: i32,\nright: i32,\n): i32 => \nleft +\nright\n}\n\nlet main = { (): i32 => \nlet values = [\n40,\n2,\n]\nlet grouped =\n(values[0] + values[1])\nadd(\nvalues[0],\nvalues[1],\n) + grouped - 42\n}\n";
+        let expected = "let marker = trait {}\nlet duplicate: <t: type> = {\n  (value: t): t requires(t is Copyable && t is marker) =>\n  value\n}\n\nlet add = {\n  (\n    left: i32,\n    right: i32,\n  ): i32 =>\n  left +\n    right\n}\n\nlet main = {\n  (): i32 =>\n  let values = [\n    40,\n    2,\n  ]\n  let grouped =\n    (values[0] + values[1])\n  add(\n    values[0],\n    values[1],\n  ) + grouped - 42\n}\n";
         let formatted = format_source(source).expect("format syntax continuations");
         assert_eq!(formatted, expected);
         assert_eq!(
@@ -624,8 +649,8 @@ mod tests {
 
     #[test]
     fn canonicalizes_a_space_before_brace_application() {
-        let source = "let choose = { <t: type>[left: t]{right: t}(fallback: t): t =>  left }\nlet value = choose<i32>[1]{2}(3)\n";
-        let expected = "let choose = { <t: type>[left: t]{right: t}(fallback: t): t =>  left }\nlet value = choose<i32>[1] {2}(3)\n";
+        let source = "let choose: <t: type> = { [left: t]{right: t}(fallback: t): t =>  left }\nlet value = choose<i32>[1]{2}(3)\n";
+        let expected = "let choose: <t: type> = { [left: t]{right: t}(fallback: t): t =>  left }\nlet value = choose<i32>[1] {2}(3)\n";
         assert_eq!(format_source(source).unwrap(), expected);
 
         let source = "let count = { {value: usize}: usize =>  value }\nlet consume = { (value: Array<i32><count{2}>): i32 =>  value[0] }\n";
@@ -667,8 +692,8 @@ mod tests {
 
     #[test]
     fn preserves_minimal_syntax_contract_tokens_idempotently() {
-        let source = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell = <t: type> struct { value: t }\nextend(cell<t>)<requires: t is marker> {\n}\nlet guarded = { <t: type>(value: t): t requires(t is marker) => \nvalue\n}\ntest(\"minimal contracts\") {\nlet value = 1\n}\n";
-        let expected = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell = <t: type> struct { value: t }\nextend(cell<t>)<requires: t is marker> {\n}\nlet guarded = { <t: type>\n  (value: t): t requires(t is marker) =>\n  value\n}\ntest(\"minimal contracts\") {\n  let value = 1\n}\n";
+        let source = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell: <t: type> = struct { value: t }\nextend(cell<t>)<requires: t is marker> {\n}\nlet guarded: <t: type> = { (value: t): t requires(t is marker) => \nvalue\n}\ntest(\"minimal contracts\") {\nlet value = 1\n}\n";
+        let expected = "let marker = trait {}\nlet bounded = trait<requires: self is marker> {\n}\nlet cell: <t: type> = struct { value: t }\nextend(cell<t>)<requires: t is marker> {\n}\nlet guarded: <t: type> = {\n  (value: t): t requires(t is marker) =>\n  value\n}\ntest(\"minimal contracts\") {\n  let value = 1\n}\n";
         let formatted = format_source(source).expect("format minimal syntax contracts");
         assert_eq!(formatted, expected);
         assert_eq!(

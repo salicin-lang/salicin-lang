@@ -31,7 +31,7 @@ let repeat = {
   action()
 }
 
-let effect_once = { <e: effects>with<e>
+let effect_once: <e: effects> = { with<e>
   (move action: with<e>(): i32): i32 =>
   action()
 }

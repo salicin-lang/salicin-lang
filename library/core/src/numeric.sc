@@ -44,7 +44,7 @@ extend(i8) {
     }
   }
   let magnitude = { (self)(): u8 => builtin() }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }
 
 extend(i16) {
@@ -82,7 +82,7 @@ extend(i16) {
     }
   }
   let magnitude = { (self)(): u16 => builtin() }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }
 
 extend(i32) {
@@ -120,7 +120,7 @@ extend(i32) {
     }
   }
   let magnitude = { (self)(): u32 => builtin() }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }
 
 extend(i64) {
@@ -158,7 +158,7 @@ extend(i64) {
     }
   }
   let magnitude = { (self)(): u64 => builtin() }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }
 
 extend(i128) {
@@ -196,7 +196,7 @@ extend(i128) {
     }
   }
   let magnitude = { (self)(): u128 => builtin() }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }
 
 extend(isize) {
@@ -234,7 +234,7 @@ extend(isize) {
     }
   }
   let magnitude = { (self)(): usize => builtin() }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }
 
 extend(u8) {
@@ -268,7 +268,7 @@ extend(u8) {
     if(self > 0) { Positive } else: { Zero }
   }
   let magnitude = { (self)(): u8 =>  self }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }
 
 extend(u16) {
@@ -302,7 +302,7 @@ extend(u16) {
     if(self > 0) { Positive } else: { Zero }
   }
   let magnitude = { (self)(): u16 =>  self }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }
 
 extend(u32) {
@@ -336,7 +336,7 @@ extend(u32) {
     if(self > 0) { Positive } else: { Zero }
   }
   let magnitude = { (self)(): u32 =>  self }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }
 
 extend(u64) {
@@ -370,7 +370,7 @@ extend(u64) {
     if(self > 0) { Positive } else: { Zero }
   }
   let magnitude = { (self)(): u64 =>  self }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }
 
 extend(u128) {
@@ -404,7 +404,7 @@ extend(u128) {
     if(self > 0) { Positive } else: { Zero }
   }
   let magnitude = { (self)(): u128 =>  self }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }
 
 extend(usize) {
@@ -438,5 +438,5 @@ extend(usize) {
     if(self > 0) { Positive } else: { Zero }
   }
   let magnitude = { (self)(): usize =>  self }
-  let checked_into = { <Output: type>(self)(): core.Option<Output> => builtin() }
+  let checked_into: <Output: type> = { (self)(): core.Option<Output> => builtin() }
 }

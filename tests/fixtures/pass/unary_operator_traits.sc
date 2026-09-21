@@ -17,8 +17,8 @@ extend(flag, Not) {
   }
 }
 
-let negate = { <t: type>(move value: t): t requires(t is Neg && t.Output == t) => -value }
-let invert = { <t: type>(move value: t): t requires(t is Not && t.Output == t) => !value }
+let negate: <t: type> = { (move value: t): t requires(t is Neg && t.Output == t) => -value }
+let invert: <t: type> = { (move value: t): t requires(t is Not && t.Output == t) => !value }
 
 let main = {
   (): i32 =>

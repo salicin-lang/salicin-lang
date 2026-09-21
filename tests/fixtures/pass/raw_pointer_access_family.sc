@@ -1,4 +1,4 @@
-let preserve = { <a: access><t: type>(pointer: Ptr<a><t>): Ptr<a><t> => pointer }
+let preserve: <a: access><t: type> = { (pointer: Ptr<a><t>): Ptr<a><t> => pointer }
 
 let main = {
   (): i32 =>

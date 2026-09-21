@@ -1,6 +1,6 @@
 let Result = core.Result
 
-let Result = <E: type><t: type> enum {
+let Result: <E: type><t: type> = enum {
   Ok(t),
   Err(e),
 }

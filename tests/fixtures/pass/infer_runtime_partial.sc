@@ -1,4 +1,4 @@
-let choose = { <t: type>(first: t)(second: t): t => second }
+let choose: <t: type> = { (first: t)(second: t): t => second }
 
 let main = {
   (): i32 =>

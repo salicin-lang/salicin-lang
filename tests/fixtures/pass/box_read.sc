@@ -1,6 +1,6 @@
 let Box = alloc.Box
 
-let read_box = { <t: type>(boxed: Borrow<Box<t>>): t
+let read_box: <t: type> = { (boxed: Borrow<Box<t>>): t
   requires(t is Copyable) => boxed.read() }
 
 let main = {

@@ -1,5 +1,5 @@
 let marker = trait {}
-let cell = <t: type> struct { value: t }
+let cell: <t: type> = struct { value: t }
 
 extend(cell<t>)(requires: t is marker) {}
 

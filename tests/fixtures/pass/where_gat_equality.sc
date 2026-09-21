@@ -1,4 +1,4 @@
-let identity = <t: type>: type t
+let identity: <t: type>: type = t
 
 let factory = trait {
   Item: <t: type>: type
@@ -14,8 +14,7 @@ extend(cell, factory) {
   let make = { (self: Borrow<self>)(value: i32): i32 => value }
 }
 
-let make_i32 = { <t: type>
-  (value: Borrow<t>): i32
+let make_i32: <t: type> = { (value: Borrow<t>): i32
   requires(t is factory && t.Item<u: type> == u) =>
   value.make(42)
 }

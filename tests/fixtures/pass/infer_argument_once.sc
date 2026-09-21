@@ -1,4 +1,4 @@
-let identity = { <t: type>(move value: t): t => value }
+let identity: <t: type> = { (move value: t): t => value }
 
 let tick = {
   (count: Borrow<mut><i32>): i32 =>

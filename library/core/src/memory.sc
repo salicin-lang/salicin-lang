@@ -4,25 +4,23 @@
 let Index = core.ops.Index
 
 /// Fixed-size Array type with compile-time element type and length.
-pub let Array = <T: type>
-  <l: usize>: type builtin()
+pub let Array: <T: type>
+  <l: usize>: type = builtin()
 
 /// Dynamically sized contiguous sequence viewed through a Borrow.
-pub let Slice = <T: type>: type builtin()
+pub let Slice: <T: type>: type = builtin()
 
 /// Routes fixed-size Array brackets through the source-defined indexing protocol.
 extend(Array<T><l>, Index<usize>) {
   let Output = T
-  let index = { <a: access>
-    (self: Borrow<a><self>)
+  let index: <a: access> = { (self: Borrow<a><self>)
     (key: usize): Borrow<a><T> => builtin() }
 }
 
 /// Provides access operations shared with slices and vectors.
 extend(Array<T><l>) {
   /// Borrows all elements as a Slice with the same source region.
-  let as_slice = { <a: access = shared>
-    (self: Borrow<a><self>)(): Borrow<a><Slice<T>> =>
+  let as_slice: <a: access = shared> = { (self: Borrow<a><self>)(): Borrow<a><Slice<T>> =>
     unsafe {
       raw_array_slice<a>(self)
     }
@@ -40,42 +38,38 @@ extend(Array<T><l>) {
   let is_empty = { (self: Borrow<self>)(): bool =>  self.len() == 0 }
 
   /// Borrows the element at `index`, or returns `None` when out of bounds.
-  let get = { <a: access = shared>
-    (self: Borrow<a><self>)
+  let get: <a: access = shared> = { (self: Borrow<a><self>)
     (index: u64): core.Option<Borrow<a><T>> =>
     let values = self.as_slice<a>()
     values.get<a>(index)
   }
 
   /// Borrows the element at `index`, trapping when out of bounds.
-  let at = { <a: access = shared>
-    (self: Borrow<a><self>)
+  let at: <a: access = shared> = { (self: Borrow<a><self>)
     (index: u64): Borrow<a><T> =>
     let values = self.as_slice<a>()
     values.at<a>(index)
   }
 
   /// Borrows the first element, or returns `None` when empty.
-  let first = { <a: access = shared>
-    (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> =>
+  let first: <a: access = shared> = { (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> =>
     self.get<a>(0)
   }
 
   /// Borrows the last element, or returns `None` when empty.
-  let last = { <a: access = shared>
-    (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> =>
+  let last: <a: access = shared> = { (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> =>
     let values = self.as_slice<a>()
     values.last<a>()
   }
 
   /// Borrows the first element accepted by `predicate`.
-  let find = { <e: effects>with<e>(self: Borrow<self>)(move predicate: with<e>(Borrow<T>) :bool): core.Option<Borrow<T>> =>
+  let find: <e: effects> = { with<e>(self: Borrow<self>)(move predicate: with<e>(Borrow<T>) :bool): core.Option<Borrow<T>> =>
     let values = self.as_slice()
     values.find(predicate)
   }
 
   /// Returns the index of the first element accepted by `predicate`.
-  let position = { <e: effects>with<e>
+  let position: <e: effects> = { with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): core.Option<u64> =>
     let values = self.as_slice()
@@ -83,7 +77,7 @@ extend(Array<T><l>) {
   }
 
   /// Returns whether any element is accepted by `predicate`.
-  let any = { <e: effects>with<e>
+  let any: <e: effects> = { with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool =>
     let values = self.as_slice()
@@ -91,7 +85,7 @@ extend(Array<T><l>) {
   }
 
   /// Returns whether every element is accepted by `predicate`.
-  let all = { <e: effects>with<e>
+  let all: <e: effects> = { with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool =>
     let values = self.as_slice()
@@ -99,7 +93,7 @@ extend(Array<T><l>) {
   }
 
   /// Folds elements from left to right into `initial`.
-  let fold = { <e: effects, Accumulator: type>with<e>
+  let fold: <e: effects, Accumulator: type> = { with<e>
     (self: Borrow<self>)
     (move initial: Accumulator)
     (move combine: with<e>(Accumulator, Borrow<T>) :Accumulator): Accumulator =>
@@ -163,8 +157,7 @@ extend(Array<T><l>)<requires: T is core.marker.Copyable> {
 /// Provides operations on a borrowed contiguous sequence.
 extend(Slice<T>) {
   /// Returns the number of elements in this Slice.
-  let len = { <a: access = shared>
-    (self: Borrow<a><self>)
+  let len: <a: access = shared> = { (self: Borrow<a><self>)
     (): u64 =>
     unsafe {
       raw_slice_len(self)
@@ -172,15 +165,13 @@ extend(Slice<T>) {
   }
 
   /// Returns whether this Slice contains no elements.
-  let is_empty = { <a: access = shared>
-    (self: Borrow<a><self>)
+  let is_empty: <a: access = shared> = { (self: Borrow<a><self>)
     (): bool =>
     self.len<a>() == 0
   }
 
   /// Borrows the element at `index`, or returns `None` when out of bounds.
-  let get = { <a: access = shared>
-    (self: Borrow<a><self>)
+  let get: <a: access = shared> = { (self: Borrow<a><self>)
     (index: u64): core.Option<Borrow<a><T>> =>
     if(index >= self.len<a>()) {
       core.Option.None
@@ -192,8 +183,7 @@ extend(Slice<T>) {
   }
 
   /// Borrows the element at `index`, trapping if `index` is out of bounds.
-  let at = { <a: access = shared>
-    (self: Borrow<a><self>)
+  let at: <a: access = shared> = { (self: Borrow<a><self>)
     (index: u64): Borrow<a><T> =>
     unsafe {
       raw_slice_at<a>(self, index)
@@ -201,14 +191,12 @@ extend(Slice<T>) {
   }
 
   /// Borrows the first element, or returns `None` when empty.
-  let first = { <a: access = shared>
-    (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> =>
+  let first: <a: access = shared> = { (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> =>
     self.get<a>(0)
   }
 
   /// Borrows the last element, or returns `None` when empty.
-  let last = { <a: access = shared>
-    (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> =>
+  let last: <a: access = shared> = { (self: Borrow<a><self>)(): core.Option<Borrow<a><T>> =>
     let length = self.len<a>()
     if(length == 0) {
       core.Option.None
@@ -218,7 +206,7 @@ extend(Slice<T>) {
   }
 
   /// Borrows the first element accepted by `predicate`.
-  let find = { <e: effects>with<e>(self: Borrow<self>)(move predicate: with<e>(Borrow<T>) :bool): core.Option<Borrow<T>> =>
+  let find: <e: effects> = { with<e>(self: Borrow<self>)(move predicate: with<e>(Borrow<T>) :bool): core.Option<Borrow<T>> =>
     let length = self.len()
     let mut index: u64 = 0
     while(index < length) {
@@ -232,7 +220,7 @@ extend(Slice<T>) {
   }
 
   /// Returns the index of the first element accepted by `predicate`.
-  let position = { <e: effects>with<e>
+  let position: <e: effects> = { with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): core.Option<u64> =>
     let length = self.len()
@@ -248,7 +236,7 @@ extend(Slice<T>) {
   }
 
   /// Returns whether any element is accepted by `predicate`.
-  let any = { <e: effects>with<e>
+  let any: <e: effects> = { with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool =>
     let length = self.len()
@@ -264,7 +252,7 @@ extend(Slice<T>) {
   }
 
   /// Returns whether every element is accepted by `predicate`.
-  let all = { <e: effects>with<e>
+  let all: <e: effects> = { with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool =>
     let length = self.len()
@@ -280,7 +268,7 @@ extend(Slice<T>) {
   }
 
   /// Folds elements from left to right into `initial`.
-  let fold = { <e: effects, Accumulator: type>with<e>
+  let fold: <e: effects, Accumulator: type> = { with<e>
     (self: Borrow<self>)
     (move initial: Accumulator)
     (move combine: with<e>(Accumulator, Borrow<T>) :Accumulator): Accumulator =>
@@ -461,21 +449,19 @@ extend(Slice<T>)<requires: T is core.marker.Copyable> {
 /// Routes bracket access through the source-defined indexing protocol.
 extend(Slice<T>, Index<u64>) {
   let Output = T
-  let index = { <a: access>
-    (self: Borrow<a><self>)
+  let index: <a: access> = { (self: Borrow<a><self>)
     (key: u64): Borrow<a><T> =>
     self.at<a>(key)
   }
 }
 
 /// Raw pointer type with access `A` and pointee `T`.
-pub let Ptr = <a: access = shared>
-  <T: type>: type builtin()
+pub let Ptr: <a: access = shared>
+  <T: type>: type = builtin()
 
 /// Forms a raw pointer from a Borrow with the same access.
-pub let ptr = { <a: access = shared>
-  <T: type>
-  (value: Borrow<a><T>): Ptr<a><T> => builtin() }
+pub let ptr: <a: access = shared>
+  <T: type> = { (value: Borrow<a><T>): Ptr<a><T> => builtin() }
 
 /// Provides operations shared by raw pointers at either access.
 extend(Ptr<a><T>) {
@@ -511,7 +497,7 @@ extend(Ptr<mut><T>) {
 }
 
 /// Returns the target size of `T` in bytes.
-pub let size_of = { <T: type>: u64 => builtin() }
+pub let size_of: <T: type> = { : u64 => builtin() }
 
 /// Returns the target alignment of `T` in bytes.
-pub let align_of = { <T: type>: u64 => builtin() }
+pub let align_of: <T: type> = { : u64 => builtin() }

@@ -1,4 +1,4 @@
-let state = <s: type> effect {
+let state: <s: type> = effect {
   get: (): s
 }
 

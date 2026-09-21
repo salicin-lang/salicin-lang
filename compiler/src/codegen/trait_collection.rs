@@ -1102,13 +1102,13 @@ impl Analyzer {
                 let method = operator_trait.method();
                 let shape = match operator_trait.lang_item {
                     LangItemKind::Eq => format!(
-                        "let Eq = <Rhs: type> trait {{ {method}: (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
+                        "let Eq: <Rhs: type> = trait {{ {method}: (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }}"
                     ),
                     LangItemKind::PartialOrd => format!(
-                        "let PartialOrd = <Rhs: type> trait {{ {method}: (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
+                        "let PartialOrd: <Rhs: type> = trait {{ {method}: (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }}"
                     ),
                     _ => format!(
-                        "let {trait_name} = <Rhs: type> trait {{ Output: type; {method}: (self)(rhs: Rhs): Output }}"
+                        "let {trait_name}: <Rhs: type> = trait {{ Output: type; {method}: (self)(rhs: Rhs): Output }}"
                     ),
                 };
                 self.error(format!(

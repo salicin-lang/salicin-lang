@@ -9,8 +9,7 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = ();
 
-  let poll = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let poll: <r: region> = { (self: Borrow<mut><r><self>)
     (): Poll<()> =>
     unsafe {
       *self.polls = *self.polls + 1
@@ -33,8 +32,7 @@ let pending_step = struct {
 extend(pending_step, Future<()>) {
   let Output = ();
 
-  let poll = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let poll: <r: region> = { (self: Borrow<mut><r><self>)
     (): Poll<()> =>
     if(self.polled) {
       unsafe {

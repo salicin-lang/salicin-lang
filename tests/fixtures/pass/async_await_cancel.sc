@@ -30,8 +30,7 @@ let consume = { (move resource: resource): () => () }
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let poll: <r: region> = { (self: Borrow<mut><r><self>)
     (): Poll<i32> =>
     Poll<i32>.Pending
   }

@@ -3,8 +3,8 @@ use super::*;
 fn core_source_with_copy(copy_declaration: &str) -> String {
     [
         r#"
-pub let Option = <T: type> enum { Some(T), None }
-pub let Result = <Error: type><T: type> enum { Ok(T), Err(Error) }
+pub let Option: <T: type> = enum { Some(T), None }
+pub let Result: <Error: type><T: type> = enum { Ok(T), Err(Error) }
 pub let never = enum {}
 pub let Movable = trait {}
 "#,
@@ -13,31 +13,31 @@ pub let Movable = trait {}
 pub let Droppable = trait {
   drop: (self: Borrow<mut><self>)(): ()
 }
-pub let Add = <Rhs: type> trait {
+pub let Add: <Rhs: type> = trait {
   Output: type
   add: (self)(rhs: Rhs): Output
 }
-pub let Sub = <Rhs: type> trait {
+pub let Sub: <Rhs: type> = trait {
   Output: type
   sub: (self)(rhs: Rhs): Output
 }
-pub let Mul = <Rhs: type> trait {
+pub let Mul: <Rhs: type> = trait {
   Output: type
   mul: (self)(rhs: Rhs): Output
 }
-pub let Div = <Rhs: type> trait {
+pub let Div: <Rhs: type> = trait {
   Output: type
   div: (self)(rhs: Rhs): Output
 }
-pub let Rem = <Rhs: type> trait {
+pub let Rem: <Rhs: type> = trait {
   Output: type
   rem: (self)(rhs: Rhs): Output
 }
-pub let Eq = <Rhs: type> trait {
+pub let Eq: <Rhs: type> = trait {
   eq: (self: Borrow<self>)(rhs: Borrow<Rhs>): bool
 }
 pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }
-pub let PartialOrd = <Rhs: type> trait {
+pub let PartialOrd: <Rhs: type> = trait {
   partial_cmp: (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering
 }
 pub let Neg = trait {
@@ -48,27 +48,27 @@ pub let Not = trait {
   Output: type
   not: (self)(): Output
 }
-pub let BitAnd = <Rhs: type> trait {
+pub let BitAnd: <Rhs: type> = trait {
   Output: type
   bit_and: (self)(rhs: Rhs): Output
 }
-pub let BitOr = <Rhs: type> trait {
+pub let BitOr: <Rhs: type> = trait {
   Output: type
   bit_or: (self)(rhs: Rhs): Output
 }
-pub let BitXor = <Rhs: type> trait {
+pub let BitXor: <Rhs: type> = trait {
   Output: type
   bit_xor: (self)(rhs: Rhs): Output
 }
-pub let Shl = <Rhs: type> trait {
+pub let Shl: <Rhs: type> = trait {
   Output: type
   shl: (self)(rhs: Rhs): Output
 }
-pub let Shr = <Rhs: type> trait {
+pub let Shr: <Rhs: type> = trait {
   Output: type
   shr: (self)(rhs: Rhs): Output
 }
-pub let Index = <Key: type> trait {
+pub let Index: <Key: type> = trait {
   Output: type
   index: <a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output>
 }
@@ -508,8 +508,8 @@ fn canonical_type_application_check_rejects_mixed_builtin_families() {
 #[test]
 fn core_bundle_rejects_legacy_parenthesized_compile_groups() {
     let malformed = EDITION_2026_BORROW.replace(
-        "pub let borrow = { <a: access = shared>",
-        "pub let borrow = { (a: access = shared)",
+        ": <a: access = shared>",
+        ": (a: access = shared)",
     );
     assert_ne!(malformed, EDITION_2026_BORROW);
 
@@ -517,7 +517,7 @@ fn core_bundle_rejects_legacy_parenthesized_compile_groups() {
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(
         error.diagnostics().iter().any(|diagnostic| {
-            diagnostic.contains("runtime parameter groups cannot contain compile-time binders")
+            diagnostic.contains("expected `)` after grouped result type")
         }),
         "{:?}",
         error.diagnostics()
@@ -538,11 +538,11 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
     for (name, declaration) in [
         (
             "test",
-            "pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>() :()}: () => builtin() }\n",
+            "pub let test: <name: String> = { {move body: with<core.error.throwing<core.string.String>>() :()}: () => builtin() }\n",
         ),
         (
             "requires",
-            "pub let requires = { <\n    condition: bool,\n  e: effects,\n  Result: type,\n  >with<e>\n  {move body: with<e>() :Result}: Result => builtin() }\n",
+            "pub let requires: <\n  condition: bool,\n  e: effects,\n  Result: type,\n> = { with<e>\n  {move body: with<e>() :Result}: Result => builtin() }\n",
         ),
     ] {
         let missing = EDITION_2026_LIB.replace(declaration, "");
@@ -571,7 +571,7 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
             "foreign",
             "foreign",
             EDITION_2026_FOREIGN.replace(
-                "pub let foreign = { <abi: abi>: never => builtin() }",
+                "pub let foreign: <abi: abi> = { : never => builtin() }",
                 "pub let foreign = { (): never => builtin() }",
             ),
         ),
@@ -579,16 +579,16 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
             "foreign",
             "foreign",
             EDITION_2026_FOREIGN.replace(
-                "pub let foreign = { <abi: abi>: never => builtin() }",
-                "pub let foreign = { <abi: abi>: () => builtin() }",
+                "pub let foreign: <abi: abi> = { : never => builtin() }",
+                "pub let foreign: <abi: abi> = { : () => builtin() }",
             ),
         ),
         (
             "foreign",
             "foreign",
             EDITION_2026_FOREIGN.replace(
-                "pub let foreign = { <abi: abi, symbol: String>: never => builtin() }",
-                "pub let foreign = { <abi: abi, symbol: usize>: never => builtin() }",
+                "pub let foreign: <abi: abi, symbol: String> = { : never => builtin() }",
+                "pub let foreign: <abi: abi, symbol: usize> = { : never => builtin() }",
             ),
         ),
         (
@@ -693,7 +693,7 @@ fn constraint_query_contracts_are_explicit_and_bounded() {
     for malformed in [
         EDITION_2026_SORTS.replace("pub let constraint: sort<2>", "pub let constraint: sort<1>"),
         EDITION_2026_SORTS.replace("right: constraint", "right: type"),
-        EDITION_2026_SORTS.replace(">: bool => builtin()", ">: usize => builtin()"),
+        EDITION_2026_SORTS.replace("> = { : bool => builtin()", "> = { : usize => builtin()"),
     ] {
         let modules = edition_2026_test_modules(&[("sorts", &malformed)]);
         let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -796,15 +796,15 @@ fn pointer_and_layout_lang_items_require_memory_contracts() {
         (
             "Array",
             EDITION_2026_MEMORY.replace(
-                "<l: usize>: type builtin()",
-                "<length: usize>: type builtin()",
+                "  <l: usize>: type = builtin()",
+                "  <length: usize>: type = builtin()",
             ),
         ),
         (
             "Slice",
             EDITION_2026_MEMORY.replace(
-                "pub let Slice = <T: type>: type builtin()",
-                "pub let Slice = <Element: type>: type builtin()",
+                "pub let Slice: <T: type>: type = builtin()",
+                "pub let Slice: <Element: type>: type = builtin()",
             ),
         ),
         (
@@ -817,15 +817,15 @@ fn pointer_and_layout_lang_items_require_memory_contracts() {
         (
             "size_of",
             EDITION_2026_MEMORY.replace(
-                "pub let size_of = { <T: type>: u64 => builtin() }",
-                "pub let size_of = { <T: type>: i32 => builtin() }",
+                "pub let size_of: <T: type> = { : u64 => builtin() }",
+                "pub let size_of: <T: type> = { : i32 => builtin() }",
             ),
         ),
         (
             "align_of",
             EDITION_2026_MEMORY.replace(
-                "pub let align_of = { <T: type>: u64 => builtin() }",
-                "pub let align_of = { <T: type>(value: T): u64 => builtin() }",
+                "pub let align_of: <T: type> = { : u64 => builtin() }",
+                "pub let align_of: <T: type> = { (value: T): u64 => builtin() }",
             ),
         ),
     ] {
@@ -920,8 +920,8 @@ fn rejects_malformed_control_contracts() {
         }
 
     let malformed = EDITION_2026_UNSAFE.replace(
-        "pub let unsafe = { <e: effects, T: type>with<e>\n  {move action: with<core.unsafe.unsafety, e>() :T}: T",
-        "pub let unsafe = { <e: effects, T: type>with<e>\n  {move action: with<e>() :T}: T",
+        "pub let unsafe: <e: effects, T: type> = { with<e>\n  {move action: with<core.unsafe.unsafety, e>() :T}: T",
+        "pub let unsafe: <e: effects, T: type> = { with<e>\n  {move action: with<e>() :T}: T",
     );
     let modules = edition_2026_test_modules(&[("unsafe", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -942,8 +942,8 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `unsafe`")));
 
     let malformed = EDITION_2026_EFFECT.replace(
-        "pub let EffectCallable = <Input: type, Output: type, Answer: type>: type builtin()",
-        "pub let EffectCallable = <Input: type, Output: type>: type builtin()",
+        "pub let EffectCallable: <Input: type, Output: type, Answer: type>: type = builtin()",
+        "pub let EffectCallable: <Input: type, Output: type>: type = builtin()",
     );
     let modules = edition_2026_test_modules(&[("effect", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -954,13 +954,13 @@ fn rejects_malformed_control_contracts() {
 
     for (source_declaration, malformed_declaration, name) in [
         (
-            "pub let Continuation = <Input: type, Output: type>: type builtin()",
-            "pub let Continuation = <Input: type, Output: type> struct {}",
+            "pub let Continuation: <Input: type, Output: type>: type = builtin()",
+            "pub let Continuation: <Input: type, Output: type> = struct {}",
             "Continuation",
         ),
         (
-            "pub let EffectCallable = <Input: type, Output: type, Answer: type>: type builtin()",
-            "pub let EffectCallable = <Input: type, Output: type, Answer: type> struct {}",
+            "pub let EffectCallable: <Input: type, Output: type, Answer: type>: type = builtin()",
+            "pub let EffectCallable: <Input: type, Output: type, Answer: type> = struct {}",
             "EffectCallable",
         ),
     ] {
@@ -1002,8 +1002,8 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `Handle`")));
 
     let malformed = EDITION_2026_ERROR.replace(
-        "pub let throw = { <Error: type>with<core.error.throwing<Error>>(move error: Error): never",
-        "pub let throw = { <Error: type>(move error: Error): never",
+        "pub let throw: <Error: type> = { with<core.error.throwing<Error>>(move error: Error): never",
+        "pub let throw: <Error: type> = { (move error: Error): never",
     );
     let modules = edition_2026_test_modules(&[("error", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -1127,8 +1127,8 @@ fn rejects_malformed_assignment_operator_contracts() {
 fn rejects_malformed_index_contracts() {
     for malformed in [
             "pub let Index = trait {}",
-            "pub let Index = <Key: type> trait { Output: type; index: (self)(key: Key): Output }",
-            "pub let Index = <Key: type> trait { Output: type; index: <a: access>(self: Borrow<self>)(key: Key): Borrow<a><Output> }",
+            "pub let Index: <Key: type> = trait { Output: type; index: (self)(key: Key): Output }",
+            "pub let Index: <Key: type> = trait { Output: type; index: <a: access>(self: Borrow<self>)(key: Key): Borrow<a><Output> }",
         ] {
             let modules = edition_2026_test_modules(&[("ops/index", malformed)]);
             let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -1188,7 +1188,7 @@ fn rejects_malformed_flow_operator_contracts() {
 #[test]
 fn lang_item_identities_follow_validated_declarations_not_source_order() {
     let source = r#"
-pub let Rem = <Rhs: type> trait {
+pub let Rem: <Rhs: type> = trait {
   Output: type
   rem: (self)(rhs: Rhs): Output
 }
@@ -1197,30 +1197,30 @@ pub let Copyable = trait<requires: self is Movable> {}
 pub let Droppable = trait {
   drop: (self: Borrow<mut><self>)(): ()
 }
-pub let Add = <Rhs: type> trait {
+pub let Add: <Rhs: type> = trait {
   Output: type
   add: (self)(rhs: Rhs): Output
 }
 pub let never = enum {}
-pub let Option = <T: type> enum { Some(T), None }
-pub let Result = <Error: type><T: type> enum { Ok(T), Err(Error) }
-pub let Div = <Rhs: type> trait {
+pub let Option: <T: type> = enum { Some(T), None }
+pub let Result: <Error: type><T: type> = enum { Ok(T), Err(Error) }
+pub let Div: <Rhs: type> = trait {
   Output: type
   div: (self)(rhs: Rhs): Output
 }
-pub let Sub = <Rhs: type> trait {
+pub let Sub: <Rhs: type> = trait {
   Output: type
   sub: (self)(rhs: Rhs): Output
 }
-pub let Mul = <Rhs: type> trait {
+pub let Mul: <Rhs: type> = trait {
   Output: type
   mul: (self)(rhs: Rhs): Output
 }
-pub let Eq = <Rhs: type> trait {
+pub let Eq: <Rhs: type> = trait {
   eq: (self: Borrow<self>)(rhs: Borrow<Rhs>): bool
 }
 pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }
-pub let PartialOrd = <Rhs: type> trait {
+pub let PartialOrd: <Rhs: type> = trait {
   partial_cmp: (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering
 }
 pub let Neg = trait {
@@ -1231,27 +1231,27 @@ pub let Not = trait {
   Output: type
   not: (self)(): Output
 }
-pub let BitAnd = <Rhs: type> trait {
+pub let BitAnd: <Rhs: type> = trait {
   Output: type
   bit_and: (self)(rhs: Rhs): Output
 }
-pub let BitOr = <Rhs: type> trait {
+pub let BitOr: <Rhs: type> = trait {
   Output: type
   bit_or: (self)(rhs: Rhs): Output
 }
-pub let BitXor = <Rhs: type> trait {
+pub let BitXor: <Rhs: type> = trait {
   Output: type
   bit_xor: (self)(rhs: Rhs): Output
 }
-pub let Shl = <Rhs: type> trait {
+pub let Shl: <Rhs: type> = trait {
   Output: type
   shl: (self)(rhs: Rhs): Output
 }
-pub let Shr = <Rhs: type> trait {
+pub let Shr: <Rhs: type> = trait {
   Output: type
   shr: (self)(rhs: Rhs): Output
 }
-pub let Index = <Key: type> trait {
+pub let Index: <Key: type> = trait {
   Output: type
   index: <a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output>
 }
@@ -1294,36 +1294,36 @@ pub let str: type = builtin()
 #[test]
 fn rejects_wrong_visibility_kind_shape_and_extra_items_deterministically() {
     let source = r#"
-let Option = <T: type> enum { Some(T), None }
+let Option: <T: type> = enum { Some(T), None }
 pub let Result = struct { value: i32 }
 pub let never = enum { Reachable }
 pub let Movable = trait {}
-pub let Copyable = <T: type> trait {}
-pub let Add = <Rhs: type> trait {
+pub let Copyable: <T: type> = trait {}
+pub let Add: <Rhs: type> = trait {
   add: (self)(rhs: Rhs): rhs
 }
 pub let Extra = enum {}
-pub let Sub = <Rhs: type> trait {
+pub let Sub: <Rhs: type> = trait {
   Output: type
   sub: (self)(rhs: Rhs): Output
 }
-pub let Mul = <Rhs: type> trait {
+pub let Mul: <Rhs: type> = trait {
   Output: type
   mul: (self)(rhs: Rhs): Output
 }
-pub let Div = <Rhs: type> trait {
+pub let Div: <Rhs: type> = trait {
   Output: type
   div: (self)(rhs: Rhs): Output
 }
-pub let Rem = <Rhs: type> trait {
+pub let Rem: <Rhs: type> = trait {
   Output: type
   rem: (self)(rhs: Rhs): Output
 }
-pub let Eq = <Rhs: type> trait {
+pub let Eq: <Rhs: type> = trait {
   eq: (self: Borrow<self>)(rhs: Borrow<Rhs>): bool
 }
 pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }
-pub let PartialOrd = <Rhs: type> trait {
+pub let PartialOrd: <Rhs: type> = trait {
   partial_cmp: (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering
 }
 pub let Neg = trait {
@@ -1334,23 +1334,23 @@ pub let Not = trait {
   Output: type
   not: (self)(): Output
 }
-pub let BitAnd = <Rhs: type> trait {
+pub let BitAnd: <Rhs: type> = trait {
   Output: type
   bit_and: (self)(rhs: Rhs): Output
 }
-pub let BitOr = <Rhs: type> trait {
+pub let BitOr: <Rhs: type> = trait {
   Output: type
   bit_or: (self)(rhs: Rhs): Output
 }
-pub let BitXor = <Rhs: type> trait {
+pub let BitXor: <Rhs: type> = trait {
   Output: type
   bit_xor: (self)(rhs: Rhs): Output
 }
-pub let Shl = <Rhs: type> trait {
+pub let Shl: <Rhs: type> = trait {
   Output: type
   shl: (self)(rhs: Rhs): Output
 }
-pub let Shr = <Rhs: type> trait {
+pub let Shr: <Rhs: type> = trait {
   Output: type
   shr: (self)(rhs: Rhs): Output
 }
@@ -1369,47 +1369,47 @@ pub let str: type = builtin()
                 "lang item `Result` must be enum, found struct",
                 "lang item `never` must have shape `pub let never = enum {}`",
                 "lang item `Copyable` must have shape `pub let Copyable = trait<requires: self is Movable> {}`",
-                "lang item `Add` must have shape `pub let Add = <Rhs: type> trait { Output: type; add: (self)(rhs: Rhs): Output }`",
+                "lang item `Add` must have shape `pub let Add: <Rhs: type> = trait { Output: type; add: (self)(rhs: Rhs): Output }`",
                 "missing lang item `Index`",
             ]
         );
     assert_eq!(
             error.to_string(),
-             "invalid embedded core bundle for edition 2026\n- lang item `Option` must be `pub`, found private visibility\n- unexpected declaration `Extra` at item 7\n- lang item `Result` must be enum, found struct\n- lang item `never` must have shape `pub let never = enum {}`\n- lang item `Copyable` must have shape `pub let Copyable = trait<requires: self is Movable> {}`\n- lang item `Add` must have shape `pub let Add = <Rhs: type> trait { Output: type; add: (self)(rhs: Rhs): Output }`\n- missing lang item `Index`"
+             "invalid embedded core bundle for edition 2026\n- lang item `Option` must be `pub`, found private visibility\n- unexpected declaration `Extra` at item 7\n- lang item `Result` must be enum, found struct\n- lang item `never` must have shape `pub let never = enum {}`\n- lang item `Copyable` must have shape `pub let Copyable = trait<requires: self is Movable> {}`\n- lang item `Add` must have shape `pub let Add: <Rhs: type> = trait { Output: type; add: (self)(rhs: Rhs): Output }`\n- missing lang item `Index`"
         );
 }
 
 #[test]
 fn rejects_missing_and_duplicate_lang_items_in_fixed_role_order() {
     let source = r#"
-pub let Option = <T: type> enum { Some(T), None }
-pub let Option = <T: type> enum { Some(T), None }
+pub let Option: <T: type> = enum { Some(T), None }
+pub let Option: <T: type> = enum { Some(T), None }
 pub let never = enum {}
-pub let Add = <Rhs: type> trait {
+pub let Add: <Rhs: type> = trait {
   Output: type
   add: (self)(rhs: Rhs): Output
 }
-pub let Sub = <Rhs: type> trait {
+pub let Sub: <Rhs: type> = trait {
   Output: type
   sub: (self)(rhs: Rhs): Output
 }
-pub let Mul = <Rhs: type> trait {
+pub let Mul: <Rhs: type> = trait {
   Output: type
   mul: (self)(rhs: Rhs): Output
 }
-pub let Div = <Rhs: type> trait {
+pub let Div: <Rhs: type> = trait {
   Output: type
   div: (self)(rhs: Rhs): Output
 }
-pub let Rem = <Rhs: type> trait {
+pub let Rem: <Rhs: type> = trait {
   Output: type
   rem: (self)(rhs: Rhs): Output
 }
-pub let Eq = <Rhs: type> trait {
+pub let Eq: <Rhs: type> = trait {
   eq: (self: Borrow<self>)(rhs: Borrow<Rhs>): bool
 }
 pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }
-pub let PartialOrd = <Rhs: type> trait {
+pub let PartialOrd: <Rhs: type> = trait {
   partial_cmp: (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering
 }
 pub let Neg = trait {
@@ -1420,23 +1420,23 @@ pub let Not = trait {
   Output: type
   not: (self)(): Output
 }
-pub let BitAnd = <Rhs: type> trait {
+pub let BitAnd: <Rhs: type> = trait {
   Output: type
   bit_and: (self)(rhs: Rhs): Output
 }
-pub let BitOr = <Rhs: type> trait {
+pub let BitOr: <Rhs: type> = trait {
   Output: type
   bit_or: (self)(rhs: Rhs): Output
 }
-pub let BitXor = <Rhs: type> trait {
+pub let BitXor: <Rhs: type> = trait {
   Output: type
   bit_xor: (self)(rhs: Rhs): Output
 }
-pub let Shl = <Rhs: type> trait {
+pub let Shl: <Rhs: type> = trait {
   Output: type
   shl: (self)(rhs: Rhs): Output
 }
-pub let Shr = <Rhs: type> trait {
+pub let Shr: <Rhs: type> = trait {
   Output: type
   shr: (self)(rhs: Rhs): Output
 }
@@ -1460,7 +1460,7 @@ pub let str: type = builtin()
 #[test]
 fn rejects_copy_compile_parameters_associated_types_and_methods() {
     let malformed_declarations = [
-        "pub let Copyable = <T: type> trait {}",
+        "pub let Copyable: <T: type> = trait {}",
         "pub let Copyable = trait { Item: type }",
         "pub let Copyable = trait { clone: (self: Borrow<self>)(): self }",
     ];
@@ -1480,7 +1480,7 @@ fn rejects_copy_compile_parameters_associated_types_and_methods() {
 #[test]
 fn rejects_malformed_move_traits_and_copy_without_move_supertrait() {
     for malformed in [
-        "pub let Movable = <T: type> trait {}",
+        "pub let Movable: <T: type> = trait {}",
         "pub let Movable = trait { Item: type }",
         "pub let Movable = trait<requires: self is Copyable> {}",
     ] {
@@ -1506,7 +1506,7 @@ fn rejects_malformed_move_traits_and_copy_without_move_supertrait() {
 #[test]
 fn rejects_malformed_drop_traits() {
     let malformed_declarations = [
-        "pub let Droppable = <T: type> trait { drop: (self: Borrow<mut><self>)(): () }",
+        "pub let Droppable: <T: type> = trait { drop: (self: Borrow<mut><self>)(): () }",
         "pub let Droppable = trait {}",
         "pub let Droppable = trait { drop: (self: Borrow<self>)(): () }",
         "pub let Droppable = trait { drop: (self: Borrow<mut><self>)(): i32 }",
@@ -1532,15 +1532,15 @@ fn rejects_malformed_drop_traits() {
 #[test]
 fn rejects_malformed_operator_traits_in_fixed_role_order() {
     let source = r#"
-pub let Option = <T: type> enum { Some(T), None }
-pub let Result = <Error: type><T: type> enum { Ok(T), Err(Error) }
+pub let Option: <T: type> = enum { Some(T), None }
+pub let Result: <Error: type><T: type> = enum { Ok(T), Err(Error) }
 pub let never = enum {}
 pub let Movable = trait {}
 pub let Copyable = trait<requires: self is Movable> {}
 pub let Droppable = trait {
   drop: (self: Borrow<mut><self>)(): ()
 }
-pub let Add = <Rhs: type> trait {
+pub let Add: <Rhs: type> = trait {
   Output: type
   add: (self)(rhs: Rhs): Output
 }
@@ -1548,22 +1548,22 @@ pub let Sub = trait {
   Output: type
   sub: (self)(rhs: Rhs): Output
 }
-pub let Mul = <Rhs: type> trait {
+pub let Mul: <Rhs: type> = trait {
   mul: (self)(rhs: Rhs): rhs
 }
-pub let Div = <Rhs: type> trait {
+pub let Div: <Rhs: type> = trait {
   Output: type
   Divide: (self)(rhs: Rhs): Output
 }
-pub let Rem = <Rhs: type> trait {
+pub let Rem: <Rhs: type> = trait {
   Output: type
   rem: (self)(rhs: Rhs): Output = rhs
 }
-pub let Eq = <Rhs: type> trait {
+pub let Eq: <Rhs: type> = trait {
   eq: (move self)(rhs: Rhs): bool
 }
 pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }
-pub let PartialOrd = <Rhs: type> trait {
+pub let PartialOrd: <Rhs: type> = trait {
   partial_cmp: (move self)(rhs: Rhs): PartialOrdering
 }
 pub let Neg = trait {
@@ -1574,27 +1574,27 @@ pub let Not = trait {
   Output: type
   not: (self)(): Output
 }
-pub let BitAnd = <Rhs: type> trait {
+pub let BitAnd: <Rhs: type> = trait {
   Output: type
   bit_and: (self)(rhs: Rhs): Output
 }
-pub let BitOr = <Rhs: type> trait {
+pub let BitOr: <Rhs: type> = trait {
   Output: type
   bit_or: (self)(rhs: Rhs): Output
 }
-pub let BitXor = <Rhs: type> trait {
+pub let BitXor: <Rhs: type> = trait {
   Output: type
   bit_xor: (self)(rhs: Rhs): Output
 }
-pub let Shl = <Rhs: type> trait {
+pub let Shl: <Rhs: type> = trait {
   Output: type
   shl: (self)(rhs: Rhs): Output
 }
-pub let Shr = <Rhs: type> trait {
+pub let Shr: <Rhs: type> = trait {
   Output: type
   shr: (self)(rhs: Rhs): Output
 }
-pub let Index = <Key: type> trait {
+pub let Index: <Key: type> = trait {
   Output: type
   index: <a: access>(self: Borrow<a><self>)(key: Key): Borrow<a><Output>
 }
@@ -1606,12 +1606,12 @@ pub let str: type = builtin()
             error.diagnostics(),
             [
                 "public core function `Divide` violates standard naming: use ASCII `snake_case` without leading, trailing, or repeated underscores",
-                "lang item `Sub` must have shape `pub let Sub = <Rhs: type> trait { Output: type; sub: (self)(rhs: Rhs): Output }`",
-                "lang item `Mul` must have shape `pub let Mul = <Rhs: type> trait { Output: type; mul: (self)(rhs: Rhs): Output }`",
-                "lang item `Div` must have shape `pub let Div = <Rhs: type> trait { Output: type; div: (self)(rhs: Rhs): Output }`",
-                "lang item `Rem` must have shape `pub let Rem = <Rhs: type> trait { Output: type; rem: (self)(rhs: Rhs): Output }`",
-                "lang item `Eq` must have shape `pub let Eq = <Rhs: type> trait { eq: (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }`",
-                "lang item `PartialOrd` must have shape `pub let PartialOrd = <Rhs: type> trait { partial_cmp: (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }`",
+                "lang item `Sub` must have shape `pub let Sub: <Rhs: type> = trait { Output: type; sub: (self)(rhs: Rhs): Output }`",
+                "lang item `Mul` must have shape `pub let Mul: <Rhs: type> = trait { Output: type; mul: (self)(rhs: Rhs): Output }`",
+                "lang item `Div` must have shape `pub let Div: <Rhs: type> = trait { Output: type; div: (self)(rhs: Rhs): Output }`",
+                "lang item `Rem` must have shape `pub let Rem: <Rhs: type> = trait { Output: type; rem: (self)(rhs: Rhs): Output }`",
+                "lang item `Eq` must have shape `pub let Eq: <Rhs: type> = trait { eq: (self: Borrow<self>)(rhs: Borrow<Rhs>): bool }`",
+                "lang item `PartialOrd` must have shape `pub let PartialOrd: <Rhs: type> = trait { partial_cmp: (self: Borrow<self>)(rhs: Borrow<Rhs>): PartialOrdering }`",
             ]
         );
 }
@@ -1619,7 +1619,7 @@ pub let str: type = builtin()
 #[test]
 fn rejects_malformed_partial_ordering() {
     for declaration in [
-        "pub let PartialOrdering = <T: type> enum { Less, Equal, Greater, Unordered }",
+        "pub let PartialOrdering: <T: type> = enum { Less, Equal, Greater, Unordered }",
         "pub let PartialOrdering = enum { Less, Equal, Greater }",
         "pub let PartialOrdering = enum { Less, Equal, Greater, Unknown }",
     ] {
@@ -1644,7 +1644,7 @@ fn rejects_malformed_unary_operator_traits() {
     for (original, malformed, expected) in [
             (
                  "pub let Neg = trait {\n  Output: type\n  neg: (self)(): Output\n}",
-                 "pub let Neg = <Rhs: type> trait { neg: (self)(): i32 }",
+                 "pub let Neg: <Rhs: type> = trait { neg: (self)(): i32 }",
                  "lang item `Neg` must have shape `pub let Neg = trait { Output: type; neg: (self)(): Output }`",
             ),
             (
@@ -1668,14 +1668,14 @@ fn rejects_malformed_unary_operator_traits() {
 fn rejects_malformed_bitwise_operator_traits() {
     for (original, malformed, expected) in [
             (
-                 "pub let BitAnd = <Rhs: type> trait {\n  Output: type\n  bit_and: (self)(rhs: Rhs): Output\n}",
+                 "pub let BitAnd: <Rhs: type> = trait {\n  Output: type\n  bit_and: (self)(rhs: Rhs): Output\n}",
                  "pub let BitAnd = trait { bit_and: (self: Borrow<self>)(move rhs: i32): i32 }",
-                  "lang item `BitAnd` must have shape `pub let BitAnd = <Rhs: type> trait { Output: type; bit_and: (self)(rhs: Rhs): Output }`",
+                  "lang item `BitAnd` must have shape `pub let BitAnd: <Rhs: type> = trait { Output: type; bit_and: (self)(rhs: Rhs): Output }`",
             ),
             (
-                 "pub let Shr = <Rhs: type> trait {\n  Output: type\n  shr: (self)(rhs: Rhs): Output\n}",
-                 "pub let Shr = <Rhs: type> trait { Output: type; shift: (move self)(rhs: Rhs): Output }",
-                  "lang item `Shr` must have shape `pub let Shr = <Rhs: type> trait { Output: type; shr: (self)(rhs: Rhs): Output }`",
+                 "pub let Shr: <Rhs: type> = trait {\n  Output: type\n  shr: (self)(rhs: Rhs): Output\n}",
+                 "pub let Shr: <Rhs: type> = trait { Output: type; shift: (move self)(rhs: Rhs): Output }",
+                  "lang item `Shr` must have shape `pub let Shr: <Rhs: type> = trait { Output: type; shr: (self)(rhs: Rhs): Output }`",
             ),
         ] {
             let source =

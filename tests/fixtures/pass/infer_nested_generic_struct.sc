@@ -1,4 +1,4 @@
-let cell = <t: type> struct { value: t }
+let cell: <t: type> = struct { value: t }
 
 let main = {
   (): i32 =>

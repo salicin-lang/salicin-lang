@@ -26,8 +26,7 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let poll: <r: region> = { (self: Borrow<mut><r><self>)
     (): Poll<i32> =>
     if(self.polls == 0) {
       self.polls = 1

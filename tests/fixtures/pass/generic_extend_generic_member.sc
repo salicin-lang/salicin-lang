@@ -1,7 +1,7 @@
-let cell = <t: type> struct { value: t }
+let cell: <t: type> = struct { value: t }
 
 extend(cell<t>) {
-  let identity = { <u: type>(self: Borrow<self>)(move value: u): u => value }
+  let identity: <u: type> = { (self: Borrow<self>)(move value: u): u => value }
 }
 
 let main = {

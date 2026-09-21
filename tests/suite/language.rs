@@ -756,7 +756,7 @@ fn compile_time_argument_diagnostics_name_binders_sorts_and_groups() {
 fn qualified_generic_calls_require_angle_compile_groups() {
     let prefix = r#"let cell = struct {}
 extend(cell) {
-  let identity = { <T: type>(self: Borrow<self>)(move value: T): T => value }
+  let identity: <T: type> = { (self: Borrow<self>)(move value: T): T => value }
 }
 "#;
 

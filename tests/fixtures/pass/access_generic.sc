@@ -1,9 +1,9 @@
-let inspect = { <a: access>(value: Borrow<a><i32>): i32 => value }
+let inspect: <a: access> = { (value: Borrow<a><i32>): i32 => value }
 
-let cell = <t: type> struct { value: t }
+let cell: <t: type> = struct { value: t }
 
 extend(cell<t>) {
-  let view = { <a: access>(self: Borrow<a><self>)(): Borrow<a><t> => borrow<a>(self.value) }
+  let view: <a: access> = { (self: Borrow<a><self>)(): Borrow<a><t> => borrow<a>(self.value) }
 }
 
 let main = {

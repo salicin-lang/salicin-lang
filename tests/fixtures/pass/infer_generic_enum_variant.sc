@@ -1,4 +1,4 @@
-let maybe = <t: type> enum {
+let maybe: <t: type> = enum {
   Some(t),
   None,
 }

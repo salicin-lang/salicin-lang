@@ -633,7 +633,7 @@ mod tests {
     #[test]
     fn standard_names_encode_semantics_instead_of_declaration_categories() {
         let valid = parser::parse(
-            "pub let Option = <T: type> enum { Some(T), None }\n\
+            "pub let Option: <T: type> = enum { Some(T), None }\n\
              pub let Copyable = trait {}\n\
              pub let suspension = effect { suspend: (): () }\n",
         )

@@ -22,8 +22,7 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = marker;
 
-  let poll = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let poll: <r: region> = { (self: Borrow<mut><r><self>)
     (): Poll<marker> =>
     Poll<marker>.Ready(marker { drops: self.drops })
   }

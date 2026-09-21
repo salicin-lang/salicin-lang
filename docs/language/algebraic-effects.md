@@ -8,7 +8,7 @@ This document defines the implementation contract for source-declared algebraic 
 An effect is a nominal compile-time identity with zero or more operations:
 
 ```sc fragment
-let state = <S: type> effect {
+let state: <S: type> = effect {
   get: (): S
   put: (move value: S): ()
 }
@@ -37,7 +37,7 @@ let increment = { with<state<i32>>(): i32 =>
   value
 }
 
-let apply = { <e: effects> with<e>
+let apply: <e: effects> = { with<e>
   (action: with<e>(i32): i32)
   (value: i32): i32 =>
   action(value)

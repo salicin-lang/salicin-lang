@@ -8,8 +8,7 @@ let step = struct { ready: bool }
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let poll: <r: region> = { (self: Borrow<mut><r><self>)
     (): Poll<i32> =>
     if(self.ready) {
       Ready(42)

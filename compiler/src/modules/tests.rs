@@ -20,7 +20,7 @@ fn resolves_user_closed_compile_parameter_types_across_modules() {
             "root.sc",
             &[],
             "use root.config.optimization as optimization\n\
-             let select = { <o: optimization>(value: i32): i32 =>  value }\n\
+             let select: <o: optimization> = { (value: i32): i32 =>  value }\n\
              let main = { (): i32 =>  0 }\n",
             true,
         ),
@@ -433,7 +433,7 @@ fn preserves_generic_extend_parameters_while_qualifying_the_target() {
         unit(
             "src/api.sc",
             &["api"],
-            "pub(package) let cell = <t: type> struct { value: t }\n\
+            "pub(package) let cell: <t: type> = struct { value: t }\n\
              extend(cell<t>) {\n\
              let new = { (move value: t): cell<t> =>  cell{ value: value } }\n\
              let take = { (move self)(): t =>  self.value }\n\
@@ -484,7 +484,7 @@ fn reinfers_cross_module_extend_pattern_sorts_after_resolution() {
             "src/api.sc",
             &["api"],
             "pub let mode = sort<1> { shared unique }\n\
-             pub let handle = <a: mode><t: type> struct {}\n",
+             pub let handle: <a: mode><t: type> = struct {}\n",
             false,
         ),
     ])
@@ -1319,7 +1319,7 @@ fn rejects_nominal_types_that_are_narrower_than_function_and_global_apis() {
         "src/lib.sc",
         &[],
         "let hidden = struct {}\n\
-             pub let wrapper = <t: type> struct {}\n\
+             pub let wrapper: <t: type> = struct {}\n\
              pub let expose = { (value: wrapper<hidden>): hidden =>  value }\n\
              pub let shared: hidden = hidden{}\n",
         true,
@@ -1388,7 +1388,7 @@ fn rejects_traits_that_are_narrower_than_public_where_predicates() {
         "src/lib.sc",
         &[],
         "let hidden = trait {}\n\
-             pub let expose = { <t: type>(value: t): t requires(t is hidden) =>  value }\n",
+             pub let expose: <t: type> = { (value: t): t requires(t is hidden) =>  value }\n",
         true,
     )])
     .unwrap_err();
@@ -1408,7 +1408,7 @@ fn rejects_traits_that_are_narrower_than_constrained_extension_members() {
         "src/lib.sc",
         &[],
         "let hidden = trait {}\n\
-             pub let cell = <t: type> struct { pub value: t }\n\
+             pub let cell: <t: type> = struct { pub value: t }\n\
              extend(cell<t>)<requires: t is hidden> {\n\
              let take = { (move self)(): t =>  self.value }\n\
              }\n",
@@ -1499,7 +1499,7 @@ fn validates_trait_signatures_without_treating_bound_types_as_nominals() {
     let valid = resolve_sources(&[unit(
         "src/valid.sc",
         &[],
-        "pub let convert = <t: type> trait {\n\
+        "pub let convert: <t: type> = trait {\n\
              output: type\n\
              convert: <u: type>(self: Borrow<self>)(value: t): output\n\
              }\n",
@@ -1574,8 +1574,8 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         "let Chain = core.flow.Chain\n\
              let ops_coalesce = core.ops.Coalesce\n\
              let legacy_coalesce = core.ops.Coalesce\n\
-             let maybe = <t: type> enum { Some(t), None }\n\
-             let legacy_maybe = <t: type> enum { Some(t), None }\n\
+             let maybe: <t: type> = enum { Some(t), None }\n\
+             let legacy_maybe: <t: type> = enum { Some(t), None }\n\
              extend(maybe<t>, Chain) {}\n\
              extend(maybe<t>, ops_coalesce) {}\n\
              extend(legacy_maybe<t>, legacy_coalesce) {}\n",
@@ -1687,7 +1687,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     let bare_flow = resolve_sources(&[unit(
         "flow.sc",
         &[],
-        "let maybe = <t: type> enum { Some(t), None }\n\
+        "let maybe: <t: type> = enum { Some(t), None }\n\
              extend(maybe<t>, Chain) {}\n",
         true,
     )])

@@ -10,7 +10,7 @@ let request = { with<ask>
   ask.ask()
 }
 
-let poll_once = { <e: effects, f: type, t: type>with<e>
+let poll_once: <e: effects, f: type, t: type> = { with<e>
   (future: Borrow<mut><f>): Poll<t> requires(f is Future<e> && f.Output == t) =>
   future.poll()
 }

@@ -1,5 +1,5 @@
-let accept_same = { <t: type>(left: t, right: t): i32 => 21 }
-let accept = { <t: type>(value: t): i32 => 21 }
+let accept_same: <t: type> = { (left: t, right: t): i32 => 21 }
+let accept: <t: type> = { (value: t): i32 => 21 }
 
 let main = {
   (): i32 =>

@@ -6,7 +6,7 @@ let IntoIterator = core.iter.IntoIterator
 let OwnedItem = core.iter.OwnedItem
 
 /// Growable contiguous heap allocation for values of type `T`.
-pub let Vec = <T: type> struct {
+pub let Vec: <T: type> = struct {
   /// Pointer to the start of the allocated storage.
   pointer: Ptr<mut><T>,
   /// Number of initialized elements.
@@ -16,8 +16,7 @@ pub let Vec = <T: type> struct {
 }
 
 /// Computes the byte size needed to store `capacity` elements of `T`.
-let vec_layout_size = { <T: type>
-  (capacity: u64): u64 =>
+let vec_layout_size: <T: type> = { (capacity: u64): u64 =>
   let element_size = size_of<T>;
   if(element_size != 0 && capacity > 18446744073709551615 / element_size) {
     unsafe {
@@ -28,42 +27,37 @@ let vec_layout_size = { <T: type>
 }
 
 /// Allocates raw storage for `capacity` elements of `T`.
-let vec_allocate = { <T: type>
-  (capacity: u64): Ptr<mut><T> =>
+let vec_allocate: <T: type> = { (capacity: u64): Ptr<mut><T> =>
   unsafe {
     raw_alloc<T>(vec_layout_size<T: T>(capacity), align_of<T>)
   }
 }
 
 /// Deallocates raw vector storage previously allocated for `capacity` elements.
-let vec_deallocate = { <T: type>
-  (pointer: Ptr<mut><T>, capacity: u64): () =>
+let vec_deallocate: <T: type> = { (pointer: Ptr<mut><T>, capacity: u64): () =>
   unsafe {
     raw_dealloc<T>(pointer, vec_layout_size<T: T>(capacity), align_of<T>)
   }
 }
 
 /// Creates an empty vector with zero capacity.
-let vec_new = { <T: type>
-  (): Vec<T> =>
+let vec_new: <T: type> = { (): Vec<T> =>
   Vec<T> { pointer: vec_allocate<T: T>(0), length: 0, storage_capacity: 0 }
 }
 
 /// Creates an empty vector with storage for `capacity` elements.
-let vec_with_capacity = { <T: type>
-  (capacity: u64): Vec<T> =>
+let vec_with_capacity: <T: type> = { (capacity: u64): Vec<T> =>
   Vec<T> { pointer: vec_allocate<T: T>(capacity), length: 0, storage_capacity: capacity }
 }
 
 /// Returns the number of initialized elements in `values`.
-let vec_len = { <T: type>(values: Borrow<Vec<T>>): u64 =>  values.length }
+let vec_len: <T: type> = { (values: Borrow<Vec<T>>): u64 =>  values.length }
 
 /// Returns the number of elements that fit without reallocating.
-let vec_capacity = { <T: type>(values: Borrow<Vec<T>>): u64 =>  values.storage_capacity }
+let vec_capacity: <T: type> = { (values: Borrow<Vec<T>>): u64 =>  values.storage_capacity }
 
 /// Borrows the element at `index`, trapping if `index` is out of bounds.
-let vec_at = { <a: access, r: region, T: type>
-  (values: Borrow<a><r><Vec<T>>)(index: u64): Borrow<a><r><T> =>
+let vec_at: <a: access, r: region, T: type> = { (values: Borrow<a><r><Vec<T>>)(index: u64): Borrow<a><r><T> =>
   if(index >= values.length) {
     unsafe {
       raw_trap()
@@ -75,7 +69,7 @@ let vec_at = { <a: access, r: region, T: type>
 }
 
 /// Ensures that `values` can accept at least `additional` more elements.
-let vec_reserve = { <T: type>(values: Borrow<mut><Vec<T>>)(additional: u64): () =>
+let vec_reserve: <T: type> = { (values: Borrow<mut><Vec<T>>)(additional: u64): () =>
   if(additional > 18446744073709551615 - values.length) {
     unsafe {
       raw_trap()
@@ -113,7 +107,7 @@ let vec_reserve = { <T: type>(values: Borrow<mut><Vec<T>>)(additional: u64): () 
 }
 
 /// Appends `value` to the end of `values`.
-let vec_push = { <T: type>(values: Borrow<mut><Vec<T>>)(value: T): () =>
+let vec_push: <T: type> = { (values: Borrow<mut><Vec<T>>)(value: T): () =>
   vec_reserve(values)(1)
   unsafe {
     raw_init(raw_offset(values.pointer, values.length), value)
@@ -122,7 +116,7 @@ let vec_push = { <T: type>(values: Borrow<mut><Vec<T>>)(value: T): () =>
 }
 
 /// Replaces the element at `index` and returns the previous element.
-let vec_replace = { <T: type>(values: Borrow<mut><Vec<T>>)(index: u64)(value: T): T =>
+let vec_replace: <T: type> = { (values: Borrow<mut><Vec<T>>)(index: u64)(value: T): T =>
   if(index >= values.length) {
     unsafe {
       raw_trap()
@@ -141,7 +135,7 @@ let vec_replace = { <T: type>(values: Borrow<mut><Vec<T>>)(index: u64)(value: T)
 }
 
 /// Removes and returns the last element, or `None` if the vector is empty.
-let vec_pop = { <T: type>(values: Borrow<mut><Vec<T>>): Option<T> =>
+let vec_pop: <T: type> = { (values: Borrow<mut><Vec<T>>): Option<T> =>
   if(values.length == 0) {
     Option<T>.None
   } else: {
@@ -154,7 +148,7 @@ let vec_pop = { <T: type>(values: Borrow<mut><Vec<T>>): Option<T> =>
 }
 
 /// Drops elements from the end until the vector length is at most `new_length`.
-let vec_truncate = { <T: type>(values: Borrow<mut><Vec<T>>)(new_length: u64): () =>
+let vec_truncate: <T: type> = { (values: Borrow<mut><Vec<T>>)(new_length: u64): () =>
   while(values.length > new_length) {
     values.length = values.length - 1
     let item = unsafe {
@@ -164,13 +158,13 @@ let vec_truncate = { <T: type>(values: Borrow<mut><Vec<T>>)(new_length: u64): ()
 }
 
 /// Removes all elements from `values`.
-let vec_clear = { <T: type>(values: Borrow<mut><Vec<T>>): () =>  vec_truncate(values)(0) }
+let vec_clear: <T: type> = { (values: Borrow<mut><Vec<T>>): () =>  vec_truncate(values)(0) }
 
 /// Returns whether `values` has no initialized elements.
-let vec_is_empty = { <T: type>(values: Borrow<Vec<T>>): bool =>  values.length == 0 }
+let vec_is_empty: <T: type> = { (values: Borrow<Vec<T>>): bool =>  values.length == 0 }
 
 /// Removes the element at `index` by moving the last element into its slot.
-let vec_swap_remove = { <T: type>(values: Borrow<mut><Vec<T>>)(index: u64): T =>
+let vec_swap_remove: <T: type> = { (values: Borrow<mut><Vec<T>>)(index: u64): T =>
   if(index >= values.length) {
     unsafe {
       raw_trap()
@@ -193,7 +187,7 @@ let vec_swap_remove = { <T: type>(values: Borrow<mut><Vec<T>>)(index: u64): T =>
 }
 
 /// Swaps the elements at `left` and `right`.
-let vec_swap = { <T: type>(values: Borrow<mut><Vec<T>>)(left: u64, right: u64): () =>
+let vec_swap: <T: type> = { (values: Borrow<mut><Vec<T>>)(left: u64, right: u64): () =>
   if(left >= values.length || right >= values.length) {
     unsafe {
       raw_trap()
@@ -214,7 +208,7 @@ let vec_swap = { <T: type>(values: Borrow<mut><Vec<T>>)(left: u64, right: u64): 
 }
 
 /// Reverses the order of initialized elements in place.
-let vec_reverse = { <T: type>(values: Borrow<mut><Vec<T>>): () =>
+let vec_reverse: <T: type> = { (values: Borrow<mut><Vec<T>>): () =>
   let mut left: u64 = 0
   while(left < values.length / 2) {
     let right = values.length - 1 - left
@@ -224,7 +218,7 @@ let vec_reverse = { <T: type>(values: Borrow<mut><Vec<T>>): () =>
 }
 
 /// Inserts `value` at `index`, shifting later elements right.
-let vec_insert = { <T: type>(values: Borrow<mut><Vec<T>>)(index: u64)(value: T): () =>
+let vec_insert: <T: type> = { (values: Borrow<mut><Vec<T>>)(index: u64)(value: T): () =>
   if(index > values.length) {
     unsafe {
       raw_trap()
@@ -249,7 +243,7 @@ let vec_insert = { <T: type>(values: Borrow<mut><Vec<T>>)(index: u64)(value: T):
 }
 
 /// Removes and returns the element at `index`, shifting later elements left.
-let vec_remove = { <T: type>(values: Borrow<mut><Vec<T>>)(index: u64): T =>
+let vec_remove: <T: type> = { (values: Borrow<mut><Vec<T>>)(index: u64): T =>
   if(index >= values.length) {
     unsafe {
       raw_trap()
@@ -274,7 +268,7 @@ let vec_remove = { <T: type>(values: Borrow<mut><Vec<T>>)(index: u64): T =>
 }
 
 /// Moves all elements from `other` onto the end of `values`.
-let vec_append = { <T: type>(values: Borrow<mut><Vec<T>>)(other: Borrow<mut><Vec<T>>): () =>
+let vec_append: <T: type> = { (values: Borrow<mut><Vec<T>>)(other: Borrow<mut><Vec<T>>): () =>
   let start = values.length
   let moved = other.length
   vec_reserve(values)(moved)
@@ -293,7 +287,7 @@ let vec_append = { <T: type>(values: Borrow<mut><Vec<T>>)(other: Borrow<mut><Vec
 }
 
 /// Reallocates storage so capacity matches the current length.
-let vec_shrink_to_fit = { <T: type>(values: Borrow<mut><Vec<T>>): () =>
+let vec_shrink_to_fit: <T: type> = { (values: Borrow<mut><Vec<T>>): () =>
   if(values.length != values.storage_capacity) {
     let new_pointer = vec_allocate<T>(values.length)
     let mut index: u64 = 0
@@ -313,7 +307,7 @@ let vec_shrink_to_fit = { <T: type>(values: Borrow<mut><Vec<T>>): () =>
 }
 
 /// Copies the element at `index` out of `values`.
-let vec_read = { <T: type>(values: Borrow<Vec<T>>)(index: u64): T requires(T is Copyable) =>
+let vec_read: <T: type> = { (values: Borrow<Vec<T>>)(index: u64): T requires(T is Copyable) =>
   if(index >= values.length) {
     unsafe {
       raw_trap()
@@ -325,7 +319,7 @@ let vec_read = { <T: type>(values: Borrow<Vec<T>>)(index: u64): T requires(T is 
 }
 
 /// Copies `value` into the element slot at `index`.
-let vec_write = { <T: type>(values: Borrow<mut><Vec<T>>)(index: u64)(copy value: T): () requires(T is Copyable) =>
+let vec_write: <T: type> = { (values: Borrow<mut><Vec<T>>)(index: u64)(copy value: T): () requires(T is Copyable) =>
   if(index >= values.length) {
     unsafe {
       raw_trap()
@@ -345,7 +339,7 @@ extend(Vec<T>) {
   /// Returns the number of initialized elements.
   let len = { (self: Borrow<self>)(): u64 =>  vec_len(self) }
   /// Borrows all initialized elements as a Slice.
-  let as_slice = { <a: access = shared>(self: Borrow<a><self>)(): Borrow<a><Slice<T>> =>
+  let as_slice: <a: access = shared> = { (self: Borrow<a><self>)(): Borrow<a><Slice<T>> =>
     unsafe {
       raw_slice<a>(self.pointer, self.length, borrow<a>(self))
     }
@@ -353,8 +347,7 @@ extend(Vec<T>) {
   /// Returns the number of elements that fit without reallocating.
   let capacity = { (self: Borrow<self>)(): u64 =>  vec_capacity(self) }
   /// Borrows the element at `index`, trapping if it is out of bounds.
-  let get = { <a: access = shared>
-    (self: Borrow<a><self>)
+  let get: <a: access = shared> = { (self: Borrow<a><self>)
     (index: u64): Option<Borrow<a><T>> =>
     if(index >= self.length) {
       Option.None
@@ -365,8 +358,7 @@ extend(Vec<T>) {
     }
   }
   /// Borrows the element at `index`, trapping if it is out of bounds.
-  let at = { <a: access = shared>
-    (self: Borrow<a><self>)
+  let at: <a: access = shared> = { (self: Borrow<a><self>)
     (index: u64): Borrow<a><T> =>
     if(index >= self.length) {
       unsafe {
@@ -378,13 +370,11 @@ extend(Vec<T>) {
     }
   }
   /// Borrows the first element, or returns `None` when empty.
-  let first = { <a: access = shared>
-    (self: Borrow<a><self>)(): Option<Borrow<a><T>> =>
+  let first: <a: access = shared> = { (self: Borrow<a><self>)(): Option<Borrow<a><T>> =>
     self.get<a>(0)
   }
   /// Borrows the last element, or returns `None` when empty.
-  let last = { <a: access = shared>
-    (self: Borrow<a><self>)(): Option<Borrow<a><T>> =>
+  let last: <a: access = shared> = { (self: Borrow<a><self>)(): Option<Borrow<a><T>> =>
     let length = self.length
     if(length == 0) {
       Option.None
@@ -393,33 +383,33 @@ extend(Vec<T>) {
     }
   }
   /// Borrows the first element accepted by `predicate`.
-  let find = { <e: effects>with<e>(self: Borrow<self>)(move predicate: with<e>(Borrow<T>) :bool): Option<Borrow<T>> =>
+  let find: <e: effects> = { with<e>(self: Borrow<self>)(move predicate: with<e>(Borrow<T>) :bool): Option<Borrow<T>> =>
     let values = self.as_slice()
     values.find(predicate)
   }
   /// Returns the index of the first element accepted by `predicate`.
-  let position = { <e: effects>with<e>
+  let position: <e: effects> = { with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): Option<u64> =>
     let values = self.as_slice()
     values.position(predicate)
   }
   /// Returns whether any element is accepted by `predicate`.
-  let any = { <e: effects>with<e>
+  let any: <e: effects> = { with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool =>
     let values = self.as_slice()
     values.any(predicate)
   }
   /// Returns whether every element is accepted by `predicate`.
-  let all = { <e: effects>with<e>
+  let all: <e: effects> = { with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool =>
     let values = self.as_slice()
     values.all(predicate)
   }
   /// Folds elements from left to right into `initial`.
-  let fold = { <e: effects, Accumulator: type>with<e>
+  let fold: <e: effects, Accumulator: type> = { with<e>
     (self: Borrow<self>)
     (move initial: Accumulator)
     (move combine: with<e>(Accumulator, Borrow<T>) :Accumulator): Accumulator =>
@@ -515,7 +505,7 @@ extend(Vec<T>)<requires: T is Copyable> {
 }
 
 /// Owning Iterator over a vector.
-pub let VecIntoIter = <T: type> struct {
+pub let VecIntoIter: <T: type> = struct {
   pointer: Ptr<mut><T>,
   next_index: u64,
   length: u64,
@@ -525,8 +515,7 @@ pub let VecIntoIter = <T: type> struct {
 /// Routes bracket access through the source-defined indexing protocol.
 extend(Vec<T>, Index<u64>) {
   let Output = T
-  let index = { <a: access>
-    (self: Borrow<a><self>)
+  let index: <a: access> = { (self: Borrow<a><self>)
     (key: u64): Borrow<a><T> =>
     self.at<a>(key)
   }
@@ -535,8 +524,7 @@ extend(Vec<T>, Index<u64>) {
 /// Advances an owning vector Iterator in source order.
 extend(VecIntoIter<T>, Iterator) {
   let Item = OwnedItem<T>;
-  let next = { <r: region>
-    (self: Borrow<mut><r><self>)
+  let next: <r: region> = { (self: Borrow<mut><r><self>)
     (): Option<T> =>
     if(self.next_index == self.length) {
       Option.None
@@ -596,14 +584,13 @@ extend(Vec<T>, Droppable) {
 
 /// Rebuilds vector ownership from initialized storage supplied by another
 /// adapter in this package.
-pub(package) let vec_from_raw_parts = { <T: type>with<core.unsafe.unsafety>
+pub(package) let vec_from_raw_parts: <T: type> = { with<core.unsafe.unsafety>
   (pointer: Ptr<mut><T>, length: u64, capacity: u64): Vec<T> =>
   Vec<T> { pointer: pointer, length: length, storage_capacity: capacity }
 }
 
 /// Consumes a vector and transfers its allocation to another package adapter.
-pub(package) let vec_into_raw_parts = { <T: type>
-  (move values: Vec<T>): (Ptr<mut><T>, u64, u64) =>
+pub(package) let vec_into_raw_parts: <T: type> = { (move values: Vec<T>): (Ptr<mut><T>, u64, u64) =>
   let parts = (values.pointer, values.length, values.storage_capacity)
   forget(values)
   parts

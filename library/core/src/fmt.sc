@@ -13,7 +13,7 @@ pub let Parse = trait {
   }
 
 /// Effect-polymorphic sink for validated UTF-8 fragments.
-pub let TextWriter = <e: effects> trait {
+pub let TextWriter: <e: effects> = trait {
   /// Writes one Unicode scalar without requiring a temporary allocation.
   write_scalar: with<e>(self: Borrow<mut><self>)(value: core.string.UnicodeScalar): ();
   write_ascii: with<e>(self: Borrow<mut><self>)(value: u8): ()
@@ -222,8 +222,7 @@ extend(u64, Parse) {
   let Source = core.string.str
   let Error = ParseIntError
 
-  let parse = { <r: region>
-    (value: Borrow<r><Source>): core.Result<Error><self> =>
+  let parse: <r: region> = { (value: Borrow<r><Source>): core.Result<Error><self> =>
     parse_u64_radix(value, 10)
   }
 }
@@ -232,19 +231,18 @@ extend(i64, Parse) {
   let Source = core.string.str
   let Error = ParseIntError
 
-  let parse = { <r: region>
-    (value: Borrow<r><Source>): core.Result<Error><self> =>
+  let parse: <r: region> = { (value: Borrow<r><Source>): core.Result<Error><self> =>
     parse_i64_radix(value, 10)
   }
 }
 
-let write_digit = { <e: effects, W: type>with<e>
+let write_digit: <e: effects, W: type> = { with<e>
   (writer: Borrow<mut><W>)
   (digit: u8): () requires(W is TextWriter<e>) =>
   writer.write_ascii(48 + digit)
 }
 
-let write_unsigned = { <e: effects, W: type>with<e>
+let write_unsigned: <e: effects, W: type> = { with<e>
   (writer: Borrow<mut><W>)
   (value: u128): () requires(W is TextWriter<e>) =>
   if(value >= 10) {
@@ -280,18 +278,18 @@ let write_unsigned = { <e: effects, W: type>with<e>
   write_digit(writer)(digit)
 }
 
-let write_minus = { <e: effects, W: type>with<e>
+let write_minus: <e: effects, W: type> = { with<e>
   (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
   writer.write_ascii(45)
 }
 
-let display_unsigned = { <e: effects, W: type>with<e>
+let display_unsigned: <e: effects, W: type> = { with<e>
   (writer: Borrow<mut><W>)
   (value: u128): () requires(W is TextWriter<e>) =>
   write_unsigned(writer)(value)
 }
 
-let display_signed = { <e: effects, W: type>with<e>
+let display_signed: <e: effects, W: type> = { with<e>
   (writer: Borrow<mut><W>)
   (negative: bool, magnitude: u128): () requires(W is TextWriter<e>) =>
   if(negative) {
@@ -300,7 +298,7 @@ let display_signed = { <e: effects, W: type>with<e>
   write_unsigned(writer)(magnitude)
 }
 
-let write_unsigned_u64 = { <e: effects, W: type>with<e>
+let write_unsigned_u64: <e: effects, W: type> = { with<e>
   (writer: Borrow<mut><W>)
   (value: u64): () requires(W is TextWriter<e>) =>
   if(value >= 10) {
@@ -336,7 +334,7 @@ let write_unsigned_u64 = { <e: effects, W: type>with<e>
   write_digit(writer)(digit)
 }
 
-let display_signed_i64 = { <e: effects, W: type>with<e>
+let display_signed_i64: <e: effects, W: type> = { with<e>
   (writer: Borrow<mut><W>)
   (negative: bool, magnitude: u64): () requires(W is TextWriter<e>) =>
   if(negative) {
@@ -346,7 +344,7 @@ let display_signed_i64 = { <e: effects, W: type>with<e>
 }
 
 /// Writes the canonical lowercase boolean spelling.
-pub let write_bool = { <e: effects, W: type>with<e>
+pub let write_bool: <e: effects, W: type> = { with<e>
   (writer: Borrow<mut><W>)
   (value: bool): () requires(W is TextWriter<e>) =>
   if(value) {
@@ -364,7 +362,7 @@ pub let write_bool = { <e: effects, W: type>with<e>
 }
 
 extend(bool, Display) {
-  let display = { <e: effects, W: type>with<e>
+  let display: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: bool = self
@@ -373,7 +371,7 @@ extend(bool, Display) {
 }
 
 extend(core.string.UnicodeScalar, Display) {
-  let display = { <e: effects, W: type>with<e>
+  let display: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: core.string.UnicodeScalar = self
@@ -382,7 +380,7 @@ extend(core.string.UnicodeScalar, Display) {
 }
 
 extend(core.string.str, Display) {
-  let display = { <e: effects, W: type>with<e>
+  let display: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let mut scalars = self.scalars()
@@ -395,7 +393,7 @@ extend(core.string.str, Display) {
 }
 
 extend(core.string.String, Display) {
-  let display = { <e: effects, W: type>with<e>
+  let display: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let view = self.as_str()
@@ -409,7 +407,7 @@ extend(core.string.String, Display) {
 }
 
 extend(u64, Display) {
-  let display = { <e: effects, W: type>with<e>
+  let display: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: u64 = self
@@ -418,7 +416,7 @@ extend(u64, Display) {
 }
 
 extend(u128, Display) {
-  let display = { <e: effects, W: type>with<e>
+  let display: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: u128 = self
@@ -427,7 +425,7 @@ extend(u128, Display) {
 }
 
 extend(i64, Display) {
-  let display = { <e: effects, W: type>with<e>
+  let display: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: i64 = self
@@ -436,7 +434,7 @@ extend(i64, Display) {
 }
 
 extend(i128, Display) {
-  let display = { <e: effects, W: type>with<e>
+  let display: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: i128 = self
@@ -445,7 +443,7 @@ extend(i128, Display) {
 }
 
 extend(bool, Debug) {
-  let debug = { <e: effects, W: type>with<e>
+  let debug: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: bool = self
@@ -454,7 +452,7 @@ extend(bool, Debug) {
 }
 
 extend(core.string.UnicodeScalar, Debug) {
-  let debug = { <e: effects, W: type>with<e>
+  let debug: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: core.string.UnicodeScalar = self
@@ -463,7 +461,7 @@ extend(core.string.UnicodeScalar, Debug) {
 }
 
 extend(core.string.str, Debug) {
-  let debug = { <e: effects, W: type>with<e>
+  let debug: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let mut scalars = self.scalars()
@@ -476,7 +474,7 @@ extend(core.string.str, Debug) {
 }
 
 extend(core.string.String, Debug) {
-  let debug = { <e: effects, W: type>with<e>
+  let debug: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let view = self.as_str()
@@ -490,7 +488,7 @@ extend(core.string.String, Debug) {
 }
 
 extend(u64, Debug) {
-  let debug = { <e: effects, W: type>with<e>
+  let debug: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: u64 = self
@@ -499,7 +497,7 @@ extend(u64, Debug) {
 }
 
 extend(u128, Debug) {
-  let debug = { <e: effects, W: type>with<e>
+  let debug: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: u128 = self
@@ -508,7 +506,7 @@ extend(u128, Debug) {
 }
 
 extend(i64, Debug) {
-  let debug = { <e: effects, W: type>with<e>
+  let debug: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: i64 = self
@@ -517,7 +515,7 @@ extend(i64, Debug) {
 }
 
 extend(i128, Debug) {
-  let debug = { <e: effects, W: type>with<e>
+  let debug: <e: effects, W: type> = { with<e>
     (self: Borrow<self>)
     (writer: Borrow<mut><W>): () requires(W is TextWriter<e>) =>
     let value: i128 = self

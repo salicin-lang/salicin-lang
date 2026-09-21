@@ -1,9 +1,8 @@
-let identity = { <t: type>(move value: t): t => value }
+let identity: <t: type> = { (move value: t): t => value }
 
 let helper = { (value: i32) => identity<i32>(value) }
 
-let preserve = { <t: type>
-  (move value: t): t =>
+let preserve: <t: type> = { (move value: t): t =>
   helper(0)
   value
 }

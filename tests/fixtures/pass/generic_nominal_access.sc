@@ -1,11 +1,10 @@
-let access_box = <a: access><t: type> struct {
+let access_box: <a: access><t: type> = struct {
   value: Borrow<a><t>,
 }
 
 let read = { (value: Borrow<i32>): i32 => value }
 
-let with_access = { <a: access, t: type>
-  (value: Borrow<a><t>): access_box<a><t> =>
+let with_access: <a: access, t: type> = { (value: Borrow<a><t>): access_box<a><t> =>
   access_box<a><t> { value: value }
 }
 

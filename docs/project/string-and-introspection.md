@@ -17,7 +17,7 @@ The completed surface has these properties:
 
 ```salicin
 let runtime_text: String = "hello"
-let register = { <name: String>: () => () }
+let register: <name: String> = { : () => () }
 
 let value_type: type = type_of<runtime_text>
 let string_sort = sort_of<String>
@@ -75,9 +75,9 @@ The universe former has an edition-pinned bootstrap declaration:
 
 ```salicin
 /// Constructs the universe at positive level `level`.
-pub let sort = { <
+pub let sort: <
   level: usize,
->: sort<level + 1> => builtin() }
+> = { : sort<level + 1> => builtin() }
 ```
 
 The compiler necessarily recognizes enough syntax to parse this bootstrap,
@@ -195,11 +195,11 @@ definition:
 
 ```salicin
 /// Returns the inferred immediate sort of `value`.
-pub let sort_of = { <
+pub let sort_of: <
   level: usize,
   classifier: sort<level>,
   value: classifier,
->: sort<level> =>
+> = { : sort<level> =>
   classifier
 }
 ```
@@ -218,10 +218,10 @@ Its source declaration therefore describes the expression as a lazy callable:
 
 ```salicin
 /// Returns the inferred type of `expression` without executing it.
-pub let type_of = { <
+pub let type_of: <
   e: effects,
   T: type,
-> with<e>
+> = { with<e>
   (move expression: with<e>(): T): type => builtin() }
 ```
 
@@ -330,10 +330,9 @@ let string_byte_at_unchecked = { (
 ): u8 => builtin() }
 
 // Returns a shared byte view tied to the source borrow.
-let string_as_bytes = { <
+let string_as_bytes: <
   r: region,
->
-  (value: Borrow<r><String>): Borrow<r><Slice<u8>> => builtin() }
+> = { (value: Borrow<r><String>): Borrow<r><Slice<u8>> => builtin() }
 
 let string_reserve = { (
   value: Borrow<mut><String>,
@@ -403,8 +402,7 @@ extend(String) {
     self.len_bytes() == 0
   }
 
-  let as_bytes = { <r: region>
-    (self: Borrow<r><self>)(): Borrow<r><Slice<u8>> =>
+  let as_bytes: <r: region> = { (self: Borrow<r><self>)(): Borrow<r><Slice<u8>> =>
     string_as_bytes(self)
   }
 
@@ -436,10 +434,10 @@ compile-time parameters are available, `core/string.sc` declares:
 
 ```salicin
 /// Materializes compiler-validated UTF-8 literal bytes as `String`.
-let string_literal = { <
+let string_literal: <
   n: usize,
   bytes: Array<u8><n>,
->: String => builtin() }
+> = { : String => builtin() }
 ```
 
 The lexer decodes escapes and validates source UTF-8, then expression
@@ -542,7 +540,7 @@ The source-backed syntax contract changes from the removed string sort to the
 ordinary type:
 
 ```salicin
-pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }
+pub let test: <name: String> = { {move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }
 ```
 
 The top-level `test("name") { ... }` syntax supplies `name` as compiler

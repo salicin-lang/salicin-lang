@@ -1,10 +1,10 @@
-let cell = <t: type> struct { value: t }
+let cell: <t: type> = struct { value: t }
 
 extend(cell<t>) {
   let take = { (move self)(): t => self.value }
 }
 
-let consume = { <t: type>(move cell: cell<t>): t => cell.take() }
+let consume: <t: type> = { (move cell: cell<t>): t => cell.take() }
 
 let main = { (): i32 => consume(cell: cell { value: 42 }) }
 

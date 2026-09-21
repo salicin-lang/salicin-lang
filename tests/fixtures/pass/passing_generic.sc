@@ -1,14 +1,13 @@
 let token = struct { value: i32 }
-let holder = <t: type> struct { value: t }
+let holder: <t: type> = struct { value: t }
 
 extend(holder<t>) {
-  let into = { <m: <p: parameters>: parameters>(m self)(): t => self.value }
+  let into: <m: <p: parameters>: parameters> = { (m self)(): t => self.value }
 }
 
-let apply = { <m: <p: parameters>: parameters, t: type>(m value: t): t => value }
-let modifier_identity = { <m: <p: parameters>: parameters> => m }
-let forward = { <m: <p: parameters>: parameters, t: type>
-  (m value: t): t =>
+let apply: <m: <p: parameters>: parameters, t: type> = { (m value: t): t => value }
+let modifier_identity: <m: <p: parameters>: parameters> = { => m }
+let forward: <m: <p: parameters>: parameters, t: type> = { (m value: t): t =>
   apply<modifier_identity<m>, t>(value)
 }
 

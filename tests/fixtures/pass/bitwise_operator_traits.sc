@@ -27,8 +27,7 @@ extend(bits, Shr<bits>) {
   let shr = { (self)(rhs: bits): bits => bits { value: self.value >> rhs.value } }
 }
 
-let mask = { <t: type>
-  (move left: t)
+let mask: <t: type> = { (move left: t)
   (move right: t): t
   requires(t is BitAnd<t> && t.Output == t) => left & right }
 

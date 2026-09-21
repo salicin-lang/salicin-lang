@@ -65,7 +65,7 @@ test_registration =
 A test registration cannot have an attribute or visibility. Its string must be
 non-empty, and the Brace group is the test body. `test` remains an ordinary
 identifier outside this top-level form. The edition-owned
-`pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`
+`pub let test: <name: String> = { {move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`
 declaration validates the static name and body contract.
 
 ### 2.0.1 Declaration and guard forms
@@ -92,12 +92,16 @@ guard contract.
 
 ```ebnf
 let_decl = "let", [ contextual("mut") ], IDENT,
-           ( ":", type_expr, "=", expression
+           [ declaration_compile_parameters ],
+           ( ":", type_expr, [ "=", expression ]
            | "=", declaration_rhs ) ;
+
+declaration_compile_parameters =
+    ":", compile_parameter_group, { compile_parameter_group } ;
 
 declaration_rhs =
     callable_literal
-  | { compile_parameter_group }, initializer
+  | initializer
   | expression ;
 
 callable_literal =
@@ -148,6 +152,12 @@ name lookup, determines which compiler-owned fragment classifiers are valid.
 and `= type { ... }` are not productions.
 `let Name = { field: Type, ... }` is a bodyless Brace schema declaration; it introduces a nominal
 struct and the same-named Brace constructor.
+
+Named declaration compile-time parameters precede `=` and retain the declaration
+signature colon: `let Cell: <T: type> = struct { value: T }` and
+`let identity: <T: type> = { (value: T): T => value }`. Compile-time
+groups remain valid inside a callable brace for anonymous callables and contexts
+without a declaration name. A named declaration cannot use both positions.
 
 `builtin()` is a complete initializer available only to the embedded `core`
 package. It may define a compiler-owned function, type, type constructor, or
@@ -365,7 +375,7 @@ its compile-time parameters. A function applies the same compiler-owned
 `requires` guard to its body:
 
 ```sc fragment
-let duplicate = { <T: type>(value: T): (T, T) requires(T is Copyable) =>
+let duplicate: <T: type> = { (value: T): (T, T) requires(T is Copyable) =>
   (value, value)
 }
 ```
@@ -411,9 +421,9 @@ bodyless declarations rather than builtin definitions. The callable forms are
 introduced by a colon after the member or operation name.
 
 The root `core` module also contains the public overloads
-`pub let foreign = { <abi: abi>: never => builtin() }` and
-`pub let foreign = { <abi: abi, symbol: String>: never => builtin() }`, plus
-`pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`
+`pub let foreign: <abi: abi> = { : never => builtin() }` and
+`pub let foreign: <abi: abi, symbol: String> = { : never => builtin() }`, plus
+`pub let test: <name: String> = { {move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`
 and the generic `requires(condition, body)` contract. They authorize the
 `foreign(c, ...)` initializer, top-level test registration, and function-body
 guard respectively;
@@ -491,9 +501,10 @@ edition's validated `Array` type form; other constructor arguments remain type e
 ordinary pure functions.
 
 `with<E>(a): b` applies one normalized effect row to the complete multi-group
-callable `(a): b`. Callable declarations place every compile-time group,
-optional effect row, runtime group, result annotation, and implementation
-inside their outer braces. The final `:` introduces both a declaration's
+callable `(a): b`. Named callable declarations place compile-time groups in
+their declaration header; anonymous callables retain them inside the brace.
+The optional effect row, runtime groups, result annotation, and implementation
+remain inside the outer braces. The final `:` introduces both a declaration's
 result and a callable type's result. `=>` separates a callable signature from
 the body that occupies the remainder of the outer braces. Callable types stay
 unbraced `(T): R`.

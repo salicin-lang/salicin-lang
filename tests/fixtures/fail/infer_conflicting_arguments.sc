@@ -1,4 +1,4 @@
-let same = { <t: type>(left: t, right: t): t => left }
+let same: <t: type> = { (left: t, right: t): t => left }
 
 let main = {
   (): i32 =>

@@ -1,5 +1,5 @@
-let cell = <t: type> struct { value: t }
-let consume = { <t: type>(move value: t): i32 => 21 }
+let cell: <t: type> = struct { value: t }
+let consume: <t: type> = { (move value: t): i32 => 21 }
 
 let main = {
   (): i32 =>

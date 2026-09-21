@@ -1,6 +1,6 @@
 let Option = core.Option
 
-let Option = <t: type> enum {
+let Option: <t: type> = enum {
   Some(t),
   None,
 }

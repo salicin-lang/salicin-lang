@@ -7,7 +7,7 @@ pub let Not = trait {
 }
 
 /// Trait backing binary `&`.
-pub let BitAnd = <Rhs: type> trait {
+pub let BitAnd: <Rhs: type> = trait {
   /// Result type produced by bitwise and.
   Output: type
   /// Computes bitwise and with `rhs`.
@@ -16,7 +16,7 @@ pub let BitAnd = <Rhs: type> trait {
 }
 
 /// Trait backing binary `|`.
-pub let BitOr = <Rhs: type> trait {
+pub let BitOr: <Rhs: type> = trait {
   /// Result type produced by bitwise or.
   Output: type
   /// Computes bitwise or with `rhs`.
@@ -25,7 +25,7 @@ pub let BitOr = <Rhs: type> trait {
 }
 
 /// Trait backing binary `^`.
-pub let BitXor = <Rhs: type> trait {
+pub let BitXor: <Rhs: type> = trait {
   /// Result type produced by bitwise xor.
   Output: type
   /// Computes bitwise xor with `rhs`.
@@ -34,7 +34,7 @@ pub let BitXor = <Rhs: type> trait {
 }
 
 /// Trait backing binary `<<`.
-pub let Shl = <Rhs: type> trait {
+pub let Shl: <Rhs: type> = trait {
   /// Result type produced by left shift.
   Output: type
   /// Shifts `self` left by `rhs`.
@@ -43,7 +43,7 @@ pub let Shl = <Rhs: type> trait {
 }
 
 /// Trait backing binary `>>`.
-pub let Shr = <Rhs: type> trait {
+pub let Shr: <Rhs: type> = trait {
   /// Result type produced by right shift.
   Output: type
   /// Shifts `self` right by `rhs`.

@@ -3,8 +3,7 @@ let Index = core.ops.Index
 let bag = struct { value: i32 }
 extend(bag, Index<i32>) {
   let Output = i32;
-  let index = { <a: access>
-    (self: Borrow<a><self>)
+  let index: <a: access> = { (self: Borrow<a><self>)
     (key: i32): Borrow<a><i32> =>
     borrow<a>(self.value)
   }

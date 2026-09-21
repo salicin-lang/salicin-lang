@@ -7,15 +7,15 @@ pub let abi = core.foreign.abi
 pub let foreign = core.foreign.foreign
 // Test names are consumed by the `test("...") { ... }` syntax. Each
 // compiler-owned registration returns unit and may throw an owned message.
-pub let test = { <name: String>{move body: with<core.error.throwing<core.string.String>>() :()}: () => builtin() }
+pub let test: <name: String> = { {move body: with<core.error.throwing<core.string.String>>() :()}: () => builtin() }
 
 // Function-definition guard. The parser supplies the normalized compile-time
 // boolean and delays the guarded body as a parameterless closure.
-pub let requires = { <
+pub let requires: <
     condition: bool,
   e: effects,
   Result: type,
-  >with<e>
+  > = { with<e>
   {move body: with<e>() :Result}: Result => builtin() }
 
 pub let never = core.never.never
