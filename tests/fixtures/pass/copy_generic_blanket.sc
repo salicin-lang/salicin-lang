@@ -2,13 +2,12 @@ let cell: <t: type> = struct { value: t }
 
 extend(cell<t>, Copyable)<requires: t is Copyable> {}
 
-let read_twice = { (copy cell: cell<cell<i32>>): i32 =>
+let read_twice: (copy cell: cell<cell<i32>>): i32 = {
   let duplicate = cell
   duplicate.value.value + cell.value.value - 42
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let inner = cell { value: 42 }
   let outer = cell { value: inner }
   let duplicate = outer

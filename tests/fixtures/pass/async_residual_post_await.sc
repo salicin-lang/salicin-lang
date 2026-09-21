@@ -13,8 +13,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<i32> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
@@ -24,13 +25,12 @@ extend(step, Future<()>) {
   }
 }
 
-let make_step = { with<ask>
-  (): step =>
+let make_step: with<ask>
+  (): step = {
   step { polls: 0, value: ask.ask() }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut future = async {
     let value = await(make_step())
     value + 2
@@ -41,9 +41,12 @@ let main = {
       let second = future.poll()
       match(first) {
         Pending => do {
-          match(second) { Ready(value) => value, Pending => 0,
+          match(second) {
+            Ready(value) => value,
+            Pending => 0,
           }
-        }, Ready(_) => 0,
+        },
+        Ready(_) => 0,
       }
     },
   }

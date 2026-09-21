@@ -8,31 +8,29 @@ let state = struct {
 }
 
 extend(state, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let update = { with<step>
-  (state: Borrow<mut><state>): () =>
+let update: with<step>
+  (state: Borrow<mut><state>): () = {
   let delta = step.delta()
   state.value = state.value + delta
 }
 
-let program = { with<step>
-  (drops: Ptr<mut><i32>): i32 =>
+let program: with<step>
+  (drops: Ptr<mut><i32>): i32 = {
   let mut state = state { value: 40, drops: drops }
   update(state)
   update(state)
   state.value
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

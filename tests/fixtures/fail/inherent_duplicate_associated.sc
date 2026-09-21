@@ -5,7 +5,7 @@ extend(a) {
 }
 
 extend(a) {
-  let answer = { (): i32 => 42 }
+  let answer: (): i32 = { 42 }
 }
 
-let main = { (): i32 => 0 }
+let main: (): i32 = { 0 }

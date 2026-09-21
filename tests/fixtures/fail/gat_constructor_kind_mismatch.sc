@@ -10,4 +10,4 @@ extend(cell, lend) {
   let Item = wrong;
 }
 
-let main = { (): i32 => 0 }
+let main: (): i32 = { 0 }

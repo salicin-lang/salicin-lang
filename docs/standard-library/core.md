@@ -5,7 +5,7 @@ services. The compiler embeds these `.sc` files, parses them through the ordinar
 validates declarations that have language-defined roles.
 
 Compiler-owned definitions are explicit. The private root declaration
-`let builtin = { () => builtin() }` bootstraps a declaration marker that is
+`let builtin: (): never = builtin()` bootstraps a declaration marker that is
 unavailable to user packages. Primitive types, compiler-defined type
 constructors, intrinsic functions, and intrinsic extension methods use
 complete `builtin()` definitions. Edition validation rejects missing,
@@ -16,9 +16,9 @@ primitives remain ordinary Salicin definitions: the core implementation does
 not use `builtin()` merely as an optimization annotation.
 
 The same private root module declares
-`pub let foreign: <abi: abi> = { : never => builtin() }`,
-`pub let foreign: <abi: abi, symbol: String> = { : never => builtin() }`, and
-`pub let test: <name: String> = { {move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`,
+`pub let foreign: <abi: abi>: never = builtin()`,
+`pub let foreign: <abi: abi, symbol: String>: never = builtin()`, and
+`pub let test: <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () = builtin()`,
 and the generic `requires(condition: bool, body)` function-body guard.
 These are canonical syntax
 contracts for foreign initializers and test registrations. `c` is the member of the finite
@@ -109,8 +109,8 @@ let Add = core.ops.Add
 
 extend(Number, Add<Number>) {
   let Output = Number
-  let add = { (self)
-    (rhs: Number): Number => ... }
+  let add: (self)
+    (rhs: Number): Number = { ... }
 }
 ```
 
@@ -121,8 +121,8 @@ negates its result:
 let Eq = core.ops.Eq
 
 extend(Number, Eq<Number>) {
-  let eq = { (self: Borrow<self>)
-    (rhs: Borrow<Number>): bool => self.value == rhs.value }
+  let eq: (self: Borrow<self>)
+    (rhs: Borrow<Number>): bool = { self.value == rhs.value }
 }
 ```
 
@@ -135,8 +135,8 @@ let PartialOrd = core.ops.PartialOrd
 let PartialOrdering = core.ops.PartialOrdering
 
 extend(Number, PartialOrd<Number>) {
-  let partial_cmp = { (self: Borrow<self>)
-    (rhs: Borrow<Number>): PartialOrdering => ... }
+  let partial_cmp: (self: Borrow<self>)
+    (rhs: Borrow<Number>): PartialOrdering = { ... }
 }
 ```
 
@@ -387,11 +387,11 @@ output agrees. Each branch retains its own linear locals across suspension; a br
 is an immediate `Ready` future. Loop suspension remains compiler work.
 
 ```sc fragment
-pub let do: <e: effects, T: type> = { with<e>
-  {move action: with<e>(): T}: T }
-pub let do: <e: effects> = { with<e>
+pub let do: <e: effects, T: type> with<e>
+  {move action: with<e>(): T}: T
+pub let do: <e: effects> with<e>
   {move action: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(): ()}
-  {move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(): bool}: () =>
+  {move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(): bool}: () = {
   loop {
     core.control.iteration_skip.handle {
       next: { () => () },
@@ -401,30 +401,30 @@ pub let do: <e: effects> = { with<e>
     if(while()) { continue() } else: { break() }
   }
 }
-pub let try: <f: effects, T: type, E: type> = { with<f>
-  {move action: with<core.error.throwing<E>, f>(): T}: core.Result<E><T> }
-pub let throw: <Error: type> = { with<core.error.throwing<Error>>
-  (move error: Error): never }
-pub let unsafe: <e: effects, T: type> = { with<e>
-  {move action: with<core.unsafe.unsafety, e>(): T}: T }
-pub let loop: <e: effects, T: type> = { with<e>
-  {move body: with<core.control.loop_exit<T>, core.control.iteration_skip, e>(): ()}: T }
-pub let while: <e: effects> = { with<e>
+pub let try: <f: effects, T: type, E: type> with<f>
+  {move action: with<core.error.throwing<E>, f>(): T}: core.Result<E><T>
+pub let throw: <Error: type> with<core.error.throwing<Error>>
+  (move error: Error): never
+pub let unsafe: <e: effects, T: type> with<e>
+  {move action: with<core.unsafe.unsafety, e>(): T}: T
+pub let loop: <e: effects, T: type> with<e>
+  {move body: with<core.control.loop_exit<T>, core.control.iteration_skip, e>(): ()}: T
+pub let while: <e: effects> with<e>
   (move condition: with<e>(): bool)
-  {move do: with<e>(): ()}: () }
-pub let if: <e: effects, T: type> = { with<e>
+  {move do: with<e>(): ()}: ()
+pub let if: <e: effects, T: type> with<e>
   (condition: bool)
   {move then: with<e>(): T}
-  {move else: with<e>(): T}: T =>
+  {move else: with<e>(): T}: T = {
   match(condition) {
     true => then(),
     false => else(),
   }
 }
-pub let match: <Input: type, Output: type, e: effects, ...cases: parameters> = { with<e>
+pub let match: <Input: type, Output: type, e: effects, ...cases: parameters> with<e>
   (move input: Input)
-  ...cases: Output }
-pub let for: <e: effects, Iterable: type, Iter: type, Item: type> = { with<e>
+  ...cases: Output
+pub let for: <e: effects, Iterable: type, Iter: type, Item: type> with<e>
   (move iterable: Iterable)
   {move body: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(Item): ()}: ()
 requires(
@@ -432,7 +432,7 @@ requires(
   Iterable.IntoIter == Iter &&
   Iter is core.iter.Iterator &&
   Iter.Item == Item
-) }
+)
 ```
 
 Here `try` removes only `throwing<E>`, `unsafe` removes only the `unsafety` requirement, and both forward
@@ -442,13 +442,13 @@ only the selected lazy branch or case. The source definitions that do not requir
 lowering remain intentionally simple:
 
 ```sc fragment
-pub let do: <e: effects, T: type> = { with<e>
-  {move action: with<e>(): T}: T =>
+pub let do: <e: effects, T: type> with<e>
+  {move action: with<e>(): T}: T = {
   action()
 }
 
-pub let try: <f: effects, T: type, E: type> = { with<f>
-  {move action: with<core.error.throwing<E>, f>(): T}: core.Result<E><T> =>
+pub let try: <f: effects, T: type, E: type> with<f>
+  {move action: with<core.error.throwing<E>, f>(): T}: core.Result<E><T> = {
   core.error.throwing<E>.handle {
     raise: { (error) => core.Result.Err(error) },
     done: { (value) => core.Result.Ok(value) },
@@ -456,8 +456,8 @@ pub let try: <f: effects, T: type, E: type> = { with<f>
   }
 }
 
-pub let throw: <Error: type> = { with<core.error.throwing<Error>>
-  (move error: Error): never =>
+pub let throw: <Error: type> with<core.error.throwing<Error>>
+  (move error: Error): never = {
   core.error.throwing<Error>.raise(error)
 }
 ```
@@ -554,7 +554,7 @@ These declarations use constructor sorts such as `<Value: type>: type` on the tr
 not as ordinary trait parameters. Traits with a matching constructor subject can be implemented for
 generic nominal constructors. Method implementations are registered as generic function templates
 and validated, for example
-`extend(Carrier, Functor) { let map: <e: effects, A: type, B: type> = { ... } }`.
+`extend(Carrier, Functor) { let map: <e: effects, A: type, B: type>(self: Carrier<A>)(transform: with<e>(A): B): Carrier<B> = { ... } }`.
 Receiver methods
 dispatch from concrete nominal instances, so `Carrier<i32>{value: 41}.map(add_one)` selects the
 `Carrier: Functor` implementation and instantiates the generic method template. Constructor
@@ -571,7 +571,7 @@ each partially applied `core.Result<Error>` constructor:
 let Result = core.Result
 let Monad = std.functional.Monad
 
-let next = { (value: i32): Result<bool><i32> =>
+let next: (value: i32): Result<bool><i32> = {
   Result<bool><i32>.Ok(value + 1)
 }
 

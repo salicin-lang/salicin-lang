@@ -5,9 +5,9 @@ pub let Outcome = enum {
 }
 
 /// Interprets exactly one unit-returning, String-throwing registration.
-pub let run = { (
-    move action: with<core.error.throwing<core.string.String>>() :(),
-  ): Outcome =>
+pub let run: (
+  move action: with<core.error.throwing<core.string.String>>() :(),
+): Outcome = {
   core.error.throwing<core.string.String>.handle {
     raise: { (message) => Outcome.Failed(message) },
     done: { (_) => Outcome.Passed },

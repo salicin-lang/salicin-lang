@@ -309,7 +309,7 @@ mod tests {
                 &[("math", 9)],
                 "/checkout/app/src/main.sc",
                 &[],
-                "let main = { (): i32 =>  math.answer() }\n",
+                "let main: (): i32 = {  math.answer() }\n",
             ),
             package(
                 9,
@@ -318,7 +318,7 @@ mod tests {
                 &[],
                 "/checkout/math/src/lib.sc",
                 &[],
-                "pub let answer = { (): i32 =>  42 }\n",
+                "pub let answer: (): i32 = {  42 }\n",
             ),
         ]
     }
@@ -351,7 +351,7 @@ mod tests {
                 .unwrap();
         let mut cases = Vec::new();
         let mut source = graph();
-        source[1].sources[0].source = "pub let answer = { (): i32 =>  43 }\n".into();
+        source[1].sources[0].source = "pub let answer: (): i32 = {  43 }\n".into();
         cases.push((source, IncrementalTarget::Binary));
         let mut alias = graph();
         alias[0].dependencies = [("arithmetic".into(), PackageId(9))].into();

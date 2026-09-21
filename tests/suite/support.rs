@@ -376,7 +376,7 @@ pub(crate) fn check_passing_fixture_corpus() -> Result<(), Vec<String>> {
             let mut sources = vec![SourceUnit {
                 path: format!("<pass-fixture-root-{index}>"),
                 module_path: Vec::new(),
-                source: "let main = { (): i32 => 42 }\n".to_owned(),
+                source: "let main: (): i32 = { 42 }\n".to_owned(),
                 is_root: true,
             }];
             sources.extend_from_slice(fixtures);

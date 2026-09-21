@@ -20,8 +20,8 @@ fn resolves_user_closed_compile_parameter_types_across_modules() {
             "root.sc",
             &[],
             "use root.config.optimization as optimization\n\
-             let select: <o: optimization> = { (value: i32): i32 =>  value }\n\
-             let main = { (): i32 =>  0 }\n",
+             let select: <o: optimization>(value: i32): i32 = {  value }\n\
+             let main: (): i32 = {  0 }\n",
             true,
         ),
         unit(
@@ -100,7 +100,7 @@ fn rejects_duplicate_stable_package_identities() {
         vec![unit(
             "primary.sc",
             &[],
-            "let main = { (): i32 =>  0 }\n",
+            "let main: (): i32 = {  0 }\n",
             true,
         )],
     );
@@ -111,7 +111,7 @@ fn rejects_duplicate_stable_package_identities() {
         vec![unit(
             "dependency.sc",
             &[],
-            "pub let answer = { (): i32 =>  42 }\n",
+            "pub let answer: (): i32 = {  42 }\n",
             true,
         )],
     );
@@ -138,7 +138,7 @@ fn distinct_providers_may_share_a_package_name_and_version() {
         vec![unit(
             "primary.sc",
             &[],
-            "let main = { (): i32 =>  0 }\n",
+            "let main: (): i32 = {  0 }\n",
             true,
         )],
     );
@@ -149,7 +149,7 @@ fn distinct_providers_may_share_a_package_name_and_version() {
         vec![unit(
             "dependency.sc",
             &[],
-            "pub let answer = { (): i32 =>  42 }\n",
+            "pub let answer: (): i32 = {  42 }\n",
             true,
         )],
     );
@@ -172,14 +172,14 @@ fn flattens_modules_and_rewrites_calls_and_dotted_types() {
         unit(
             "src/main.sc",
             &[],
-            "let main = { (): geometry.point =>  geometry.make() }\n",
+            "let main: (): geometry.point = {  geometry.make() }\n",
             true,
         ),
         unit(
             "src/geometry.sc",
             &["geometry"],
             "pub(package) let point = struct { x: i32, y: i32 }\n\
-             pub(package) let make = { (): point =>  point{ x: 1, y: 2 } }\n",
+             pub(package) let make: (): point = {  point{ x: 1, y: 2 } }\n",
             false,
         ),
     ])
@@ -218,7 +218,7 @@ fn resolves_longest_declaration_prefix_and_preserves_fields() {
         unit(
             "src/main.sc",
             &[],
-            "let main = { (): i32 =>  data.origin.x }\n",
+            "let main: (): i32 = {  data.origin.x }\n",
             true,
         ),
         unit(
@@ -245,7 +245,7 @@ fn local_parameters_blocks_closures_and_match_bindings_shadow_modules() {
             "src/main.sc",
             &[],
             "use core.option.Option\n\
-             let keep = { (math: i32): i32 => \n\
+             let keep: (math: i32): i32 = { \n\
              let local = { (math: i32) =>  math }\n\
              match(Option.Some(math)) { Option.Some(math) => local(math), _ => math }\n\
              }\n",
@@ -287,25 +287,25 @@ fn reports_private_sibling_access_but_allows_descendants() {
         unit(
             "src/main.sc",
             &[],
-            "let main = { (): i32 =>  b.read() }\n",
+            "let main: (): i32 = {  b.read() }\n",
             true,
         ),
         unit(
             "src/a.sc",
             &["a"],
-            "let secret = { (): i32 =>  1 }\n",
+            "let secret: (): i32 = {  1 }\n",
             false,
         ),
         unit(
             "src/a/child.sc",
             &["a", "child"],
-            "pub(package) let read = { (): i32 =>  secret() }\n",
+            "pub(package) let read: (): i32 = {  secret() }\n",
             false,
         ),
         unit(
             "src/b.sc",
             &["b"],
-            "pub(package) let read = { (): i32 =>  a.secret() }\n",
+            "pub(package) let read: (): i32 = {  a.secret() }\n",
             false,
         ),
     ])
@@ -318,7 +318,7 @@ fn reports_private_sibling_access_but_allows_descendants() {
 #[test]
 fn preserves_self_and_associated_types_inside_traits_and_extensions() {
     let program = resolve_sources(&[
-        unit("src/main.sc", &[], "let main = { (): i32 =>  0 }\n", true),
+        unit("src/main.sc", &[], "let main: (): i32 = {  0 }\n", true),
         unit(
             "src/api.sc",
             &["api"],
@@ -336,7 +336,7 @@ fn preserves_self_and_associated_types_inside_traits_and_extensions() {
              let output = i32\n\
              let a = self\n\
              let b = a\n\
-             let convert = { (self: Borrow<self>)(value: self): output =>  value.value }\n}\n",
+             let convert: (self: Borrow<self>)(value: self): output = {  value.value }\n}\n",
             false,
         ),
     ])
@@ -427,7 +427,7 @@ fn preserves_generic_extend_parameters_while_qualifying_the_target() {
         unit(
             "src/main.sc",
             &[],
-            "let main = { (): i32 =>  api.cell.new(42).take() }\n",
+            "let main: (): i32 = {  api.cell.new(42).take() }\n",
             true,
         ),
         unit(
@@ -435,8 +435,8 @@ fn preserves_generic_extend_parameters_while_qualifying_the_target() {
             &["api"],
             "pub(package) let cell: <t: type> = struct { value: t }\n\
              extend(cell<t>) {\n\
-             let new = { (move value: t): cell<t> =>  cell{ value: value } }\n\
-             let take = { (move self)(): t =>  self.value }\n\
+             let new: (move value: t): cell<t> = {  cell{ value: value } }\n\
+             let take: (move self)(): t = {  self.value }\n\
              }\n",
             false,
         ),
@@ -515,7 +515,7 @@ fn rewrites_cross_module_associated_declaration_sorts() {
             &[],
             "use root.api.mode\n\
              let protocol = trait { Item: <a: mode>: type }\n\
-             let main = { (): i32 => 0 }\n",
+             let main: (): i32 = { 0 }\n",
             true,
         ),
         unit(
@@ -567,7 +567,7 @@ fn leaves_unknown_names_for_semantic_analysis() {
     let program = resolve_sources(&[unit(
         "src/main.sc",
         &[],
-        "let main = { (): i32 =>  missing.value() }\n",
+        "let main: (): i32 = {  missing.value() }\n",
         true,
     )])
     .unwrap();
@@ -583,7 +583,7 @@ fn leaves_unknown_names_for_semantic_analysis() {
 #[test]
 fn rejects_duplicate_modules_declarations_and_module_name_conflicts() {
     let duplicate_module = resolve_sources(&[
-        unit("root.sc", &[], "let main = { () => }\n", true),
+        unit("root.sc", &[], "let main: () = { }\n", true),
         unit("one.sc", &["net"], "let one = 1\n", false),
         unit("two.sc", &["net"], "let two = 2\n", false),
     ])
@@ -613,14 +613,14 @@ fn rejects_duplicate_modules_declarations_and_module_name_conflicts() {
 fn rejects_named_pattern_callable_overloads_in_either_declaration_order() {
     for source in [
         "let choose = { true => 1, false => 0 }\n\
-         let choose = { (value: i32): i32 => value }\n",
-        "let choose = { (value: i32): i32 => value }\n\
+         let choose: (value: i32): i32 = { value }\n",
+        "let choose: (value: i32): i32 = { value }\n\
          let choose = { true => 1, false => 0 }\n",
         "let Predicate: type = (bool): i32\n\
          let choose: Predicate = { true => 1, false => 0 }\n\
-         let choose = { (value: i32): i32 => value }\n",
+         let choose: (value: i32): i32 = { value }\n",
         "let Predicate: type = (bool): i32\n\
-         let choose = { (value: i32): i32 => value }\n\
+         let choose: (value: i32): i32 = { value }\n\
          let choose: Predicate = { true => 1, false => 0 }\n",
     ] {
         let diagnostics = resolve_sources(&[unit("root.sc", &[], source, true)])
@@ -649,7 +649,7 @@ fn requires_exactly_one_root_source() {
 fn rejects_module_segments_that_are_unspellable_or_canonicalize_ambiguously() {
     for segment in ["", "_", "let", "Upper", "has-dash", "a.b", "a::b"] {
         let error = resolve_sources(&[
-            unit("root.sc", &[], "let main = { (): i32 =>  0 }\n", true),
+            unit("root.sc", &[], "let main: (): i32 = {  0 }\n", true),
             unit("bad.sc", &[segment], "let value = 1\n", false),
         ])
         .unwrap_err();
@@ -668,7 +668,7 @@ fn resolves_forward_aliases_module_aliases_and_reexport_chains() {
         unit(
             "root.sc",
             &[],
-            "let selected = root.facade.answer\nlet main = { (): i32 =>  selected() }\n",
+            "let selected = root.facade.answer\nlet main: (): i32 = {  selected() }\n",
             true,
         ),
         unit(
@@ -680,7 +680,7 @@ fn resolves_forward_aliases_module_aliases_and_reexport_chains() {
         unit(
             "implementation.sc",
             &["implementation"],
-            "pub let answer = { (): i32 =>  42 }\n",
+            "pub let answer: (): i32 = {  42 }\n",
             false,
         ),
     ])
@@ -707,11 +707,11 @@ let never = root.fake
 let number = struct { value: i32 }
 extend(number, Add<number>) {
   let Output = i32
-  let add = { (self)(rhs: number): i32 =>  self.value + rhs.value }
+  let add: (self)(rhs: number): i32 = {  self.value + rhs.value }
 }
 
-let stop = { (): never =>  loop {} }
-let main = { (): i32 =>  Option{} }
+let stop: (): never = {  loop {} }
+let main: (): i32 = {  Option{} }
 "#,
             true,
         ),
@@ -739,13 +739,13 @@ fn resolves_root_self_super_and_anchor_only_module_aliases() {
         unit(
             "root.sc",
             &[],
-            "let root_value = { (): i32 =>  10 }\nlet main = { (): i32 =>  nested.deep.answer() }\n",
+            "let root_value: (): i32 = {  10 }\nlet main = { (): i32 =>  nested.deep.answer() }\n",
             true,
         ),
         unit(
             "nested.sc",
             &["nested"],
-            "let parent_value = { (): i32 =>  20 }\n",
+            "let parent_value: (): i32 = {  20 }\n",
             false,
         ),
         unit(
@@ -754,8 +754,8 @@ fn resolves_root_self_super_and_anchor_only_module_aliases() {
             "let pkg = root\n\
              let local = self.local_value\n\
              let parent = super.parent_value\n\
-             let local_value = { (): i32 =>  12 }\n\
-             pub(package) let answer = { (): i32 =>  pkg.root_value() + parent() + local() }\n",
+             let local_value: (): i32 = {  12 }\n\
+             pub(package) let answer: (): i32 = {  pkg.root_value() + parent() + local() }\n",
             false,
         ),
     ])
@@ -792,7 +792,7 @@ fn rejects_import_cycles_privacy_and_visibility_escalation() {
         unit(
             "sibling.sc",
             &["sibling"],
-            "let secret = { (): i32 =>  1 }\n",
+            "let secret: (): i32 = {  1 }\n",
             false,
         ),
     ])
@@ -802,11 +802,11 @@ fn rejects_import_cycles_privacy_and_visibility_escalation() {
     }));
 
     let promotion = resolve_sources(&[
-        unit("root.sc", &[], "let main = { (): i32 =>  0 }\n", true),
+        unit("root.sc", &[], "let main: (): i32 = {  0 }\n", true),
         unit(
             "facade.sc",
             &["facade"],
-            "pub(package) let internal = { (): i32 =>  1 }\npub use self.internal as exposed\n",
+            "pub(package) let internal: (): i32 = {  1 }\npub use self.internal as exposed\n",
             false,
         ),
     ])
@@ -824,13 +824,13 @@ fn preserves_private_module_alias_boundaries_and_skips_relative_self_aliases() {
         unit(
             "root.sc",
             &[],
-            "pub(package) let answer = { (): i32 =>  42 }\nlet main = { (): i32 =>  child.read() }\n",
+            "pub(package) let answer: (): i32 = {  42 }\nlet main = { (): i32 =>  child.read() }\n",
             true,
         ),
         unit(
             "child.sc",
             &["child"],
-            "use answer\npub(package) let read = { (): i32 =>  answer() }\n",
+            "use answer\npub(package) let read: (): i32 = {  answer() }\n",
             false,
         ),
     ])
@@ -842,11 +842,11 @@ fn preserves_private_module_alias_boundaries_and_skips_relative_self_aliases() {
     ));
 
     let bypass = resolve_sources(&[
-        unit("root.sc", &[], "let main = { (): i32 =>  0 }\n", true),
+        unit("root.sc", &[], "let main: (): i32 = {  0 }\n", true),
         unit(
             "net.sc",
             &["net"],
-            "pub(package) let value = { (): i32 =>  1 }\n",
+            "pub(package) let value: (): i32 = {  1 }\n",
             false,
         ),
         unit(
@@ -894,7 +894,7 @@ fn resolves_dependency_packages_with_independent_roots() {
             vec![unit(
                 "app/src/main.sc",
                 &[],
-                "use math.answer as selected\nlet main = { (): i32 =>  selected() }\n",
+                "use math.answer as selected\nlet main: (): i32 = {  selected() }\n",
                 true,
             )],
         ),
@@ -907,7 +907,7 @@ fn resolves_dependency_packages_with_independent_roots() {
                 unit(
                     "math/src/inner.sc",
                     &["inner"],
-                    "pub let answer = { (): i32 =>  42 }\n",
+                    "pub let answer: (): i32 = {  42 }\n",
                     false,
                 ),
             ],
@@ -935,7 +935,7 @@ fn enforces_package_visibility_across_dependency_boundaries() {
                 vec![unit(
                     "app/src/main.sc",
                     &[],
-                    "let main = { (): i32 =>  dep.hidden() }\n",
+                    "let main: (): i32 = {  dep.hidden() }\n",
                     true,
                 )],
             ),
@@ -969,7 +969,7 @@ fn prevents_dependency_anchors_from_escaping_their_package() {
             vec![unit(
                 "app/src/main.sc",
                 &[],
-                "pub let root_value = { (): i32 =>  1 }\nlet main = { (): i32 =>  0 }\n",
+                "pub let root_value: (): i32 = {  1 }\nlet main = { (): i32 =>  0 }\n",
                 true,
             )],
         ),
@@ -980,7 +980,7 @@ fn prevents_dependency_anchors_from_escaping_their_package() {
             vec![unit(
                 "dep/src/lib.sc",
                 &[],
-                "use root.root_value\npub let answer = { (): i32 =>  root_value() }\n",
+                "use root.root_value\npub let answer: (): i32 = {  root_value() }\n",
                 true,
             )],
         ),
@@ -1001,7 +1001,7 @@ fn prevents_dependency_anchors_from_escaping_their_package() {
             vec![unit(
                 "app/src/main.sc",
                 &[],
-                "let main = { (): i32 =>  0 }\n",
+                "let main: (): i32 = {  0 }\n",
                 true,
             )],
         ),
@@ -1012,7 +1012,7 @@ fn prevents_dependency_anchors_from_escaping_their_package() {
             vec![unit(
                 "dep/src/lib.sc",
                 &[],
-                "use super.outside as value\npub let answer = { (): i32 =>  0 }\n",
+                "use super.outside as value\npub let answer: (): i32 = {  0 }\n",
                 true,
             )],
         ),
@@ -1034,7 +1034,7 @@ fn rejects_dependency_aliases_that_conflict_with_file_modules() {
                 unit(
                     "app/src/main.sc",
                     &[],
-                    "let main = { (): i32 =>  0 }\n",
+                    "let main: (): i32 = {  0 }\n",
                     true,
                 ),
                 unit(
@@ -1052,7 +1052,7 @@ fn rejects_dependency_aliases_that_conflict_with_file_modules() {
             vec![unit(
                 "dep/src/lib.sc",
                 &[],
-                "pub let answer = { (): i32 =>  1 }\n",
+                "pub let answer: (): i32 = {  1 }\n",
                 true,
             )],
         ),
@@ -1074,7 +1074,7 @@ fn hides_transitive_dependencies_until_the_owner_reexports_them() {
             vec![unit(
                 "app/src/main.sc",
                 &[],
-                "use middle.leaf.answer\nlet main = { (): i32 =>  answer() }\n",
+                "use middle.leaf.answer\nlet main: (): i32 = {  answer() }\n",
                 true,
             )],
         ),
@@ -1085,7 +1085,7 @@ fn hides_transitive_dependencies_until_the_owner_reexports_them() {
             vec![unit(
                 "middle/src/lib.sc",
                 &[],
-                "pub let middle_value = { (): i32 =>  leaf.answer() }\n",
+                "pub let middle_value: (): i32 = {  leaf.answer() }\n",
                 true,
             )],
         ),
@@ -1096,7 +1096,7 @@ fn hides_transitive_dependencies_until_the_owner_reexports_them() {
             vec![unit(
                 "leaf/src/lib.sc",
                 &[],
-                "pub let answer = { (): i32 =>  42 }\n",
+                "pub let answer: (): i32 = {  42 }\n",
                 true,
             )],
         ),
@@ -1114,7 +1114,7 @@ fn hides_transitive_dependencies_until_the_owner_reexports_them() {
             vec![unit(
                 "app/src/main.sc",
                 &[],
-                "use middle.answer as selected\nlet main = { (): i32 =>  selected() }\n",
+                "use middle.answer as selected\nlet main: (): i32 = {  selected() }\n",
                 true,
             )],
         ),
@@ -1136,7 +1136,7 @@ fn hides_transitive_dependencies_until_the_owner_reexports_them() {
             vec![unit(
                 "leaf/src/lib.sc",
                 &[],
-                "pub let answer = { (): i32 =>  42 }\n",
+                "pub let answer: (): i32 = {  42 }\n",
                 true,
             )],
         ),
@@ -1160,7 +1160,7 @@ fn shared_dependencies_keep_one_definition_identity() {
             vec![unit(
                 "app/src/main.sc",
                 &[],
-                "let same = { (value: left.token): right.token =>  value }\nlet main = { (): i32 =>  0 }\n",
+                "let same: (value: left.token): right.token = {  value }\nlet main = { (): i32 =>  0 }\n",
                 true,
             )],
         ),
@@ -1229,7 +1229,7 @@ fn dependency_aliases_conflict_with_root_declarations_and_imports() {
                 vec![unit(
                     "dep/src/lib.sc",
                     &[],
-                    "pub let answer = { (): i32 =>  1 }\n",
+                    "pub let answer: (): i32 = {  1 }\n",
                     true,
                 )],
             ),
@@ -1248,7 +1248,7 @@ fn validates_public_package_graph_inputs() {
             0,
             true,
             &[("next", 1)],
-            vec![unit("root.sc", &[], "let main = { (): i32 =>  0 }\n", true)],
+            vec![unit("root.sc", &[], "let main: (): i32 = {  0 }\n", true)],
         ),
         package(
             1,
@@ -1267,7 +1267,7 @@ fn validates_public_package_graph_inputs() {
             0,
             true,
             &[("missing", 99)],
-            vec![unit("root.sc", &[], "let main = { (): i32 =>  0 }\n", true)],
+            vec![unit("root.sc", &[], "let main: (): i32 = {  0 }\n", true)],
         ),
         package(
             1,
@@ -1288,7 +1288,7 @@ fn validates_public_package_graph_inputs() {
         PackageId::CORE.0,
         true,
         &[],
-        vec![unit("root.sc", &[], "let main = { (): i32 =>  0 }\n", true)],
+        vec![unit("root.sc", &[], "let main: (): i32 = {  0 }\n", true)],
     )])
     .unwrap_err();
     assert!(reserved
@@ -1302,7 +1302,7 @@ fn validates_public_package_graph_inputs() {
         PackageId::ALLOC.0,
         true,
         &[],
-        vec![unit("root.sc", &[], "let main = { (): i32 =>  0 }\n", true)],
+        vec![unit("root.sc", &[], "let main: (): i32 = {  0 }\n", true)],
     )])
     .unwrap_err();
     assert!(reserved_alloc
@@ -1320,7 +1320,7 @@ fn rejects_nominal_types_that_are_narrower_than_function_and_global_apis() {
         &[],
         "let hidden = struct {}\n\
              pub let wrapper: <t: type> = struct {}\n\
-             pub let expose = { (value: wrapper<hidden>): hidden =>  value }\n\
+             pub let expose: (value: wrapper<hidden>): hidden = {  value }\n\
              pub let shared: hidden = hidden{}\n",
         true,
     )])
@@ -1347,7 +1347,7 @@ fn canonicalizes_qualified_custom_effects_across_modules() {
         unit(
             "src/main.sc",
             &[],
-            "pub let screen = { with<ui.ui>(): i32 =>  0 }\n",
+            "pub let screen: with<ui.ui>(): i32 = {  0 }\n",
             true,
         ),
         unit("src/ui.sc", &["ui"], "pub let ui = effect\n", false),
@@ -1366,7 +1366,7 @@ fn rejects_private_effects_exposed_by_public_callable_apis() {
         "src/lib.sc",
         &[],
         "let ui = effect\n\
-             pub let expose = { with<ui>(action: with<ui>(): i32): i32 =>  0 }\n",
+             pub let expose: with<ui>(action: with<ui>(): i32): i32 = {  0 }\n",
         true,
     )])
     .unwrap_err();
@@ -1388,7 +1388,7 @@ fn rejects_traits_that_are_narrower_than_public_where_predicates() {
         "src/lib.sc",
         &[],
         "let hidden = trait {}\n\
-             pub let expose: <t: type> = { (value: t): t requires(t is hidden) =>  value }\n",
+             pub let expose: <t: type>(value: t): t requires(t is hidden) = {  value }\n",
         true,
     )])
     .unwrap_err();
@@ -1410,7 +1410,7 @@ fn rejects_traits_that_are_narrower_than_constrained_extension_members() {
         "let hidden = trait {}\n\
              pub let cell: <t: type> = struct { pub value: t }\n\
              extend(cell<t>)<requires: t is hidden> {\n\
-             let take = { (move self)(): t =>  self.value }\n\
+             let take: (move self)(): t = {  self.value }\n\
              }\n",
         true,
     )])
@@ -1433,17 +1433,17 @@ fn compares_package_and_private_api_audiences_by_module_ancestry() {
             &[],
             "let root_secret = struct {}\n\
              pub(package) let package_secret = struct {}\n\
-             let main = { (): i32 =>  0 }\n",
+             let main: (): i32 = {  0 }\n",
             true,
         ),
         unit(
             "src/child.sc",
             &["child"],
             "let child_secret = struct {}\n\
-             pub(package) let package_ok = { (value: root_secret): root_secret =>  value }\n\
-             let private_ok = { (value: root_secret): root_secret =>  value }\n\
-             pub(package) let package_bad = { (value: child_secret): i32 =>  0 }\n\
-             pub let public_bad = { (value: package_secret): i32 =>  0 }\n",
+             pub(package) let package_ok: (value: root_secret): root_secret = {  value }\n\
+             let private_ok: (value: root_secret): root_secret = {  value }\n\
+             pub(package) let package_bad: (value: child_secret): i32 = {  0 }\n\
+             pub let public_bad: (value: package_secret): i32 = {  0 }\n",
             false,
         ),
     ])
@@ -1536,8 +1536,8 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         "main.sc",
         &[],
         "use alloc.boxed.Box as HeapBox\nuse alloc.vec.Vec\n\
-             let keep = { (move boxed: HeapBox<i32>): HeapBox<i32> =>  boxed }\n\
-             let empty = { (): Vec<i32> =>  Vec<i32>.new() }\n",
+             let keep: (move boxed: HeapBox<i32>): HeapBox<i32> = {  boxed }\n\
+             let empty: (): Vec<i32> = {  Vec<i32>.new() }\n",
         true,
     )])
     .unwrap();
@@ -1557,7 +1557,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
              let number = struct { value: i32 }\n\
              extend(number, plus<number>) {\n\
              let output = number\n\
-             let add = { (self)(rhs: number): number =>  number{ value: self.value + rhs.value } }\n\
+             let add: (self)(rhs: number): number = {  number{ value: self.value + rhs.value } }\n\
              }\n",
         true,
     )])
@@ -1600,12 +1600,12 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
              let Semigroup = std.algebra.Semigroup\n\
                            let Monoid = std.algebra.Monoid\n\
                           let number = struct { value: i32 }\n\
-             let suspended = { with<async>(): i32 =>  0 }\n\
-             let invoke = { with<async>(move action: with<async>(): i32): i32 =>  action() }\n\
+             let suspended: with<async>(): i32 = {  0 }\n\
+             let invoke: with<async>(move action: with<async>(): i32): i32 = {  action() }\n\
              extend(number, Semigroup) {\n\
-             let combine = { (move left: number, move right: number): number =>  number{ value: left.value + right.value } }\n}\n\
+             let combine: (move left: number, move right: number): number = {  number{ value: left.value + right.value } }\n}\n\
              extend(number, Monoid) {\n\
-             let empty = { (): number =>  number{ value: 0 } }\n}\n",
+             let empty: (): number = {  number{ value: 0 } }\n}\n",
             true,
         )])
         .unwrap();
@@ -1635,7 +1635,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     let bare = resolve_sources(&[unit(
         "main.sc",
         &[],
-        "let make = { (): Box<i32> =>  Box.new(1) }\n",
+        "let make: (): Box<i32> = {  Box.new(1) }\n",
         true,
     )])
     .unwrap_err();
@@ -1647,7 +1647,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     let bare_option = resolve_sources(&[unit(
         "option.sc",
         &[],
-        "let maybe = { (): Option<i32> =>  Option.None }\n",
+        "let maybe: (): Option<i32> = {  Option.None }\n",
         true,
     )])
     .unwrap_err();
@@ -1659,7 +1659,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     let bare_result = resolve_sources(&[unit(
         "result.sc",
         &[],
-        "let outcome = { (): Result<bool><i32> =>  Result.Ok(1) }\n",
+        "let outcome: (): Result<bool><i32> = {  Result.Ok(1) }\n",
         true,
     )])
     .unwrap_err();
@@ -1674,7 +1674,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         "let number = struct { value: i32 }\n\
              extend(number, Add<number>) {\n\
              let Output = number\n\
-             let add = { (self)(rhs: number): number =>  self }\n\
+             let add: (self)(rhs: number): number = {  self }\n\
              }\n",
         true,
     )])
@@ -1700,7 +1700,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     let bare_effect = resolve_sources(&[unit(
         "effect.sc",
         &[],
-        "let suspended = { with<async>(): i32 =>  0 }\n",
+        "let suspended: with<async>(): i32 = {  0 }\n",
         true,
     )])
     .unwrap_err();
@@ -1714,7 +1714,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
         &[],
         "let number = struct { value: i32 }\n\
              extend(number, Semigroup) {\n\
-             let combine = { (move left: number, move right: number): number =>  left }\n}\n",
+             let combine: (move left: number, move right: number): number = {  left }\n}\n",
         true,
     )])
     .unwrap_err();
@@ -1738,7 +1738,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
 
     for namespace in ["core", "alloc", "std"] {
         let module = resolve_sources(&[
-            unit("main.sc", &[], "let main = { (): i32 =>  0 }\n", true),
+            unit("main.sc", &[], "let main: (): i32 = {  0 }\n", true),
             unit(
                 &format!("{namespace}.sc"),
                 &[namespace],
@@ -1758,7 +1758,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
                 0,
                 true,
                 &[(namespace, 1)],
-                vec![unit("main.sc", &[], "let main = { (): i32 =>  0 }\n", true)],
+                vec![unit("main.sc", &[], "let main: (): i32 = {  0 }\n", true)],
             ),
             package(
                 1,

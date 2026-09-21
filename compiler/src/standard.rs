@@ -649,7 +649,7 @@ mod tests {
                 "pub let Iterator = trait { item: type }\n",
                 "associated type",
             ),
-            ("pub let Service = { (): () => }\n", "snake_case"),
+            ("pub let Service: (): () = { }\n", "snake_case"),
         ] {
             let program = parser::parse(source).unwrap();
             let diagnostics = naming_diagnostics(&program, "test");

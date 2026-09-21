@@ -62,6 +62,7 @@ pub fn parse(source: &str) -> Result<Program, ParseError> {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct SourceLayout {
     pub parameter_groups: Vec<usize>,
+    pub named_parameter_groups: Vec<usize>,
     pub repeated_parameter_groups: Vec<usize>,
     pub where_predicates: Vec<usize>,
     pub blocks: Vec<SourceBracedRegion>,
@@ -490,84 +491,25 @@ impl Parser {
         let mutable = self.take(&TokenKind::Mut);
         let name = self.declaration_name()?;
         self.effect_parameters_in_scope.clear();
+        let named_group_start = self.layout.parameter_groups.len();
         let compile_groups = self.named_compile_parameter_groups()?;
 
         if mutable && !compile_groups.is_empty() {
             return Err(self.error_here("`let mut` cannot declare a generic function or type"));
         }
 
-        let rhs_signature = self.take(&TokenKind::Equal);
-        if rhs_signature && self.callable_declaration_brace_follows() {
-            return self
-                .braced_function(name, mutable, false, &[], true, compile_groups)
-                .map(Item::Function);
-        }
-        if rhs_signature && self.runtime_parameter_group_follows() {
-            return Err(self.error_here(
-                "named callable declarations use an outer callable brace: `let name = { (parameters): Result => body }`",
-            ));
-        }
-        if !rhs_signature
-            && (self.current_group_delimiter().is_some() || self.at_context_ident("with"))
-        {
-            return Err(self.error_here("declaration signature groups must follow `=`"));
-        }
-
-        if rhs_signature && self.group_starts_with_compile_parameter() {
-            return Err(self.error_here(
-                "named declaration compile-time parameters precede `=`",
-            ));
+        if compile_groups.is_empty() {
+            self.take_named_callable_header_colon();
         }
 
         let (compile_groups, groups, mut effects, has_callable_boundary, mut has_effect_clause) =
             self.declaration_groups(false, &[], compile_groups)?;
-
-        if rhs_signature
-            && !compile_groups.is_empty()
-            && groups.is_empty()
-            && self.at(&TokenKind::FatArrow)
-        {
-            return Err(self
-                .error_here("named callable declarations use an outer callable brace after `=`"));
-        }
-        if rhs_signature && !groups.is_empty() {
-            let brace_constructor = !has_callable_boundary
-                && !has_effect_clause
-                && effects.group_delimiters == [GroupDelimiter::Brace]
-                && (self.at_separator() || self.at(&TokenKind::Eof) || self.at(&TokenKind::RBrace));
-            if !brace_constructor {
-                return Err(self.error_here(
-                    "named callable declarations use an outer callable brace: `let name = { (parameters): Result => body }`",
-                ));
-            }
-        }
+        self.layout.named_parameter_groups.extend_from_slice(
+            &self.layout.parameter_groups[named_group_start..],
+        );
 
         if mutable && (!compile_groups.is_empty() || !groups.is_empty()) {
             return Err(self.error_here("`let mut` cannot declare a function"));
-        }
-
-        if rhs_signature
-            && groups.is_empty()
-            && !compile_groups.is_empty()
-            && self.at(&TokenKind::Colon)
-            && self.at_offset(1, &TokenKind::Type)
-        {
-            self.advance();
-            self.advance();
-            self.take_newlines_if_followed_by(&[TokenKind::Ident("builtin".to_owned())]);
-            if self.at_context_ident("builtin") {
-                self.consume_builtin_initializer()?;
-                return self.type_form_definition(name, compile_groups, mutable, true);
-            }
-            if self.at_separator() || self.at(&TokenKind::Eof) || self.at(&TokenKind::RBrace) {
-                return self.type_form_definition(name, compile_groups, mutable, false);
-            }
-            let target = self.type_expr()?;
-            return Ok(Item::TypeAlias(TypeAliasDef {
-                name,
-                compile_groups,
-                target,
-            }));
         }
 
         if groups.is_empty() && self.at(&TokenKind::Colon) {
@@ -658,7 +600,7 @@ impl Parser {
             ]);
         }
 
-        if rhs_signature && self.at(&TokenKind::Newline) {
+        if self.at(&TokenKind::Newline) {
             let mut next = self.index;
             while matches!(
                 self.tokens.get(next).map(|token| &token.kind),
@@ -684,45 +626,14 @@ impl Parser {
             ));
         }
         let mut where_predicates = Vec::new();
+        if self.at_context_ident("requires") {
+            self.advance();
+            where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
+        }
         self.take_newlines_if_followed_by(&[TokenKind::Equal]);
 
-        if rhs_signature
-            && annotation.is_none()
-            && !has_effect_clause
-            && matches!(groups.as_slice(), [group] if group.iter().all(|parameter| {
-                parameter.mode == PassMode::Inferred
-                    && parameter.access.is_none()
-                    && parameter.modifiers.is_empty()
-                    && parameter.region.is_none()
-            }))
-            && effects.group_delimiters == [GroupDelimiter::Brace]
-            && (self.at_separator() || self.at(&TokenKind::Eof) || self.at(&TokenKind::RBrace))
-        {
-            let fields = groups
-                .into_iter()
-                .next()
-                .expect("one brace declaration group")
-                .into_iter()
-                .map(|parameter| Field {
-                    visibility: Visibility::Private,
-                    name: parameter.name,
-                    ty: parameter.ty,
-                })
-                .collect();
-            return Ok(Item::Struct(StructDef {
-                name,
-                compile_groups,
-                representation: StructRepresentation::Salicin,
-                derives: Vec::new(),
-                fields,
-            }));
-        }
-
-        if (rhs_signature
-            && (self.at_separator() || self.at(&TokenKind::Eof) || self.at(&TokenKind::RBrace)))
-            || (!rhs_signature
-                && !self.at(&TokenKind::Equal)
-                && (!compile_groups.is_empty() || !groups.is_empty()))
+        if !self.at(&TokenKind::Equal)
+            && (!compile_groups.is_empty() || !groups.is_empty())
         {
             return Ok(Item::Function(Function {
                 name,
@@ -737,27 +648,7 @@ impl Parser {
             }));
         }
 
-        if !rhs_signature {
-            self.expect(&TokenKind::Equal, "`=` before a declaration value")?;
-        }
-
-        if self.at_context_ident("requires") {
-            self.advance();
-            where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
-            if self.at_separator() || self.at(&TokenKind::Eof) {
-                return Ok(Item::Function(Function {
-                    name,
-                    foreign: None,
-                    builtin: false,
-                    compile_groups,
-                    groups,
-                    return_type: annotation,
-                    effects,
-                    where_predicates,
-                    body: None,
-                }));
-            }
-        }
+        self.expect(&TokenKind::Equal, "`=` before a declaration value")?;
 
         if self.at_context_ident("builtin") {
             if mutable {
@@ -768,15 +659,7 @@ impl Parser {
                     "`builtin()` defines a function or type declaration, not a global value",
                 ));
             }
-            let builtin_bootstrap = name == "builtin"
-                && compile_groups.is_empty()
-                && matches!(groups.as_slice(), [group] if group.is_empty());
-            if builtin_bootstrap && annotation.is_some() {
-                return Err(self.error_here(
-                    "the compiler-definition bootstrap has exact shape `let builtin() = builtin()`",
-                ));
-            }
-            if annotation.is_none() && !builtin_bootstrap {
+            if annotation.is_none() {
                 return Err(self.error_here(
                     "builtin functions require an explicit result type before `= builtin()`",
                 ));
@@ -788,8 +671,7 @@ impl Parser {
                 builtin: true,
                 compile_groups,
                 groups,
-                return_type: annotation
-                    .or(builtin_bootstrap.then_some(Type::Named("never".to_owned(), Vec::new()))),
+                return_type: annotation,
                 effects,
                 where_predicates,
                 body: None,
@@ -942,7 +824,6 @@ impl Parser {
                 && compile_groups[0].len() == 1
                 && compile_groups[0][0].kind == Sort::ParameterModifier;
             if transparent_modifier {
-                self.expect(&TokenKind::FatArrow, "`=>` before callable implementation")?;
                 let body = self.callable_body()?;
                 return Ok(Item::Function(Function {
                     name,
@@ -956,7 +837,6 @@ impl Parser {
                     body: Some(body),
                 }));
             }
-            self.expect(&TokenKind::FatArrow, "`=>` before callable implementation")?;
             let body = self.callable_body()?;
             Ok(Item::Function(Function {
                 name,
@@ -970,175 +850,6 @@ impl Parser {
                 body: Some(body),
             }))
         }
-    }
-
-    fn callable_declaration_brace_follows(&self) -> bool {
-        if !self.at(&TokenKind::LBrace) {
-            return false;
-        }
-        let mut index = self.index + 1;
-        while matches!(
-            self.tokens.get(index).map(|token| &token.kind),
-            Some(TokenKind::Newline | TokenKind::Semicolon)
-        ) {
-            index += 1;
-        }
-        match self.tokens.get(index).map(|token| &token.kind) {
-            Some(
-                TokenKind::Less | TokenKind::Ellipsis | TokenKind::Colon | TokenKind::FatArrow,
-            ) => true,
-            Some(TokenKind::Ident(name)) if name == "with" => true,
-            Some(TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace) => {
-                let Some(end) = self.group_end(index) else {
-                    return false;
-                };
-                if end == index + 1 {
-                    return true;
-                }
-                let mut nested = 0usize;
-                for token in &self.tokens[index + 1..end] {
-                    match token.kind {
-                        TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace => nested += 1,
-                        TokenKind::RParen | TokenKind::RBracket | TokenKind::RBrace => {
-                            nested = nested.saturating_sub(1)
-                        }
-                        TokenKind::Colon if nested == 0 => return true,
-                        TokenKind::Ident(ref name) if nested == 0 && name == "self" => return true,
-                        _ => {}
-                    }
-                }
-                false
-            }
-            _ => false,
-        }
-    }
-
-    fn braced_function(
-        &mut self,
-        name: String,
-        mutable: bool,
-        allow_receiver: bool,
-        outer_effect_parameters: &[String],
-        allow_foreign: bool,
-        compile_groups: Vec<Vec<CompileParam>>,
-    ) -> Result<Function, ParseError> {
-        if mutable {
-            return Err(self.error_here("`let mut` cannot declare a function"));
-        }
-        let open = self.current().clone();
-        let body_start_byte = self.body_start_byte(self.index + 1);
-        self.expect(&TokenKind::LBrace, "outer callable `{`")?;
-        self.skip_separators();
-        if !compile_groups.is_empty() && self.group_starts_with_compile_parameter() {
-            return Err(self.error_here(
-                "compile-time parameters cannot appear both before `=` and inside a callable brace",
-            ));
-        }
-        let (compile_groups, groups, mut effects, has_callable_boundary, mut has_effect_clause) =
-            self.declaration_groups(
-                allow_receiver,
-                outer_effect_parameters,
-                compile_groups,
-            )?;
-        if allow_receiver {
-            self.validate_receiver_groups(&name, &groups)?;
-        }
-        let logical_result = if self.take(&TokenKind::Colon) {
-            Some(self.function_result_type()?)
-        } else {
-            None
-        };
-        if !has_callable_boundary {
-            let (mut declared, _, declared_clause) = self.function_effect_clause()?;
-            declared.compile_group_delimiters = effects.compile_group_delimiters;
-            declared.group_delimiters = effects.group_delimiters;
-            effects = declared;
-            has_effect_clause = declared_clause;
-        }
-        let return_type = logical_result
-            .map(|result| Self::apply_failure_effect(result, effects.failure.as_deref().cloned()));
-        self.effect_parameters_in_scope.clear();
-        self.take_newlines_if_followed_by(&[
-            TokenKind::FatArrow,
-            TokenKind::Ident("requires".to_owned()),
-            TokenKind::RBrace,
-        ]);
-
-        let mut where_predicates = Vec::new();
-        if self.at_context_ident("requires") {
-            self.advance();
-            where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
-            self.take_newlines_if_followed_by(&[TokenKind::FatArrow, TokenKind::RBrace]);
-        }
-
-        let mut builtin = false;
-        let mut foreign = None;
-        let body = if self.take(&TokenKind::RBrace) {
-            None
-        } else {
-            self.expect(&TokenKind::FatArrow, "`=>` before callable implementation")?;
-            self.skip_newlines();
-            if self.at_context_ident("builtin") {
-                if return_type.is_none() {
-                    return Err(self.error_here(
-                        "builtin functions require an explicit result type before `=> builtin()`",
-                    ));
-                }
-                self.consume_builtin_initializer()?;
-                builtin = true;
-                self.skip_separators();
-                self.expect(&TokenKind::RBrace, "`}` after builtin callable")?;
-                None
-            } else if self.at_context_ident("foreign") {
-                if !allow_foreign {
-                    return Err(
-                        self.error_here("foreign declarations are only allowed at top level")
-                    );
-                }
-                if !compile_groups.is_empty() || groups.len() != 1 || return_type.is_none() {
-                    return Err(self.error_here(
-                        "foreign functions require one runtime group, no compile groups, and an explicit result type",
-                    ));
-                }
-                if has_effect_clause || !where_predicates.is_empty() {
-                    return Err(
-                        self.error_here("foreign functions cannot declare effects or requirements")
-                    );
-                }
-                foreign = Some(self.foreign_initializer(&name)?);
-                self.skip_separators();
-                self.expect(&TokenKind::RBrace, "`}` after foreign callable")?;
-                effects = FunctionEffects {
-                    unsafety: true,
-                    compile_group_delimiters: effects.compile_group_delimiters,
-                    group_delimiters: effects.group_delimiters,
-                    ..FunctionEffects::default()
-                };
-                None
-            } else {
-                Some(self.block_contents()?)
-            }
-        };
-        let close = self.previous().clone();
-        self.layout.blocks.push(SourceBracedRegion {
-            open_byte: open.start_byte,
-            close_byte: close.start_byte,
-            body_start_byte,
-            open_line: open.line,
-            close_line: close.line,
-        });
-
-        Ok(Function {
-            name,
-            foreign,
-            builtin,
-            compile_groups,
-            groups,
-            return_type,
-            effects,
-            where_predicates,
-            body,
-        })
     }
 
     fn foreign_initializer(
@@ -1492,6 +1203,21 @@ impl Parser {
         Ok(groups)
     }
 
+    fn take_named_callable_header_colon(&mut self) -> bool {
+        if !self.at(&TokenKind::Colon) {
+            return false;
+        }
+        let colon = self.index;
+        self.advance();
+        self.skip_newlines();
+        if self.at_context_ident("with") || self.runtime_parameter_declaration_group_follows() {
+            true
+        } else {
+            self.index = colon;
+            false
+        }
+    }
+
     fn sort_level_literal(&mut self) -> Result<u64, ParseError> {
         self.expect(&TokenKind::Less, "`<` after `sort`")?;
         let token = self.current().clone();
@@ -1656,36 +1382,16 @@ impl Parser {
         }
         let name = self.expect_ident("an extend member name")?;
         self.effect_parameters_in_scope.clear();
+        let named_group_start = self.layout.parameter_groups.len();
         let compile_groups = self.named_compile_parameter_groups()?;
-        let rhs_signature = self.take(&TokenKind::Equal);
-        if rhs_signature && self.callable_declaration_brace_follows() {
-            return self
-                .braced_function(name, false, true, &[], false, compile_groups)
-                .map(ExtendMember::Function);
-        }
-        if rhs_signature && self.runtime_parameter_group_follows() {
-            return Err(
-                self.error_here("method declarations use an outer callable brace after `=`")
-            );
-        }
-        if !rhs_signature
-            && (self.current_group_delimiter().is_some() || self.at_context_ident("with"))
-        {
-            return Err(self.error_here("declaration signature groups must follow `=`"));
-        }
-
-        if rhs_signature && self.group_starts_with_compile_parameter() {
-            return Err(self.error_here(
-                "named declaration compile-time parameters precede `=`",
-            ));
+        if compile_groups.is_empty() {
+            self.take_named_callable_header_colon();
         }
         let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
             self.declaration_groups(true, &[], compile_groups)?;
-        if rhs_signature && !groups.is_empty() {
-            return Err(
-                self.error_here("method declarations use an outer callable brace after `=`")
-            );
-        }
+        self.layout.named_parameter_groups.extend_from_slice(
+            &self.layout.parameter_groups[named_group_start..],
+        );
         self.validate_receiver_groups(&name, &groups)?;
 
         let logical_result = if self.take(&TokenKind::Colon) {
@@ -1716,11 +1422,13 @@ impl Parser {
                 "colon-style extension-member predicates were removed; write `= requires(t is trait) ...`",
             ));
         }
-        let where_predicates = Vec::new();
+        let mut where_predicates = Vec::new();
+        if self.at_context_ident("requires") {
+            self.advance();
+            where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
+        }
         self.take_newlines_if_followed_by(&[TokenKind::Equal]);
-        if !rhs_signature
-            && !self.at(&TokenKind::Equal)
-            && (!compile_groups.is_empty() || !groups.is_empty())
+        if !self.at(&TokenKind::Equal) && (!compile_groups.is_empty() || !groups.is_empty())
         {
             return Ok(ExtendMember::Function(Function {
                 name,
@@ -1734,28 +1442,7 @@ impl Parser {
                 body: None,
             }));
         }
-        if !rhs_signature {
-            self.expect(&TokenKind::Equal, "`=` in extend member")?;
-        }
-
-        let mut where_predicates = where_predicates;
-        if self.at_context_ident("requires") {
-            self.advance();
-            where_predicates.extend(self.constraint_arguments("`(` after `requires`")?);
-            if self.at_separator() || self.at(&TokenKind::RBrace) {
-                return Ok(ExtendMember::Function(Function {
-                    name,
-                    foreign: None,
-                    builtin: false,
-                    compile_groups,
-                    groups,
-                    return_type: annotation,
-                    effects,
-                    where_predicates,
-                    body: None,
-                }));
-            }
-        }
+        self.expect(&TokenKind::Equal, "`=` in extend member")?;
 
         if self.at_context_ident("builtin") {
             if compile_groups.is_empty() && groups.is_empty() {
@@ -1796,7 +1483,6 @@ impl Parser {
                 value: self.expression(true)?,
             }))
         } else {
-            self.expect(&TokenKind::FatArrow, "`=>` before callable implementation")?;
             let body = self.callable_body()?;
             Ok(ExtendMember::Function(Function {
                 name,
@@ -2056,7 +1742,7 @@ impl Parser {
             self.function_effect_clause()?;
         prefix_effects.compile_group_delimiters = compile_group_delimiters.clone();
 
-        while self.runtime_parameter_group_follows() {
+        while self.runtime_parameter_declaration_group_follows() {
             runtime_group_delimiters.push(self.current_runtime_group_delimiter().unwrap());
             runtime_groups.push(
                 self.runtime_parameter_group(
@@ -2368,6 +2054,40 @@ impl Parser {
                 _ => return false,
             }
         }
+    }
+
+    fn runtime_parameter_declaration_group_follows(&self) -> bool {
+        if self.current_runtime_group_delimiter().is_none() {
+            return false;
+        }
+        let Some(group_end) = self.group_end(self.index) else {
+            return false;
+        };
+        if group_end == self.index + 1 {
+            return true;
+        }
+        match self.tokens.get(self.index + 1).map(|token| &token.kind) {
+            Some(TokenKind::Ellipsis) => return true,
+            Some(TokenKind::Ident(name)) if name == "self" => return true,
+            _ => {}
+        }
+
+        let mut depth = 0usize;
+        for token in &self.tokens[self.index + 1..group_end] {
+            match token.kind {
+                TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace | TokenKind::Less => {
+                    depth += 1;
+                }
+                TokenKind::RParen
+                | TokenKind::RBracket
+                | TokenKind::RBrace
+                | TokenKind::Greater => depth = depth.saturating_sub(1),
+                TokenKind::Ident(ref name) if depth == 0 && name == "self" => return true,
+                TokenKind::Colon if depth == 0 => return true,
+                _ => {}
+            }
+        }
+        false
     }
 
     fn group_end(&self, start: usize) -> Option<usize> {

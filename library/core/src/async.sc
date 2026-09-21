@@ -23,14 +23,16 @@ pub let Executor = trait {
 }
 
 /// Constructs a cold compiler-generated future without running `action`.
-pub let async: <e: effects, F: type, T: type> = { {move action: with<core.async.suspension, e>() :T}: F requires(F is Future<e> && F.Output == T) => builtin() }
+pub let async: <e: effects, F: type, T: type>{move action: with<core.async.suspension, e>() :T}: F requires(F is Future<e> && F.Output == T) = builtin()
 
 /// Suspends the enclosing async computation until `future` is Ready.
-pub let await: <e: effects, F: type, T: type> = { with<core.async.suspension, e>
-  (move future: F): T requires(F is Future<e> && F.Output == T) =>
+pub let await: <e: effects, F: type, T: type> with<core.async.suspension, e>
+  (move future: F): T requires(F is Future<e> && F.Output == T) = {
   let mut current = future
   loop {
-    match(current.poll()) { Pending => suspension.suspend(), Ready(value) => break(value),
+    match(current.poll()) {
+      Pending => suspension.suspend(),
+      Ready(value) => break(value),
     }
   }
 }

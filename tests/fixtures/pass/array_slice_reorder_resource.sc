@@ -6,21 +6,19 @@ let resource = struct {
 }
 
 extend(resource) {
-  let read = { (self: Borrow<self>)(): i32 => self.value }
+  let read: (self: Borrow<self>)(): i32 = { self.value }
 }
 
 extend(resource, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
   }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let counter = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

@@ -6,13 +6,12 @@ let add = effect {
   add: (x: i32): i32
 }
 
-let program = { with<read, add>
-  (): i32 =>
+let program: with<read, add>
+  (): i32 = {
   add.add(read.read())
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   read.handle {
     read: { (resume) => resume(20) },
     action: { add.handle {

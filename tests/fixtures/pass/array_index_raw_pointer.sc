@@ -1,5 +1,4 @@
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut values = [40, 2]
   let pointer = ptr<mut>(borrow<mut>(values[1]))
   let second = unsafe {

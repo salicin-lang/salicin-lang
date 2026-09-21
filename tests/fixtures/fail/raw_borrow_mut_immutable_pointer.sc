@@ -1,5 +1,4 @@
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut anchor = 42
   let pointer = ptr(borrow(anchor))
   let reference = unsafe {

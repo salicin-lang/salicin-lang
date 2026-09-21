@@ -17,22 +17,19 @@ pub let Summary = struct {
 }
 
 extend(Inventory) {
-  let new = {
-    (): Inventory =>
+  let new: (): Inventory = {
     Inventory { products: Vec<model.Product>.new() }
   }
 
-  let push = {
-    (self: Borrow<mut><self>)
-    (move product: model.Product): () =>
+  let push: (self: Borrow<mut><self>)
+    (move product: model.Product): () = {
     self.products.push(product)
   }
 }
 
 extend(Inventory, Summarize) {
-  let summarize = {
-    (move self)
-    (): Summary =>
+  let summarize: (move self)
+    (): Summary = {
     let mut owner = self
     let products = owner.products.take()
     let mut count: u64 = 0
@@ -50,9 +47,13 @@ extend(Inventory, Summarize) {
 test("inventory combines arrays slices vectors and Unicode") {
   let expected_name_bytes: Array<u64><2> = [1, 3]
   let byte_view = expected_name_bytes.as_slice()
-  let first_bytes: u64 = match(byte_view.first()) { Some(value) => value, None => std.test.fail("expected first byte count"),
+  let first_bytes: u64 = match(byte_view.first()) {
+    Some(value) => value,
+    None => std.test.fail("expected first byte count"),
   }
-  let last_bytes: u64 = match(byte_view.last()) { Some(value) => value, None => std.test.fail("expected last byte count"),
+  let last_bytes: u64 = match(byte_view.last()) {
+    Some(value) => value,
+    None => std.test.fail("expected last byte count"),
   }
   std.test.assert_eq<u64>(first_bytes + last_bytes)(4)
 

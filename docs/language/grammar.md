@@ -65,7 +65,7 @@ test_registration =
 A test registration cannot have an attribute or visibility. Its string must be
 non-empty, and the Brace group is the test body. `test` remains an ordinary
 identifier outside this top-level form. The edition-owned
-`pub let test: <name: String> = { {move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`
+`pub let test: <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () = builtin()`
 declaration validates the static name and body contract.
 
 ### 2.0.1 Declaration and guard forms
@@ -92,23 +92,22 @@ guard contract.
 
 ```ebnf
 let_decl = "let", [ contextual("mut") ], IDENT,
-           [ declaration_compile_parameters ],
-           ( ":", type_expr, [ "=", expression ]
-           | "=", declaration_rhs ) ;
+           ( ":", declaration_signature, [ "=", declaration_initializer ]
+            | "=", declaration_rhs ) ;
 
-declaration_compile_parameters =
-    ":", compile_parameter_group, { compile_parameter_group } ;
+declaration_signature =
+    callable_signature
+  | type_expr ;
 
-declaration_rhs =
-    callable_literal
-  | initializer
+declaration_initializer =
+    callable_body
+  | builtin_initializer
+  | foreign_initializer
   | expression ;
 
-callable_literal =
-    "{", separators,
-    callable_signature,
-    [ "=>", callable_body ],
-    separators, "}" ;
+declaration_rhs =
+    initializer
+  | expression ;
 
 callable_signature =
     { compile_parameter_group },
@@ -118,7 +117,7 @@ callable_signature =
     [ ":", declaration_annotation ],
     [ where_clause ] ;
 
-callable_body = block_contents ;
+callable_body = "{", block_contents, "}" | expression ;
 
 declaration_annotation =
     type_expr
@@ -153,20 +152,21 @@ and `= type { ... }` are not productions.
 `let Name = { field: Type, ... }` is a bodyless Brace schema declaration; it introduces a nominal
 struct and the same-named Brace constructor.
 
-Named declaration compile-time parameters precede `=` and retain the declaration
-signature colon: `let Cell: <T: type> = struct { value: T }` and
-`let identity: <T: type> = { (value: T): T => value }`. Compile-time
+Named declaration compile-time parameters and callable groups precede `=` and
+follow the declaration signature colon: `let Cell: <T: type> = struct { value: T }`
+and `let identity: <T: type>(value: T): T = { value }`. Compile-time and runtime
 groups remain valid inside a callable brace for anonymous callables and contexts
-without a declaration name. A named declaration cannot use both positions.
+without a declaration name. A named declaration cannot repeat its signature in
+the body.
 
 `builtin()` is a complete initializer available only to the embedded `core`
 package. It may define a compiler-owned function, type, type constructor, or
 extension method whose exact declaration is validated by the edition
 contract. It is not an expression initializer available to user packages.
-Every callable value has one outer brace pair. After its signature groups and
-result annotation, an implementation must begin with `=>`; the remainder of
-the outer braces is its body. A callable literal with no `=>` is a bodyless
-contract and is valid only where an abstract callable requirement is allowed.
+Anonymous callable values have one outer brace pair and separate their signature
+from their implementation with `=>`. Named callable declarations instead write
+`let name: signature = body`; omitting `= body` is valid only where a bodyless
+callable contract is allowed.
 The removed bare form `let name = (parameters): Result => body` is not grammar.
 
 ### 2.2 Compile-Time Parameters
@@ -328,7 +328,7 @@ extend_decl =
     "}" ;
 
 extend_member =
-    "let", IDENT, "=", callable_literal
+    "let", IDENT, ":", callable_signature, [ "=", declaration_initializer ]
   | "let", IDENT, "=", expression ;
 
 constraint_guard =
@@ -375,7 +375,7 @@ its compile-time parameters. A function applies the same compiler-owned
 `requires` guard to its body:
 
 ```sc fragment
-let duplicate: <T: type> = { (value: T): (T, T) requires(T is Copyable) =>
+let duplicate: <T: type>(value: T): (T, T) requires(T is Copyable) = {
   (value, value)
 }
 ```
@@ -389,10 +389,8 @@ constraint arguments directly, for example `trait<requires: self is Movable> {}`
 
 ```ebnf
 foreign_function =
-    "let", IDENT, "=", "{",
-    runtime_parameter_group,
-    ":", type_expr,
-    "=>", foreign_initializer, "}" ;
+    "let", IDENT, ":", runtime_parameter_group,
+    ":", type_expr, "=", foreign_initializer ;
 ```
 
 A foreign declaration has exactly one runtime parameter group, no
@@ -405,15 +403,15 @@ declarations and `@` attributes are not grammar productions.
 
 ```ebnf
 builtin_definition =
-    "let", IDENT, "=", "{",
+    "let", IDENT, ":",
     { declaration_group },
     ":", declaration_annotation,
-    "=>", builtin_initializer, "}" ;
+    "=", builtin_initializer ;
 ```
 
-The core-private bootstrap is the sole compiler definition that may omit a
-result annotation; like every callable value, its signature and initializer
-remain inside outer braces.
+The core-private bootstrap has the unique signature `(): never`. Compiler
+definitions place their complete signature before `=` and use `builtin()` as
+the direct initializer.
 Every other marker must match a known
 compiler-owned edition contract and is removed before code generation.
 Trait callable requirements, effect operations, and user opaque types remain
@@ -421,9 +419,9 @@ bodyless declarations rather than builtin definitions. The callable forms are
 introduced by a colon after the member or operation name.
 
 The root `core` module also contains the public overloads
-`pub let foreign: <abi: abi> = { : never => builtin() }` and
-`pub let foreign: <abi: abi, symbol: String> = { : never => builtin() }`, plus
-`pub let test: <name: String> = { {move body: with<core.error.throwing<core.string.String>>(): ()}: () => builtin() }`
+`pub let foreign: <abi: abi>: never = builtin()` and
+`pub let foreign: <abi: abi, symbol: String>: never = builtin()`, plus
+`pub let test: <name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () = builtin()`
 and the generic `requires(condition, body)` contract. They authorize the
 `foreign(c, ...)` initializer, top-level test registration, and function-body
 guard respectively;
@@ -501,13 +499,12 @@ edition's validated `Array` type form; other constructor arguments remain type e
 ordinary pure functions.
 
 `with<E>(a): b` applies one normalized effect row to the complete multi-group
-callable `(a): b`. Named callable declarations place compile-time groups in
-their declaration header; anonymous callables retain them inside the brace.
-The optional effect row, runtime groups, result annotation, and implementation
-remain inside the outer braces. The final `:` introduces both a declaration's
-result and a callable type's result. `=>` separates a callable signature from
-the body that occupies the remainder of the outer braces. Callable types stay
-unbraced `(T): R`.
+callable `(a): b`. Named callable declarations place compile-time groups, the
+optional effect row, runtime groups, and result annotation before `=`. Their
+body braces contain only the implementation. Anonymous callables retain their
+signature inside the braces and use `=>` before the body. The final `:`
+introduces both a declaration's and a callable type's result. Callable types
+stay unbraced `(T): R`.
 Canonical presentation separates an adjacent compile-time group and effect
 prefix with whitespace: `<T: type> with<e>`, not `<T: type>with<e>`.
 
@@ -634,7 +631,9 @@ callable_expression =
 zero_parameter_callable =
     "{", block_contents, "}" ;
 
-parameterized_callable = callable_literal ;
+parameterized_callable =
+    "{", separators, callable_signature, "=>",
+    block_contents, "}" ;
 
 pattern_callable =
     "{", separators,
@@ -707,19 +706,19 @@ await_expression = contextual("await"), "(", expression, ")" ;
 ```
 
 An ordinary `{ expression }` is a zero-parameter closure, not a generic eagerly
-evaluated block. A parameterized callable also requires outer braces around its
-complete signature and body. Function declarations bind those callable
-literals; dedicated control forms consume zero-parameter closures and invoke
-them at the point required by their contracts. `match(value) { ... }`
+evaluated block. A parameterized anonymous callable requires outer braces around
+its complete signature and body. Named function declarations place their
+signature before `=`; dedicated control forms consume zero-parameter closures
+and invoke them at the point required by their contracts. `match(value) { ... }`
 maps directly to a match expression whose comma-separated arms are stored as
 match arms. Its brace is not a tight Brace `DelimitedCall`, and parsing does
 not create a closure or other call intermediate.
 
 A pattern callable has one or more comma-separated arms in one outer brace pair:
 `{ Pattern [if expression] => expression, ... }`. Calling it tries arms in
-source order. At the top level, an immutable binding of this form declares a
-named function. Boolean literal patterns determine a `bool` input directly;
-other inputs currently require a callable annotation, for example
+source order. A named pattern function declares its callable signature before
+`=`. Boolean literal patterns determine a `bool` input directly; other inputs
+currently require a callable annotation, for example
 `let select: (core.Option<i32>): i32 = { Some(value) => value, None => 0 }`.
 The annotation may also name a callable type alias. Named pattern callables do
 not participate in overload sets because their input has no source-level label.

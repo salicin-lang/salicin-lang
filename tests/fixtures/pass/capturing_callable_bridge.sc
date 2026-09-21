@@ -10,34 +10,31 @@ let resource = struct {
 }
 
 extend(resource, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     unsafe {
       *self.counter = *self.counter + 1
     }
   }
 }
 
-let consume = { (move resource: resource): i32 => resource.value }
+let consume: (move resource: resource): i32 = { resource.value }
 
-let ignore = { (move action: (): i32): i32 => 29 }
+let ignore: (move action: (): i32): i32 = { 29 }
 
-let once = { (move action: (): i32): i32 => action() }
+let once: (move action: (): i32): i32 = { action() }
 
-let repeat = {
-  (move action: (): ()): () =>
+let repeat: (move action: (): ()): () = {
   action()
   action()
 }
 
-let effect_once: <e: effects> = { with<e>
-  (move action: with<e>(): i32): i32 =>
+let effect_once: <e: effects> with<e>
+  (move action: with<e>(): i32): i32 = {
   action()
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let counter = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

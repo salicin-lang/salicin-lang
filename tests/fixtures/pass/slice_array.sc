@@ -1,9 +1,8 @@
 let Slice = core.memory.Slice
 
-let read = { (value: Borrow<i32>): i32 => value }
+let read: (value: Borrow<i32>): i32 = { value }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let values = [20, 22, 0]
   let slice: Borrow<Slice<i32>> = borrow(values)
   let first = slice.at(0)

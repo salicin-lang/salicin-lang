@@ -1,5 +1,4 @@
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut total = 39
   let mut add = { (x: i32)(y: i32) =>
     total = total + x + y

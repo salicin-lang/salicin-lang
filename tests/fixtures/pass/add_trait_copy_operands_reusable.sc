@@ -7,15 +7,13 @@ extend(number, Copyable) {}
 
 extend(number, Add<number>) {
   let Output = number;
-  let add = {
-    (self)
-    (rhs: number): number =>
+  let add: (self)
+    (rhs: number): number = {
     number { value: self.value + rhs.value }
   }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let left = number { value: 10 }
   let right = number { value: 11 }
   let answer = left + right

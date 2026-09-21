@@ -6,4 +6,4 @@ let invalid = struct(c) {
   inner: inner,
 }
 
-let main = { (): i32 => 0 }
+let main: (): i32 = { 0 }

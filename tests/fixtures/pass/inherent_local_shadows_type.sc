@@ -4,8 +4,7 @@ extend(answer) {
   let answer = 2
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let answer = answer { answer: 40 }
   answer.answer + 2
 }

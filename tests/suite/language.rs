@@ -4,7 +4,7 @@ use crate::support::*;
 fn named_pattern_callables_run_with_expected_result() {
     let ir = compile_source(
         "let select = { true => 42, false => 0 }\n\
-         let main = { (): i32 => select(true) }\n",
+         let main: (): i32 = { select(true) }\n",
     )
     .expect("compile named pattern callable");
     let output = link_and_run_ir(&ir, "named pattern callable");
@@ -756,17 +756,17 @@ fn compile_time_argument_diagnostics_name_binders_sorts_and_groups() {
 fn qualified_generic_calls_require_angle_compile_groups() {
     let prefix = r#"let cell = struct {}
 extend(cell) {
-  let identity: <T: type> = { (self: Borrow<self>)(move value: T): T => value }
+  let identity: <T: type>(self: Borrow<self>)(move value: T): T = { value }
 }
 "#;
 
     check_source(&format!(
-        "{prefix}let main = {{ (): i32 => cell {{}}.identity<i32>(42) }}\n"
+        "{prefix}let main: (): i32 = {{ cell {{}}.identity<i32>(42) }}\n"
     ))
     .expect("qualified generic calls accept angle compile groups");
 
     let diagnostics = check_source(&format!(
-        "{prefix}let main = {{ (): i32 => cell {{}}.identity(i32)(42) }}\n"
+        "{prefix}let main: (): i32 = {{ cell {{}}.identity(i32)(42) }}\n"
     ))
     .expect_err("qualified generic calls reject parenthesized compile groups");
     assert!(

@@ -1,8 +1,7 @@
 let Option = core.Option
 let Result = core.Result
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let option = Option.Some(20)
   let result = Result<bool>.Ok(22)
   option!! + result!!

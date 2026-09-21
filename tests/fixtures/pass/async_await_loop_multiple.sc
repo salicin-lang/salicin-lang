@@ -9,9 +9,8 @@ let step = struct {
 }
 
 extend(step, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -21,8 +20,9 @@ extend(step, Droppable) {
 extend(step, Future<()>) {
   let Output = bool;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<bool> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
     if(self.polled) {
       let done = if(self.finish) {
         unsafe {
@@ -40,13 +40,11 @@ extend(step, Future<()>) {
   }
 }
 
-let step = {
-  (remaining: Ptr<mut><i32>, drops: Ptr<mut><i32>, finish: bool): step =>
+let step: (remaining: Ptr<mut><i32>, drops: Ptr<mut><i32>, finish: bool): step = {
   step { polled: false, remaining: remaining, drops: drops, finish: finish }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut remaining = 2
   let mut drops = 0
   let remaining_ptr = ptr<mut>(borrow<mut>(remaining))
@@ -63,15 +61,25 @@ let main = {
     }
   }
 
-  let first = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  let first = match(future.poll()) {
+    Pending => 1,
+    Ready(_) => 0,
   }
-  let second = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  let second = match(future.poll()) {
+    Pending => 1,
+    Ready(_) => 0,
   }
-  let third = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  let third = match(future.poll()) {
+    Pending => 1,
+    Ready(_) => 0,
   }
-  let fourth = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  let fourth = match(future.poll()) {
+    Pending => 1,
+    Ready(_) => 0,
   }
-  let fifth = match(future.poll()) { Pending => 0, Ready(value) => value,
+  let fifth = match(future.poll()) {
+    Pending => 0,
+    Ready(value) => value,
   }
 
   let mut cancel_remaining = 2
@@ -90,9 +98,13 @@ let main = {
         }
       }
     }
-    match(cancelled.poll()) { Pending => (), Ready(_) => (),
+    match(cancelled.poll()) {
+      Pending => (),
+      Ready(_) => (),
     }
-    match(cancelled.poll()) { Pending => (), Ready(_) => (),
+    match(cancelled.poll()) {
+      Pending => (),
+      Ready(_) => (),
     }
   }
 

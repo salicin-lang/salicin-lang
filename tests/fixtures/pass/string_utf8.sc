@@ -1,30 +1,32 @@
 let greeting: String = "柳"
 
-let runtime_text = {
-  (): String =>
+let runtime_text: (): String = {
   "salicin"
 }
 
-let is_scalar = {
-  (expected_value: u32, expected_length: u64): bool =>
+let is_scalar: (expected_value: u32, expected_length: u64): bool = {
   match(core.string.UnicodeScalar.from_u32(expected_value)) {
     Some(scalar) => do {
       scalar.to_u32() == expected_value && scalar.len_utf8() == expected_length
-    }, None => false,
+    },
+    None => false,
   }
 }
 
-let scalar_checks = {
-  (): bool =>
+let scalar_checks: (): bool = {
   let equality = match(core.string.UnicodeScalar.from_u32(65)) {
     Some(a) => do {
       match(core.string.UnicodeScalar.from_u32(65)) {
         Some(another_a) => do {
-          match(core.string.UnicodeScalar.from_u32(66)) { Some(b) => a == another_a && a != b, None => false,
+          match(core.string.UnicodeScalar.from_u32(66)) {
+            Some(b) => a == another_a && a != b,
+            None => false,
           }
-        }, None => false,
+        },
+        None => false,
       }
-    }, None => false,
+    },
+    None => false,
   }
   equality &&
     is_scalar(0, 1) &&
@@ -42,23 +44,23 @@ let scalar_checks = {
     core.string.UnicodeScalar.from_u32(1114112).is_none()
 }
 
-let accepts_utf8 = { (bytes: Borrow<core.memory.Slice<u8>>, expected_length: u64): bool =>
+let accepts_utf8: (bytes: Borrow<core.memory.Slice<u8>>, expected_length: u64): bool = {
   match(core.string.str.from_utf8(bytes)) {
     Some(text) => do {
       let encoded = text.as_bytes()
       text.len() == expected_length &&
         text.is_empty() == (expected_length == 0) &&
         encoded.len() == expected_length
-    }, None => false,
+    },
+    None => false,
   }
 }
 
-let rejects_utf8 = { (bytes: Borrow<core.memory.Slice<u8>>): bool =>
+let rejects_utf8: (bytes: Borrow<core.memory.Slice<u8>>): bool = {
   core.string.str.from_utf8(bytes).is_none()
 }
 
-let borrowed_text_checks = {
-  (): bool =>
+let borrowed_text_checks: (): bool = {
   let empty: Array<u8><0> = []
   let ascii: Array<u8><1> = [65]
   let two_byte: Array<u8><2> = [194, 128]
@@ -112,16 +114,14 @@ let borrowed_text_checks = {
     rejects_utf8(invalid_lead_view)
 }
 
-let string_view_checks = {
-  (): bool =>
+let string_view_checks: (): bool = {
   let text: String = "柳"
   let view = text.as_str()
   let encoded = view.as_bytes()
   view.len() == 3 && !view.is_empty() && encoded.len() == 3
 }
 
-let subview_checks = {
-  (): bool =>
+let subview_checks: (): bool = {
   let text: String = "A柳𐀀"
   let ascii_expected: String = "A"
   let three_byte_expected: String = "柳"
@@ -158,15 +158,20 @@ let subview_checks = {
                         three_byte == three_byte_expected_view &&
                         four_byte == four_byte_expected_view &&
                         empty.is_empty()
-                    }, None => false,
+                    },
+                    None => false,
                   }
-                }, None => false,
+                },
+                None => false,
               }
-            }, None => false,
+            },
+            None => false,
           }
-        }, None => false,
+        },
+        None => false,
       }
-    }, None => false,
+    },
+    None => false,
   }
   boundaries &&
     valid &&
@@ -174,12 +179,13 @@ let subview_checks = {
     view.get(1, 5).is_none() &&
     view.get(9, 9).is_none() &&
     view.get(4, 1).is_none() &&
-    match(empty_view.get(0, 0)) { Some(empty) => empty.is_empty(), None => false,
+    match(empty_view.get(0, 0)) {
+    Some(empty) => empty.is_empty(),
+    None => false,
   }
 }
 
-let text_equality_checks = {
-  (): bool =>
+let text_equality_checks: (): bool = {
   let composed: String = "é"
   let same: String = "é"
   let decomposed: String = "é"
@@ -196,8 +202,7 @@ let text_equality_checks = {
     view != decomposed_view
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let text = runtime_text()
   if(text.len_bytes() == 7 &&
     greeting.len_bytes() == 3 &&

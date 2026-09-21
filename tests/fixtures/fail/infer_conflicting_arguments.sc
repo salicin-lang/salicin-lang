@@ -1,7 +1,6 @@
-let same: <t: type> = { (left: t, right: t): t => left }
+let same: <t: type>(left: t, right: t): t = { left }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   same(1, true)
   42
 }

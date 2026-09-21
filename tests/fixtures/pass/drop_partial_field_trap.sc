@@ -2,17 +2,15 @@ let resource = struct { value: i32 }
 let pair = struct { left: resource, right: resource }
 
 extend(resource, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     let trapped = 1 / self.value
   }
 }
 
-let consume = { (move value: resource): () => () }
+let consume: (move value: resource): () = { () }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let pair = pair { left: resource { value: 1 }, right: resource { value: 0 } }
   consume(pair.left)
   0

@@ -29,10 +29,10 @@ or unchecked-representation APIs remain separately `with<unsafety>`.
 A native binary entry point has exactly one of these shapes:
 
 ```salicin
-let main = { (): () }
-let main = { (): i32 }
-let main = { with<std.io.io>(): () }
-let main = { with<std.io.io>(): i32 }
+let main: (): () = { () }
+let main: (): i32 = { 0 }
+let main: with<std.io.io>(): () = { ... }
+let main: with<std.io.io>(): i32 = { ... }
 ```
 
 The native launcher discharges only the validated `io` identity. It does not

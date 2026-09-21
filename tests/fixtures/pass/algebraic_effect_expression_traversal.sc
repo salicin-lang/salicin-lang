@@ -2,15 +2,15 @@ let read = effect {
   read: (): usize
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   read.handle {
     read: { (resume) => resume(0) },
     action: { let values = [42, 0]
       match(values[read.read()]) {
         42 => do {
           if(read.read() == 0) { 42 } else: { 0 }
-        }, _ => 0,
+        },
+        _ => 0,
       }
     },
   }

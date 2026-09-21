@@ -4,8 +4,7 @@ let family: <t: type>: type = cell<t>;
 let constructor: <t: type>: type = cell
 let scalar = i32
 
-let main = {
-  (): scalar =>
+let main: (): scalar = {
   let left: family<i32> = family<i32> { value: 41 }
   let right = constructor<i32> { value: 1 }
   left.value + right.value

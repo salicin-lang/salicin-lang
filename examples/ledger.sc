@@ -27,23 +27,20 @@ let Account = trait {
 }
 
 extend(Ledger, Account) {
-  let credit = {
-    (self: Borrow<mut><self>)
-    (amount: i32): () =>
+  let credit: (self: Borrow<mut><self>)
+    (amount: i32): () = {
     self.balance = self.balance + amount
     self.processed = self.processed + 1
   }
 
-  let debit = {
-    (self: Borrow<mut><self>)
-    (amount: i32): () =>
+  let debit: (self: Borrow<mut><self>)
+    (amount: i32): () = {
     self.balance = self.balance - amount
     self.processed = self.processed + 1
   }
 
-  let snapshot = {
-    (self: Borrow<self>)
-    (): i32 =>
+  let snapshot: (self: Borrow<self>)
+    (): i32 = {
     if(self.processed == 4) { self.balance } else: { 0 }
   }
 }
@@ -55,8 +52,9 @@ let Batch = struct {
 extend(Batch, Iterator) {
   let Item = OwnedItem<Transaction>;
 
-  let next: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Option<Transaction> =>
+  let next: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Option<Transaction> = {
     let transaction: Option<Transaction> = match(self.index) {
       0 => Some(Transaction.Credit(30)),
       1 => Some(Transaction.Debit(8)),
@@ -72,15 +70,13 @@ extend(Batch, Iterator) {
 extend(Batch, IntoIterator) {
   let Iter = Batch;
 
-  let into_iter = {
-    (move self)
-    (): Batch =>
+  let into_iter: (move self)
+    (): Batch = {
     self
   }
 }
 
-let count_batch = {
-  (move batch: Batch): i32 =>
+let count_batch: (move batch: Batch): i32 = {
   let mut count = 0
   for batch { _ =>
     count = count + 1
@@ -88,9 +84,9 @@ let count_batch = {
   count
 }
 
-let apply = { with<overdraft>
+let apply: with<overdraft>
   (ledger: Borrow<mut><Ledger>)
-  (move transaction: Transaction): () =>
+  (move transaction: Transaction): () = {
   match(transaction) {
     Credit(amount) => ledger.credit(amount),
     Debit(amount) => do {
@@ -103,8 +99,8 @@ let apply = { with<overdraft>
   }
 }
 
-let process = { with<overdraft>
-  (move batch: Batch): i32 =>
+let process: with<overdraft>
+  (move batch: Batch): i32 = {
   let mut ledger = Ledger { balance: 0, processed: 0 }
   for batch { transaction =>
     apply(ledger)(transaction)
@@ -112,8 +108,7 @@ let process = { with<overdraft>
   ledger.snapshot()
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let balance = overdraft.handle {
     reject: { () => 1 },
     action: { process(Batch { index: 0 }) },

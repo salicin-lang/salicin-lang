@@ -2013,7 +2013,7 @@ fn validate_builtin_bootstrap(item: &Item, diagnostics: &mut Vec<String>) {
     );
     if !valid {
         diagnostics.push(
-            "compiler-definition bootstrap must have exact private shape `let builtin() = builtin()`"
+            "compiler-definition bootstrap must have exact private shape `let builtin: (): never = builtin()`"
                 .to_owned(),
         );
     }

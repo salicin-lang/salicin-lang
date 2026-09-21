@@ -2,21 +2,20 @@ let step = effect {
   delta: (): i32
 }
 
-let update = { with<step>
-  (value: Borrow<mut><i32>): () =>
+let update: with<step>
+  (value: Borrow<mut><i32>): () = {
   let delta = step.delta()
   value = value + delta
 }
 
-let program = { with<step>
-  (index: usize): i32 =>
+let program: with<step>
+  (index: usize): i32 = {
   let mut values = [40]
   update(values[index])
   values[0]
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   step.handle {
     delta: { (resume) => resume(2) },
     action: { program(1) },

@@ -31,22 +31,22 @@ declaration with the same operation name in another effect is unrelated.
 `with<E>` adds the normalized effect row `E` to a callable signature or type:
 
 ```sc fragment
-let increment = { with<state<i32>>(): i32 =>
+let increment: with<state<i32>>(): i32 = {
   let value = state<i32>.get()
   state<i32>.put(value + 1)
   value
 }
 
-let apply: <e: effects> = { with<e>
+let apply: <e: effects> with<e>
   (action: with<e>(i32): i32)
-  (value: i32): i32 =>
+  (value: i32): i32 = {
   action(value)
 }
 ```
 
-An ordinary callable value places its signature after `=` inside outer braces;
-trait and effect members place it after `:`. A function value uses the callable
-type `with<state<i32>>(): i32`. The row belongs to
+An ordinary named callable places its signature after the declaration colon and
+before `=`; trait and effect members use the same `name: signature` shape. A
+function value uses the callable type `with<state<i32>>(): i32`. The row belongs to
 the complete multi-group call, not to a parameter group or result value.
 `with<>(a): b` is the pure callable `(a): b`; a non-callable operand is
 rejected.

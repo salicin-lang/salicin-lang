@@ -10,32 +10,30 @@ let state = struct {
 }
 
 extend(state, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let update = { with<step, unsafety>
+let update: with<step, unsafety>
   (
-    state: Borrow<mut><state>,
-    calls: Ptr<mut><i32>,
-  ): i32 =>
+  state: Borrow<mut><state>,
+  calls: Ptr<mut><i32>,
+): i32 = {
   let delta = step.delta()
   unsafe { *calls = *calls + 1 }
   state.value = state.value + delta
   state.value
 }
 
-let unsafe_outside = {
-  (
-    drops: Ptr<mut><i32>,
-    calls: Ptr<mut><i32>,
-    abandon: bool,
-  ): i32 =>
+let unsafe_outside: (
+  drops: Ptr<mut><i32>,
+  calls: Ptr<mut><i32>,
+  abandon: bool,
+): i32 = {
   unsafe {
     let mut state = state { value: 20, drops: drops }
     step.handle {
@@ -48,12 +46,11 @@ let unsafe_outside = {
   }
 }
 
-let unsafe_inside = {
-  (
-    drops: Ptr<mut><i32>,
-    calls: Ptr<mut><i32>,
-    abandon: bool,
-  ): i32 =>
+let unsafe_inside: (
+  drops: Ptr<mut><i32>,
+  calls: Ptr<mut><i32>,
+  abandon: bool,
+): i32 = {
   let mut state = state { value: 20, drops: drops }
   step.handle {
     delta: {
@@ -68,8 +65,7 @@ let unsafe_inside = {
   }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

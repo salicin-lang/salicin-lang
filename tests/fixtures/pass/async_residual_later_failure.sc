@@ -15,9 +15,8 @@ let step = struct {
 }
 
 extend(resource, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     unsafe {
       *self.drops = *self.drops + 100
     }
@@ -25,9 +24,8 @@ extend(resource, Droppable) {
 }
 
 extend(step, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     unsafe {
       *self.drops = *self.drops + 10
     }
@@ -37,8 +35,9 @@ extend(step, Droppable) {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<i32> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
@@ -48,11 +47,11 @@ extend(step, Future<()>) {
   }
 }
 
-let finish = { with<throwing<bool>>(
-    calls: Ptr<mut><i32>,
-    fail: bool,
-    value: i32,
-  ): i32 =>
+let finish: with<throwing<bool>>(
+  calls: Ptr<mut><i32>,
+  fail: bool,
+  value: i32,
+): i32 = {
   unsafe {
     *calls = *calls + 1
   }
@@ -63,12 +62,11 @@ let finish = { with<throwing<bool>>(
   }
 }
 
-let run = {
-  (
-    drops: Ptr<mut><i32>,
-    calls: Ptr<mut><i32>,
-    fail: bool,
-  ): i32 =>
+let run: (
+  drops: Ptr<mut><i32>,
+  calls: Ptr<mut><i32>,
+  fail: bool,
+): i32 = {
   let result: Result<bool><i32> = try {
     let mut future = async {
       let retained = resource { drops: drops, value: 1 }
@@ -80,20 +78,23 @@ let run = {
     let ready = future.poll()
     match(pending) {
       Pending => do {
-        match(ready) { Ready(value) => value, Pending => 0,
+        match(ready) {
+          Ready(value) => value,
+          Pending => 0,
         }
-      }, Ready(_) => 0,
+      },
+      Ready(_) => 0,
     }
   }
   match(result) {
-    Ok(value) => value, Err(error) => do {
+    Ok(value) => value,
+    Err(error) => do {
       if(error) { 42 } else: { 0 }
     },
   }
 }
 
-let run_cancelled = {
-  (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
+let run_cancelled: (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   let result: Result<bool><i32> = try {
     let mut future = async {
       let retained = resource { drops: drops, value: 1 }
@@ -101,15 +102,18 @@ let run_cancelled = {
       let completed = value + retained.value
       finish(calls, false, completed)
     }
-    match(future.poll()) { Pending => 42, Ready(_) => 0,
+    match(future.poll()) {
+      Pending => 42,
+      Ready(_) => 0,
     }
   }
-  match(result) { Ok(value) => value, Err(_) => 0,
+  match(result) {
+    Ok(value) => value,
+    Err(_) => 0,
   }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

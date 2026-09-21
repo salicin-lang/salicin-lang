@@ -1,9 +1,8 @@
 let boxed = struct { value: i32 }
 
-let consume = { (move boxed: boxed): () => }
+let consume: (move boxed: boxed): () = { }
 
-let use_value = {
-  (take_first: bool): i32 =>
+let use_value: (take_first: bool): i32 = {
   let boxed = boxed { value: 42 }
   if(take_first) {
     consume(boxed)
@@ -13,4 +12,4 @@ let use_value = {
   boxed.value
 }
 
-let main = { (): i32 => use_value(false) }
+let main: (): i32 = { use_value(false) }

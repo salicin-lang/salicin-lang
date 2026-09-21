@@ -8,14 +8,13 @@ let select = trait {
 let counter = struct { value: i32 }
 
 extend(counter, select) {
-  let pick = { (self: Borrow<self>)(left: i32): i32 => self.value + left }
-  let pick = { (self: Borrow<self>)(right: i32): i32 => self.value + right + 1 }
-  let make = { (left: i32): i32 => left }
-  let make = { (right: i32): i32 => right + 1 }
+  let pick: (self: Borrow<self>)(left: i32): i32 = { self.value + left }
+  let pick: (self: Borrow<self>)(right: i32): i32 = { self.value + right + 1 }
+  let make: (left: i32): i32 = { left }
+  let make: (right: i32): i32 = { right + 1 }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   counter { value: 0 }.pick(right: 20) + counter.make(right: 20)
 }
 

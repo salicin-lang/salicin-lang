@@ -8,8 +8,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = bool;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<bool> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
     let done = unsafe {
       *self.remaining = *self.remaining - 1
       *self.remaining == 0
@@ -18,13 +19,11 @@ extend(step, Future<()>) {
   }
 }
 
-let step = {
-  (remaining: Ptr<mut><i32>): step =>
+let step: (remaining: Ptr<mut><i32>): step = {
   step { remaining: remaining }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut implicit_remaining = 3
   let implicit_ptr = ptr<mut>(borrow<mut>(implicit_remaining))
   let mut implicit = async {
@@ -35,7 +34,9 @@ let main = {
       }
     }
   }
-  let implicit_value = match(implicit.poll()) { Pending => 0, Ready(value) => value,
+  let implicit_value = match(implicit.poll()) {
+    Pending => 0,
+    Ready(value) => value,
   }
 
   let mut explicit_remaining = 3
@@ -54,7 +55,9 @@ let main = {
       }
     }
   }
-  let explicit_value = match(explicit.poll()) { Pending => 0, Ready(value) => value,
+  let explicit_value = match(explicit.poll()) {
+    Pending => 0,
+    Ready(value) => value,
   }
 
   implicit_value + explicit_value + unsafe { *fallthroughs_ptr } - 2

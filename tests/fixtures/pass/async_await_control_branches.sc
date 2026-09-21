@@ -9,8 +9,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<i32> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if(self.polled) {
       Poll<i32>.Ready(self.value)
     } else: {
@@ -28,8 +29,9 @@ let other_step = struct {
 extend(other_step, Future<()>) {
   let Output = i32;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<i32> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if(self.polled) {
       Poll<i32>.Ready(self.value)
     } else: {
@@ -39,13 +41,11 @@ extend(other_step, Future<()>) {
   }
 }
 
-let step = {
-  (value: i32): step =>
+let step: (value: i32): step = {
   step { polled: false, value: value }
 }
 
-let other_step = {
-  (value: i32): other_step =>
+let other_step: (value: i32): other_step = {
   other_step { polled: false, value: value }
 }
 
@@ -54,8 +54,7 @@ let choice = enum {
   right
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut conditional = async {
     let value = if(true) {
       let prefix = 19
@@ -66,19 +65,29 @@ let main = {
     }
     value
   }
-  match(conditional.poll()) { Pending => (), Ready(_) => (),
+  match(conditional.poll()) {
+    Pending => (),
+    Ready(_) => (),
   }
-  let first = match(conditional.poll()) { Ready(value) => value, Pending => 0,
+  let first = match(conditional.poll()) {
+    Ready(value) => value,
+    Pending => 0,
   }
 
   let mut matched = async {
-    let value = match(choice.left) { choice.left => await(step(22)), choice.right => await(other_step(0)),
+    let value = match(choice.left) {
+      choice.left => await(step(22)),
+      choice.right => await(other_step(0)),
     }
     value
   }
-  match(matched.poll()) { Pending => (), Ready(_) => (),
+  match(matched.poll()) {
+    Pending => (),
+    Ready(_) => (),
   }
-  let second = match(matched.poll()) { Ready(value) => value, Pending => 0,
+  let second = match(matched.poll()) {
+    Ready(value) => value,
+    Pending => 0,
   }
 
   first + second

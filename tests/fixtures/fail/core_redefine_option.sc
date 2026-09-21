@@ -5,4 +5,4 @@ let Option: <t: type> = enum {
   None,
 }
 
-let main = { (): i32 => 42 }
+let main: (): i32 = { 42 }

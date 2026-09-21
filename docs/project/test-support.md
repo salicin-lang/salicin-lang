@@ -34,9 +34,9 @@ let Outcome = enum {
   Failed(String),
 }
 
-let run = { (
+let run: (
   move action: with<core.error.throwing<String>>(): (),
-): Outcome }
+): Outcome
 ```
 
 `run` is an ordinary one-shot handler:

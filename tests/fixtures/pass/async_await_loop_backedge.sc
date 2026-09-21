@@ -9,8 +9,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = bool;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<bool> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
     if(self.polled) {
       let done = unsafe {
         *self.remaining = *self.remaining - 1
@@ -24,8 +25,7 @@ extend(step, Future<()>) {
   }
 }
 
-let next_step = {
-  (remaining: Ptr<mut><i32>): step =>
+let next_step: (remaining: Ptr<mut><i32>): step = {
   step { polled: false, remaining: remaining }
 }
 
@@ -36,8 +36,9 @@ let ready_step = struct {
 extend(ready_step, Future<()>) {
   let Output = bool;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<bool> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
     let done = unsafe {
       *self.remaining = *self.remaining - 1
       *self.remaining == 0
@@ -46,13 +47,11 @@ extend(ready_step, Future<()>) {
   }
 }
 
-let ready_step = {
-  (remaining: Ptr<mut><i32>): ready_step =>
+let ready_step: (remaining: Ptr<mut><i32>): ready_step = {
   ready_step { remaining: remaining }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut remaining = 3
   let remaining_ptr = ptr<mut>(borrow<mut>(remaining))
   let mut future = async {
@@ -66,13 +65,21 @@ let main = {
     }
   }
 
-  let first = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  let first = match(future.poll()) {
+    Pending => 1,
+    Ready(_) => 0,
   }
-  let second = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  let second = match(future.poll()) {
+    Pending => 1,
+    Ready(_) => 0,
   }
-  let third = match(future.poll()) { Pending => 1, Ready(_) => 0,
+  let third = match(future.poll()) {
+    Pending => 1,
+    Ready(_) => 0,
   }
-  let fourth = match(future.poll()) { Pending => 0, Ready(_) => 39,
+  let fourth = match(future.poll()) {
+    Pending => 0,
+    Ready(_) => 39,
   }
 
   let mut immediate_remaining = 3
@@ -87,7 +94,9 @@ let main = {
       }
     }
   }
-  let immediate_ready = match(immediate.poll()) { Pending => 0, Ready(_) => 1,
+  let immediate_ready = match(immediate.poll()) {
+    Pending => 0,
+    Ready(_) => 1,
   }
 
   first + second + third + fourth + immediate_ready - 1

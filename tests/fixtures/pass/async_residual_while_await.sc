@@ -11,9 +11,8 @@ let step = struct {
 }
 
 extend(step, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -23,27 +22,26 @@ extend(step, Droppable) {
 extend(step, Future<()>) {
   let Output = bool;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<bool> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
     Poll<bool>.Ready(self.done)
   }
 }
 
-let make_step = { with<ask>
-  (drops: Ptr<mut><i32>): step =>
+let make_step: with<ask>
+  (drops: Ptr<mut><i32>): step = {
   step { drops: drops, done: ask.ask() }
 }
 
-let next = {
-  (calls: Ptr<mut><i32>): bool =>
+let next: (calls: Ptr<mut><i32>): bool = {
   unsafe {
     *calls = *calls + 1
     *calls == 3
   }
 }
 
-let run_true = {
-  (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
+let run_true: (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   ask.handle {
     ask: { (resume) => resume(next(calls)) },
     action: {
@@ -61,16 +59,18 @@ let run_true = {
       let second = future.poll()
       match(first) {
         Pending => do {
-          match(second) { Ready(_) => 42, Pending => 0,
+          match(second) {
+            Ready(_) => 42,
+            Pending => 0,
           }
-        }, Ready(_) => 0,
+        },
+        Ready(_) => 0,
       }
     },
   }
 }
 
-let run_false = {
-  (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
+let run_false: (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   ask.handle {
     ask: { (resume) => resume(next(calls)) },
     action: {
@@ -84,14 +84,15 @@ let run_false = {
           }
         }
       }
-      match(future.poll()) { Ready(_) => 42, Pending => 0,
+      match(future.poll()) {
+        Ready(_) => 42,
+        Pending => 0,
       }
     },
   }
 }
 
-let run_post = {
-  (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 =>
+let run_post: (drops: Ptr<mut><i32>, calls: Ptr<mut><i32>): i32 = {
   ask.handle {
     ask: { (resume) => resume(next(calls)) },
     action: {
@@ -107,16 +108,18 @@ let run_post = {
       let second = future.poll()
       match(first) {
         Pending => do {
-          match(second) { Ready(_) => 42, Pending => 0,
+          match(second) {
+            Ready(_) => 42,
+            Pending => 0,
           }
-        }, Ready(_) => 0,
+        },
+        Ready(_) => 0,
       }
     },
   }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

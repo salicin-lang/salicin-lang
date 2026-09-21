@@ -24,11 +24,10 @@ the contract requires it. Conditions are eager where their source order requires
 Conceptually, `if` has this shape:
 
 ```sc fragment
-let if: <e: effects, T: type> = { with<e>
+let if: <e: effects, T: type> with<e>
   (condition: bool)
   {move then: with<e>(): T}
   {move else: with<e>(): T}: T
-}
 ```
 
 The ordinary surface form:
@@ -96,8 +95,8 @@ A match case maps a successful pattern and guard to an arm result. It consists o
 
 A pattern callable is written as
 `{ Pattern [if guard] => expression, ... }`. It may be passed as one callable
-argument, or bound at the top level as a named function. Its arms are attempted
-in source order. A Boolean literal arm determines a `bool` input; other named
+argument, or used as the implementation of an explicitly signed named
+function. Its arms are attempted in source order. A Boolean literal arm determines a `bool` input; other named
 forms require a whole-callable annotation or callable type alias. Named pattern
 callables cannot be overloaded because their input has no source-level label.
 

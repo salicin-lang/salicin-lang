@@ -10,11 +10,10 @@ let read = effect {
 let adder = struct { base: i32 }
 
 extend(adder) {
-  let add = { (self)(value: i32): i32 => self.base + value }
+  let add: (self)(value: i32): i32 = { self.base + value }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut arguments = 0
   let result: i32 = read.handle {
     option_base: {

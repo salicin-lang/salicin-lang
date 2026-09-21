@@ -1,10 +1,9 @@
 let Box = alloc.Box
 
-let read_box: <t: type> = { (boxed: Borrow<Box<t>>): t
-  requires(t is Copyable) => boxed.read() }
+let read_box: <t: type>(boxed: Borrow<Box<t>>): t
+requires(t is Copyable) = { boxed.read() }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut boxed = Box.new<T: i32>(0)
   boxed.write(20)
   let first = boxed.read()

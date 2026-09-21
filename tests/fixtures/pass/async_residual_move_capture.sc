@@ -11,32 +11,29 @@ let resource = struct {
   }
 
 extend(resource, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
   }
 }
 
-let request = { with<ask>
-  (): i32 =>
+let request: with<ask>
+  (): i32 = {
   ask.ask()
 }
 
-let consume = {
-  (move resource: resource): i32 =>
+let consume: (move resource: resource): i32 = {
   resource.value
 }
 
-let poll_once: <e: effects, f: type, t: type> = { with<e>
-  (future: Borrow<mut><f>): Poll<t> requires(f is Future<e> && f.Output == t) =>
+let poll_once: <e: effects, f: type, t: type> with<e>
+  (future: Borrow<mut><f>): Poll<t> requires(f is Future<e> && f.Output == t) = {
   future.poll()
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
@@ -50,7 +47,9 @@ let main = {
   let result: i32 = ask.handle {
     ask: { (resume) => resume(40) },
     action: { let polled: Poll<i32> = poll_once(future)
-      match(polled) { Ready(value) => value, Pending => 0,
+      match(polled) {
+        Ready(value) => value,
+        Pending => 0,
       }
     },
   }

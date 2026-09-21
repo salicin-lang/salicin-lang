@@ -1,5 +1,4 @@
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut value = 0
   let mut total = 30
   while(value < 5) {

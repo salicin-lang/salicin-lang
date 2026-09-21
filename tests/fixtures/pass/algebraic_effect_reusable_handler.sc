@@ -3,9 +3,8 @@ let ask = effect {
   stop: (): i32
 }
 
-let run = {
-  (action: with<ask>(i32): i32)
-  (input: i32): i32 =>
+let run: (action: with<ask>(i32): i32)
+  (input: i32): i32 = {
   ask.handle {
     value: { (resume) => resume(10) },
     stop: { (resume) => 40 },
@@ -13,22 +12,19 @@ let run = {
   }
 }
 
-let left = { with<ask>(input: i32): i32 => ask.value() + input }
-let right = { with<ask>(input: i32): i32 => ask.value() * 2 + input }
-let abort = { with<ask>(input: i32): i32 => ask.stop() + input }
-let select = {
-  (order: Borrow<mut><i32>): bool =>
+let left: with<ask>(input: i32): i32 = { ask.value() + input }
+let right: with<ask>(input: i32): i32 = { ask.value() * 2 + input }
+let abort: with<ask>(input: i32): i32 = { ask.stop() + input }
+let select: (order: Borrow<mut><i32>): bool = {
   order = order * 10 + 1
   false
 }
-let next_input = {
-  (order: Borrow<mut><i32>): i32 =>
+let next_input: (order: Borrow<mut><i32>): i32 = {
   order = order * 10 + 2
   2
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let chosen = left
   let left_runner = run(action: chosen)
   let mut order = 0

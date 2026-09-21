@@ -6,13 +6,14 @@ subset.
 
 ## Unreleased
 
-- **Breaking:** Callable values now require outer braces. Named functions bind
-  callable literals such as `let add = { (x: i32): i32 => x + 1 }`, while
-  callable types remain `(T): R`; `{ expression }` is the zero-parameter
-  closure and `{ Pattern => expression, ... }` is the multi-arm pattern
-  callable. An immutable top-level pattern callable declares a named function;
-  Boolean inputs infer directly, while other inputs use a callable annotation
-  or callable type alias. Named pattern callables cannot be overloaded. Trait
+- **Breaking:** Named callable signatures now precede `=`, as in
+  `let add: (x: i32): i32 = { x + 1 }`, while anonymous/local callable values
+  retain outer braces and `=>`. Callable types remain `(T): R`;
+  `{ expression }` is the zero-parameter closure and
+  `{ Pattern => expression, ... }` is the multi-arm pattern
+  callable. Named pattern functions use `let name: signature = { arms }`; a
+  callable type alias may supply the signature. Named pattern callables cannot
+  be overloaded. Trait
   callable members now use `name: signature` for requirements or
   `name: signature = body` for defaults, and effect operations use
   `Operation: (parameters): Result` declarations. Associated declarations use

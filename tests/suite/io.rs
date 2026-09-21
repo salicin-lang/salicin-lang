@@ -5,10 +5,10 @@ use std::process::Stdio;
 #[test]
 fn file_authority_and_ownership_are_static_contracts() {
     let pure = check_source(
-        r#"let misuse = { (path: Borrow<core.string.str>): core.Result<std.io.IoError><std.io.File> =>
+        r#"let misuse: (path: Borrow<core.string.str>): core.Result<std.io.IoError><std.io.File> = {
   std.io.open(path)(std.io.OpenOptions.read_only())
 }
-let main = { (): i32 => 42 }"#,
+let main: (): i32 = { 42 }"#,
     )
     .expect_err("pure file open must require io");
     assert!(
@@ -18,8 +18,8 @@ let main = { (): i32 => 42 }"#,
     );
 
     let copied = check_source(
-        r#"let duplicate = { (copy value: std.io.File): () => () }
-let main = { (): i32 => 42 }"#,
+        r#"let duplicate: (copy value: std.io.File): () = { () }
+let main: (): i32 = { 42 }"#,
     )
     .expect_err("file owners must not be copyable");
     assert!(
@@ -32,14 +32,13 @@ let main = { (): i32 => 42 }"#,
 
 #[test]
 fn explicit_close_failure_invalidates_before_the_single_host_attempt() {
-    let source = r#"let close_calls = { (): i32 => foreign(c, "close_calls") }
+    let source = r#"let close_calls: (): i32 = foreign(c, "close_calls")
 
-let abandon = {
-  with<std.io.io>(path: Borrow<core.string.str>): () =>
+let abandon: with<std.io.io>(path: Borrow<core.string.str>): () = {
   match(std.io.open(path)(std.io.OpenOptions.read_only())) { Ok(value) => (), Err(_) => (), }
 }
 
-let main = { with<std.io.io>(): i32 =>
+let main: with<std.io.io>(): i32 = {
   let path: String = "/dev/null"
   let view = path.as_str()
   let input = match(std.io.open(view)(std.io.OpenOptions.read_only())) { Ok(value) => value, Err(_) => return(1), }
@@ -72,7 +71,7 @@ fn native_console_and_process_contracts_preserve_bytes_and_utf8() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "io.sc",
-        r#"let main = { with<std.io.io>(): i32 =>
+        r#"let main: with<std.io.io>(): i32 = {
   let argument = match(std.io.argument_bytes(1)) { Some(value) => value, None => return(1), }
   if(argument.len() != 3 || argument[0] != 255 || argument[1] != 111 || argument[2] != 107) {
     return(2)
@@ -125,7 +124,7 @@ fn native_io_helpers_report_eof_and_broken_pipe() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "io-errors.sc",
-        r#"let main = { with<std.io.io>(): i32 =>
+        r#"let main: with<std.io.io>(): i32 = {
   let mode = match(std.io.argument_bytes(1)) { Some(value) => value, None => return(1), }
   if(mode[0] == 101) {
     let mut bytes: Array<u8><2> = [0, 0]
@@ -178,7 +177,7 @@ fn native_file_owners_support_options_seek_flush_limits_and_close() {
     let temporary = TestDirectory::new();
     let source = temporary.write(
         "files.sc",
-        r#"let main = { with<std.io.io>(): i32 =>
+        r#"let main: with<std.io.io>(): i32 = {
   let mut arguments = match(std.io.arguments()) { Ok(value) => value, Err(_) => return(1), }
   let path = arguments.remove(1)
   let missing = arguments.remove(1)

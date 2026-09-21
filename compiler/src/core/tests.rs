@@ -78,6 +78,31 @@ pub let str: type = builtin()
     .concat()
 }
 
+fn core_bundle_from_source(source: &str) -> Result<CoreBundle, CoreBundleError> {
+    let source = format!(
+        "{source}\n{TEST_ASSIGNMENT_OPS}\n{TEST_CHAIN_OPS}\n{EDITION_2026_EFFECT}\n{EDITION_2026_ERROR}\n{EDITION_2026_UNSAFE}\n{EDITION_2026_ASYNC}\n{EDITION_2026_PRIMITIVES}\n{EDITION_2026_SORTS}\n{EDITION_2026_FOREIGN}\n{EDITION_2026_PASSING}\n{EDITION_2026_BORROW}\n{EDITION_2026_CONTROL}\n{EDITION_2026_ITER}\n{EDITION_2026_MEMORY}\nlet builtin: (): never = builtin()\npub let test: <name: String>{{move body: with<core.error.throwing<core.string.String>>() :()}}: () = builtin()\npub let requires: <condition: bool, e: effects, Result: type>with<e>{{move body: with<e>() :Result}}: Result = builtin()"
+    );
+    let mut program = parser::parse(&source).map_err(|error| {
+        CoreBundleError::new(
+            Edition::Edition2026,
+            vec![format!("embedded prelude does not parse: {error}")],
+        )
+    })?;
+    for origin in &mut program.item_origins {
+        origin.package = PackageId::CORE.0;
+        origin.module_path = vec!["@core".to_owned()];
+        if let Some(location) = &mut origin.source {
+            location.path = Some("<core:test>".to_owned());
+        }
+    }
+    let lang_items = validate_program(Edition::Edition2026, &program)?;
+    Ok(CoreBundle {
+        edition: Edition::Edition2026,
+        program,
+        lang_items,
+    })
+}
+
 fn edition_2026_test_modules<'a>(overrides: &[(&str, &'a str)]) -> Vec<(&'static str, &'a str)> {
     let mut modules = vec![
         ("lib", EDITION_2026_LIB),
@@ -517,7 +542,9 @@ fn core_bundle_rejects_legacy_parenthesized_compile_groups() {
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(
         error.diagnostics().iter().any(|diagnostic| {
-            diagnostic.contains("expected `)` after grouped result type")
+            diagnostic.contains(
+                "runtime parameter groups cannot contain compile-time binders; use `<name: sort>`",
+            )
         }),
         "{:?}",
         error.diagnostics()
@@ -527,7 +554,7 @@ fn core_bundle_rejects_legacy_parenthesized_compile_groups() {
 #[test]
 fn builtin_markers_are_explicit_and_bounded_core_contracts() {
     let missing_bootstrap =
-        EDITION_2026_LIB.replace("let builtin = { (): never => builtin() }\n", "");
+        EDITION_2026_LIB.replace("let builtin: (): never = builtin()\n", "");
     let modules = edition_2026_test_modules(&[("lib", &missing_bootstrap)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error
@@ -538,11 +565,11 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
     for (name, declaration) in [
         (
             "test",
-            "pub let test: <name: String> = { {move body: with<core.error.throwing<core.string.String>>() :()}: () => builtin() }\n",
+            "pub let test: <name: String>{move body: with<core.error.throwing<core.string.String>>() :()}: () = builtin()\n\n",
         ),
         (
             "requires",
-            "pub let requires: <\n  condition: bool,\n  e: effects,\n  Result: type,\n> = { with<e>\n  {move body: with<e>() :Result}: Result => builtin() }\n",
+            "pub let requires: <\n  condition: bool,\n  e: effects,\n  Result: type,\n> with<e>\n  {move body: with<e>() :Result}: Result = builtin()\n",
         ),
     ] {
         let missing = EDITION_2026_LIB.replace(declaration, "");
@@ -571,24 +598,24 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
             "foreign",
             "foreign",
             EDITION_2026_FOREIGN.replace(
-                "pub let foreign: <abi: abi> = { : never => builtin() }",
-                "pub let foreign = { (): never => builtin() }",
+                "pub let foreign: <abi: abi>: never = builtin()",
+                "pub let foreign: (): never = builtin()",
             ),
         ),
         (
             "foreign",
             "foreign",
             EDITION_2026_FOREIGN.replace(
-                "pub let foreign: <abi: abi> = { : never => builtin() }",
-                "pub let foreign: <abi: abi> = { : () => builtin() }",
+                "pub let foreign: <abi: abi>: never = builtin()",
+                "pub let foreign: <abi: abi>: () = builtin()",
             ),
         ),
         (
             "foreign",
             "foreign",
             EDITION_2026_FOREIGN.replace(
-                "pub let foreign: <abi: abi, symbol: String> = { : never => builtin() }",
-                "pub let foreign: <abi: abi, symbol: usize> = { : never => builtin() }",
+                "pub let foreign: <abi: abi, symbol: String>: never = builtin()",
+                "pub let foreign: <abi: abi, symbol: usize>: never = builtin()",
             ),
         ),
         (
@@ -651,8 +678,7 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
         diagnostic.contains("compiler-owned lang item `i32`") && diagnostic.contains("= builtin()")
     }));
 
-    let unknown =
-        format!("{EDITION_2026_PRIMITIVES}\npub let mystery = {{ (): i32 => builtin() }}\n");
+    let unknown = format!("{EDITION_2026_PRIMITIVES}\npub let mystery: (): i32 = builtin()\n");
     let modules = edition_2026_test_modules(&[("primitives", &unknown)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error.diagnostics().iter().any(|diagnostic| {
@@ -660,8 +686,8 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
     }));
 
     let malformed_defer = EDITION_2026_CONTROL.replace(
-        "with<e>{move action: with<e>() :()}: () => builtin()",
-        "with<e>{move action: with<e>() :bool}: () => builtin()",
+        "with<e>{move action: with<e>() :()}: () = builtin()",
+        "with<e>{move action: with<e>() :bool}: () = builtin()",
     );
     assert_ne!(malformed_defer, EDITION_2026_CONTROL);
     let modules = edition_2026_test_modules(&[("control", &malformed_defer)]);
@@ -693,7 +719,7 @@ fn constraint_query_contracts_are_explicit_and_bounded() {
     for malformed in [
         EDITION_2026_SORTS.replace("pub let constraint: sort<2>", "pub let constraint: sort<1>"),
         EDITION_2026_SORTS.replace("right: constraint", "right: type"),
-        EDITION_2026_SORTS.replace("> = { : bool => builtin()", "> = { : usize => builtin()"),
+        EDITION_2026_SORTS.replace(">: bool = builtin()", ">: usize = builtin()"),
     ] {
         let modules = edition_2026_test_modules(&[("sorts", &malformed)]);
         let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -810,22 +836,22 @@ fn pointer_and_layout_lang_items_require_memory_contracts() {
         (
             "ptr",
             EDITION_2026_MEMORY.replace(
-                "(value: Borrow<a><T>): Ptr<a><T> => builtin()",
-                "(value: Borrow<T>): Ptr<a><T> => builtin()",
+                "(value: Borrow<a><T>): Ptr<a><T> = builtin()",
+                "(value: Borrow<T>): Ptr<a><T> = builtin()",
             ),
         ),
         (
             "size_of",
             EDITION_2026_MEMORY.replace(
-                "pub let size_of: <T: type> = { : u64 => builtin() }",
-                "pub let size_of: <T: type> = { : i32 => builtin() }",
+                "pub let size_of: <T: type>: u64 = builtin()",
+                "pub let size_of: <T: type>: i32 = builtin()",
             ),
         ),
         (
             "align_of",
             EDITION_2026_MEMORY.replace(
-                "pub let align_of: <T: type> = { : u64 => builtin() }",
-                "pub let align_of: <T: type> = { (value: T): u64 => builtin() }",
+                "pub let align_of: <T: type>: u64 = builtin()",
+                "pub let align_of: <T: type>(value: T): u64 = builtin()",
             ),
         ),
     ] {
@@ -867,15 +893,15 @@ fn rejects_malformed_control_contracts() {
             (
                 "continue",
                 EDITION_2026_CONTROL.replace(
-                    "pub let continue = { with<iteration_skip>\n  (): never =>",
-                    "pub let continue = { with<iteration_skip>\n  (): () =>",
+                    "pub let continue: with<iteration_skip>\n  (): never =",
+                    "pub let continue: with<iteration_skip>\n  (): () =",
                 ),
             ),
             (
                 "return",
                 EDITION_2026_CONTROL.replace(
-                    "with<function_exit<T>>(move value: T): never",
-                    "with<function_exit<T>>(value: T): never",
+                    "with<function_exit<T>>\n  (move value: T): never",
+                    "with<function_exit<T>>\n  (value: T): never",
                 ),
             ),
             (
@@ -902,11 +928,12 @@ fn rejects_malformed_control_contracts() {
             (
                 "for",
                 EDITION_2026_CONTROL.replace(
-                    "      Iter.Item == Item",
-                    "      Iter.Item == bool",
+                    "    Iter.Item == Item",
+                    "    Iter.Item == bool",
                 ),
             ),
         ] {
+            assert_ne!(malformed, EDITION_2026_CONTROL, "stale `{name}` mutation");
             let modules = edition_2026_test_modules(&[("control", &malformed)]);
             let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
             assert!(
@@ -920,8 +947,8 @@ fn rejects_malformed_control_contracts() {
         }
 
     let malformed = EDITION_2026_UNSAFE.replace(
-        "pub let unsafe: <e: effects, T: type> = { with<e>\n  {move action: with<core.unsafe.unsafety, e>() :T}: T",
-        "pub let unsafe: <e: effects, T: type> = { with<e>\n  {move action: with<e>() :T}: T",
+        "pub let unsafe: <e: effects, T: type> with<e>\n  {move action: with<core.unsafe.unsafety, e>() :T}: T",
+        "pub let unsafe: <e: effects, T: type> with<e>\n  {move action: with<e>() :T}: T",
     );
     let modules = edition_2026_test_modules(&[("unsafe", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -931,7 +958,7 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `unsafe`")));
 
     let bodyless = EDITION_2026_UNSAFE.replace(
-        ": T =>\n  core.unsafe.unsafety.handle {\n    action: { action() },\n  }",
+        ": T = {\n  core.unsafe.unsafety.handle {\n    action: { action() },\n  }\n}",
         ": T",
     );
     let modules = edition_2026_test_modules(&[("unsafe", &bodyless)]);
@@ -1002,9 +1029,10 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `Handle`")));
 
     let malformed = EDITION_2026_ERROR.replace(
-        "pub let throw: <Error: type> = { with<core.error.throwing<Error>>(move error: Error): never",
-        "pub let throw: <Error: type> = { (move error: Error): never",
+        "pub let throw: <Error: type> with<core.error.throwing<Error>>\n  (move error: Error): never",
+        "pub let throw: <Error: type>\n  (move error: Error): never",
     );
+    assert_ne!(malformed, EDITION_2026_ERROR, "stale `throw` mutation");
     let modules = edition_2026_test_modules(&[("error", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error
@@ -1018,7 +1046,7 @@ fn privileged_runtime_group_delimiters_are_validated() {
     let cases = [
         ("control", "do", EDITION_2026_CONTROL.replace("{move action: with<e>() :T}", "(move action: with<e>(): T)")),
         ("control", "post-test do", EDITION_2026_CONTROL.replace("{move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>() :bool}", "(move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(): bool)")),
-        ("control", "defer", EDITION_2026_CONTROL.replace("{move action: with<e>() :()}: () => builtin()", "(move action: with<e>(): ()): () => builtin()")),
+        ("control", "defer", EDITION_2026_CONTROL.replace("{move action: with<e>() :()}: () = builtin()", "(move action: with<e>(): ()): () = builtin()")),
         ("error", "try", EDITION_2026_ERROR.replace("{move action: with<core.error.throwing<Error>, f>() :T}", "(move action: with<core.error.throwing<Error>, f>(): T)")),
         ("unsafe", "unsafe", EDITION_2026_UNSAFE.replace("{move action: with<core.unsafe.unsafety, e>() :T}", "(move action: with<core.unsafe.unsafety, e>(): T)")),
         ("control", "loop", EDITION_2026_CONTROL.replace("{move body: with<core.control.loop_exit<T>, core.control.iteration_skip, e>() :()}", "(move body: with<core.control.loop_exit<T>, core.control.iteration_skip, e>(): ())")),
@@ -1257,7 +1285,7 @@ pub let Index: <Key: type> = trait {
 }
 pub let str: type = builtin()
 "#;
-    let bundle = CoreBundle::from_source(Edition::Edition2026, source).unwrap();
+    let bundle = core_bundle_from_source(source).unwrap();
 
     assert_eq!(bundle.lang_items().rem().item_index(), 0);
     assert_eq!(bundle.lang_items().move_trait().item_index(), 1);
@@ -1359,7 +1387,7 @@ pub let Droppable = trait {
 }
 pub let str: type = builtin()
 "#;
-    let error = CoreBundle::from_source(Edition::Edition2026, source).unwrap_err();
+    let error = core_bundle_from_source(source).unwrap_err();
 
     assert_eq!(
             error.diagnostics(),
@@ -1442,7 +1470,7 @@ pub let Shr: <Rhs: type> = trait {
 }
 pub let str: type = builtin()
 "#;
-    let error = CoreBundle::from_source(Edition::Edition2026, source).unwrap_err();
+    let error = core_bundle_from_source(source).unwrap_err();
 
     assert_eq!(
         error.diagnostics(),
@@ -1467,7 +1495,7 @@ fn rejects_copy_compile_parameters_associated_types_and_methods() {
 
     for declaration in malformed_declarations {
         let source = core_source_with_copy(declaration);
-        let error = CoreBundle::from_source(Edition::Edition2026, &source).unwrap_err();
+        let error = core_bundle_from_source(&source).unwrap_err();
 
         assert_eq!(
                 error.diagnostics(),
@@ -1487,7 +1515,7 @@ fn rejects_malformed_move_traits_and_copy_without_move_supertrait() {
         let source =
             core_source_with_copy("pub let Copyable = trait<requires: self is Movable> {}")
                 .replacen("pub let Movable = trait {}", malformed, 1);
-        let error = CoreBundle::from_source(Edition::Edition2026, &source).unwrap_err();
+        let error = core_bundle_from_source(&source).unwrap_err();
         assert_eq!(
             error.diagnostics(),
             ["lang item `Movable` must have shape `pub let Movable = trait {}`"],
@@ -1496,7 +1524,7 @@ fn rejects_malformed_move_traits_and_copy_without_move_supertrait() {
     }
 
     let source = core_source_with_copy("pub let Copyable = trait {}");
-    let error = CoreBundle::from_source(Edition::Edition2026, &source).unwrap_err();
+    let error = core_bundle_from_source(&source).unwrap_err();
     assert_eq!(
         error.diagnostics(),
         ["lang item `Copyable` must have shape `pub let Copyable = trait<requires: self is Movable> {}`"]
@@ -1520,7 +1548,7 @@ fn rejects_malformed_drop_traits() {
                     declaration,
                     1,
                 );
-        let error = CoreBundle::from_source(Edition::Edition2026, &source).unwrap_err();
+        let error = core_bundle_from_source(&source).unwrap_err();
         assert_eq!(
                 error.diagnostics(),
                 ["lang item `Droppable` must have shape `pub let Droppable = trait { drop: (self: Borrow<mut><self>)(): () }`"],
@@ -1600,7 +1628,7 @@ pub let Index: <Key: type> = trait {
 }
 pub let str: type = builtin()
 "#;
-    let error = CoreBundle::from_source(Edition::Edition2026, source).unwrap_err();
+    let error = core_bundle_from_source(source).unwrap_err();
 
     assert_eq!(
             error.diagnostics(),
@@ -1630,7 +1658,7 @@ fn rejects_malformed_partial_ordering() {
                     declaration,
                     1,
                 );
-        let error = CoreBundle::from_source(Edition::Edition2026, &source).unwrap_err();
+        let error = core_bundle_from_source(&source).unwrap_err();
         assert_eq!(
                 error.diagnostics(),
                 ["lang item `PartialOrdering` must have shape `pub let PartialOrdering = enum { Less, Equal, Greater, Unordered }`"],
@@ -1659,7 +1687,7 @@ fn rejects_malformed_unary_operator_traits() {
                 malformed,
                 1,
             );
-            let error = CoreBundle::from_source(Edition::Edition2026, &source).unwrap_err();
+            let error = core_bundle_from_source(&source).unwrap_err();
             assert_eq!(error.diagnostics(), [expected]);
         }
 }
@@ -1684,7 +1712,7 @@ fn rejects_malformed_bitwise_operator_traits() {
                 malformed,
                 1,
             );
-            let error = CoreBundle::from_source(Edition::Edition2026, &source).unwrap_err();
+            let error = core_bundle_from_source(&source).unwrap_err();
             assert_eq!(error.diagnostics(), [expected]);
         }
 }

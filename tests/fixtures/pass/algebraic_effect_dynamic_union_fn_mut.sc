@@ -3,8 +3,7 @@ let ask = effect {
   value: (): i32
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   ask.handle {
     choose: { (resume) => resume(false) },
     value: { (resume) => resume(10) },

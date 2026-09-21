@@ -9,8 +9,9 @@ let step = struct {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<i32> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if(self.polled) {
       Poll<i32>.Ready(self.value)
     } else: {
@@ -20,8 +21,7 @@ extend(step, Future<()>) {
   }
 }
 
-let step = {
-  (value: i32): step =>
+let step: (value: i32): step = {
   step { polled: false, value: value }
 }
 
@@ -33,8 +33,9 @@ let condition = struct {
 extend(condition, Future<()>) {
   let Output = bool;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<bool> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<bool> = {
     if(self.polled) {
       Poll<bool>.Ready(self.value)
     } else: {
@@ -44,21 +45,23 @@ extend(condition, Future<()>) {
   }
 }
 
-let condition = {
-  (value: bool): condition =>
+let condition: (value: bool): condition = {
   condition { polled: false, value: value }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut value_loop = async {
     loop {
       break(await(step(40)))
     }
   }
-  let loop_pending = match(value_loop.poll()) { Pending => 1, Ready(_) => 0,
+  let loop_pending = match(value_loop.poll()) {
+    Pending => 1,
+    Ready(_) => 0,
   }
-  let loop_value = match(value_loop.poll()) { Pending => 0, Ready(value) => value,
+  let loop_value = match(value_loop.poll()) {
+    Pending => 0,
+    Ready(value) => value,
   }
 
   let mut true_while = async {
@@ -67,9 +70,13 @@ let main = {
       break()
     }
   }
-  let while_pending = match(true_while.poll()) { Pending => 1, Ready(_) => 0,
+  let while_pending = match(true_while.poll()) {
+    Pending => 1,
+    Ready(_) => 0,
   }
-  let while_ready = match(true_while.poll()) { Pending => 0, Ready(_) => 1,
+  let while_ready = match(true_while.poll()) {
+    Pending => 0,
+    Ready(_) => 1,
   }
 
   let mut false_while = async {
@@ -78,7 +85,9 @@ let main = {
       break()
     }
   }
-  let false_ready = match(false_while.poll()) { Pending => 0, Ready(_) => 1,
+  let false_ready = match(false_while.poll()) {
+    Pending => 0,
+    Ready(_) => 1,
   }
 
   let mut awaited_condition = async {
@@ -86,9 +95,13 @@ let main = {
       break()
     }
   }
-  let condition_pending = match(awaited_condition.poll()) { Pending => 1, Ready(_) => 0,
+  let condition_pending = match(awaited_condition.poll()) {
+    Pending => 1,
+    Ready(_) => 0,
   }
-  let condition_ready = match(awaited_condition.poll()) { Pending => 0, Ready(_) => 1,
+  let condition_ready = match(awaited_condition.poll()) {
+    Pending => 0,
+    Ready(_) => 1,
   }
 
   loop_value + loop_pending + while_pending + while_ready + false_ready + condition_pending +

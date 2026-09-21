@@ -13,9 +13,8 @@ let step = struct {
 }
 
 extend(step, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     unsafe {
       *self.drops = *self.drops + self.drop_amount
     }
@@ -25,8 +24,9 @@ extend(step, Droppable) {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<i32> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
@@ -36,8 +36,7 @@ extend(step, Future<()>) {
   }
 }
 
-let run = {
-  (drops: Ptr<mut><i32>, first: bool): i32 =>
+let run: (drops: Ptr<mut><i32>, first: bool): i32 = {
   let mut future = async {
     if(first) {
       await(step { drops: drops, polls: 0, value: ask.ask(), drop_amount: 10 })
@@ -51,16 +50,18 @@ let run = {
       let ready = future.poll()
       match(pending) {
         Pending => do {
-          match(ready) { Ready(value) => value, Pending => 0,
+          match(ready) {
+            Ready(value) => value,
+            Pending => 0,
           }
-        }, Ready(_) => 0,
+        },
+        Ready(_) => 0,
       }
     },
   }
 }
 
-let cancel_second = {
-  (drops: Ptr<mut><i32>): i32 =>
+let cancel_second: (drops: Ptr<mut><i32>): i32 = {
   ask.handle {
     ask: { (resume) => resume(40) },
     action: {
@@ -71,14 +72,15 @@ let cancel_second = {
           await(step { drops: drops, polls: 0, value: ask.ask(), drop_amount: 1 })
         }
       }
-      match(future.poll()) { Pending => 42, Ready(_) => 0,
+      match(future.poll()) {
+        Pending => 42,
+        Ready(_) => 0,
       }
     },
   }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

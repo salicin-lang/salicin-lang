@@ -22,26 +22,26 @@ pub let StringLiteral = trait {
 extend(Array<T><l>, ArrayLiteral<T>) {
   let Output = Array<T><l>;
 
-  let from_array_literal: <length: usize> = { (move values: Array<T><length>): Output => builtin() }
+  let from_array_literal: <length: usize>(move values: Array<T><length>): Output = builtin()
 }
 
 /// A UTF-8 byte Array can preserve String-literal backing without conversion.
 extend(Array<u8><l>, StringLiteral) {
   let Output = Array<u8><l>;
 
-  let from_string_literal: <length: usize> = { (move utf8: Array<u8><length>): Output => builtin() }
+  let from_string_literal: <length: usize>(move utf8: Array<u8><length>): Output = builtin()
 }
 
 /// A Slice literal is a Borrow of compiler-owned literal backing storage.
 extend(Slice<T>, ArrayLiteral<T>) {
   let Output = Slice<T>;
 
-  let from_array_literal: <length: usize> = { (move values: Array<T><length>): Output => builtin() }
+  let from_array_literal: <length: usize>(move values: Array<T><length>): Output = builtin()
 }
 
 /// UTF-8 slices may be selected directly as the Result of a String literal.
 extend(Slice<u8>, StringLiteral) {
   let Output = Slice<u8>;
 
-  let from_string_literal: <length: usize> = { (move utf8: Array<u8><length>): Output => builtin() }
+  let from_string_literal: <length: usize>(move utf8: Array<u8><length>): Output = builtin()
 }

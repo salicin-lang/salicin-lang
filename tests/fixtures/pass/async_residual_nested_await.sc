@@ -12,9 +12,8 @@ let step = struct {
 }
 
 extend(step, Droppable) {
-  let drop = {
-    (self: Borrow<mut><self>)
-    (): () =>
+  let drop: (self: Borrow<mut><self>)
+    (): () = {
     unsafe {
       *self.drops = *self.drops + 1
     }
@@ -24,8 +23,9 @@ extend(step, Droppable) {
 extend(step, Future<()>) {
   let Output = i32;
 
-  let poll: <r: region> = { (self: Borrow<mut><r><self>)
-    (): Poll<i32> =>
+  let poll: <r: region>
+    (self: Borrow<mut><r><self>)
+    (): Poll<i32> = {
     if(self.polls == 0) {
       self.polls = 1
       Poll<i32>.Pending
@@ -35,13 +35,12 @@ extend(step, Future<()>) {
   }
 }
 
-let make_step = { with<ask>
-  (drops: Ptr<mut><i32>): step =>
+let make_step: with<ask>
+  (drops: Ptr<mut><i32>): step = {
   step { drops: drops, polls: 0, value: ask.ask() }
 }
 
-let run_success = {
-  (drops: Ptr<mut><i32>): i32 =>
+let run_success: (drops: Ptr<mut><i32>): i32 = {
   let mut future = async {
     let first = await(make_step(drops))
     let second = await(step { drops: drops, polls: 0, value: first + 1 })
@@ -56,18 +55,21 @@ let run_success = {
         Pending => do {
           match(second) {
             Pending => do {
-              match(third) { Ready(value) => value, Pending => 0,
+              match(third) {
+                Ready(value) => value,
+                Pending => 0,
               }
-            }, Ready(_) => 0,
+            },
+            Ready(_) => 0,
           }
-        }, Ready(_) => 0,
+        },
+        Ready(_) => 0,
       }
     },
   }
 }
 
-let run_cancelled = {
-  (drops: Ptr<mut><i32>): i32 =>
+let run_cancelled: (drops: Ptr<mut><i32>): i32 = {
   ask.handle {
     ask: { (resume) => resume(40) },
     action: {
@@ -80,16 +82,18 @@ let run_cancelled = {
       let second = future.poll()
       match(first) {
         Pending => do {
-          match(second) { Pending => 42, Ready(_) => 0,
+          match(second) {
+            Pending => 42,
+            Ready(_) => 0,
           }
-        }, Ready(_) => 0,
+        },
+        Ready(_) => 0,
       }
     },
   }
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let drops = unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }

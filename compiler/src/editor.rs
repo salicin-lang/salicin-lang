@@ -1750,7 +1750,7 @@ fn looks_like_label_or_parameter(tokens: &[Token], index: usize) -> bool {
             .checked_sub(1)
             .and_then(|index| tokens.get(index))
             .map(|token| &token.kind),
-        Some(TokenKind::Dot)
+        Some(TokenKind::Dot | TokenKind::Let)
     )
 }
 
@@ -1977,7 +1977,7 @@ mod tests {
         assert_eq!(parser.diagnostics[0].range.unwrap().start.byte, 12);
 
         let semantic = analyze(
-            "let main = { (): i32 => \n  missing\n}\n",
+            "let main: (): i32 = { \n  missing\n}\n",
             DocumentTarget::Binary,
         );
         assert_eq!(semantic.diagnostics[0].phase, DiagnosticPhase::Semantic);
@@ -2043,8 +2043,8 @@ mod tests {
     fn workspace_diagnostics_return_to_the_owning_document() {
         let root_modules = ["part".to_owned()];
         let empty = Vec::new();
-        let root = "let main = { (): i32 =>  part.answer() }\n";
-        let part = "pub(package) let answer = { (): i32 => \n  missing\n}\n";
+        let root = "let main: (): i32 = {  part.answer() }\n";
+        let part = "pub(package) let answer: (): i32 = { \n  missing\n}\n";
         let analysis = std::thread::Builder::new()
             .name("workspace-editor-analysis".into())
             .stack_size(16 * 1024 * 1024)
@@ -2085,7 +2085,7 @@ mod tests {
     #[test]
     fn semantic_index_covers_source_identities_references_and_ambiguity() {
         let module = Vec::new();
-        let source = "let Option = core.Option\nlet read = trait {\n  read: (self: Borrow<self>)(): i32\n}\n\nlet cell = struct { value: i32 }\nlet event = enum { value { value: i32 }, empty }\n\nlet choose = { (value: i32): i32 =>  value }\nlet choose = { (other: u64): u64 =>  other }\n\nextend(cell, read) {\n  let read = { (self: Borrow<self>)(): i32 =>  self.value }\n}\n\nlet answer = { (value: cell): i32 => \n  choose(value: value.read())\n}\n";
+        let source = "let Option = core.Option\nlet read = trait {\n  read: (self: Borrow<self>)(): i32\n}\n\nlet cell = struct { value: i32 }\nlet event = enum { value { value: i32 }, empty }\n\nlet choose: (value: i32): i32 = {  value }\nlet choose: (other: u64): u64 = {  other }\n\nextend(cell, read) {\n  let read: (self: Borrow<self>)(): i32 = {  self.value }\n}\n\nlet answer: (value: cell): i32 = { \n  choose(value: value.read())\n}\n";
         let analysis = analyze_workspace(
             &[EditorSource {
                 path: "src/lib.sc",
@@ -2181,8 +2181,8 @@ mod tests {
     fn semantic_index_routes_cross_module_references_and_rejects_partial_facts() {
         let root_module = Vec::new();
         let part_module = ["part".to_owned()];
-        let root = "let main = { (): i32 =>  part.answer() }\n";
-        let part = "pub(package) let answer = { (): i32 =>  42 }\n";
+        let root = "let main: (): i32 = {  part.answer() }\n";
+        let part = "pub(package) let answer: (): i32 = {  42 }\n";
         let sources = [
             EditorSource {
                 path: "src/main.sc",
@@ -2221,7 +2221,7 @@ mod tests {
             &[EditorSource {
                 path: "src/main.sc",
                 module_path: &root_module,
-                source: "let main = { (): i32 =>  missing }\n",
+                source: "let main: (): i32 = {  missing }\n",
                 is_root: true,
             }],
             DocumentTarget::Binary,
@@ -2233,7 +2233,7 @@ mod tests {
     #[test]
     fn semantic_index_preserves_unicode_and_never_misbinds_shadowed_names() {
         let module = Vec::new();
-        let source = "let 值 = { (): i32 =>  40 }\nlet shadowed = { (): i32 =>  1 }\nlet use_value = { (): i32 =>  值() + 2 }\nlet use_shadow = { (shadowed: i32): i32 =>  shadowed }\n";
+        let source = "let 值: (): i32 = {  40 }\nlet shadowed: (): i32 = {  1 }\nlet use_value: (): i32 = {  值() + 2 }\nlet use_shadow: (shadowed: i32): i32 = {  shadowed }\n";
         let analysis = analyze_workspace(
             &[EditorSource {
                 path: "src/unicode.sc",
@@ -2284,8 +2284,8 @@ mod tests {
     fn navigation_queries_cross_packages_and_preserve_read_only_ownership() {
         use std::collections::BTreeMap;
 
-        let root_source = "let main = { (): i32 =>  dep.answer() }\n";
-        let dependency_source = "pub let answer = { (): i32 =>  42 }\n";
+        let root_source = "let main: (): i32 = {  dep.answer() }\n";
+        let dependency_source = "pub let answer: (): i32 = {  42 }\n";
         let packages = [
             SourcePackage {
                 id: PackageId(0),
@@ -2354,7 +2354,7 @@ mod tests {
         else {
             panic!("expected hover");
         };
-        assert_eq!(hover.detail, "pub let answer = { (): i32 =>");
+        assert_eq!(hover.detail, "pub let answer: (): i32");
         assert!(!hover.editable);
         assert_eq!(hover.range.start.utf16_character, position.utf16_character);
 
@@ -2369,7 +2369,7 @@ mod tests {
 
     #[test]
     fn navigation_queries_refuse_overload_ambiguity_and_unknown_positions() {
-        let source = "let choose = { (value: i32): i32 =>  value }\nlet choose = { (other: u64): u64 =>  other }\nlet use_choose = { (): i32 =>  choose(value: 1) }\n";
+        let source = "let choose: (value: i32): i32 = {  value }\nlet choose: (other: u64): u64 = {  other }\nlet use_choose: (): i32 = {  choose(value: 1) }\n";
         let analysis = analyze_workspace(
             &[EditorSource {
                 path: "src/lib.sc",
@@ -2452,8 +2452,8 @@ mod tests {
     fn rename_produces_complete_cross_module_unicode_edits_and_preserves_bindings() {
         let root_module = Vec::new();
         let part_module = vec!["part".to_owned()];
-        let root = "let main = { (): i32 =>  part.answer() }\n";
-        let part = "pub(package) let answer = { (): i32 =>  42 }\n";
+        let root = "let main: (): i32 = {  part.answer() }\n";
+        let part = "pub(package) let answer: (): i32 = {  42 }\n";
         let session = WorkspaceSession::new(
             &[
                 EditorSource {
@@ -2498,7 +2498,7 @@ mod tests {
     fn rename_handles_aliases_and_selected_overloads_without_textual_overreach() {
         let module = Vec::new();
         let alias_source =
-            "let Option = core.Option\nlet make = { (): Option<i32> =>  Option.Some(1) }\n";
+            "let Option = core.Option\nlet make: (): Option<i32> = {  Option.Some(1) }\n";
         let alias_session = WorkspaceSession::new(
             &[EditorSource {
                 path: "src/lib.sc",
@@ -2524,7 +2524,7 @@ mod tests {
             .unwrap();
         assert_eq!(alias.edits.len(), 3);
 
-        let overload_source = "let choose = { (value: i32): i32 =>  value }\nlet choose = { (other: u64): u64 =>  other }\nlet use_choose = { (): i32 =>  choose(value: 1) }\n";
+        let overload_source = "let choose: (value: i32): i32 = {  value }\nlet choose: (other: u64): u64 = {  other }\nlet use_choose: (): i32 = {  choose(value: 1) }\n";
         let overload_session = WorkspaceSession::new(
             &[EditorSource {
                 path: "src/lib.sc",
@@ -2567,7 +2567,7 @@ mod tests {
     #[test]
     fn rename_refuses_invalid_names_capture_collision_foreign_and_dependency_targets() {
         let module = Vec::new();
-        let source = "let answer = { (): i32 =>  1 }\nlet second = { (): i32 =>  2 }\nlet use = { (value: i32): i32 =>  answer() + value }\n";
+        let source = "let answer: (): i32 = {  1 }\nlet second: (): i32 = {  2 }\nlet use: (value: i32): i32 = {  answer() + value }\n";
         let session = WorkspaceSession::new(
             &[EditorSource {
                 path: "src/lib.sc",
@@ -2619,7 +2619,7 @@ mod tests {
             Err(RenameError::BindingConflict)
         );
 
-        let foreign = "let c_value = { (): i32 => foreign(c) }\n";
+        let foreign = "let c_value: (): i32 = foreign(c)\n";
         let foreign_session = WorkspaceSession::new(
             &[EditorSource {
                 path: "src/lib.sc",
@@ -2645,7 +2645,7 @@ mod tests {
             Err(RenameError::ForeignTarget)
         );
 
-        let dependency_call = "let main = { (): i32 =>  dep.answer() }\n";
+        let dependency_call = "let main: (): i32 = {  dep.answer() }\n";
         let dependency_position = u32::try_from(dependency_call.find("answer").unwrap()).unwrap();
         let root = SourcePackage {
             id: PackageId(0),
@@ -2671,7 +2671,7 @@ mod tests {
             sources: vec![SourceUnit {
                 path: "deps/dep/src/lib.sc".into(),
                 module_path: Vec::new(),
-                source: "pub let answer = { (): i32 =>  42 }\n".into(),
+                source: "pub let answer: (): i32 = {  42 }\n".into(),
                 is_root: true,
             }],
         };
@@ -2697,8 +2697,8 @@ mod tests {
     fn workspace_session_overlays_versions_and_discards_superseded_results() {
         let root_module = Vec::new();
         let part_module = ["part".to_owned()];
-        let root = "let main = { (): i32 =>  part.answer() }\n";
-        let part = "pub(package) let answer = { (): i32 =>  42 }\n";
+        let root = "let main: (): i32 = {  part.answer() }\n";
+        let part = "pub(package) let answer: (): i32 = {  42 }\n";
         let mut session = WorkspaceSession::new(
             &[
                 EditorSource {
@@ -2726,7 +2726,7 @@ mod tests {
             .open_document(
                 "part.sc",
                 1,
-                "pub(package) let answer = { (): i32 =>  missing }\n",
+                "pub(package) let answer: (): i32 = {  missing }\n",
             )
             .expect("open overlay");
         let stale_snapshot = session.snapshot();
@@ -2736,7 +2736,7 @@ mod tests {
             .change_document(
                 "part.sc",
                 2,
-                "pub(package) let answer = { (): i32 =>  42 }\n",
+                "pub(package) let answer: (): i32 = {  42 }\n",
             )
             .expect("newer overlay");
         let stale_result = stale_worker.join().expect("stale analysis completes");
@@ -2780,18 +2780,18 @@ mod tests {
             &[EditorSource {
                 path: "main.sc",
                 module_path: &root_module,
-                source: "let main = { (): i32 =>  42 }\n",
+                source: "let main: (): i32 = {  42 }\n",
                 is_root: true,
             }],
             DocumentTarget::Binary,
         )
         .expect("workspace session");
         session
-            .open_document("main.sc", 7, "let main = { (): i32 =>  missing }\n")
+            .open_document("main.sc", 7, "let main: (): i32 = {  missing }\n")
             .expect("open document");
         let before_rejection = session.snapshot_id();
         assert!(matches!(
-            session.change_document("main.sc", 7, "let main = { (): i32 =>  0 }\n"),
+            session.change_document("main.sc", 7, "let main: (): i32 = {  0 }\n"),
             Err(WorkspaceSessionError::StaleDocumentVersion {
                 current: 7,
                 received: 7,
@@ -2801,7 +2801,7 @@ mod tests {
         assert_eq!(session.snapshot_id(), before_rejection);
 
         session
-            .update_baseline("main.sc", "let main = { (): i32 =>  41 + 1 }\n")
+            .update_baseline("main.sc", "let main: (): i32 = {  41 + 1 }\n")
             .expect("replace baseline");
         assert!(
             !session.snapshot().analyze().analysis.diagnostics.is_empty(),
@@ -2812,7 +2812,7 @@ mod tests {
         assert_eq!(closed.documents[0].version, None);
         assert_eq!(
             closed.documents[0].source,
-            "let main = { (): i32 =>  41 + 1 }\n"
+            "let main: (): i32 = {  41 + 1 }\n"
         );
         assert!(closed.analyze().analysis.diagnostics.is_empty());
     }
@@ -2827,7 +2827,7 @@ mod tests {
         let directory = std::env::temp_dir().join(unique);
         std::fs::create_dir(&directory).expect("create editor session fixture");
         let path = directory.join("main.sc");
-        let baseline = "let main = { (): i32 =>  42 }\n";
+        let baseline = "let main: (): i32 = {  42 }\n";
         std::fs::write(&path, baseline).expect("write editor session fixture");
         let path_string = path.to_string_lossy().into_owned();
         let root_module = Vec::new();
@@ -2870,7 +2870,7 @@ mod tests {
             Err(WorkspaceSessionError::DocumentNotOpen(_))
         ));
         session
-            .open_document(&path_string, 1, "let main = { (): i32 =>  0 }\n")
+            .open_document(&path_string, 1, "let main: (): i32 = {  0 }\n")
             .expect("open memory overlay");
         assert!(matches!(
             session.open_document(&path_string, 2, ""),

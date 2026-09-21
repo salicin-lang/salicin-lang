@@ -2,23 +2,20 @@ let ask = effect {
   value: (): i32
 }
 
-let run = {
-  (seed: i32)
-  {move action: with<ask>(): i32}: i32 =>
+let run: (seed: i32)
+  {move action: with<ask>(): i32}: i32 = {
   ask.handle {
     value: { (resume) => resume(20) },
     action: { action() + seed },
   }
 }
 
-let prepare = {
-  (order: Borrow<mut><i32>): i32 =>
+let prepare: (order: Borrow<mut><i32>): i32 = {
   order = order + 1
   20
 }
 
-let main = {
-  (): i32 =>
+let main: (): i32 = {
   let mut order = 0
   run(prepare(order)) {
     order = order * 2

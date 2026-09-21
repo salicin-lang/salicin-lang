@@ -1200,7 +1200,7 @@ mod tests {
             &[EditorSource {
                 path,
                 module_path: &[],
-                source: "let main = { (): i32 =>  0 }\n",
+                source: "let main: (): i32 = {  0 }\n",
                 is_root: true,
             }],
             DocumentTarget::Binary,
@@ -1329,18 +1329,18 @@ mod tests {
         }));
         for message in [
             json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{
-                "textDocument":{"uri":uri,"languageId":"salicin","version":2,"text":"let main = { (): i32 =>  1 }\n"}
+                "textDocument":{"uri":uri,"languageId":"salicin","version":2,"text":"let main: (): i32 = {  1 }\n"}
             }}),
             json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{
                 "textDocument":{"uri":uri,"version":2},
-                "contentChanges":[{"text":"let main = { (): i32 =>  2 }\n"}]
+                "contentChanges":[{"text":"let main: (): i32 = {  2 }\n"}]
             }}),
             json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{
                 "textDocument":{"uri":uri,"version":3},
-                "contentChanges":[{"text":"let main = { (): i32 =>  3 }\n"}]
+                "contentChanges":[{"text":"let main: (): i32 = {  3 }\n"}]
             }}),
             json!({"jsonrpc":"2.0","method":"textDocument/didSave","params":{
-                "textDocument":{"uri":uri},"text":"let main = { (): i32 =>  3 }\n"
+                "textDocument":{"uri":uri},"text":"let main: (): i32 = {  3 }\n"
             }}),
             json!({"jsonrpc":"2.0","method":"textDocument/didClose","params":{
                 "textDocument":{"uri":uri}
@@ -1357,7 +1357,7 @@ mod tests {
         let snapshot = server.session().snapshot();
         assert_eq!(
             snapshot.documents[0].source,
-            "let main = { (): i32 =>  3 }\n"
+            "let main: (): i32 = {  3 }\n"
         );
         assert_eq!(snapshot.documents[0].version, None);
         let messages = messages(output);
@@ -1381,13 +1381,13 @@ mod tests {
             EditorSource {
                 path: root_path,
                 module_path: &[],
-                source: "pub let root_value = { (): i32 =>  helper.value() }\n",
+                source: "pub let root_value: (): i32 = {  helper.value() }\n",
                 is_root: true,
             },
             EditorSource {
                 path: module_path,
                 module_path: &helper_module,
-                source: "pub let value = { (): i32 =>  42 }\n",
+                source: "pub let value: (): i32 = {  42 }\n",
                 is_root: false,
             },
         ];
@@ -1496,7 +1496,7 @@ mod tests {
     fn definition_references_and_hover_cross_read_only_package_sources() {
         let root_path = "/tmp/app/src/main.sc";
         let dependency_path = "/tmp/deps/math/src/lib.sc";
-        let root_source = "let main = { (): i32 =>  math.answer() }\n";
+        let root_source = "let main: (): i32 = {  math.answer() }\n";
         let packages = [
             SourcePackage {
                 id: PackageId(0),
@@ -1522,7 +1522,7 @@ mod tests {
                 sources: vec![SourceUnit {
                     path: dependency_path.into(),
                     module_path: Vec::new(),
-                    source: "pub let answer = { (): i32 =>  42 }\n".into(),
+                    source: "pub let answer: (): i32 = {  42 }\n".into(),
                     is_root: true,
                 }],
             },
@@ -1605,7 +1605,7 @@ mod tests {
                     "uri": dependency_uri,
                     "languageId": "salicin",
                     "version": 1,
-                    "text": "pub let answer = { (): i32 =>  0 }\n"
+                    "text": "pub let answer: (): i32 = {  0 }\n"
                 }
             }
         }));
@@ -1629,7 +1629,7 @@ mod tests {
     fn prepare_rename_and_rename_return_complete_versioned_edits() {
         let path = "/tmp/rename.sc";
         let uri = path_to_file_uri(path);
-        let source = "let answer = { (): i32 =>  42 }\nlet main = { (): i32 =>  answer() }\n";
+        let source = "let answer: (): i32 = {  42 }\nlet main: (): i32 = {  answer() }\n";
         let reference = source.rfind("answer").unwrap();
         let line_start = source[..reference].rfind('\n').unwrap() + 1;
         let workspace = WorkspaceSession::new(
@@ -1764,7 +1764,7 @@ mod tests {
         client.send(
             json!({"jsonrpc":"2.0","method":"textDocument/didOpen","params":{
                 "textDocument":{"uri":uri,"languageId":"salicin","version":1,
-                    "text":"let main = { (): i32 =>  missing }\n"}
+                    "text":"let main: (): i32 = {  missing }\n"}
             }}),
         );
         let modified = client.receive_until(|message| message["id"] == 3);
@@ -1773,7 +1773,7 @@ mod tests {
         client.send(
             json!({"jsonrpc":"2.0","method":"textDocument/didChange","params":{
                 "textDocument":{"uri":uri,"version":2},
-                "contentChanges":[{"text":"let main = { (): i32 =>  2 }\n"}]
+                "contentChanges":[{"text":"let main: (): i32 = {  2 }\n"}]
             }}),
         );
         release.store(true, Ordering::Release);
