@@ -66,6 +66,7 @@ pub(crate) struct SourceLayout {
     pub where_predicates: Vec<usize>,
     pub blocks: Vec<SourceBracedRegion>,
     pub closures: Vec<SourceBracedRegion>,
+    pub matches: Vec<SourceMatchRegion>,
     pub brace_groups: Vec<usize>,
 }
 
@@ -76,6 +77,12 @@ pub(crate) struct SourceBracedRegion {
     pub body_start_byte: usize,
     pub open_line: usize,
     pub close_line: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct SourceMatchRegion {
+    pub region: SourceBracedRegion,
+    pub arms: Vec<usize>,
 }
 
 pub(crate) fn parse_with_source_layout(
@@ -4937,13 +4944,15 @@ impl Parser {
     fn match_arms(
         &mut self,
         first: Option<(Pattern, Option<Box<Expr>>)>,
-    ) -> Result<Vec<MatchArm>, ParseError> {
+    ) -> Result<(Vec<MatchArm>, Vec<usize>), ParseError> {
         let mut arms = Vec::new();
+        let mut arm_starts = Vec::new();
         let mut first = first;
         loop {
             let (pattern, guard) = if let Some(first) = first.take() {
                 first
             } else {
+                arm_starts.push(self.current().start_byte);
                 let pattern = self.pattern()?;
                 let guard = if self.take(&TokenKind::If) {
                     Some(Box::new(self.expression(true)?))
@@ -4975,7 +4984,7 @@ impl Parser {
             self.expect(&TokenKind::RBrace, "`}` after match arms")?;
             break;
         }
-        Ok(arms)
+        Ok((arms, arm_starts))
     }
 
     fn named_brace_attachment_follows(&self) -> bool {
@@ -5230,18 +5239,23 @@ impl Parser {
         let body_start_byte = self.body_start_byte(self.index + 1);
         self.expect(&TokenKind::LBrace, "`{` before match arms")?;
         self.skip_separators();
-        let arms = if self.take(&TokenKind::RBrace) {
-            Vec::new()
+        let (arms, arm_starts) = if self.take(&TokenKind::RBrace) {
+            (Vec::new(), Vec::new())
         } else {
             self.match_arms(None)?
         };
         let close = self.previous().clone();
-        self.layout.closures.push(SourceBracedRegion {
+        let region = SourceBracedRegion {
             open_byte: open.start_byte,
             close_byte: close.start_byte,
             body_start_byte,
             open_line: open.line,
             close_line: close.line,
+        };
+        self.layout.closures.push(region.clone());
+        self.layout.matches.push(SourceMatchRegion {
+            region,
+            arms: arm_starts,
         });
         Ok(Expr::Match {
             scrutinee: Box::new(value.clone()),
@@ -5720,7 +5734,7 @@ impl Parser {
                 let id = self.next_control_binding;
                 self.next_control_binding += 1;
                 let input = format!("$match$callable$input${id}");
-                let arms = self.match_arms(Some((pattern, guard)))?;
+                let (arms, _) = self.match_arms(Some((pattern, guard)))?;
                 return Ok(Expr::Closure(
                     vec![Param {
                         mode: PassMode::Inferred,

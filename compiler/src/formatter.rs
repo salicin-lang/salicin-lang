@@ -22,6 +22,10 @@ pub fn format_source(source: &str) -> Result<String, String> {
     let (_, source_layout) = parse_with_source_layout(&expanded).map_err(|error| {
         format!("internal formatter error: expanded source no longer parses: {error}")
     })?;
+    let expanded = expand_multiline_match_arms(&expanded, &source_layout);
+    let (_, source_layout) = parse_with_source_layout(&expanded).map_err(|error| {
+        format!("internal formatter error: expanded match no longer parses: {error}")
+    })?;
     let expanded = expand_multiline_callable_groups(&expanded, &source_layout);
     let (_, source_layout) = parse_with_source_layout(&expanded).map_err(|error| {
         format!("internal formatter error: expanded callable header no longer parses: {error}")
@@ -211,6 +215,43 @@ fn expand_multiline_callable_groups(source: &str, layout: &SourceLayout) -> Stri
             if !source[previous.end_byte..group.start_byte].contains('\n') {
                 insertions.push(group.start_byte);
             }
+        }
+    }
+
+    insertions.sort_unstable();
+    insertions.dedup();
+    let mut expanded = source.to_owned();
+    for byte in insertions.into_iter().rev() {
+        expanded.insert(byte, '\n');
+    }
+    expanded
+}
+
+fn expand_multiline_match_arms(source: &str, layout: &SourceLayout) -> String {
+    let tokens = lex(source).expect("a parsed source must lex");
+    let mut insertions = Vec::new();
+    for matched in &layout.matches {
+        let region = &matched.region;
+        if region.open_line == region.close_line {
+            continue;
+        }
+        for byte in matched.arms.iter().copied() {
+            let Some(previous) = tokens.iter().rev().find(|token| {
+                token.end_byte <= byte && token.kind != TokenKind::Newline
+            }) else {
+                continue;
+            };
+            if !source[previous.end_byte..byte].contains('\n') {
+                insertions.push(byte);
+            }
+        }
+        let Some(previous) = tokens.iter().rev().find(|token| {
+            token.end_byte <= region.close_byte && token.kind != TokenKind::Newline
+        }) else {
+            continue;
+        };
+        if !source[previous.end_byte..region.close_byte].contains('\n') {
+            insertions.push(region.close_byte);
         }
     }
 
@@ -535,6 +576,25 @@ mod tests {
         assert_eq!(
             format_source(&formatted).expect("format output again"),
             formatted
+        );
+    }
+
+    #[test]
+    fn expands_inline_arms_when_a_match_already_spans_lines() {
+        let source = "let next = { <r: region>\n(batch: Borrow<mut><r><Batch>)\n(): Option<Transaction> =>\nlet transaction: Option<Transaction> = match(batch.index) { 0 => Some(Transaction.Credit(30)), 1 => Some(Transaction.Debit(8)), _ => None,\n}\ntransaction\n}\n";
+        let expected = "let next = { <r: region>\n  (batch: Borrow<mut><r><Batch>)\n  (): Option<Transaction> =>\n  let transaction: Option<Transaction> = match(batch.index) {\n    0 => Some(Transaction.Credit(30)),\n    1 => Some(Transaction.Debit(8)),\n    _ => None,\n  }\n  transaction\n}\n";
+        let formatted = format_source(source).expect("format multiline match arms");
+        assert_eq!(formatted, expected);
+        assert_eq!(
+            format_source(&formatted).expect("format multiline match again"),
+            formatted
+        );
+
+        let nested = "let main = { (): i32 =>\nmatch(true) { true => match(false) { false => 42, true => 0, }, false => 0,\n}\n}\n";
+        let formatted = format_source(nested).expect("format nested compact match");
+        assert!(
+            formatted.contains("true => match(false) { false => 42, true => 0, },"),
+            "{formatted}"
         );
     }
 

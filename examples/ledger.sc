@@ -58,7 +58,12 @@ extend(Batch, Iterator) {
   let next = { <r: region>
     (self: Borrow<mut><r><self>)
     (): Option<Transaction> =>
-    let transaction: Option<Transaction> = match(self.index) { 0 => Some(Transaction.Credit(30)), 1 => Some(Transaction.Debit(8)), 2 => Some(Transaction.Credit(25)), 3 => Some(Transaction.Debit(5)), _ => None,
+    let transaction: Option<Transaction> = match(self.index) {
+      0 => Some(Transaction.Credit(30)),
+      1 => Some(Transaction.Debit(8)),
+      2 => Some(Transaction.Credit(25)),
+      3 => Some(Transaction.Debit(5)),
+      _ => None,
     }
     self.index = self.index + 1
     transaction
@@ -88,7 +93,8 @@ let apply = { with<overdraft>
   (ledger: Borrow<mut><Ledger>)
   (move transaction: Transaction): () =>
   match(transaction) {
-    Credit(amount) => ledger.credit(amount), Debit(amount) => do {
+    Credit(amount) => ledger.credit(amount),
+    Debit(amount) => do {
       if(amount > ledger.balance) {
         overdraft.reject()
       } else: {
