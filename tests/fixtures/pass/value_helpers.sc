@@ -13,11 +13,11 @@ let result_fallback(error: bool): i32 = {
   if(error) { 11 } else: { 10 }
 }
 let make_error(): bool = { true }
-let impossible with<unsafety>
+let impossible: with<unsafety>
   (): i32 = {
   unsafe { raw_trap() }
 }
-let impossible_error with<unsafety>
+let impossible_error: with<unsafety>
   (error: bool): i32 = {
   unsafe { raw_trap() }
 }

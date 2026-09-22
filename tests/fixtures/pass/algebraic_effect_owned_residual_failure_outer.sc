@@ -19,18 +19,18 @@ extend<state, Droppable> {
   }
 }
 
-let accept with<throwing<bool>>(fail: bool): i32 = {
+let accept: with<throwing<bool>>(fail: bool): i32 = {
   if(fail) { throw(true) } else: { 0 }
 }
 
-let update with<step, throwing<bool>>(state: Borrow<mut><state>, fail: bool): i32 = {
+let update: with<step, throwing<bool>>(state: Borrow<mut><state>, fail: bool): i32 = {
   let accepted = accept(fail)
   let delta = step.delta()
   state.value = state.value + delta
   state.value + accepted
 }
 
-let run with<throwing<bool>>(drops: Ptr<mut><i32>, fail: bool): i32 = {
+let run: with<throwing<bool>>(drops: Ptr<mut><i32>, fail: bool): i32 = {
   let mut state = state { value: 20, drops: drops }
   step.handle {
     delta: { (resume) => resume(1) },

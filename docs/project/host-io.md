@@ -31,8 +31,8 @@ A native binary entry point has exactly one of these shapes:
 ```salicin
 let main(): () = { () }
 let main(): i32 = { 0 }
-let main with<std.io.io>(): () = { ... }
-let main with<std.io.io>(): i32 = { ... }
+let main: with<std.io.io>(): () = { ... }
+let main: with<std.io.io>(): i32 = { ... }
 ```
 
 The native launcher discharges only the validated `io` identity. It does not
@@ -180,7 +180,7 @@ it never silently substitutes another ABI.
 Each concrete host primitive must have:
 
 - source signatures proving `io` without implicit `unsafety`;
-- pure-caller rejection and `main with<io>` acceptance;
+- pure-caller rejection and `main: with<io>` acceptance;
 - native success, partial progress, EOF, interruption, and error mapping;
 - byte-exact output kept separate from compiler diagnostics;
 - initialized-buffer and checked-count coverage;

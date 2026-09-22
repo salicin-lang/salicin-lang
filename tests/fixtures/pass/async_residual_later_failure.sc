@@ -47,7 +47,7 @@ extend<step, Future<()>> {
   }
 }
 
-let finish with<throwing<bool>>(
+let finish: with<throwing<bool>>(
   calls: Ptr<mut><i32>,
   fail: bool,
   value: i32,

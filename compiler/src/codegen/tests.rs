@@ -1365,7 +1365,7 @@ fn throw_returns_the_enclosing_failure_error_variant() {
 let Result = core.Result
 let throwing = core.error.throwing
 
-let answer with<throwing<bool>>(fail: bool): i32 = {
+let answer: with<throwing<bool>>(fail: bool): i32 = {
   if(fail) { throw(true) }
   42
 }
@@ -1387,12 +1387,12 @@ fn failure_calls_propagate_automatically_and_try_handles_them() {
 let Result = core.Result
 let throwing = core.error.throwing
 
-let read with<throwing<bool>>(fail: bool): i32 = {
+let read: with<throwing<bool>>(fail: bool): i32 = {
   if(fail) { throw(true) }
   40
 }
-let forward with<throwing<bool>>(fail: bool): i32 = {  read(fail) + 2 }
-let invoke with<throwing<bool>>(action: (bool): i32)(fail: bool): i32 = {
+let forward: with<throwing<bool>>(fail: bool): i32 = {  read(fail) + 2 }
+let invoke: with<throwing<bool>>(action: (bool): i32)(fail: bool): i32 = {
   action(fail) }
 let main(): i32 = {
   let result: Result<bool><i32> = try { invoke(forward)(false) }
@@ -1411,7 +1411,7 @@ Err(_) => 0
 let Result = core.Result
 let throwing = core.error.throwing
 
-let read with<throwing<bool>>(): i32 = {  throw(true) }
+let read: with<throwing<bool>>(): i32 = {  throw(true) }
 let main(): i32 = {  read() }
 "#,
     )
@@ -1428,7 +1428,7 @@ fn try_infers_a_unique_escaping_failure_source_without_context() {
 let Result = core.Result
 let throwing = core.error.throwing
 
-let fail with<throwing<bool>>(flag: bool): i32 = {  if(flag) { throw(true) } else: { 41 } }
+let fail: with<throwing<bool>>(flag: bool): i32 = {  if(flag) { throw(true) } else: { 41 } }
 let main(): i32 = {
   let action = fail
   let direct = try { fail(false) }
@@ -1448,7 +1448,7 @@ let throwing = core.error.throwing
 let failure = struct { code: i32 }
 extend<failure, Copyable> {}
 extend<failure> {
-  let raise with<throwing<bool>>(self: Borrow<self>)(): i32 = {  throw(true) }
+  let raise: with<throwing<bool>>(self: Borrow<self>)(): i32 = {  throw(true) }
 }
 let main(): i32 = {
   let failure = failure{ code: 1 }
@@ -1464,8 +1464,8 @@ let main(): i32 = {
 let Result = core.Result
 let throwing = core.error.throwing
 
-let left with<throwing<bool>>(): i32 = {  throw(true) }
-let right with<throwing<i64>>(): i32 = {  throw(1) }
+let left: with<throwing<bool>>(): i32 = {  throw(true) }
+let right: with<throwing<i64>>(): i32 = {  throw(1) }
 let main(): i32 = {
   let result = try { if(true) { left() } else: { right() } }
   result ?? 0
@@ -1487,7 +1487,7 @@ let main(): i32 = {
 let Result = core.Result
 let throwing = core.error.throwing
 
-let fail with<throwing<bool>>(): i32 = {  throw(true) }
+let fail: with<throwing<bool>>(): i32 = {  throw(true) }
 let main(): i32 = {
   let inner = try { fail() }
   let outer = try { inner }
@@ -1569,7 +1569,7 @@ let main(): i32 = {
 let Result = core.Result
 let throwing = core.error.throwing
 
-let choose with<throwing<bool>>(fail: bool): i32 = {  if(fail) { throw(true) } else: { 42 } }
+let choose: with<throwing<bool>>(fail: bool): i32 = {  if(fail) { throw(true) } else: { 42 } }
 let choose(value: i32): i32 = {  value }
 let main(): i32 = {
   let result = try { choose(fail: false) }
@@ -1645,7 +1645,7 @@ let throwing = core.error.throwing
 let counter = struct { value: i32 }
 extend<counter, Copyable> {}
 extend<counter> {
-  let read with<throwing<bool>>(self: Borrow<self>)(fail: bool): i32 = {
+  let read: with<throwing<bool>>(self: Borrow<self>)(fail: bool): i32 = {
 if(fail) { throw(true) } else: { self.value }
   }
   let read(self: Borrow<self>)(fallback: i32): i32 = {  fallback }
@@ -1807,9 +1807,9 @@ let Result = core.Result
 let throwing = core.error.throwing
 
 let invoke<e: effects> with<e>(action: with<e>(): i32)(): i32 = {  action() }
-let fail with<throwing<bool>>(): i32 = {  throw(true) }
-let forward with<throwing<bool>>(): i32 = {  invoke(fail)() }
-let explicit with<throwing<bool>>(): i32 = {  invoke<throwing<bool>>(fail)() }
+let fail: with<throwing<bool>>(): i32 = {  throw(true) }
+let forward: with<throwing<bool>>(): i32 = {  invoke(fail)() }
+let explicit: with<throwing<bool>>(): i32 = {  invoke<throwing<bool>>(fail)() }
 let main(): i32 = {
   let inferred: Result<bool><i32> = try { forward() }
   let selected: Result<bool><i32> = try { explicit() }
@@ -1825,7 +1825,7 @@ let main(): i32 = {
 fn throw_requires_an_exact_active_failure_boundary() {
     for (source, expected) in [
         (
-            "let fail with<throwing<bool>>(): i32 = {  throw(0) }\nlet main(): i32 = {  0 }\n",
+            "let fail: with<throwing<bool>>(): i32 = {  throw(0) }\nlet main(): i32 = {  0 }\n",
             "requires `throwing<i32>`",
         ),
         (
@@ -3071,7 +3071,7 @@ fn ctfe_calls_reject_effects_borrows_and_foreign_bodies() {
     let effectful = compile_text(
         r#"
 let unsafe = core.unsafe.unsafe
-let unsafe_length with<unsafe>(): usize = {  unsafe { 1 } }
+let unsafe_length: with<unsafe>(): usize = {  unsafe { 1 } }
 let read(values: Array<i32><unsafe_length()>): i32 = {  values[0] }
 let main(): i32 = {  0 }
 "#,
@@ -6118,12 +6118,12 @@ let throwing = core.error.throwing
 let unsafe = core.unsafe.unsafety
 
 let ui = effect
-let fail with<throwing<bool>>(flag: bool): i32 = {
+let fail: with<throwing<bool>>(flag: bool): i32 = {
   if(flag) { throw(true) }
   40
 }
-let render with<ui>(value: i32): i32 = {  value }
-let combined with<throwing<bool>, unsafe, ui>(pointer: Ptr<i32>): i32 = {  do {
+let render: with<ui>(value: i32): i32 = {  value }
+let combined: with<throwing<bool>, unsafe, ui>(pointer: Ptr<i32>): i32 = {  do {
   let attempted = fail(false)
   let value = render(attempted)
   if(value == 40) { return(*pointer) }
@@ -6139,8 +6139,8 @@ let main(): i32 = {  0 }
 let Result = core.Result
 let throwing = core.error.throwing
 
-let fail with<throwing<i64>>(): i32 = {  throw(1) }
-let outer with<throwing<bool>>(): i32 = {  do { return(fail()) } }
+let fail: with<throwing<i64>>(): i32 = {  throw(1) }
+let outer: with<throwing<bool>>(): i32 = {  do { return(fail()) } }
 let main(): i32 = {  0 }
 "#,
     )
@@ -6158,8 +6158,8 @@ let state<s: type> = effect {
   get(): s
   put(move value: s): ()
 }
-let read with<state<i32>>(): i32 = {  state<i32>.get() }
-let write with<state<i32>>(value: i32): () = {  state<i32>.put(value) }
+let read: with<state<i32>>(): i32 = {  state<i32>.get() }
+let write: with<state<i32>>(value: i32): () = {  state<i32>.put(value) }
 let main(): i32 = {  0 }
 "#,
     )
@@ -6183,7 +6183,7 @@ let main(): i32 = {  0 }
     let wrong_instance = compile_text(
         r#"
 let state<s: type> = effect { get(): s }
-let read with<state<i64>>(): i32 = {  state<i32>.get() }
+let read: with<state<i64>>(): i32 = {  state<i32>.get() }
 let main(): i32 = {  0 }
 "#,
     )
@@ -6198,7 +6198,7 @@ fn handler_transformations_preserve_effectful_call_delimiters() {
     compile_text(
         r#"
 let ask = effect { value(): i32 }
-let combine with<ask>[left: i32](right: i32): i32 = {
+let combine: with<ask>[left: i32](right: i32): i32 = {
   left + right + ask.value()
 }
 let main(): i32 = {
@@ -6214,7 +6214,7 @@ let main(): i32 = {
     let diagnostics = compile_text(
         r#"
 let ask = effect { value(): i32 }
-let combine with<ask>[left: i32](right: i32): i32 = {
+let combine: with<ask>[left: i32](right: i32): i32 = {
   left + right + ask.value()
 }
 let main(): i32 = {
@@ -6241,12 +6241,12 @@ fn handler_rewrites_preserve_delimiters_through_specialized_paths() {
     compile_text(
         r#"
 let ask = effect { value(): i32 }
-let left with<ask>(): i32 = {  ask.value() }
-let right with<ask>(): i32 = {  ask.value() + 1 }
-let invoke with<ask>{move action: with<ask>() :i32}(bonus: i32): i32 = {
+let left: with<ask>(): i32 = {  ask.value() }
+let right: with<ask>(): i32 = {  ask.value() + 1 }
+let invoke: with<ask>{move action: with<ask>() :i32}(bonus: i32): i32 = {
   action() + bonus
 }
-let choose with<ask>(): i32 = {  invoke{action: if(true) { left } else: { right }}(2) }
+let choose: with<ask>(): i32 = {  invoke{action: if(true) { left } else: { right }}(2) }
 let main(): i32 = {  0 }
 "#,
     )
@@ -6285,12 +6285,12 @@ let main(): i32 = {
     compile_text(
         r#"
 let ask = effect { value(): i32 }
-let readable = trait { read with<ask>[move self](): i32 }
+let readable = trait { read: with<ask>[move self](): i32 }
 let cell = struct { value: i32 }
 extend<cell, readable> {
-  let read with<ask>[move self](): i32 = {  self.value + ask.value() }
+  let read: with<ask>[move self](): i32 = {  self.value + ask.value() }
 }
-let forward with<ask>(value: cell): i32 = {  value.read() }
+let forward: with<ask>(value: cell): i32 = {  value.read() }
 let main(): i32 = {
   ask.handle {
     value: { (resume) => resume(2) },
@@ -6341,8 +6341,8 @@ fn algebraic_handlers_preserve_operation_and_frame_residual_effects() {
     compile_text(
         r#"
 let io = effect
-let ask = effect { value with<io>(): i32 }
-let run with<io>(): i32 = {  ask.handle {
+let ask = effect { value: with<io>(): i32 }
+let run: with<io>(): i32 = {  ask.handle {
   value: { (resume) => resume(42) },
   action: { ask.value() },
 } }
@@ -6354,7 +6354,7 @@ let main(): i32 = {  0 }
     compile_text(
         r#"
 let supply = effect { seed(): i32 }
-let ask = effect { value with<supply>(): i32 }
+let ask = effect { value: with<supply>(): i32 }
 let main(): i32 = {
   supply.handle {
     seed: { (resume) => resume(0) },
@@ -6371,9 +6371,9 @@ let main(): i32 = {
     compile_text(
         r#"
 let supply = effect { seed(): i32 }
-let ask = effect { value with<supply>(): i32 }
-let request with<ask, supply>(): i32 = {  ask.value() }
-let inner with<supply>(): i32 = {
+let ask = effect { value: with<supply>(): i32 }
+let request: with<ask, supply>(): i32 = {  ask.value() }
+let inner: with<supply>(): i32 = {
   ask.handle {
     value: { (resume) => resume(42) },
     action: { request() },
@@ -6395,9 +6395,9 @@ let Result = core.Result
 let throwing = core.error.throwing
 
 let supply = effect { seed(): i32 }
-let ask = effect { value with<supply, throwing<bool>>(): i32 }
-let request with<ask, supply, throwing<bool>>(): i32 = {  ask.value() }
-let inner with<supply, throwing<bool>>(): i32 = {
+let ask = effect { value: with<supply, throwing<bool>>(): i32 }
+let request: with<ask, supply, throwing<bool>>(): i32 = {  ask.value() }
+let inner: with<supply, throwing<bool>>(): i32 = {
   ask.handle {
     value: { (resume) => resume(42) },
     action: { request() },
@@ -6419,7 +6419,7 @@ supply.handle {
     let missing_operation_effect = compile_text(
         r#"
 let io = effect
-let ask = effect { value with<io>(): i32 }
+let ask = effect { value: with<io>(): i32 }
 let run(): i32 = {  ask.handle {
   value: { (resume) => resume(42) },
   action: { ask.value() },
@@ -6436,7 +6436,7 @@ let main(): i32 = {  run() }
         r#"
 let io = effect
 let ask = effect { value(): i32 }
-let request with<ask, io>(): i32 = {  ask.value() }
+let request: with<ask, io>(): i32 = {  ask.value() }
 let run(): i32 = {  ask.handle {
   value: { (resume) => resume(42) },
   action: { request() },
@@ -6454,21 +6454,21 @@ let main(): i32 = {  run() }
 let throwing = core.error.throwing
 let unsafe = core.unsafe.unsafety
 
-let ask_unsafe = effect { value with<unsafe>(): i32 }
+let ask_unsafe = effect { value: with<unsafe>(): i32 }
 let unsafe_run(): i32 = {  unsafe { ask_unsafe.handle {
   value: { (resume) => resume(42) },
   action: { ask_unsafe.value() },
 } } }
-let ask_failure = effect { value with<throwing<bool>>(): i32 }
-let throwing_run with<throwing<bool>>(): i32 = {
+let ask_failure = effect { value: with<throwing<bool>>(): i32 }
+let throwing_run: with<throwing<bool>>(): i32 = {
   ask_failure.handle {
     value: { (resume) => resume(42) },
     action: { ask_failure.value() },
   }
 }
 let ask_frame = effect { value(): i32 }
-let throwing_request with<ask_frame, throwing<bool>>(): i32 = {  ask_frame.value() }
-let throwing_frame with<throwing<bool>>(): i32 = {
+let throwing_request: with<ask_frame, throwing<bool>>(): i32 = {  ask_frame.value() }
+let throwing_frame: with<throwing<bool>>(): i32 = {
   ask_frame.handle {
     value: { (resume) => resume(42) },
     action: { throwing_request() },
@@ -6484,7 +6484,7 @@ let main(): i32 = {  0 }
 let Result = core.Result
 let unsafe = core.unsafe.unsafety
 
-let ask = effect { value with<unsafe>(): i32 }
+let ask = effect { value: with<unsafe>(): i32 }
 let run(): i32 = {  ask.handle {
   value: { (resume) => resume(42) },
   action: { ask.value() },
@@ -6502,7 +6502,7 @@ let main(): i32 = {  run() }
 let Result = core.Result
 let throwing = core.error.throwing
 
-let ask = effect { value with<throwing<bool>>(): i32 }
+let ask = effect { value: with<throwing<bool>>(): i32 }
 let run(): i32 = {  ask.handle {
   value: { (resume) => resume(42) },
   action: { ask.value() },
@@ -6525,7 +6525,7 @@ let ask = effect {
   value(left: i32): i32
   value(right: i32): i32
 }
-let choose with<ask>(): i32 = {  ask.value(left: 19) + ask.value(right: 23) }
+let choose: with<ask>(): i32 = {  ask.value(left: 19) + ask.value(right: 23) }
 let main(): i32 = {  ask.handle {
   value: { (left, resume) => resume(left) },
   value: { (right, resume) => resume(right) },
@@ -6541,7 +6541,7 @@ let ask = effect {
   value(left: i32): i32
   value(right: i32): i32
 }
-let choose with<ask>(): i32 = {  ask.value(42) }
+let choose: with<ask>(): i32 = {  ask.value(42) }
 let main(): i32 = {  0 }
 "#,
     )
@@ -6556,7 +6556,7 @@ fn algebraic_effect_function_aliases_stay_static_and_handler_local() {
     compile_text(
         r#"
 let ask = effect { value(): i32 }
-let ask with<ask>(): i32 = {  ask.value() }
+let ask: with<ask>(): i32 = {  ask.value() }
 let main(): i32 = {  ask.handle {
   value: { (resume) => resume(42) },
   action: { let action = ask
@@ -6570,8 +6570,8 @@ let main(): i32 = {  ask.handle {
     compile_text(
         r#"
 let ask = effect { value(): i32 }
-let ask with<ask>(): i32 = {  ask.value() }
-let consume with<ask>(action: (): i32): i32 = {  action() }
+let ask: with<ask>(): i32 = {  ask.value() }
+let consume: with<ask>(action: (): i32): i32 = {  action() }
 let main(): i32 = {  ask.handle {
   value: { (resume) => resume(42) },
   action: { let action = ask
@@ -6584,9 +6584,9 @@ let main(): i32 = {  ask.handle {
     compile_text(
         r#"
 let ask = effect { value(): i32 }
-let ask_left with<ask>(): i32 = {  ask.value() }
-let ask_right with<ask>(): i32 = {  ask.value() }
-let consume with<ask>(action: (): i32): i32 = {  action() }
+let ask_left: with<ask>(): i32 = {  ask.value() }
+let ask_right: with<ask>(): i32 = {  ask.value() }
+let consume: with<ask>(action: (): i32): i32 = {  action() }
 let main(): i32 = {  ask.handle {
   value: { (resume) => resume(42) },
   action: { let action: with<ask>(): i32= if(true) { ask_left } else: { ask_right }
@@ -6600,8 +6600,8 @@ let main(): i32 = {  ask.handle {
     compile_text(
         r#"
 let ask = effect { value(): i32 }
-let ask_left with<ask>(): i32 = {  ask.value() }
-let ask_right with<ask>(): i32 = {  ask.value() }
+let ask_left: with<ask>(): i32 = {  ask.value() }
+let ask_right: with<ask>(): i32 = {  ask.value() }
 let main(): i32 = {  ask.handle {
   value: { (resume) => resume(42) },
   action: { let action: with<ask>(): i32= if(true) { ask_left } else: { ask_right }
@@ -6615,8 +6615,8 @@ let main(): i32 = {  ask.handle {
     compile_text(
         r#"
 let ask = effect { value(): i32 }
-let ask_left with<ask>(): i32 = {  ask.value() }
-let ask_right with<ask>(): i32 = {  ask.value() }
+let ask_left: with<ask>(): i32 = {  ask.value() }
+let ask_right: with<ask>(): i32 = {  ask.value() }
 let main(): i32 = {  ask.handle {
   value: { (resume) => resume(42) },
   action: { let action: with<ask>(): i32= if(true) { ask_left } else: { ask_right }
@@ -6632,9 +6632,9 @@ let main(): i32 = {  ask.handle {
     let incompatible_alias = compile_text(
         r#"
 let ask = effect { value(): i32 }
-let first with<ask>(): i32 = {  ask.value() }
-let second with<ask>(): i32 = {  ask.value() }
-let third with<ask>(): i32 = {  ask.value() }
+let first: with<ask>(): i32 = {  ask.value() }
+let second: with<ask>(): i32 = {  ask.value() }
+let third: with<ask>(): i32 = {  ask.value() }
 let main(): i32 = {  ask.handle {
   value: { (resume) => resume(42) },
   action: { let left: with<ask>(): i32= if(true) { first } else: { second }
@@ -6798,9 +6798,9 @@ fn custom_marker_effects_are_nominal_and_checked_at_calls() {
     compile_text(
         r#"
 let ui = effect
-let render with<ui>(): i32 = {  42 }
+let render: with<ui>(): i32 = {  42 }
 let invoke<e: effects> with<e>(action: with<e>(): i32)(): i32 = {  action() }
-let screen with<ui>(): i32 = {  invoke(render)() }
+let screen: with<ui>(): i32 = {  invoke(render)() }
 let main(): i32 = {  0 }
 "#,
     )
@@ -6809,7 +6809,7 @@ let main(): i32 = {  0 }
     let missing = compile_text(
         r#"
 let ui = effect
-let render with<ui>(): i32 = {  42 }
+let render: with<ui>(): i32 = {  42 }
 let screen(): i32 = {  render() }
 let main(): i32 = {  screen() }
 "#,
@@ -6821,7 +6821,7 @@ let main(): i32 = {  screen() }
 
     let unknown = compile_text(
         r#"
-let render with<ui>(): i32 = {  42 }
+let render: with<ui>(): i32 = {  42 }
 let main(): i32 = {  0 }
 "#,
     )
@@ -6833,7 +6833,7 @@ let main(): i32 = {  0 }
     let entry = compile_text(
         r#"
 let ui = effect
-let main with<ui>(): i32 = {  0 }
+let main: with<ui>(): i32 = {  0 }
 "#,
     )
     .expect_err("the native entry point cannot leave a custom effect unhandled");
@@ -6848,9 +6848,9 @@ fn callable_effect_requirements_are_covariant_rows() {
         r#"
 let ui = effect
 let pure(): i32 = {  42 }
-let render with<ui>(): i32 = {  42 }
-let accept_ui with<ui>(action: with<ui>(): i32)(): i32 = {  action() }
-let screen with<ui>(): i32 = {
+let render: with<ui>(): i32 = {  42 }
+let accept_ui: with<ui>(action: with<ui>(): i32)(): i32 = {  action() }
+let screen: with<ui>(): i32 = {
   let widened: with<ui>(): i32= pure
   accept_ui(pure)() + widened()
 }
@@ -6862,9 +6862,9 @@ let main(): i32 = {  0 }
     let narrowing = compile_text(
         r#"
 let ui = effect
-let render with<ui>(): i32 = {  42 }
+let render: with<ui>(): i32 = {  42 }
 let accept_pure(action: (): i32)(): i32 = {  action() }
-let screen with<ui>(): i32 = {  accept_pure(render)() }
+let screen: with<ui>(): i32 = {  accept_pure(render)() }
 let main(): i32 = {  0 }
 "#,
     )
@@ -6879,7 +6879,7 @@ let main(): i32 = {  0 }
 let unsafe = core.unsafe.unsafety
 
 let pure(): i32 = {  42 }
-let accept_unsafe with<unsafe>(action: with<unsafe>(): i32)(): i32 = {  action() }
+let accept_unsafe: with<unsafe>(action: with<unsafe>(): i32)(): i32 = {  action() }
 let main(): i32 = {  unsafe { accept_unsafe(pure)() } }
 "#,
     )
@@ -6944,8 +6944,8 @@ fn unsafetys_are_declared_forwarded_and_handled_at_calls() {
         r#"
 let unsafe = core.unsafe.unsafety
 
-let read with<unsafe>(pointer: Ptr<i32>): i32 = {  *pointer }
-let forward with<unsafe>(pointer: Ptr<i32>): i32 = {  read(pointer) }
+let read: with<unsafe>(pointer: Ptr<i32>): i32 = {  *pointer }
+let forward: with<unsafe>(pointer: Ptr<i32>): i32 = {  read(pointer) }
 let main(): i32 = {
   let value = 42
   unsafe { forward(ptr(borrow(value))) }
@@ -6959,7 +6959,7 @@ let main(): i32 = {
         r#"
 let unsafe = core.unsafe.unsafety
 
-let read with<unsafe>(pointer: Ptr<i32>): i32 = {  *pointer }
+let read: with<unsafe>(pointer: Ptr<i32>): i32 = {  *pointer }
 let main(): i32 = {
   let value = 42
   read(ptr(borrow(value)))
@@ -6980,7 +6980,7 @@ fn unsafety_checks_survive_aliasing_and_partial_application() {
         r#"
 let unsafe = core.unsafe.unsafety
 
-let read with<unsafe>(pointer: Ptr<i32>)(offset: i32): i32 = {  *pointer + offset }
+let read: with<unsafe>(pointer: Ptr<i32>)(offset: i32): i32 = {  *pointer + offset }
 let main(): i32 = {
   let value = 40
   let named = read
@@ -6998,7 +6998,7 @@ let main(): i32 = {
         r#"
 let unsafe = core.unsafe.unsafety
 
-let read with<unsafe>(pointer: Ptr<i32>)(offset: i32): i32 = {  *pointer + offset }
+let read: with<unsafe>(pointer: Ptr<i32>)(offset: i32): i32 = {  *pointer + offset }
 let main(): i32 = {
   let value = 40
   let pending = read(ptr(borrow(value)))
@@ -7017,10 +7017,10 @@ let unsafe = core.unsafe.unsafety
 
 let reader = struct { pointer: Ptr<i32> }
 let read = trait {
-  read with<unsafe>(self: Borrow<self>)(): i32
+  read: with<unsafe>(self: Borrow<self>)(): i32
 }
 extend<reader, read> {
-  let read with<unsafe>(self: Borrow<self>)(): i32 = {  *self.pointer }
+  let read: with<unsafe>(self: Borrow<self>)(): i32 = {  *self.pointer }
 }
 let main(): i32 = {
   let value = 42
@@ -7037,7 +7037,7 @@ let unsafe = core.unsafe.unsafety
 
 let reader = struct { pointer: Ptr<i32> }
 let read = trait {
-  read with<unsafe>(self: Borrow<self>)(): i32
+  read: with<unsafe>(self: Borrow<self>)(): i32
 }
 extend<reader, read> {
   let read(self: Borrow<self>)(): i32 = {  unsafe { *self.pointer } }
@@ -7054,7 +7054,7 @@ let main(): i32 = {  0 }
 #[test]
 fn entry_point_cannot_export_an_unsafety() {
     let errors = compile_resolved_text(
-        "let unsafe = core.unsafe.unsafety\nlet main with<unsafe>(): i32 = {  42 }\n",
+        "let unsafe = core.unsafe.unsafety\nlet main: with<unsafe>(): i32 = {  42 }\n",
     )
     .unwrap_err();
     assert!(errors.iter().any(|error| {
@@ -7066,11 +7066,11 @@ fn entry_point_cannot_export_an_unsafety() {
 
 #[test]
 fn entry_point_accepts_only_the_validated_standard_io_authority() {
-    compile_resolved_text("let main with<std.io.io>(): i32 = {  42 }\n")
+    compile_resolved_text("let main: with<std.io.io>(): i32 = {  42 }\n")
         .expect("the native boundary handles the validated std.io.io identity");
 
     let errors = compile_resolved_text(
-        "let host with<std.io.io>(): i32 = {  42 }\n\
+        "let host: with<std.io.io>(): i32 = {  42 }\n\
              let main(): i32 = {  host() }\n",
     )
     .unwrap_err();
@@ -7081,7 +7081,7 @@ fn entry_point_accepts_only_the_validated_standard_io_authority() {
     }));
 
     let errors =
-        compile_resolved_text("let io = effect {}\nlet main with<io>(): i32 = {  42 }\n")
+        compile_resolved_text("let io = effect {}\nlet main: with<io>(): i32 = {  42 }\n")
             .unwrap_err();
     assert!(errors.iter().any(|error| {
         error
@@ -7292,8 +7292,8 @@ fn failure_effects_lower_to_result_boundaries_and_propagate() {
 let Result = core.Result
 let throwing = core.error.throwing
 
-let fail with<throwing<bool>>(flag: bool): i32 = {  if(flag) { throw(true) } else: { 41 } }
-let forward with<throwing<bool>>(flag: bool): i32 = {  fail(flag) }
+let fail: with<throwing<bool>>(flag: bool): i32 = {  if(flag) { throw(true) } else: { 41 } }
+let forward: with<throwing<bool>>(flag: bool): i32 = {  fail(flag) }
 let main(): i32 = {
   let result: Result<bool><i32> = try { forward(false) }
   result ?? 0
@@ -7311,11 +7311,11 @@ fn failure_and_unsafe_share_one_effect_row() {
 let throwing = core.error.throwing
 let unsafe = core.unsafe.unsafety
 
-let read with<throwing<bool>, unsafe>(pointer: Ptr<i32>, fail: bool): i32 = {
+let read: with<throwing<bool>, unsafe>(pointer: Ptr<i32>, fail: bool): i32 = {
   if(fail) { throw(true) }
   *pointer
 }
-let forward with<throwing<bool>, unsafe>(pointer: Ptr<i32>, fail: bool): i32 = {
+let forward: with<throwing<bool>, unsafe>(pointer: Ptr<i32>, fail: bool): i32 = {
   read(pointer, fail) }
 "#,
     )
@@ -7326,7 +7326,7 @@ let forward with<throwing<bool>, unsafe>(pointer: Ptr<i32>, fail: bool): i32 = {
 let throwing = core.error.throwing
 let unsafe = core.unsafe.unsafety
 
-let read with<throwing<bool>, unsafe>(pointer: Ptr<i32>): i32 = {  *pointer }
+let read: with<throwing<bool>, unsafe>(pointer: Ptr<i32>): i32 = {  *pointer }
 let main(): i32 = {
   let value = 42
   read(ptr(borrow(value)))
@@ -7347,9 +7347,9 @@ let Result = core.Result
 let unsafe = core.unsafe.unsafety
 
 let ui = effect
-let render with<ui>(value: i32): i32 = {  value }
-let read with<unsafe>(pointer: Ptr<i32>): i32 = {  *pointer }
-let handle with<unsafe, ui>(pointer: Ptr<i32>): Result<bool><i32> = {  try {
+let render: with<ui>(value: i32): i32 = {  value }
+let read: with<unsafe>(pointer: Ptr<i32>): i32 = {  *pointer }
+let handle: with<unsafe, ui>(pointer: Ptr<i32>): Result<bool><i32> = {  try {
   let value = read(pointer)
   return(render(value))
 } }
@@ -8420,21 +8420,21 @@ let result_ref_mut<r: region>(value: Borrow<mut><r><Result<bool><i32>>): Result<
   value.as_ref<mut>()
 }
 
-let add_one with<unsafety>(value: i32): i32 = {  value + 1 }
-let keep_positive with<unsafety>(value: i32): Option<i32> = {
+let add_one: with<unsafety>(value: i32): i32 = {  value + 1 }
+let keep_positive: with<unsafety>(value: i32): Option<i32> = {
   if(value > 0) { Option.Some(value) } else: { Option.None }
 }
-let keep_result with<unsafety>(value: i32): Result<bool><i32> = {
+let keep_result: with<unsafety>(value: i32): Result<bool><i32> = {
   Result.Ok(value)
 }
-let map_error with<unsafety>(value: bool): i32 = {
+let map_error: with<unsafety>(value: bool): i32 = {
   if(value) { 1 } else: { 0 }
 }
-let option_fallback with<unsafety>(): i32 = {  40 }
-let error_fallback with<unsafety>(value: bool): i32 = {
+let option_fallback: with<unsafety>(): i32 = {  40 }
+let error_fallback: with<unsafety>(value: bool): i32 = {
   if(value) { 41 } else: { 40 }
 }
-let make_error with<unsafety>(): bool = {  true }
+let make_error: with<unsafety>(): bool = {  true }
 
 let main(): i32 = {  unsafe {
   let mut maybe = Option.Some(1)
@@ -9275,9 +9275,9 @@ let Result = core.Result
 let throwing = core.error.throwing
 
 let failure = struct { code: i32 }
-let read with<throwing<failure>>(fail: bool): i32 = {
+let read: with<throwing<failure>>(fail: bool): i32 = {
   if(fail) { throw(failure{ code: 1 }) } else: { 40 } }
-let run with<throwing<failure>>(fail: bool): i32 = {  read(fail) + 2 }
+let run: with<throwing<failure>>(fail: bool): i32 = {  read(fail) + 2 }
 let main(): i32 = {
   let result: Result<failure><i32> = try { run(false) }
   match(result) { Ok(value) => value, Err(_) => 0 }
@@ -9702,7 +9702,7 @@ fn cold_async_poll_preserves_its_residual_unsafety() {
 let Future = core.async.Future
 let unsafe = core.unsafe.unsafety
 
-let dangerous with<unsafe>(): i32 = {  unsafe { 42 } }
+let dangerous: with<unsafe>(): i32 = {  unsafe { 42 } }
 
 let main(): i32 = {
   let mut future = async { dangerous() }
@@ -9722,7 +9722,7 @@ let main(): i32 = {
 let Future = core.async.Future
 let unsafe = core.unsafe.unsafety
 
-let dangerous with<unsafe>(): i32 = {  unsafe { 42 } }
+let dangerous: with<unsafe>(): i32 = {  unsafe { 42 } }
 
 let main(): i32 = {
   let mut future = async { dangerous() }
@@ -9744,7 +9744,7 @@ fn tail_await_forwards_the_child_futures_unsafety() {
 let Future = core.async.Future
 let unsafe = core.unsafe.unsafety
 
-let dangerous with<unsafe>(): i32 = {  unsafe { 42 } }
+let dangerous: with<unsafe>(): i32 = {  unsafe { 42 } }
 
 let main(): i32 = {  unsafe {
   let mut future = async {
@@ -9768,7 +9768,7 @@ let ask = effect {
   ask(): i32
 }
 
-let request with<ask>(): i32 = {  ask.ask() }
+let request: with<ask>(): i32 = {  ask.ask() }
 
 let main(): i32 = {
   let future = async { request() }
@@ -10513,8 +10513,8 @@ fn cleanup_plan_try_and_throw_returns_exit_match_arm_scopes() {
 let Result = core.Result
 let throwing = core.error.throwing
 
-let read with<throwing<bool>>(fail: bool): i32 = {  if(fail) { throw(true) } else: { 42 } }
-let propagate with<throwing<bool>>(fail: bool): i32 = {
+let read: with<throwing<bool>>(fail: bool): i32 = {  if(fail) { throw(true) } else: { 42 } }
+let propagate: with<throwing<bool>>(fail: bool): i32 = {
   let item = read(fail)
   if(item == 0) { throw(true) }
   item

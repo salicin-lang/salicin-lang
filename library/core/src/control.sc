@@ -28,11 +28,11 @@ pub let break<T: type> with<loop_exit<T>>
   loop_exit<T>.exit(value)
 }
 
-pub let break with<loop_exit<()>>(): never = {
+pub let break: with<loop_exit<()>>(): never = {
   loop_exit<()>.exit(())
 }
 
-pub let continue with<iteration_skip>
+pub let continue: with<iteration_skip>
   (): never = {
   iteration_skip.next()
 }
@@ -42,7 +42,7 @@ pub let return<T: type> with<function_exit<T>>
   function_exit<T>.exit(value)
 }
 
-pub let return with<function_exit<()>>(): never = {
+pub let return: with<function_exit<()>>(): never = {
   function_exit<()>.exit(())
 }
 

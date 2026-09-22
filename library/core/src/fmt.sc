@@ -15,8 +15,8 @@ pub let Parse = trait {
 /// Effect-polymorphic sink for validated UTF-8 fragments.
 pub let TextWriter<e: effects> = trait {
   /// Writes one Unicode scalar without requiring a temporary allocation.
-  write_scalar with<e>(self: Borrow<mut><self>)(value: core.string.UnicodeScalar): ();
-  write_ascii with<e>(self: Borrow<mut><self>)(value: u8): ()
+  write_scalar: with<e>(self: Borrow<mut><self>)(value: core.string.UnicodeScalar): ();
+  write_ascii: with<e>(self: Borrow<mut><self>)(value: u8): ()
 }
 
 /// Stable categories for strict integer parsing failures.

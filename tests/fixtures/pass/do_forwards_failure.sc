@@ -1,9 +1,9 @@
 let Result = core.Result
 let throwing = core.error.throwing
 
-let reject with<throwing<bool>>(): i32 = { throw(true) }
+let reject: with<throwing<bool>>(): i32 = { throw(true) }
 
-let choose with<throwing<bool>>(flag: bool): i32 = {
+let choose: with<throwing<bool>>(flag: bool): i32 = {
   do {
     if(flag) { return(reject()) }
     42

@@ -159,7 +159,7 @@ extend<Result<E><T>, core.flow.Raise> {
   let Output = T
   let Error = E
 
-  let raise with<core.error.throwing<E>>(move self): T = {
+  let raise: with<core.error.throwing<E>>(move self): T = {
     match(self) {
       Ok(value) => value,
       Err(error) => core.error.throw(error),

@@ -19,7 +19,7 @@ An effectful declaration places its signature before `=` and its implementation
 inside the body braces:
 
 ```salicin
-let read with<io>(path: str): String = { ... }
+let read: with<io>(path: str): String = { ... }
 
 let apply<e: effects> with<e>
   (action: with<e>(i32): i32)
@@ -35,7 +35,12 @@ the same signature-first structure:
 let identity(value: i32): i32 = { value }
 ```
 
-`let f: (...): with<e>(R) = { ... }` is not an effect annotation: it attempts to use
+The colon before `with` is required when the effect clause immediately follows
+the declaration name. If a compile-time parameter group is attached to the name,
+the signature is already introduced and no colon appears before `with`, as in
+`apply<e: effects> with<e>` above.
+
+`let f(...): with<e>(R) = { ... }` is not an effect annotation: it attempts to use
 `with` as a non-callable result and is rejected. This keeps the result position
 available for future task or computation types.
 

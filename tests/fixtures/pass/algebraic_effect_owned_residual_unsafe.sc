@@ -18,7 +18,7 @@ extend<state, Droppable> {
   }
 }
 
-let update with<step, unsafety>
+let update: with<step, unsafety>
   (
   state: Borrow<mut><state>,
   calls: Ptr<mut><i32>,

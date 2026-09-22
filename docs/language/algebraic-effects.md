@@ -31,7 +31,7 @@ declaration with the same operation name in another effect is unrelated.
 `with<E>` adds the normalized effect row `E` to a callable signature or type:
 
 ```sc fragment
-let increment with<state<i32>>(): i32 = {
+let increment: with<state<i32>>(): i32 = {
   let value = state<i32>.get()
   state<i32>.put(value + 1)
   value
@@ -44,10 +44,13 @@ let apply<e: effects> with<e>
 }
 ```
 
-An ordinary named callable attaches its signature directly to the declaration name
-and places it before `=`; trait and effect members use the same shape. A
-function value uses the callable type `with<state<i32>>(): i32`. The row belongs to
-the complete multi-group call, not to a parameter group or result value.
+An ordinary named callable attaches a leading parameter group directly to the
+declaration name and places its signature before `=`. When `with` is the first
+signature element, it follows a declaration colon, as in `increment` above;
+after an attached compile-time group, `with` needs no colon, as in `apply`.
+Trait and effect members use the same rule. A function value uses the callable
+type `with<state<i32>>(): i32`. The row belongs to the complete multi-group call,
+not to a parameter group or result value.
 `with<>(a): b` is the pure callable `(a): b`; a non-callable operand is
 rejected.
 

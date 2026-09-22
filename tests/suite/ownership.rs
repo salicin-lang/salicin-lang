@@ -1098,7 +1098,7 @@ fn standard_library_acceptance_balances_allocations_on_return_and_throw() {
         "main.sc",
         r#"let live_allocations(): i64 = foreign<c, "live_allocations">
 
-let exercise with<core.error.throwing<core.string.String>>(fail: bool): () = {
+let exercise: with<core.error.throwing<core.string.String>>(fail: bool): () = {
   let mut writer = alloc.string.StringWriter.new()
   "柳".display(writer)
   let number: i64 = 42

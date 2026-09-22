@@ -2,7 +2,7 @@ let ask = effect {
   value(): i32
 }
 
-let ask with<ask>
+let ask: with<ask>
   (): i32 = {
   ask.value()
 }

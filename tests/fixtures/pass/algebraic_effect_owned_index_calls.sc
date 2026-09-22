@@ -31,7 +31,7 @@ let next_index(calls: Ptr<mut><i32>): usize = {
   }
 }
 
-let update with<step>
+let update: with<step>
   (before: i32)
   (value: Borrow<mut><i32>)
   (after: i32): () = {
@@ -39,7 +39,7 @@ let update with<step>
   value = value + delta + before + after
 }
 
-let program with<step>
+let program: with<step>
   (drops: Ptr<mut><i32>)
   (calls: Ptr<mut><i32>): i32 = {
   let mut state = state { values: [0, 40], drops: drops }

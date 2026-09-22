@@ -39,12 +39,12 @@ extend<step, Future<()>> {
   }
 }
 
-let request with<ask>
+let request: with<ask>
   (): i32 = {
   ask.ask()
 }
 
-let make_step with<ask>
+let make_step: with<ask>
   (drops: Ptr<mut><i32>): step = {
   step { polls: 0, value: request(), resource: resource { drops: drops } }
 }

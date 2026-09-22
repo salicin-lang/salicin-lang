@@ -498,11 +498,7 @@ impl Parser {
             return Err(self.error_here("`let mut` cannot declare a generic function or type"));
         }
 
-        if self.legacy_named_signature_colon_follows() {
-            return Err(self.error_here(
-                "named declaration parameters attach directly to the name; remove the `:`",
-            ));
-        }
+        self.prepare_named_signature(!compile_groups.is_empty(), "named declaration")?;
 
         let (compile_groups, groups, mut effects, has_callable_boundary, mut has_effect_clause) =
             self.declaration_groups(false, &[], compile_groups)?;
@@ -906,7 +902,7 @@ impl Parser {
         while !self.at(&TokenKind::RBrace) {
             if self.at(&TokenKind::Let) {
                 return Err(self.error_here(
-                    "effect operations omit `let`; write `operation(parameters): Result`",
+                    "effect operations omit `let`; write `operation(parameters): Result` or `operation: with<effects>(parameters): Result`",
                 ));
             }
             let operation = self.expect_ident("an effect operation name")?;
@@ -915,11 +911,7 @@ impl Parser {
                     "effect operation name `{operation}` is reserved by the generated `handle` function"
                 )));
             }
-            if self.legacy_named_signature_colon_follows() {
-                return Err(self.error_here(
-                    "effect operation parameters attach directly to the name; remove the `:`",
-                ));
-            }
+            self.prepare_named_signature(false, "effect operation")?;
             let (
                 operation_compile_groups,
                 groups,
@@ -1186,18 +1178,42 @@ impl Parser {
         Ok(groups)
     }
 
-    fn legacy_named_signature_colon_follows(&mut self) -> bool {
+    fn prepare_named_signature(
+        &mut self,
+        has_attached_parameter_group: bool,
+        declaration: &str,
+    ) -> Result<(), ParseError> {
         if !self.at(&TokenKind::Colon) {
-            return false;
+            if !has_attached_parameter_group && self.at_context_ident("with") {
+                return Err(self.error_here(format!(
+                    "{declaration} effect signatures require `:` before `with`"
+                )));
+            }
+            return Ok(());
         }
+
         let colon = self.index;
         self.advance();
         self.skip_newlines();
-        let follows = self.group_starts_with_compile_parameter()
-            || self.at_context_ident("with")
+        if self.at_context_ident("with") {
+            if has_attached_parameter_group {
+                self.index = colon;
+                return Err(self.error_here(format!(
+                    "{declaration} parameters already attach the signature to the name; remove the `:`"
+                )));
+            }
+            return Ok(());
+        }
+
+        let legacy_parameters = self.group_starts_with_compile_parameter()
             || self.runtime_parameter_declaration_group_follows();
         self.index = colon;
-        follows
+        if legacy_parameters {
+            return Err(self.error_here(format!(
+                "{declaration} parameters attach directly to the name; remove the `:`"
+            )));
+        }
+        Ok(())
     }
 
     fn sort_level_literal(&mut self) -> Result<u64, ParseError> {
@@ -1366,11 +1382,7 @@ impl Parser {
         self.effect_parameters_in_scope.clear();
         let named_group_start = self.layout.parameter_groups.len();
         let compile_groups = self.named_compile_parameter_groups()?;
-        if self.legacy_named_signature_colon_follows() {
-            return Err(self.error_here(
-                "extension member parameters attach directly to the name; remove the `:`",
-            ));
-        }
+        self.prepare_named_signature(!compile_groups.is_empty(), "extension member")?;
         let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
             self.declaration_groups(true, &[], compile_groups)?;
         self.layout.named_parameter_groups.extend_from_slice(
@@ -3126,14 +3138,15 @@ impl Parser {
             return Err(self.error_here("visibility on trait members is not supported yet"));
         }
         if self.at(&TokenKind::Let) {
-            return Err(self
-                .error_here("trait members omit `let`; write `name(parameters): Result` or `name: type`"));
+            return Err(self.error_here(
+                "trait members omit `let`; write `name(parameters): Result`, `name: with<effects>(parameters): Result`, or `name: type`",
+            ));
         }
         if matches!(self.current().kind, TokenKind::Ident(_)) {
             return self.trait_named_member(outer_effect_parameters);
         }
         Err(self.error_here(
-            "expected a trait member declaration `name(parameters): Result` or `name: type`",
+            "expected a trait member declaration `name(parameters): Result`, `name: with<effects>(parameters): Result`, or `name: type`",
         ))
     }
 
@@ -3143,11 +3156,7 @@ impl Parser {
     ) -> Result<TraitMember, ParseError> {
         let name = self.expect_ident("a trait member name")?;
         let compile_groups = self.named_compile_parameter_groups()?;
-        if self.legacy_named_signature_colon_follows() {
-            return Err(self.error_here(
-                "trait member parameters attach directly to the name; remove the `:`",
-            ));
-        }
+        self.prepare_named_signature(!compile_groups.is_empty(), "trait member")?;
         let (compile_groups, groups, mut effects, has_callable_boundary, _) =
             self.declaration_groups(true, outer_effect_parameters, compile_groups)?;
         let associated_kind = if groups.is_empty() {

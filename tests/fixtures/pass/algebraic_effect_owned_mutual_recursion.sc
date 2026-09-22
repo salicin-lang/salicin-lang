@@ -16,7 +16,7 @@ extend<state, Droppable> {
   }
 }
 
-let even with<step>
+let even: with<step>
   (state: Borrow<mut><state>, count: i32): i32 = {
   if(count == 0) {
     return(state.value)
@@ -27,7 +27,7 @@ let even with<step>
   nested + state.value
 }
 
-let odd with<step>
+let odd: with<step>
   (state: Borrow<mut><state>, count: i32): i32 = {
   if(count == 0) {
     return(state.value)

@@ -868,7 +868,7 @@ declaration, all signature groups precede `=`, and the final colon introduces
 the result:
 
 ```sc fragment
-let read with<counter>(): i32 = {
+let read: with<counter>(): i32 = {
   counter.next()
 }
 
@@ -911,7 +911,7 @@ answer type. Without it, completion preserves the action result.
 operation. `try { ... }` handles that effect and materializes `core.Result<Error><Value>`.
 
 ```sc fragment
-let parse with<throwing<parse_error>>(): i32 = { ... }
+let parse: with<throwing<parse_error>>(): i32 = { ... }
 
 let result = try {
   parse()
@@ -1013,7 +1013,7 @@ Postfix `value!` invokes the validated source trait `core.flow.Raise`:
 pub let Raise = trait {
   Output: type
   Error: type
-  raise with<core.error.throwing<Error>>(move self): Output
+  raise: with<core.error.throwing<Error>>(move self): Output
 }
 ```
 

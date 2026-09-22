@@ -6,7 +6,7 @@ let make_error(count: Borrow<mut><i32>): bool = {
   true
 }
 
-let fail with<throwing<bool>>(): i32 = {
+let fail: with<throwing<bool>>(): i32 = {
   let mut count = 0
   throw(make_error(count))
 }

@@ -5,7 +5,7 @@ let ask = effect {
   ask(): i32
 }
 
-let request with<ask>
+let request: with<ask>
   (): i32 = {
   ask.ask()
 }

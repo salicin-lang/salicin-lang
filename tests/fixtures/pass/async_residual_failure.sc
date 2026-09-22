@@ -17,7 +17,7 @@ extend<resource, Droppable> {
   }
 }
 
-let choose with<throwing<bool>>(fail: bool, value: i32): i32 = {
+let choose: with<throwing<bool>>(fail: bool, value: i32): i32 = {
   if(fail) {
     throw(true)
   } else: {
@@ -25,7 +25,7 @@ let choose with<throwing<bool>>(fail: bool, value: i32): i32 = {
   }
 }
 
-let consume_or_throw with<throwing<bool>>(move resource: resource): i32 = {
+let consume_or_throw: with<throwing<bool>>(move resource: resource): i32 = {
   choose(true, resource.value)
 }
 

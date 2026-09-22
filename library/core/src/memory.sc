@@ -478,7 +478,7 @@ pub let ptr<a: access = shared>
 /// Provides operations shared by raw pointers at either access.
 extend<Ptr<a><T>> {
   /// Returns the pointer `index` elements after this pointer.
-  let offset with<core.unsafe.unsafety>
+  let offset: with<core.unsafe.unsafety>
     (self)
     (index: u64): Ptr<a><T> = {
     unsafe {
@@ -490,7 +490,7 @@ extend<Ptr<a><T>> {
 /// Provides operations that require mutable raw-pointer access.
 extend<Ptr<mut><T>> {
   /// Initializes storage that is currently uninitialized.
-  let init with<core.unsafe.unsafety>
+  let init: with<core.unsafe.unsafety>
     (self)
     (value: T): () = {
     unsafe {
@@ -499,7 +499,7 @@ extend<Ptr<mut><T>> {
   }
 
   /// Moves a value out and leaves the storage uninitialized.
-  let take with<core.unsafe.unsafety>
+  let take: with<core.unsafe.unsafety>
     (self)
     (): T = {
     unsafe {

@@ -4,12 +4,12 @@ let Applicative = std.functional.Applicative
 let Functor = std.functional.Functor
 let Monad = std.functional.Monad
 
-let unsafe_add_one with<unsafety>
+let unsafe_add_one: with<unsafety>
   (value: i32): i32 = {
   value + 1
 }
 
-let unsafe_next with<unsafety>
+let unsafe_next: with<unsafety>
   (value: i32): Option<i32> = {
   Option<i32>.Some(value + 2)
 }

@@ -2,7 +2,7 @@ let ask = effect {
   value(): i32
 }
 
-let invoke with<ask>
+let invoke: with<ask>
   (action: with<ask>(i32): i32)
   (input: i32): i32 = {
   action(input)

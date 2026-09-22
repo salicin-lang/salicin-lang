@@ -15,7 +15,7 @@ extend<resource, Droppable> {
 
 let consume(move resource: resource): i32 = { 0 }
 
-let program with<stop>
+let program: with<stop>
   (counter: Ptr<mut><i32>): i32 = {
   let resource = resource { counter: counter }
   let value = stop.value()

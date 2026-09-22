@@ -893,8 +893,8 @@ fn rejects_malformed_control_contracts() {
             (
                 "continue",
                 EDITION_2026_CONTROL.replace(
-                    "pub let continue with<iteration_skip>\n  (): never =",
-                    "pub let continue with<iteration_skip>\n  (): () =",
+                    "pub let continue: with<iteration_skip>\n  (): never =",
+                    "pub let continue: with<iteration_skip>\n  (): () =",
                 ),
             ),
             (
@@ -1202,7 +1202,7 @@ fn rejects_malformed_flow_operator_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `Unwrap`")));
 
     let malformed = EDITION_2026_FLOW.replace(
-        "raise with<core.error.throwing<Error>>(move self): Output",
+        "raise: with<core.error.throwing<Error>>(move self): Output",
         "raise(move self): Output",
     );
     let modules = edition_2026_test_modules(&[("flow", &malformed)]);

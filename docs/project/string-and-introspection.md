@@ -340,25 +340,25 @@ let string_reserve(
 ): () = builtin()
 
 // Callers preserve the UTF-8 invariant.
-let string_push_byte_unchecked with<core.unsafe.unsafety>(
+let string_push_byte_unchecked: with<core.unsafe.unsafety>(
   value: Borrow<mut><String>,
   byte: u8,
 ): () = builtin()
 
 // `new_length` has already been checked as a UTF-8 boundary.
-let string_truncate_unchecked with<core.unsafe.unsafety>(
+let string_truncate_unchecked: with<core.unsafe.unsafety>(
   value: Borrow<mut><String>,
   new_length: u64,
 ): () = builtin()
 
 // Transfers ownership between the opaque string and allocation adapters.
-pub let string_from_raw_parts with<core.unsafe.unsafety>(
+pub let string_from_raw_parts: with<core.unsafe.unsafety>(
   pointer: Ptr<mut><u8>,
   length: u64,
   capacity: u64,
 ): String = builtin()
 
-pub let string_into_raw_parts with<core.unsafe.unsafety>(
+pub let string_into_raw_parts: with<core.unsafe.unsafety>(
   move value: String,
 ): (Ptr<mut><u8>, u64, u64) = builtin()
 ```

@@ -1,4 +1,4 @@
-let main with<std.io.io>
+let main: with<std.io.io>
   (): i32 = {
   let text: String = "hello"
   let view = text.as_str()

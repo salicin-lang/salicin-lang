@@ -3,7 +3,7 @@ let Result = core.Result
 let throwing = core.error.throwing
 let unsafety = core.unsafe.unsafety
 
-let read with<throwing<bool>, unsafety>
+let read: with<throwing<bool>, unsafety>
   (fail: bool): i32 = {
   if(fail) { throw(true) }
   42

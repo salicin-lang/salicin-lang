@@ -741,7 +741,7 @@ fn standard_test_assertions_evaluate_once_and_report_stable_messages() {
              counter = counter + 1\n\
              42\n\
              }\n\
-             let common_assertions_pass with<core.error.throwing<core.string.String>>(): () = {\n\
+             let common_assertions_pass: with<core.error.throwing<core.string.String>>(): () = {\n\
              let mut counter = 0\n\
              std.test.assert(true)\n\
              std.test.assert_eq(evaluate(counter))(evaluate(counter))\n\
@@ -769,31 +769,31 @@ fn standard_test_assertions_evaluate_once_and_report_stable_messages() {
 
     let failing = temporary.write(
         "assertions-fail.sc",
-        "let fail_assert with<core.error.throwing<core.string.String>>(): () = {\n\
+        "let fail_assert: with<core.error.throwing<core.string.String>>(): () = {\n\
              std.test.assert(false)\n\
              }\n\
-             let fail_assert_eq with<core.error.throwing<core.string.String>>(): () = {\n\
+             let fail_assert_eq: with<core.error.throwing<core.string.String>>(): () = {\n\
              let left: i64 = 1\n\
              let right: i64 = 2\n\
              std.test.assert_eq<i64>(left)(right)\n\
              }\n\
-             let fail_assert_ne with<core.error.throwing<core.string.String>>(): () = {\n\
+             let fail_assert_ne: with<core.error.throwing<core.string.String>>(): () = {\n\
              let value: i64 = 7\n\
              std.test.assert_ne<i64>(value)(value)\n\
              }\n\
-             let fail_expect_some with<core.error.throwing<core.string.String>>(): () = {\n\
+             let fail_expect_some: with<core.error.throwing<core.string.String>>(): () = {\n\
              let value: core.Option<i64> = core.Option.None\n\
              let _ = std.test.expect_some<i64>(value)\n\
              }\n\
-             let fail_expect_none with<core.error.throwing<core.string.String>>(): () = {\n\
+             let fail_expect_none: with<core.error.throwing<core.string.String>>(): () = {\n\
              let value: core.Option<i64> = core.Option.Some(9)\n\
              std.test.expect_none<i64>(value)\n\
              }\n\
-             let fail_expect_ok with<core.error.throwing<core.string.String>>(): () = {\n\
+             let fail_expect_ok: with<core.error.throwing<core.string.String>>(): () = {\n\
              let value: core.Result<i64><i64> = core.Result.Err(0)\n\
              let _ = std.test.expect_ok<i64, i64>(value)\n\
              }\n\
-             let fail_expect_err with<core.error.throwing<core.string.String>>(): () = {\n\
+             let fail_expect_err: with<core.error.throwing<core.string.String>>(): () = {\n\
              let value: core.Result<i64><i64> = core.Result.Ok(11)\n\
              let _ = std.test.expect_err<i64, i64>(value)\n\
              }\n\

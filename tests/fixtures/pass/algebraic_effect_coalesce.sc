@@ -7,7 +7,7 @@ let query = effect {
   fallback(): bool
 }
 
-let program with<query>
+let program: with<query>
   (): i32 = {
   let option_some = if(query.option(true) ?? query.fallback()) { 10 } else: { 0 }
   let option_none = if(query.option(false) ?? query.fallback()) { 10 } else: { 0 }

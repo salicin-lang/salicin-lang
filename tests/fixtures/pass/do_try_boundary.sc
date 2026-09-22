@@ -1,7 +1,7 @@
 let Result = core.Result
 let throwing = core.error.throwing
 
-let read with<throwing<bool>>(fail: bool): i32 = {
+let read: with<throwing<bool>>(fail: bool): i32 = {
   if(fail) { throw(true) } else: { 40 }
 }
 

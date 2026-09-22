@@ -159,12 +159,12 @@ let count_result(
 ///
 /// A successful zero count on a non-empty buffer is EOF. Short reads are
 /// successful and `Interrupted` is preserved.
-pub let read_stdin with<io>
+pub let read_stdin: with<io>
   (buffer: Borrow<mut><core.memory.Slice<u8>>): core.Result<IoError><u64> = {
   read_stream_at(0)(buffer)(0)
 }
 
-let read_stream_at with<io>
+let read_stream_at: with<io>
   (descriptor: i32)
   (buffer: Borrow<mut><core.memory.Slice<u8>>)
   (offset: u64): core.Result<IoError><u64> = {
@@ -188,18 +188,18 @@ let read_stream_at with<io>
 }
 
 /// Performs one synchronous write Attempt to standard output.
-pub let write_stdout with<io>
+pub let write_stdout: with<io>
   (bytes: Borrow<core.memory.Slice<u8>>): core.Result<IoError><u64> = {
   write_stream_at(1)(bytes)(0)
 }
 
 /// Performs one synchronous write Attempt to standard error.
-pub let write_stderr with<io>
+pub let write_stderr: with<io>
   (bytes: Borrow<core.memory.Slice<u8>>): core.Result<IoError><u64> = {
   write_stream_at(2)(bytes)(0)
 }
 
-let write_stream_at with<io>
+let write_stream_at: with<io>
   (descriptor: i32)
   (bytes: Borrow<core.memory.Slice<u8>>)
   (offset: u64): core.Result<IoError><u64> = {
@@ -222,7 +222,7 @@ let write_stream_at with<io>
   count_result(count, failure, raw_code)
 }
 
-let write_all_stream with<io>
+let write_all_stream: with<io>
   (descriptor: i32)
   (bytes: Borrow<core.memory.Slice<u8>>): core.Result<IoError><()> = {
   let length = bytes.len()
@@ -243,31 +243,31 @@ let write_all_stream with<io>
 }
 
 /// Writes every byte to standard output, retrying interruption.
-pub let write_stdout_all with<io>
+pub let write_stdout_all: with<io>
   (bytes: Borrow<core.memory.Slice<u8>>): core.Result<IoError><()> = {
   write_all_stream(1)(bytes)
 }
 
 /// Writes every byte to standard error, retrying interruption.
-pub let write_stderr_all with<io>
+pub let write_stderr_all: with<io>
   (bytes: Borrow<core.memory.Slice<u8>>): core.Result<IoError><()> = {
   write_all_stream(2)(bytes)
 }
 
 /// Direct descriptor writes are unbuffered, so flushing is a successful
 /// synchronization point without another host call.
-pub let flush_stdout with<io>(): core.Result<IoError><()> = {  core.Result.Ok(()) }
-pub let flush_stderr with<io>(): core.Result<IoError><()> = {  core.Result.Ok(()) }
+pub let flush_stdout: with<io>(): core.Result<IoError><()> = {  core.Result.Ok(()) }
+pub let flush_stderr: with<io>(): core.Result<IoError><()> = {  core.Result.Ok(()) }
 
 /// Writes validated UTF-8 text to standard output.
-pub let print with<io>
+pub let print: with<io>
   (value: Borrow<core.string.str>): core.Result<IoError><()> = {
   let bytes = value.as_bytes()
   write_stdout_all(bytes)
 }
 
 /// Writes validated UTF-8 text followed by one LF byte.
-pub let println with<io>
+pub let println: with<io>
   (value: Borrow<core.string.str>): core.Result<IoError><()> = {
   match(print(value)) {
     Err(error) => core.Result.Err(error),
@@ -280,14 +280,14 @@ pub let println with<io>
 }
 
 /// Writes validated UTF-8 text to standard error.
-pub let eprint with<io>
+pub let eprint: with<io>
   (value: Borrow<core.string.str>): core.Result<IoError><()> = {
   let bytes = value.as_bytes()
   write_stderr_all(bytes)
 }
 
 /// Writes validated UTF-8 text followed by one LF byte to standard error.
-pub let eprintln with<io>
+pub let eprintln: with<io>
   (value: Borrow<core.string.str>): core.Result<IoError><()> = {
   match(eprint(value)) {
     Err(error) => core.Result.Err(error),
@@ -300,7 +300,7 @@ pub let eprintln with<io>
 }
 
 /// Reads exactly `buffer.len()` bytes or reports `UnexpectedEof`.
-pub let read_stdin_exact with<io>
+pub let read_stdin_exact: with<io>
   (buffer: Borrow<mut><core.memory.Slice<u8>>): core.Result<IoError><()> = {
   let length = buffer.len<mut>()
   let mut read: u64 = 0
@@ -321,7 +321,7 @@ pub let read_stdin_exact with<io>
 
 /// Reads one UTF-8 line including its LF terminator. EOF before any byte is
 /// `None`; invalid UTF-8 is `InvalidData`.
-pub let read_line with<io>(): core.Result<IoError><core.Option<String>> = {
+pub let read_line: with<io>(): core.Result<IoError><core.Option<String>> = {
   let mut bytes = alloc.vec.Vec<u8>.new()
   let mut done = false
   while(!done) {
@@ -356,13 +356,13 @@ pub let read_line with<io>(): core.Result<IoError><core.Option<String>> = {
 }
 
 /// Returns the number of process arguments, including the executable name.
-pub let argument_count with<io>
+pub let argument_count: with<io>
   (): u64 = {
   unsafe { host_argument_count() }
 }
 
 /// Copies one process argument losslessly as Unix bytes.
-pub let argument_bytes with<io>
+pub let argument_bytes: with<io>
   (index: u64): core.Option<alloc.vec.Vec<u8>> = {
   let count = argument_count()
   if(index >= count) {
@@ -380,7 +380,7 @@ pub let argument_bytes with<io>
 }
 
 /// Copies all process arguments losslessly as Unix bytes.
-pub let arguments_bytes with<io>
+pub let arguments_bytes: with<io>
   (): alloc.vec.Vec<ProcessArgument> = {
   let count = argument_count()
   let mut arguments = alloc.vec.Vec<ProcessArgument>.with_capacity(count)
@@ -399,7 +399,7 @@ pub let arguments_bytes with<io>
 ///
 /// The first invalid host argument returns `InvalidData`; no replacement
 /// decoding is performed.
-pub let arguments with<io>(): core.Result<IoError><alloc.vec.Vec<String>> = {
+pub let arguments: with<io>(): core.Result<IoError><alloc.vec.Vec<String>> = {
   let mut bytes = arguments_bytes()
   let count = bytes.len()
   let mut text = alloc.vec.Vec<String>.with_capacity(count)
@@ -503,7 +503,7 @@ let descriptor(value: Borrow<File>): i32 = {
   unsafe { *value.descriptor }
 }
 
-let close_descriptor with<io>
+let close_descriptor: with<io>
   (value: Ptr<mut><i32>): core.Result<IoError><()> = {
   let descriptor = unsafe { *value }
   if(descriptor < 0) { return(core.Result.Ok(())) }
@@ -525,7 +525,7 @@ let close_descriptor with<io>
 }
 
 /// Opens a UTF-8 path without normalization. Embedded NUL is rejected.
-pub let open with<io>
+pub let open: with<io>
   (path: Borrow<core.string.str>)
   (options: OpenOptions): core.Result<IoError><File> = {
   let flags = match(option_flags(options)) {
@@ -563,13 +563,13 @@ pub let open with<io>
 }
 
 extend<File> {
-  let read with<io>
+  let read: with<io>
     (self: Borrow<mut><self>)
     (buffer: Borrow<mut><core.memory.Slice<u8>>): core.Result<IoError><u64> = {
     read_stream_at(descriptor(self))(buffer)(0)
   }
 
-  let read_exact with<io>
+  let read_exact: with<io>
     (self: Borrow<mut><self>)
     (buffer: Borrow<mut><core.memory.Slice<u8>>): core.Result<IoError><()> = {
     let length = buffer.len<mut>()
@@ -589,19 +589,19 @@ extend<File> {
     core.Result.Ok(())
   }
 
-  let write with<io>
+  let write: with<io>
     (self: Borrow<self>)
     (bytes: Borrow<core.memory.Slice<u8>>): core.Result<IoError><u64> = {
     write_stream_at(descriptor(self))(bytes)(0)
   }
 
-  let write_all with<io>
+  let write_all: with<io>
     (self: Borrow<self>)
     (bytes: Borrow<core.memory.Slice<u8>>): core.Result<IoError><()> = {
     write_all_stream(descriptor(self))(bytes)
   }
 
-  let flush with<io>
+  let flush: with<io>
     (self: Borrow<self>)
     (): core.Result<IoError><()> = {
     let mut failure: i32 = 12
@@ -620,7 +620,7 @@ extend<File> {
     }
   }
 
-  let seek with<io>
+  let seek: with<io>
     (self: Borrow<self>)
     (offset: i64, origin: SeekFrom): core.Result<IoError><u64> = {
     let native_origin = match(origin) {
@@ -651,7 +651,7 @@ extend<File> {
 
   /// Consumes the owner. The descriptor is invalidated before the one close
   /// Attempt, including when close reports an error.
-  let close with<io>
+  let close: with<io>
     (move self)
     (): core.Result<IoError><()> = {
     close_descriptor(self.descriptor)
@@ -679,7 +679,7 @@ extend<File, core.marker.Droppable> {
 }
 
 /// Reads a whole File while enforcing a caller-selected byte limit.
-pub let read_file with<io>
+pub let read_file: with<io>
   (path: Borrow<core.string.str>)
   (limit: u64): core.Result<IoError><alloc.vec.Vec<u8>> = {
   let mut input = match(open(path)(OpenOptions.read_only())) {
@@ -723,7 +723,7 @@ pub let read_file with<io>
 }
 
 /// Creates or truncates a File and writes every byte.
-pub let write_file with<io>
+pub let write_file: with<io>
   (path: Borrow<core.string.str>)
   (bytes: Borrow<core.memory.Slice<u8>>): core.Result<IoError><()> = {
   let output = match(open(path)(OpenOptions.write_truncate())) {

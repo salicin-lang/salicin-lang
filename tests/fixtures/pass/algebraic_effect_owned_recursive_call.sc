@@ -16,7 +16,7 @@ extend<state, Droppable> {
   }
 }
 
-let walk with<step>
+let walk: with<step>
   (state: Borrow<mut><state>, count: i32): i32 = {
   if(count == 0) {
     return(state.value)

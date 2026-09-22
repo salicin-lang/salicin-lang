@@ -20,12 +20,12 @@ let consume(move resource: resource): i32 = {
   resource.bias
 }
 
-let apply with<ask>
+let apply: with<ask>
   (move action: with<ask>(): i32): i32 = {
   action() + 1
 }
 
-let apply_input with<ask>
+let apply_input: with<ask>
   (seed: i32, move action: with<ask>(i32): i32): i32 = {
   action(seed) + 1
 }

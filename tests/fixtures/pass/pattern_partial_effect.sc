@@ -1,6 +1,6 @@
 let unsafety = core.unsafe.unsafety
 
-let dangerous with<unsafety>
+let dangerous: with<unsafety>
   (): i32 = {
   42
 }

@@ -2,7 +2,7 @@ let ask = effect {
   value(): i32
 }
 
-let leak with<ask>
+let leak: with<ask>
   (value: Borrow<mut><i32>): (with<ask>(): i32) = {
   let mut action: with<ask>(): i32  = { () =>
     value = value + 1

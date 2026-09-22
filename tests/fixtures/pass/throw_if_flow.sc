@@ -1,7 +1,7 @@
 let Result = core.Result
 let throwing = core.error.throwing
 
-let choose with<throwing<bool>>(flag: bool): i32 = {
+let choose: with<throwing<bool>>(flag: bool): i32 = {
   if(flag) {
     throw(true)
   } else: {

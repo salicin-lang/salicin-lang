@@ -2,7 +2,7 @@ let stop = effect {
   stop(): i32
 }
 
-let program with<stop>
+let program: with<stop>
   (): i32 = {
   let value = stop.stop()
   value + 1

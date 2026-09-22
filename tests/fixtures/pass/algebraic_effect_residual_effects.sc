@@ -8,15 +8,15 @@ let supply = effect {
 }
 
 let ask = effect {
-  value with<supply, throwing<bool>, unsafety>(): i32
+  value: with<supply, throwing<bool>, unsafety>(): i32
 }
 
-let request with<ask, supply, throwing<bool>, unsafety>
+let request: with<ask, supply, throwing<bool>, unsafety>
   (): i32 = {
   ask.value()
 }
 
-let run with<supply, throwing<bool>>(): i32 = {
+let run: with<supply, throwing<bool>>(): i32 = {
   unsafe {
     ask.handle {
       value: { (resume) => resume(42) },

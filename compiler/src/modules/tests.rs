@@ -1347,7 +1347,7 @@ fn canonicalizes_qualified_custom_effects_across_modules() {
         unit(
             "src/main.sc",
             &[],
-            "pub let screen with<ui.ui>(): i32 = {  0 }\n",
+            "pub let screen: with<ui.ui>(): i32 = {  0 }\n",
             true,
         ),
         unit("src/ui.sc", &["ui"], "pub let ui = effect\n", false),
@@ -1366,7 +1366,7 @@ fn rejects_private_effects_exposed_by_public_callable_apis() {
         "src/lib.sc",
         &[],
         "let ui = effect\n\
-             pub let expose with<ui>(action: with<ui>(): i32): i32 = {  0 }\n",
+             pub let expose: with<ui>(action: with<ui>(): i32): i32 = {  0 }\n",
         true,
     )])
     .unwrap_err();
@@ -1600,8 +1600,8 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
              let Semigroup = std.algebra.Semigroup\n\
                            let Monoid = std.algebra.Monoid\n\
                           let number = struct { value: i32 }\n\
-             let suspended with<async>(): i32 = {  0 }\n\
-             let invoke with<async>(move action: with<async>(): i32): i32 = {  action() }\n\
+             let suspended: with<async>(): i32 = {  0 }\n\
+             let invoke: with<async>(move action: with<async>(): i32): i32 = {  action() }\n\
              extend<number, Semigroup> {\n\
              let combine(move left: number, move right: number): number = {  number{ value: left.value + right.value } }\n}\n\
              extend<number, Monoid> {\n\
@@ -1700,7 +1700,7 @@ fn standard_library_modules_are_explicit_reserved_namespaces() {
     let bare_effect = resolve_sources(&[unit(
         "effect.sc",
         &[],
-        "let suspended with<async>(): i32 = {  0 }\n",
+        "let suspended: with<async>(): i32 = {  0 }\n",
         true,
     )])
     .unwrap_err();

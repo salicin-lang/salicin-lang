@@ -3,15 +3,15 @@ let Result = core.Result
 let throwing = core.error.throwing
 let suspension = core.async.suspension
 
-let fail_with_answer with<throwing<i32>>(): never = {
+let fail_with_answer: with<throwing<i32>>(): never = {
   throwing<i32>.raise(42)
 }
 
-let fail_with_throw_sugar with<throwing<i32>>(): never = {
+let fail_with_throw_sugar: with<throwing<i32>>(): never = {
   throw(42)
 }
 
-let choose_with_throw_sugar with<throwing<i32>>(fail: bool): i32 = {
+let choose_with_throw_sugar: with<throwing<i32>>(fail: bool): i32 = {
   if(fail) { throw(42) } else: { 1 }
 }
 

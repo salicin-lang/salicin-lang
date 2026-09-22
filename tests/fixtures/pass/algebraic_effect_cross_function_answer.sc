@@ -2,7 +2,7 @@ let decide = effect {
   choose(): bool
 }
 
-let choose_value with<decide>
+let choose_value: with<decide>
   (): bool = {
   decide.choose()
 }

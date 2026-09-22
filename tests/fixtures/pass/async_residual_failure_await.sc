@@ -23,7 +23,7 @@ extend<step, Future<()>> {
   }
 }
 
-let make_step with<throwing<bool>>(fail: bool): step = {
+let make_step: with<throwing<bool>>(fail: bool): step = {
   if(fail) {
     throw(true)
   } else: {

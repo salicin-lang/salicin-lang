@@ -35,7 +35,7 @@ extend<step, Future<()>> {
   }
 }
 
-let make_step with<ask>
+let make_step: with<ask>
   (drops: Ptr<mut><i32>): step = {
   step { drops: drops, polls: 0, value: ask.ask() }
 }

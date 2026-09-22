@@ -34,7 +34,7 @@ let increment(calls: Ptr<mut><i32>): i32 = {
   }
 }
 
-let make_step with<throwing<bool>>(
+let make_step: with<throwing<bool>>(
   drops: Ptr<mut><i32>,
   calls: Ptr<mut><i32>,
   fail_at: i32,

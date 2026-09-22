@@ -2,7 +2,7 @@ let step = effect {
   tick(): ()
 }
 
-let update with<step>
+let update: with<step>
   (left: Borrow<mut><i32>, right: Borrow<mut><i32>): () = {
   step.tick()
   left = left + 1

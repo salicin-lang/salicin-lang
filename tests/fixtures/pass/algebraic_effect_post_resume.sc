@@ -2,7 +2,7 @@ let read = effect {
   read(): i32
 }
 
-let program with<read>
+let program: with<read>
   (): i32 = {
   read.read()
 }

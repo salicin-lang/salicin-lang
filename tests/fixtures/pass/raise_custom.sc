@@ -11,7 +11,7 @@ extend<stored, Raise> {
   let Output = i32;
   let Error = bool;
 
-  let raise with<throwing<bool>>(move self): i32 = {
+  let raise: with<throwing<bool>>(move self): i32 = {
     match(self) {
       value(value) => value,
       failure(error) => throw(error),
@@ -19,15 +19,15 @@ extend<stored, Raise> {
   }
 }
 
-let extract with<throwing<bool>>(move stored: stored): i32 = {
+let extract: with<throwing<bool>>(move stored: stored): i32 = {
   stored!
 }
 
-let extract_direct with<throwing<bool>>(move stored: stored): i32 = {
+let extract_direct: with<throwing<bool>>(move stored: stored): i32 = {
   stored.raise()
 }
 
-let extract_local with<throwing<bool>>(): i32 = {
+let extract_local: with<throwing<bool>>(): i32 = {
   let stored: stored = stored.value(42)
   stored.raise()
 }

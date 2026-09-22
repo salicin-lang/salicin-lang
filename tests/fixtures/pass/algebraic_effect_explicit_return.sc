@@ -13,7 +13,7 @@ extend<resource, Droppable> {
   }
 }
 
-let read_early with<read>
+let read_early: with<read>
   (counter: Ptr<mut><i32>): i32 = {
   let resource = resource { counter: counter }
   let value = read.read()

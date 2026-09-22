@@ -2,7 +2,7 @@ let abort = effect {
   stop(value: i32): never
 }
 
-let fail with<abort>
+let fail: with<abort>
   (): never = {
   abort.stop(42)
 }

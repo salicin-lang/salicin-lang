@@ -82,7 +82,7 @@ extend<Box<T>> {
   /// Allocates a new Box containing `value`.
   let new(value: T): Box<T> = {  box_new(value) }
   /// Rebuilds unique ownership from a pointer returned by `Box.into_raw`.
-  let from_raw with<core.unsafe.unsafety>
+  let from_raw: with<core.unsafe.unsafety>
     (pointer: Ptr<mut><T>): Box<T> = {
     Box<T> { pointer: pointer }
   }

@@ -2,7 +2,7 @@ let ask = effect {
   value(): i32
 }
 
-let apply_twice with<ask>
+let apply_twice: with<ask>
   (move action: with<ask>(): i32): i32 = {
   action() + action()
 }

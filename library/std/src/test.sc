@@ -56,13 +56,13 @@ let finish(registrations: u64, failures: u64): i32 = {
 }
 
 /// Fails the current test with an exact owned UTF-8 message.
-pub let fail with<core.error.throwing<core.string.String>>
+pub let fail: with<core.error.throwing<core.string.String>>
   (move message: core.string.String): never = {
   core.error.throw(message)
 }
 
 /// Requires a condition to be true.
-pub let assert with<core.error.throwing<core.string.String>>(condition: bool): () = {
+pub let assert: with<core.error.throwing<core.string.String>>(condition: bool): () = {
   if(!condition) {
     fail("assertion failed")
   }

@@ -20,7 +20,7 @@ extend<state, Droppable> {
   }
 }
 
-let update with<audit, step>
+let update: with<audit, step>
   (state: Borrow<mut><state>): i32 = {
   let adjustment = audit.adjust()
   let delta = step.delta()

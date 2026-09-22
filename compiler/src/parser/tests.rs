@@ -511,16 +511,37 @@ fn parses_name_side_declaration_signatures() {
             .unwrap_err();
     assert!(!error.message.is_empty());
 
+    parse(
+        "let io = effect {}\n\
+         let apply: with<io>(value: i32): i32 = { value }\n\
+         let generic<e: effects> with<e>(value: i32): i32 = { value }\n\
+         let protocol = trait { read: with<io>(value: i32): i32 }\n\
+         let state = effect { get: with<io>(): i32 }\n\
+         let value = struct {}\n\
+         extend<value> { let read: with<io>(self: Borrow<self>)(): i32 = { 0 } }\n",
+    )
+    .expect("a name-adjacent effect signature must use `:`, unless a parameter group is attached");
+
     for source in [
         "let Identity: <T: type>: type = T\n",
         "let identity: (value: i32): i32 = { value }\n",
-        "let apply: with<io>(): i32 = { 0 }\n",
+        "let apply<e: effects>: with<e>(): i32 = { 0 }\n",
         "let protocol = trait { read: <T: type>(value: T): T }\n",
         "let state = effect { get: (): i32 }\n",
         "let value = struct {}\nextend<value> { let read: <T: type>(value: T): T = { value } }\n",
     ] {
         let error = parse(source).expect_err("declaration signature colons must be rejected");
         assert!(error.message.contains("remove the `:`"), "{source}: {error:?}");
+    }
+
+    for source in [
+        "let io = effect {}\nlet apply with<io>(): i32 = { 0 }\n",
+        "let io = effect {}\nlet protocol = trait { read with<io>(): i32 }\n",
+        "let io = effect {}\nlet state = effect { get with<io>(): i32 }\n",
+        "let io = effect {}\nlet value = struct {}\nextend<value> { let read with<io>(self: Borrow<self>)(): i32 = { 0 } }\n",
+    ] {
+        let error = parse(source).expect_err("name-adjacent `with` must require a colon");
+        assert!(error.message.contains("require `:` before `with`"), "{source}: {error:?}");
     }
 
 }
@@ -602,7 +623,7 @@ fn grouped_global_expressions_remain_values() {
 #[test]
 fn parses_function_effects_and_rejects_them_on_values() {
     let program =
-        parse("let read with<unsafety>(pointer: Ptr<i32>): i32 = {  *pointer }\n").unwrap();
+        parse("let read: with<unsafety>(pointer: Ptr<i32>): i32 = {  *pointer }\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -623,7 +644,7 @@ fn parses_function_effects_and_rejects_them_on_values() {
     assert!(!error.message.is_empty());
 
     let program =
-        parse("let fallible with<throwing<bool>, unsafety>(): i32 = {  throw(true) }\n")
+        parse("let fallible: with<throwing<bool>, unsafety>(): i32 = {  throw(true) }\n")
             .unwrap();
     let Item::Function(fallible) = &program.items[0] else {
         panic!("expected fallible function");
@@ -640,15 +661,15 @@ fn parses_function_effects_and_rejects_them_on_values() {
     );
 
     for source in [
-        "let f with<unsafety, unsafety>(): i32 = {  0 }\n",
-        "let f with<throwing<bool>, throwing<bool>>(): i32 = {  0 }\n",
+        "let f: with<unsafety, unsafety>(): i32 = {  0 }\n",
+        "let f: with<throwing<bool>, throwing<bool>>(): i32 = {  0 }\n",
     ] {
         let error = parse(source).unwrap_err();
         assert!(error.message.contains("duplicate"));
     }
 
     let contextual =
-        parse("let f with<unsafe, try<bool>>(): i32 = {  0 }\n").expect("custom effect names");
+        parse("let f: with<unsafe, try<bool>>(): i32 = {  0 }\n").expect("custom effect names");
     let Item::Function(contextual) = &contextual.items[0] else {
         panic!("expected function");
     };
@@ -1868,7 +1889,7 @@ fn parses_bounded_c_foreign_declarations() {
             "an explicit result type",
         ),
         (
-            "let abs with<unsafety>(value: i32): i32 = foreign<c>\n",
+            "let abs: with<unsafety>(value: i32): i32 = foreign<c>\n",
             "cannot declare effects",
         ),
         (
@@ -2118,7 +2139,7 @@ fn parses_do_and_try_as_distinct_immediate_handlers() {
     assert!(matches!(function_tail(other), Expr::DoBlock { .. }));
 
     let member = parse(
-        "let unwrap with<throwing<bool>>(value: Result<bool><i32>): i32 = {  value.try }\n",
+        "let unwrap: with<throwing<bool>>(value: Result<bool><i32>): i32 = {  value.try }\n",
     )
     .unwrap();
     let Item::Function(member) = &member.items[0] else {
@@ -3425,8 +3446,8 @@ fn rejects_removed_type_value_syntax_and_duplicate_enum_variants() {
 fn parses_nominal_marker_effect_declarations_and_callable_rows() {
     let program = parse(
         "pub let ui = effect\n\
-             let render with<ui>(): i32 = {  0 }\n\
-             let invoke with<ui>(action: with<ui>(): i32): i32 = {  action() }\n",
+             let render: with<ui>(): i32 = {  0 }\n\
+             let invoke: with<ui>(action: with<ui>(): i32): i32 = {  action() }\n",
     )
     .unwrap();
 
@@ -3447,12 +3468,12 @@ fn parses_nominal_marker_effect_declarations_and_callable_rows() {
             if effects.custom == [Type::Named("ui".into(), Vec::new())]
     ));
 
-    let duplicate = parse("let f with<ui, ui>(): i32 = {  0 }\n").unwrap_err();
+    let duplicate = parse("let f: with<ui, ui>(): i32 = {  0 }\n").unwrap_err();
     assert!(duplicate.message.contains("duplicate custom effect `ui`"));
 
     parse("let local_effect = effect\n")
         .expect("snake_case effect declarations are valid nominal identities");
-    parse("let f with<core.effect.ui>(): i32 = {  0 }\n")
+    parse("let f: with<core.effect.ui>(): i32 = {  0 }\n")
         .expect("snake_case qualified effect names are valid");
 }
 
@@ -3463,7 +3484,7 @@ fn parses_parameterized_algebraic_effect_operations() {
              get(): s\n\
              put(move value: s): ()\n\
              }\n\
-             let program with<state<i32>>(): i32 = {  0 }\n",
+             let program: with<state<i32>>(): i32 = {  0 }\n",
     )
     .unwrap();
     let Item::Effect(state) = &program.items[0] else {

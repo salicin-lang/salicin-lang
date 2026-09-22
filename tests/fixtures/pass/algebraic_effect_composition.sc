@@ -6,7 +6,7 @@ let add = effect {
   add(x: i32): i32
 }
 
-let program with<read, add>
+let program: with<read, add>
   (): i32 = {
   add.add(read.read())
 }

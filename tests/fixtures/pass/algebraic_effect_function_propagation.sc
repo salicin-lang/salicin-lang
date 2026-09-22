@@ -2,7 +2,7 @@ let state<s: type> = effect {
   get(): s
 }
 
-let program with<state<i32>>(): i32 = {
+let program: with<state<i32>>(): i32 = {
   let answer = 1
   state<i32>.get() + answer
 }

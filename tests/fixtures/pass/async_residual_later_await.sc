@@ -36,7 +36,7 @@ extend<step, Future<()>> {
   }
 }
 
-let make_second with<ask>
+let make_second: with<ask>
   (
   drops: Ptr<mut><i32>,
   calls: Ptr<mut><i32>,

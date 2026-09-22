@@ -93,10 +93,17 @@ guard contract.
 
 ```ebnf
 let_decl = "let", [ contextual("mut") ], IDENT,
-           { compile_parameter_group },
-           ( callable_signature_tail, [ "=", declaration_initializer ]
+           ( name_attached_signature, [ "=", declaration_initializer ]
+             | ":", with_callable_signature, [ "=", declaration_initializer ]
              | ":", type_expr, [ "=", expression ]
              | "=", declaration_rhs ) ;
+
+name_attached_signature =
+    compile_parameter_group, { compile_parameter_group }, callable_signature_tail
+  | runtime_parameter_group, { runtime_parameter_group }, callable_signature_suffix ;
+
+with_callable_signature =
+    with_clause, { runtime_parameter_group }, callable_signature_suffix ;
 
 declaration_initializer =
     callable_body
@@ -115,6 +122,9 @@ callable_signature =
 callable_signature_tail =
     [ with_clause ],
     { runtime_parameter_group },
+    callable_signature_suffix ;
+
+callable_signature_suffix =
     [ "...", type_expr ],
     [ ":", declaration_annotation ],
     [ constraint_guard ] ;
@@ -154,12 +164,15 @@ and `= type { ... }` are not productions.
 `let Name = { field: Type, ... }` is a bodyless Brace schema declaration; it introduces a nominal
 struct and the same-named Brace constructor.
 
-Named declaration compile-time parameters and callable groups attach directly
-to the declaration name: `let Cell<T: type> = struct { value: T }`
-and `let identity<T: type>(value: T): T = { value }`. Compile-time and runtime
-groups remain valid inside a callable brace for anonymous callables and contexts
-without a declaration name. A named declaration cannot repeat its signature in
-the body.
+Named declaration compile-time and runtime parameter groups attach directly to
+the declaration name: `let Cell<T: type> = struct { value: T }` and
+`let identity<T: type>(value: T): T = { value }`. When `with` is the first
+signature element after the name, the declaration colon remains:
+`let read: with<io>(path: str): String = { ... }`. After an attached compile-time
+group, no colon intervenes: `let apply<e: effects> with<e>(): i32 = { ... }`.
+Compile-time and runtime groups remain valid inside a callable brace for
+anonymous callables and contexts without a declaration name. A named
+declaration cannot repeat its signature in the body.
 
 `builtin()` is a complete initializer available only to the embedded `core`
 package. It may define a compiler-owned function, type, type constructor, or
@@ -258,8 +271,9 @@ effect_decl =
 
 effect_operation =
     IDENT,
-    [ with_clause ],
-    runtime_parameter_group, { runtime_parameter_group },
+    ( runtime_parameter_group, { runtime_parameter_group }
+    | ":", with_clause,
+      runtime_parameter_group, { runtime_parameter_group } ),
     ":", type_expr ;
 
 struct_decl =
@@ -297,21 +311,24 @@ trait_decl =
 self_parameter = contextual("self"), ":", compile_parameter_sort ;
 
 trait_member =
-    IDENT, callable_signature, [ "=", callable_body ]
+    IDENT, name_attached_signature, [ "=", callable_body ]
+  | IDENT, ":", with_callable_signature, [ "=", callable_body ]
   | IDENT, ":", ( contextual("type") | contextual("parameters") )
   | IDENT, compile_parameter_group, { compile_parameter_group },
     ":", ( contextual("type") | contextual("parameters") ) ;
 ```
 
-Trait callable members use declarations of the form `name(parameters): Result`:
-the bodyless form declares an abstract requirement and `name(parameters): Result = body`
-for a default implementation. Associated declarations also omit `let`.
+Trait callable members use `name(parameters): Result`, or
+`name: with<effects>(parameters): Result` when `with` comes first. The bodyless
+form declares an abstract requirement and `= body` adds a default
+implementation. Associated declarations also omit `let`.
 
-Effect operations use the same `name(parameters): Result` form: they omit `let` and `=`,
-require an explicit runtime group, and have no implementation body. Their names
-are used by qualified operation calls and the labeled arguments of the
-compiler-generated `handle` function. `handle`, `done`, and `action` are
-reserved within an effect declaration for that generated interface.
+Effect operations use the same parameter-attached or colon-prefixed `with`
+forms. They omit `let` and `=`, require an explicit runtime group, and have no
+implementation body. Their names are used by qualified operation calls and the
+labeled arguments of the compiler-generated `handle` function. `handle`,
+`done`, and `action` are reserved within an effect declaration for that
+generated interface.
 
 An associated type or associated constructor has no runtime parameter groups. Its compile-time
 groups appear before `: type`. Associated declaration defaults are not supported yet.
@@ -330,7 +347,9 @@ extend_decl =
     "}" ;
 
 extend_member =
-    "let", IDENT, ":", callable_signature, [ "=", declaration_initializer ]
+    "let", IDENT,
+    ( name_attached_signature | ":", with_callable_signature ),
+    [ "=", declaration_initializer ]
   | "let", IDENT, "=", expression ;
 
 constraint_guard =

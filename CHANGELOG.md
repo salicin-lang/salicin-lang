@@ -9,15 +9,17 @@ subset.
 - **Breaking:** Named declaration signatures now attach directly to their names:
   `let Box<T: type> = struct { ... }`, `let identity<T: type>(value: T): T =
   { value }`, and `operation(): Result`. The former colon between a declaration
-  name and its compile-time, effect, or runtime parameter groups is removed;
-  `:` remains the result or ordinary value type separator.
+  name and its compile-time or runtime parameter groups is removed. A `with`
+  clause that immediately follows the name retains the signature colon, as in
+  `let read: with<io>(): String`; `:` also remains the result or ordinary value
+  type separator.
 - **Breaking:** Syntax-owned compile-time metadata now consistently uses angle
   groups: `test<"name"> { ... }`, callable-signature
   `requires<T is Trait>`, `extend<Target, Trait>`, and
   `foreign<c, "symbol">`. Their former parenthesized spellings are removed;
   parentheses, square brackets, and braces remain runtime groups.
 - **Breaking:** Named callable signatures now precede `=`, as in
-  `let add: (x: i32): i32 = { x + 1 }`, while anonymous/local callable values
+  `let add(x: i32): i32 = { x + 1 }`, while anonymous/local callable values
   retain outer braces and `=>`. Callable types remain `(T): R`;
   `{ expression }` is the zero-parameter closure and
   `{ Pattern => expression, ... }` is the multi-arm pattern

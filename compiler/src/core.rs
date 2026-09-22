@@ -153,7 +153,7 @@ pub let Unwrap = trait {
 pub let Raise = trait {
   Output: type
   Error: type
-  raise with<throwing<Error>>(move self): Output
+  raise: with<throwing<Error>>(move self): Output
 }
 "#;
 
@@ -3211,7 +3211,7 @@ fn validate_raise(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Raise` must declare `Output`, `Error`, and `raise with<throwing<Error>>(move self): Output`"
+            "lang item `Raise` must declare `Output`, `Error`, and `raise: with<throwing<Error>>(move self): Output`"
                 .to_owned(),
         );
     }

@@ -16,13 +16,13 @@ extend<state, Droppable> {
   }
 }
 
-let update with<step>
+let update: with<step>
   (state: Borrow<mut><state>): () = {
   let delta = step.delta()
   state.value = state.value + delta
 }
 
-let program with<step>
+let program: with<step>
   (drops: Ptr<mut><i32>): i32 = {
   let mut state = state { value: 40, drops: drops }
   update(state)

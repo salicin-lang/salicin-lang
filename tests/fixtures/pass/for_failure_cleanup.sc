@@ -45,11 +45,11 @@ extend<counter, IntoIterator> {
   }
 }
 
-let check with<throwing<bool>>(value: i32): () = {
+let check: with<throwing<bool>>(value: i32): () = {
   if(value < 0) { throw(true) } else: { () }
 }
 
-let visit with<throwing<bool>>(move counter: counter): i32 = {
+let visit: with<throwing<bool>>(move counter: counter): i32 = {
   for counter { value =>
     check(value)
   }

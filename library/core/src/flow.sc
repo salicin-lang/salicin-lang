@@ -35,5 +35,5 @@ pub let Raise = trait {
   Error: type
 
   /// Returns the successful payload or raises the stored Error.
-  raise with<core.error.throwing<Error>>(move self): Output
+  raise: with<core.error.throwing<Error>>(move self): Output
 }

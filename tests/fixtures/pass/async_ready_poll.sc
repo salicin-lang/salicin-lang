@@ -15,14 +15,14 @@ extend<resource, Droppable> {
 
 let consume(move resource: resource): () = { () }
 
-let allocate with<unsafety>
+let allocate: with<unsafety>
   (): Ptr<mut><i32> = {
   unsafe {
     raw_alloc<i32>(size_of<i32>, align_of<i32>)
   }
 }
 
-let release with<unsafety>
+let release: with<unsafety>
   (counter: Ptr<mut><i32>): () = {
   unsafe {
     raw_dealloc(counter, size_of<i32>, align_of<i32>)

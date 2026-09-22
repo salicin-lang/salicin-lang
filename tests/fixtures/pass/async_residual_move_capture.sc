@@ -19,7 +19,7 @@ extend<resource, Droppable> {
   }
 }
 
-let request with<ask>
+let request: with<ask>
   (): i32 = {
   ask.ask()
 }

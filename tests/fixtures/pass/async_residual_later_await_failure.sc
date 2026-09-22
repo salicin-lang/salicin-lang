@@ -34,7 +34,7 @@ extend<step, Future<()>> {
   }
 }
 
-let make_second with<throwing<bool>>(
+let make_second: with<throwing<bool>>(
   drops: Ptr<mut><i32>,
   calls: Ptr<mut><i32>,
   first: i32,
