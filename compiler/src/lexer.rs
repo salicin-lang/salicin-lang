@@ -695,8 +695,7 @@ mod tests {
 
     #[test]
     fn recognizes_region_parameters_and_names() {
-        let tokens =
-            lex("let choose<r: region>(value: Borrow<r><i32>): Borrow<r><i32>").unwrap();
+        let tokens = lex("let choose<r: region>(value: Borrow<r><i32>): Borrow<r><i32>").unwrap();
         assert!(tokens
             .iter()
             .any(|token| token.kind == TokenKind::Ident("region".to_owned())));

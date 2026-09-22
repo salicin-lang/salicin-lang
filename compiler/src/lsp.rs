@@ -1355,10 +1355,7 @@ mod tests {
         let code = server.run(Cursor::new(input), &mut output).unwrap();
         assert_eq!(code, 0);
         let snapshot = server.session().snapshot();
-        assert_eq!(
-            snapshot.documents[0].source,
-            "let main(): i32 = {  3 }\n"
-        );
+        assert_eq!(snapshot.documents[0].source, "let main(): i32 = {  3 }\n");
         assert_eq!(snapshot.documents[0].version, None);
         let messages = messages(output);
         let log = messages

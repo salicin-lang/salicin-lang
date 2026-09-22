@@ -532,10 +532,7 @@ fn canonical_type_application_check_rejects_mixed_builtin_families() {
 
 #[test]
 fn core_bundle_rejects_legacy_parenthesized_compile_groups() {
-    let malformed = EDITION_2026_BORROW.replace(
-        "<a: access = shared>",
-        "(a: access = shared)",
-    );
+    let malformed = EDITION_2026_BORROW.replace("<a: access = shared>", "(a: access = shared)");
     assert_ne!(malformed, EDITION_2026_BORROW);
 
     let modules = edition_2026_test_modules(&[("borrow", &malformed)]);
@@ -553,8 +550,7 @@ fn core_bundle_rejects_legacy_parenthesized_compile_groups() {
 
 #[test]
 fn builtin_markers_are_explicit_and_bounded_core_contracts() {
-    let missing_bootstrap =
-        EDITION_2026_LIB.replace("let builtin(): never = builtin()\n", "");
+    let missing_bootstrap = EDITION_2026_LIB.replace("let builtin(): never = builtin()\n", "");
     let modules = edition_2026_test_modules(&[("lib", &missing_bootstrap)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error
@@ -1090,10 +1086,8 @@ fn rejects_malformed_async_contracts() {
         ),
         (
             "Executor",
-            EDITION_2026_ASYNC.replace(
-                "run<e: effects, F: type, T: type>",
-                "run<F: type, T: type>",
-            ),
+            EDITION_2026_ASYNC
+                .replace("run<e: effects, F: type, T: type>", "run<F: type, T: type>"),
         ),
         (
             "async",
@@ -1192,8 +1186,7 @@ fn rejects_malformed_flow_operator_contracts() {
         .iter()
         .any(|diagnostic| diagnostic.contains("lang item `Coalesce`")));
 
-    let malformed =
-        EDITION_2026_FLOW.replace("unwrap(move self): Output", "unwrap(self): Output");
+    let malformed = EDITION_2026_FLOW.replace("unwrap(move self): Output", "unwrap(self): Output");
     let modules = edition_2026_test_modules(&[("flow", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
     assert!(error

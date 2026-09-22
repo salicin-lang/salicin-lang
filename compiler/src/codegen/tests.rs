@@ -1841,7 +1841,9 @@ fn throw_requires_an_exact_active_failure_boundary() {
             "handle it with `try { ... }`",
         ),
     ] {
-        let source = format!("use core.option.Option\nuse core.result.Result\nuse core.error.throwing\n{source}");
+        let source = format!(
+            "use core.option.Option\nuse core.result.Result\nuse core.error.throwing\n{source}"
+        );
         let errors = compile_resolved_text(&source).expect_err("invalid throw(must) be rejected");
         assert!(
             errors.iter().any(|error| error.message.contains(expected)),
@@ -7080,9 +7082,8 @@ fn entry_point_accepts_only_the_validated_standard_io_authority() {
             .contains("requires custom effect `std::io::io`")
     }));
 
-    let errors =
-        compile_resolved_text("let io = effect {}\nlet main: with<io>(): i32 = {  42 }\n")
-            .unwrap_err();
+    let errors = compile_resolved_text("let io = effect {}\nlet main: with<io>(): i32 = {  42 }\n")
+        .unwrap_err();
     assert!(errors.iter().any(|error| {
         error
             .message

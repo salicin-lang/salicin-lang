@@ -310,18 +310,22 @@ fn expand_multiline_match_arms(source: &str, layout: &SourceLayout) -> String {
             continue;
         }
         for byte in matched.arms.iter().copied() {
-            let Some(previous) = tokens.iter().rev().find(|token| {
-                token.end_byte <= byte && token.kind != TokenKind::Newline
-            }) else {
+            let Some(previous) = tokens
+                .iter()
+                .rev()
+                .find(|token| token.end_byte <= byte && token.kind != TokenKind::Newline)
+            else {
                 continue;
             };
             if !source[previous.end_byte..byte].contains('\n') {
                 insertions.push(byte);
             }
         }
-        let Some(previous) = tokens.iter().rev().find(|token| {
-            token.end_byte <= region.close_byte && token.kind != TokenKind::Newline
-        }) else {
+        let Some(previous) = tokens
+            .iter()
+            .rev()
+            .find(|token| token.end_byte <= region.close_byte && token.kind != TokenKind::Newline)
+        else {
             continue;
         };
         if !source[previous.end_byte..region.close_byte].contains('\n') {
@@ -500,8 +504,8 @@ fn analyze_layout(source: &str, source_layout: &SourceLayout) -> Result<Vec<Line
         }
         declaration_continuation = (line.has_parameter_group || line.has_repeated_parameter_group)
             && !matches!(line.first, Some(TokenKind::Equal));
-        named_declaration_continuation = line.has_named_parameter_group
-            && !matches!(line.first, Some(TokenKind::Equal));
+        named_declaration_continuation =
+            line.has_named_parameter_group && !matches!(line.first, Some(TokenKind::Equal));
         if continues_declaration && line.first == Some(TokenKind::Colon) {
             declaration_continuation = true;
         }
@@ -692,8 +696,10 @@ mod tests {
             formatted
         );
 
-        let source = "let pair<\nleft: type,\nright: type,\n> = struct { left: left, right: right }\n";
-        let expected = "let pair<\n  left: type,\n  right: type,\n> = struct { left: left, right: right }\n";
+        let source =
+            "let pair<\nleft: type,\nright: type,\n> = struct { left: left, right: right }\n";
+        let expected =
+            "let pair<\n  left: type,\n  right: type,\n> = struct { left: left, right: right }\n";
         assert_eq!(format_source(source).unwrap(), expected);
     }
 
@@ -808,7 +814,8 @@ mod tests {
 
     #[test]
     fn formats_generated_handle_members_as_ordinary_labeled_calls() {
-        let source = "let run(): i32 = { state.handle{get:{(resume)=>resume(42)},action:{state.get()},} }\n";
+        let source =
+            "let run(): i32 = { state.handle{get:{(resume)=>resume(42)},action:{state.get()},} }\n";
         let formatted = format_source(source).expect("format generated handle call");
         assert!(formatted.contains("state.handle {"), "{formatted}");
         assert!(formatted.contains("get:"), "{formatted}");

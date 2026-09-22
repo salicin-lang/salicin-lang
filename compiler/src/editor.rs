@@ -2733,11 +2733,7 @@ mod tests {
         let stale_worker = std::thread::spawn(move || stale_snapshot.analyze());
 
         session
-            .change_document(
-                "part.sc",
-                2,
-                "pub(package) let answer(): i32 = {  42 }\n",
-            )
+            .change_document("part.sc", 2, "pub(package) let answer(): i32 = {  42 }\n")
             .expect("newer overlay");
         let stale_result = stale_worker.join().expect("stale analysis completes");
         assert!(stale_result

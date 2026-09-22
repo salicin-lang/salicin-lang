@@ -97,12 +97,7 @@ fn rejects_duplicate_stable_package_identities() {
         1,
         true,
         &[("dependency", 2)],
-        vec![unit(
-            "primary.sc",
-            &[],
-            "let main(): i32 = {  0 }\n",
-            true,
-        )],
+        vec![unit("primary.sc", &[], "let main(): i32 = {  0 }\n", true)],
     );
     let mut dependency = package(
         2,
@@ -135,12 +130,7 @@ fn distinct_providers_may_share_a_package_name_and_version() {
         1,
         true,
         &[("dependency", 2)],
-        vec![unit(
-            "primary.sc",
-            &[],
-            "let main(): i32 = {  0 }\n",
-            true,
-        )],
+        vec![unit("primary.sc", &[], "let main(): i32 = {  0 }\n", true)],
     );
     let mut dependency = package(
         2,
@@ -290,12 +280,7 @@ fn reports_private_sibling_access_but_allows_descendants() {
             "let main(): i32 = {  b.read() }\n",
             true,
         ),
-        unit(
-            "src/a.sc",
-            &["a"],
-            "let secret(): i32 = {  1 }\n",
-            false,
-        ),
+        unit("src/a.sc", &["a"], "let secret(): i32 = {  1 }\n", false),
         unit(
             "src/a/child.sc",
             &["a", "child"],
@@ -1031,12 +1016,7 @@ fn rejects_dependency_aliases_that_conflict_with_file_modules() {
             true,
             &[("dep", 1)],
             vec![
-                unit(
-                    "app/src/main.sc",
-                    &[],
-                    "let main(): i32 = {  0 }\n",
-                    true,
-                ),
+                unit("app/src/main.sc", &[], "let main(): i32 = {  0 }\n", true),
                 unit(
                     "app/src/dep/internal.sc",
                     &["dep", "internal"],

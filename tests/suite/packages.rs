@@ -175,10 +175,7 @@ edition = "2026"
 answer = { package = "answer-kit", version = "^1", registry = "local-test" }
 "#,
     );
-    workspace.write(
-        "app/src/main.sc",
-        "let main(): i32 = { answer.answer() }\n",
-    );
+    workspace.write("app/src/main.sc", "let main(): i32 = { answer.answer() }\n");
     workspace.write(
         "unused/salicin.toml",
         "[package]\nname = \"unused\"\nversion = \"0.1.0\"\nedition = \"2026\"\n",
@@ -755,10 +752,7 @@ edition = "2026"
 math = { path = "../math" }
 "#,
     );
-    workspace.write(
-        "app/src/main.sc",
-        "let main(): i32 = { math.answer() }\n",
-    );
+    workspace.write("app/src/main.sc", "let main(): i32 = { math.answer() }\n");
     workspace.write(
         "app/src/lib.sc",
         "pub let library_answer(): i32 = { math.answer() }\n",
@@ -963,10 +957,7 @@ fn incremental_fingerprint_is_path_independent_and_input_sensitive() {
             "src/lib.sc",
             "pub let library_answer(): i32 = { shared.answer() }\n",
         );
-        project.write(
-            "src/shared.sc",
-            "pub(package) let answer(): i32 = { 42 }\n",
-        );
+        project.write("src/shared.sc", "pub(package) let answer(): i32 = { 42 }\n");
     }
 
     fn fingerprint(project: &TestDirectory, extra: &[&str]) -> Output {
@@ -1002,10 +993,7 @@ fn incremental_fingerprint_is_path_independent_and_input_sensitive() {
     assert!(library.status.success(), "{}", output_text(&library));
     assert_ne!(first_binary.stdout, library.stdout);
 
-    relocated.write(
-        "src/shared.sc",
-        "pub(package) let answer(): i32 = { 43 }\n",
-    );
+    relocated.write("src/shared.sc", "pub(package) let answer(): i32 = { 43 }\n");
     let changed = fingerprint(&relocated, &["--locked"]);
     assert!(changed.status.success(), "{}", output_text(&changed));
     assert_ne!(first_binary.stdout, changed.stdout);
@@ -1020,10 +1008,7 @@ fn incremental_cli_invalidates_each_package_graph_identity_dimension() {
              \n[dependencies]\nmath = { path = \"dep\" }\n",
         );
         project.write("src/main.sc", "let main(): i32 = { 0 }\n");
-        project.write(
-            "src/feature.sc",
-            "pub(package) let value(): i32 = { 1 }\n",
-        );
+        project.write("src/feature.sc", "pub(package) let value(): i32 = { 1 }\n");
         project.write(
             "dep/salicin.toml",
             "[package]\nname = \"math\"\nversion = \"1.0.0\"\nedition = \"2026\"\n",
@@ -1193,8 +1178,7 @@ fn rooted_workspace_defaults_to_its_root_package_and_formats_members() {
         "member/salicin.toml",
         "[package]\nname = \"member\"\nversion = \"0.1.0\"\nedition = \"2026\"\n",
     );
-    let member_source =
-        workspace.write("member/src/lib.sc", "pub let answer():i32 = {\n7\n}\n");
+    let member_source = workspace.write("member/src/lib.sc", "pub let answer():i32 = {\n7\n}\n");
 
     let run = salic()
         .arg("run")
@@ -2046,10 +2030,7 @@ version = "0.1.0"
 edition = "2026"
 "#,
     );
-    private_member.write(
-        "src/main.sc",
-        "let main(): i32 = { sibling.secret() }\n",
-    );
+    private_member.write("src/main.sc", "let main(): i32 = { sibling.secret() }\n");
     private_member.write("src/sibling.sc", "let secret(): i32 = { 42 }\n");
 
     let private = salic()
@@ -2077,10 +2058,7 @@ version = "0.1.0"
 edition = "2026"
 "#,
     );
-    unknown_nested_member.write(
-        "src/main.sc",
-        "let main(): i32 = { net.http.missing() }\n",
-    );
+    unknown_nested_member.write("src/main.sc", "let main(): i32 = { net.http.missing() }\n");
     unknown_nested_member.write(
         "src/net/http.sc",
         "pub(package) let answer(): i32 = { 42 }\n",
@@ -2236,10 +2214,7 @@ edition = "2026"
         "src/main.sc",
         "let main(): i32 = { facade.answer() + package_facade.extra() }\n",
     );
-    project.write(
-        "src/implementation.sc",
-        "pub let answer(): i32 = { 40 }\n",
-    );
+    project.write("src/implementation.sc", "pub let answer(): i32 = { 40 }\n");
     project.write(
         "src/package_implementation.sc",
         "pub(package) let extra(): i32 = { 2 }\n",
@@ -2313,24 +2288,15 @@ let selected = root.second.answer
 let main(): i32 = { selected() }
 "#,
             modules: &[
-                (
-                    "src/first.sc",
-                    "pub(package) let answer(): i32 = { 1 }\n",
-                ),
-                (
-                    "src/second.sc",
-                    "pub(package) let answer(): i32 = { 2 }\n",
-                ),
+                ("src/first.sc", "pub(package) let answer(): i32 = { 1 }\n"),
+                ("src/second.sc", "pub(package) let answer(): i32 = { 2 }\n"),
             ],
             expected: &["duplicate", "selected", "first.answer", "second.answer"],
         },
         Case {
             name: "unknown-import",
             root: "use root.net.missing as answer\nlet main = { (): i32 => answer() }\n",
-            modules: &[(
-                "src/net.sc",
-                "pub(package) let present(): i32 = { 42 }\n",
-            )],
+            modules: &[("src/net.sc", "pub(package) let present(): i32 = { 42 }\n")],
             expected: &["unknown", "net.missing"],
         },
         Case {

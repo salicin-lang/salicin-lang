@@ -502,9 +502,9 @@ impl Parser {
 
         let (compile_groups, groups, mut effects, has_callable_boundary, mut has_effect_clause) =
             self.declaration_groups(false, &[], compile_groups)?;
-        self.layout.named_parameter_groups.extend_from_slice(
-            &self.layout.parameter_groups[named_group_start..],
-        );
+        self.layout
+            .named_parameter_groups
+            .extend_from_slice(&self.layout.parameter_groups[named_group_start..]);
 
         if mutable && (!compile_groups.is_empty() || !groups.is_empty()) {
             return Err(self.error_here("`let mut` cannot declare a function"));
@@ -630,9 +630,7 @@ impl Parser {
         }
         self.take_newlines_if_followed_by(&[TokenKind::Equal]);
 
-        if !self.at(&TokenKind::Equal)
-            && (!compile_groups.is_empty() || !groups.is_empty())
-        {
+        if !self.at(&TokenKind::Equal) && (!compile_groups.is_empty() || !groups.is_empty()) {
             return Ok(Item::Function(Function {
                 name,
                 foreign: None,
@@ -1156,9 +1154,7 @@ impl Parser {
         Ok(name)
     }
 
-    fn named_compile_parameter_groups(
-        &mut self,
-    ) -> Result<Vec<Vec<CompileParam>>, ParseError> {
+    fn named_compile_parameter_groups(&mut self) -> Result<Vec<Vec<CompileParam>>, ParseError> {
         let mut groups = Vec::new();
         while self.group_starts_with_compile_parameter() {
             let parameters = self.compile_parameter_group()?;
@@ -1375,9 +1371,9 @@ impl Parser {
         self.prepare_named_signature("extension member")?;
         let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
             self.declaration_groups(true, &[], compile_groups)?;
-        self.layout.named_parameter_groups.extend_from_slice(
-            &self.layout.parameter_groups[named_group_start..],
-        );
+        self.layout
+            .named_parameter_groups
+            .extend_from_slice(&self.layout.parameter_groups[named_group_start..]);
         self.validate_receiver_groups(&name, &groups)?;
 
         let logical_result = if self.take(&TokenKind::Colon) {
@@ -1414,8 +1410,7 @@ impl Parser {
             where_predicates.extend(self.constraint_arguments("`<` after `requires`")?);
         }
         self.take_newlines_if_followed_by(&[TokenKind::Equal]);
-        if !self.at(&TokenKind::Equal) && (!compile_groups.is_empty() || !groups.is_empty())
-        {
+        if !self.at(&TokenKind::Equal) && (!compile_groups.is_empty() || !groups.is_empty()) {
             return Ok(ExtendMember::Function(Function {
                 name,
                 foreign: None,

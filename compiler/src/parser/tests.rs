@@ -506,9 +506,8 @@ fn parses_name_side_declaration_signatures() {
     let error = parse("let Identity = <T: type>: type T\n").unwrap_err();
     assert!(!error.message.is_empty());
 
-    let error =
-        parse("let identity<T: type>(value: T): T = { <U: type>(value: T): T => value }\n")
-            .unwrap_err();
+    let error = parse("let identity<T: type>(value: T): T = { <U: type>(value: T): T => value }\n")
+        .unwrap_err();
     assert!(!error.message.is_empty());
 
     parse(
@@ -530,7 +529,10 @@ fn parses_name_side_declaration_signatures() {
         "let value = struct {}\nextend<value> { let read: <T: type>(value: T): T = { value } }\n",
     ] {
         let error = parse(source).expect_err("declaration signature colons must be rejected");
-        assert!(error.message.contains("remove the `:`"), "{source}: {error:?}");
+        assert!(
+            error.message.contains("remove the `:`"),
+            "{source}: {error:?}"
+        );
     }
 
     for source in [
@@ -543,7 +545,6 @@ fn parses_name_side_declaration_signatures() {
         let error = parse(source).expect_err("name-adjacent `with` must require a colon");
         assert!(error.message.contains("require `:` before `with`"), "{source}: {error:?}");
     }
-
 }
 
 #[test]
@@ -644,8 +645,7 @@ fn parses_function_effects_and_rejects_them_on_values() {
     assert!(!error.message.is_empty());
 
     let program =
-        parse("let fallible: with<throwing<bool>, unsafety>(): i32 = {  throw(true) }\n")
-            .unwrap();
+        parse("let fallible: with<throwing<bool>, unsafety>(): i32 = {  throw(true) }\n").unwrap();
     let Item::Function(fallible) = &program.items[0] else {
         panic!("expected fallible function");
     };
@@ -972,10 +972,9 @@ fn accepts_root_super_and_contextual_self_in_ordinary_paths() {
 
 #[test]
 fn parses_dotted_type_paths() {
-    let program = parse(
-        "let convert(value: net.http.point): net.http.result<core.status> = {  value }\n",
-    )
-    .unwrap();
+    let program =
+        parse("let convert(value: net.http.point): net.http.result<core.status> = {  value }\n")
+            .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -1166,10 +1165,9 @@ fn splits_nested_angle_closers_from_shift_tokens() {
 
 #[test]
 fn parses_angle_type_applications_and_official_type_forms() {
-    let program = parse(
-        "let apply<t: type>(value: Borrow<mut><Option<Array<t><2>>>): with<io>(t): Ptr<t>\n",
-    )
-    .unwrap();
+    let program =
+        parse("let apply<t: type>(value: Borrow<mut><Option<Array<t><2>>>): with<io>(t): Ptr<t>\n")
+            .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -1204,7 +1202,10 @@ fn rejects_parenthesized_type_trait_effect_associated_and_schema_applications() 
         "let read = (value: Chain.Rebind(i32)): i32 { 0 }\n",
         "let handle<Value: type, Answer: type> =...Clauses(Value, Answer) (value: Value): Answer\n",
     ] {
-        assert!(parse(source).is_err(), "legacy application parsed: {source}");
+        assert!(
+            parse(source).is_err(),
+            "legacy application parsed: {source}"
+        );
     }
 }
 
@@ -1727,8 +1728,7 @@ fn tight_and_spaced_braces_are_the_same_delimited_application() {
 
 #[test]
 fn spaced_brace_application_in_for_iterable_stops_before_pattern_body() {
-    let source =
-        "let visit(): () = { for (counter { current: 0, end: 4 }) { value => value } }\n";
+    let source = "let visit(): () = { for (counter { current: 0, end: 4 }) { value => value } }\n";
     parse(source).expect("the parenthesized Brace application must stop before the `for` body");
 }
 
@@ -2138,10 +2138,9 @@ fn parses_do_and_try_as_distinct_immediate_handlers() {
     };
     assert!(matches!(function_tail(other), Expr::DoBlock { .. }));
 
-    let member = parse(
-        "let unwrap: with<throwing<bool>>(value: Result<bool><i32>): i32 = {  value.try }\n",
-    )
-    .unwrap();
+    let member =
+        parse("let unwrap: with<throwing<bool>>(value: Result<bool><i32>): i32 = {  value.try }\n")
+            .unwrap();
     let Item::Function(member) = &member.items[0] else {
         panic!("expected function");
     };
@@ -2498,9 +2497,7 @@ fn rejects_legacy_trait_callable_and_effect_operation_syntax() {
 
     let effect_operation = parse("let state = effect { get: (): i32 }\n").unwrap_err();
     assert!(
-        effect_operation
-            .message
-            .contains("remove the `:`"),
+        effect_operation.message.contains("remove the `:`"),
         "{effect_operation:?}"
     );
 
@@ -3099,9 +3096,9 @@ fn parses_parameter_modifier_functions_in_prefix_position() {
 #[test]
 fn parses_parameter_prefixes_as_composable_modifiers() {
     let program = parse(
-            "let decorate<b: bool, m: <p: parameters>: parameters>(b m value: i32): i32 = {  value }\n",
-        )
-        .unwrap();
+        "let decorate<b: bool, m: <p: parameters>: parameters>(b m value: i32): i32 = {  value }\n",
+    )
+    .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected a function");
     };
@@ -3562,9 +3559,9 @@ fn parses_function_shaped_handlers_with_contextual_clause_parameters() {
 #[test]
 fn parses_effects_as_part_of_callable_signatures() {
     let program = parse(
-            "let apply<e: effects>: with<e>(action: with<e>(i32): i32)(value: i32): i32 = {  value }\n",
-        )
-        .unwrap();
+        "let apply<e: effects>: with<e>(action: with<e>(i32): i32)(value: i32): i32 = {  value }\n",
+    )
+    .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -3584,8 +3581,8 @@ fn parses_effects_as_part_of_callable_signatures() {
 
 #[test]
 fn rejects_parameter_modifier_parameters_on_data_declarations() {
-    let error = parse("let wrapper<m: <p: parameters>: parameters> = struct { value: i32 }\n")
-        .unwrap_err();
+    let error =
+        parse("let wrapper<m: <p: parameters>: parameters> = struct { value: i32 }\n").unwrap_err();
     assert!(error
         .message
         .contains("modifier parameters belong to functions"));
@@ -3654,8 +3651,7 @@ fn parses_canonical_while() {
 
 #[test]
 fn parses_do_while_as_the_labeled_do_overload() {
-    let program =
-        parse("let main(): () = { \n  do { work() } while: { Ready() }\n}\n").unwrap();
+    let program = parse("let main(): () = { \n  do { work() } while: { Ready() }\n}\n").unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -3685,9 +3681,8 @@ fn parses_canonical_if() {
 
 #[test]
 fn rejects_removed_while_let_syntax() {
-    let error =
-        parse("let main(): () = {  while let some(value) = next() { consume(value) } }\n")
-            .unwrap_err();
+    let error = parse("let main(): () = {  while let some(value) = next() { consume(value) } }\n")
+        .unwrap_err();
     assert!(error
         .message
         .contains("`while` requires `while(condition) { ... }`"));
@@ -3769,8 +3764,7 @@ fn rejects_bare_control_exits() {
 
 #[test]
 fn array_length_must_be_a_restricted_static_expression() {
-    let error =
-        parse("let main(values: Array<i32><borrow(value)>): i32 = {  0 }\n").unwrap_err();
+    let error = parse("let main(values: Array<i32><borrow(value)>): i32 = {  0 }\n").unwrap_err();
     assert!(
         error.message.contains("invalid compile-time array length"),
         "{}",
@@ -4269,10 +4263,9 @@ fn parses_constructor_compile_parameter_sorts() {
 
 #[test]
 fn parses_labeled_type_arguments_without_reordering() {
-    let program = parse(
-        "let consume(value: pair<v: bool, k: i32>): Result<e: bool><t: i32> = {  value }\n",
-    )
-    .unwrap();
+    let program =
+        parse("let consume(value: pair<v: bool, k: i32>): Result<e: bool><t: i32> = {  value }\n")
+            .unwrap();
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
@@ -4398,9 +4391,8 @@ fn records_local_initializer_and_statement_ranges() {
 
 #[test]
 fn parses_contextual_async_and_await_as_language_expressions() {
-    let program =
-        parse("let make(): i32 = { \n  let future = async { await(next()) }\n  0\n}\n")
-            .expect("async expressions must parse");
+    let program = parse("let make(): i32 = { \n  let future = async { await(next()) }\n  0\n}\n")
+        .expect("async expressions must parse");
     let Item::Function(function) = &program.items[0] else {
         panic!("expected function");
     };
