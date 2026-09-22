@@ -70,7 +70,7 @@ extend<Array<T><l>> {
   }
 
   /// Borrows the first element accepted by `predicate`.
-  let find<e: effects> with<e>
+  let find<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): core.Option<Borrow<T>> = {
     let values = self.as_slice()
@@ -78,7 +78,7 @@ extend<Array<T><l>> {
   }
 
   /// Returns the index of the first element accepted by `predicate`.
-  let position<e: effects> with<e>
+  let position<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): core.Option<u64> = {
     let values = self.as_slice()
@@ -86,7 +86,7 @@ extend<Array<T><l>> {
   }
 
   /// Returns whether any element is accepted by `predicate`.
-  let any<e: effects> with<e>
+  let any<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool = {
     let values = self.as_slice()
@@ -94,7 +94,7 @@ extend<Array<T><l>> {
   }
 
   /// Returns whether every element is accepted by `predicate`.
-  let all<e: effects> with<e>
+  let all<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool = {
     let values = self.as_slice()
@@ -102,7 +102,7 @@ extend<Array<T><l>> {
   }
 
   /// Folds elements from left to right into `initial`.
-  let fold<e: effects, Accumulator: type> with<e>
+  let fold<e: effects, Accumulator: type>: with<e>
     (self: Borrow<self>)
     (move initial: Accumulator)
     (move combine: with<e>(Accumulator, Borrow<T>) :Accumulator): Accumulator = {
@@ -219,7 +219,7 @@ extend<Slice<T>> {
   }
 
   /// Borrows the first element accepted by `predicate`.
-  let find<e: effects> with<e>
+  let find<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): core.Option<Borrow<T>> = {
     let length = self.len()
@@ -235,7 +235,7 @@ extend<Slice<T>> {
   }
 
   /// Returns the index of the first element accepted by `predicate`.
-  let position<e: effects> with<e>
+  let position<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): core.Option<u64> = {
     let length = self.len()
@@ -251,7 +251,7 @@ extend<Slice<T>> {
   }
 
   /// Returns whether any element is accepted by `predicate`.
-  let any<e: effects> with<e>
+  let any<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool = {
     let length = self.len()
@@ -267,7 +267,7 @@ extend<Slice<T>> {
   }
 
   /// Returns whether every element is accepted by `predicate`.
-  let all<e: effects> with<e>
+  let all<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool = {
     let length = self.len()
@@ -283,7 +283,7 @@ extend<Slice<T>> {
   }
 
   /// Folds elements from left to right into `initial`.
-  let fold<e: effects, Accumulator: type> with<e>
+  let fold<e: effects, Accumulator: type>: with<e>
     (self: Borrow<self>)
     (move initial: Accumulator)
     (move combine: with<e>(Accumulator, Borrow<T>) :Accumulator): Accumulator = {

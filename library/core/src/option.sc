@@ -38,7 +38,7 @@ extend<Option<T>> {
   }
 
   /// Transforms `Some` once and preserves `None`.
-  let map<e: effects, U: type> with<e>
+  let map<e: effects, U: type>: with<e>
     (move self)
     (move transform: with<e>(T) :U): Option<U> = {
     match(self) {
@@ -48,7 +48,7 @@ extend<Option<T>> {
   }
 
   /// Runs `next` once for `Some` and preserves `None`.
-  let and_then<e: effects, U: type> with<e>
+  let and_then<e: effects, U: type>: with<e>
     (move self)
     (move next: with<e>(T) :Option<U>): Option<U> = {
     match(self) {
@@ -67,7 +67,7 @@ extend<Option<T>> {
   }
 
   /// Extracts `Some` or evaluates `fallback` exactly once for `None`.
-  let unwrap_or_else<e: effects> with<e>
+  let unwrap_or_else<e: effects>: with<e>
     (move self)
     (move fallback: with<e>() :T): T = {
     match(self) {
@@ -87,7 +87,7 @@ extend<Option<T>> {
   }
 
   /// Converts `Some` to `Ok` and lazily constructs the error for `None`.
-  let ok_or_else<e: effects, Error: type> with<e>
+  let ok_or_else<e: effects, Error: type>: with<e>
     (move self)
     (move error: with<e>() :Error): core.Result<Error><T> = {
     match(self) {
@@ -105,7 +105,7 @@ extend<Option<T>, core.flow.Chain> {
   let Rebind = Option
 
   /// Applies `transform` to `Some` and propagates `None`.
-  let chain<e: effects, U: type> with<e>
+  let chain<e: effects, U: type>: with<e>
     (self)
     (transform: with<e>(T) :U): Option<U> = {
     match(self) {
@@ -121,7 +121,7 @@ extend<Option<T>, core.flow.Coalesce> {
   let Item = T
 
   /// Extracts `Some` or evaluates `fallback` for `None`.
-  let coalesce<e: effects> with<e>
+  let coalesce<e: effects>: with<e>
     (self)
     (fallback: with<e>() :T): T = {
     match(self) {

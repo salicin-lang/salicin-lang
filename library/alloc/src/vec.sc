@@ -426,35 +426,35 @@ extend<Vec<T>> {
     }
   }
   /// Borrows the first element accepted by `predicate`.
-  let find<e: effects> with<e>
+  let find<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): Option<Borrow<T>> = {
     let values = self.as_slice()
     values.find(predicate)
   }
   /// Returns the index of the first element accepted by `predicate`.
-  let position<e: effects> with<e>
+  let position<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): Option<u64> = {
     let values = self.as_slice()
     values.position(predicate)
   }
   /// Returns whether any element is accepted by `predicate`.
-  let any<e: effects> with<e>
+  let any<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool = {
     let values = self.as_slice()
     values.any(predicate)
   }
   /// Returns whether every element is accepted by `predicate`.
-  let all<e: effects> with<e>
+  let all<e: effects>: with<e>
     (self: Borrow<self>)
     (move predicate: with<e>(Borrow<T>) :bool): bool = {
     let values = self.as_slice()
     values.all(predicate)
   }
   /// Folds elements from left to right into `initial`.
-  let fold<e: effects, Accumulator: type> with<e>
+  let fold<e: effects, Accumulator: type>: with<e>
     (self: Borrow<self>)
     (move initial: Accumulator)
     (move combine: with<e>(Accumulator, Borrow<T>) :Accumulator): Accumulator = {
@@ -627,7 +627,7 @@ extend<Vec<T>, Droppable> {
 
 /// Rebuilds vector ownership from initialized storage supplied by another
 /// adapter in this package.
-pub(package) let vec_from_raw_parts<T: type> with<core.unsafe.unsafety>
+pub(package) let vec_from_raw_parts<T: type>: with<core.unsafe.unsafety>
   (pointer: Ptr<mut><T>, length: u64, capacity: u64): Vec<T> = {
   Vec<T> { pointer: pointer, length: length, storage_capacity: capacity }
 }

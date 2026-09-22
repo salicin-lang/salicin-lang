@@ -498,7 +498,7 @@ impl Parser {
             return Err(self.error_here("`let mut` cannot declare a generic function or type"));
         }
 
-        self.prepare_named_signature(!compile_groups.is_empty(), "named declaration")?;
+        self.prepare_named_signature("named declaration")?;
 
         let (compile_groups, groups, mut effects, has_callable_boundary, mut has_effect_clause) =
             self.declaration_groups(false, &[], compile_groups)?;
@@ -911,7 +911,7 @@ impl Parser {
                     "effect operation name `{operation}` is reserved by the generated `handle` function"
                 )));
             }
-            self.prepare_named_signature(false, "effect operation")?;
+            self.prepare_named_signature("effect operation")?;
             let (
                 operation_compile_groups,
                 groups,
@@ -1178,13 +1178,9 @@ impl Parser {
         Ok(groups)
     }
 
-    fn prepare_named_signature(
-        &mut self,
-        has_attached_parameter_group: bool,
-        declaration: &str,
-    ) -> Result<(), ParseError> {
+    fn prepare_named_signature(&mut self, declaration: &str) -> Result<(), ParseError> {
         if !self.at(&TokenKind::Colon) {
-            if !has_attached_parameter_group && self.at_context_ident("with") {
+            if self.at_context_ident("with") {
                 return Err(self.error_here(format!(
                     "{declaration} effect signatures require `:` before `with`"
                 )));
@@ -1196,12 +1192,6 @@ impl Parser {
         self.advance();
         self.skip_newlines();
         if self.at_context_ident("with") {
-            if has_attached_parameter_group {
-                self.index = colon;
-                return Err(self.error_here(format!(
-                    "{declaration} parameters already attach the signature to the name; remove the `:`"
-                )));
-            }
             return Ok(());
         }
 
@@ -1382,7 +1372,7 @@ impl Parser {
         self.effect_parameters_in_scope.clear();
         let named_group_start = self.layout.parameter_groups.len();
         let compile_groups = self.named_compile_parameter_groups()?;
-        self.prepare_named_signature(!compile_groups.is_empty(), "extension member")?;
+        self.prepare_named_signature("extension member")?;
         let (compile_groups, groups, mut effects, has_callable_boundary, _has_effect_clause) =
             self.declaration_groups(true, &[], compile_groups)?;
         self.layout.named_parameter_groups.extend_from_slice(
@@ -3156,7 +3146,7 @@ impl Parser {
     ) -> Result<TraitMember, ParseError> {
         let name = self.expect_ident("a trait member name")?;
         let compile_groups = self.named_compile_parameter_groups()?;
-        self.prepare_named_signature(!compile_groups.is_empty(), "trait member")?;
+        self.prepare_named_signature("trait member")?;
         let (compile_groups, groups, mut effects, has_callable_boundary, _) =
             self.declaration_groups(true, outer_effect_parameters, compile_groups)?;
         let associated_kind = if groups.is_empty() {

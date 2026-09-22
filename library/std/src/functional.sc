@@ -1,23 +1,23 @@
 /// Type constructors whose payload can be transformed.
 pub let Functor = trait<self: <Value: type>: type> {
-  map<e: effects, A: type, B: type>with<e>(self: self<A>)(transform: with<e>(A) :B): self<B>;
+  map<e: effects, A: type, B: type>:with<e>(self: self<A>)(transform: with<e>(A) :B): self<B>;
 }
 
 /// Functors that can inject values and apply wrapped functions.
 pub let Applicative = trait<self: <Value: type>: type><requires: self is Functor> {
   pure<A: type>(value: A): self<A>;
 
-  apply<e: effects, A: type, B: type>with<e>(self: self<with<e>(A) :B>)(value: self<A>): self<B>;
+  apply<e: effects, A: type, B: type>:with<e>(self: self<with<e>(A) :B>)(value: self<A>): self<B>;
 }
 
 /// Applicatives that can sequence dependent computations.
 pub let Monad = trait<self: <Value: type>: type><requires: self is Applicative> {
-  flat_map<e: effects, A: type, B: type>with<e>(self: self<A>)(next: with<e>(A) :self<B>): self<B>;
+  flat_map<e: effects, A: type, B: type>:with<e>(self: self<A>)(next: with<e>(A) :self<B>): self<B>;
 }
 
 /// Implements `Functor` for `Option`.
 extend<core.option.Option, Functor> {
-  let map<e: effects, A: type, B: type> with<e>
+  let map<e: effects, A: type, B: type>: with<e>
     (self: core.Option<A>)
     (transform: with<e>(A) :B): core.Option<B> = {
     match(self) {
@@ -34,7 +34,7 @@ extend<core.option.Option, Applicative> {
     core.Option.Some(value)
   }
 
-  let apply<e: effects, A: type, B: type> with<e>
+  let apply<e: effects, A: type, B: type>: with<e>
     (self: core.Option<with<e>(A) :B>)
     (value: core.Option<A>): core.Option<B> = {
     match(self) {
@@ -51,7 +51,7 @@ extend<core.option.Option, Applicative> {
 
 /// Implements `Monad` for `Option`.
 extend<core.option.Option, Monad> {
-  let flat_map<e: effects, A: type, B: type> with<e>
+  let flat_map<e: effects, A: type, B: type>: with<e>
     (self: core.Option<A>)
     (next: with<e>(A) :core.Option<B>): core.Option<B> = {
     match(self) {
@@ -63,7 +63,7 @@ extend<core.option.Option, Monad> {
 
 /// Implements `Functor` for `Result<error>`.
 extend<core.result.Result<Error>, Functor> {
-  let map<e: effects, A: type, B: type> with<e>
+  let map<e: effects, A: type, B: type>: with<e>
     (self: core.Result<Error><A>)
     (transform: with<e>(A) :B): core.Result<Error><B> = {
     match(self) {
@@ -80,7 +80,7 @@ extend<core.result.Result<Error>, Applicative> {
     core.Result.Ok(value)
   }
 
-  let apply<e: effects, A: type, B: type> with<e>
+  let apply<e: effects, A: type, B: type>: with<e>
     (self: core.Result<Error><with<e>(A) :B>)
     (value: core.Result<Error><A>): core.Result<Error><B> = {
     match(self) {
@@ -97,7 +97,7 @@ extend<core.result.Result<Error>, Applicative> {
 
 /// Implements `Monad` for `Result<error>`.
 extend<core.result.Result<Error>, Monad> {
-  let flat_map<e: effects, A: type, B: type> with<e>
+  let flat_map<e: effects, A: type, B: type>: with<e>
     (self: core.Result<Error><A>)
     (next: with<e>(A) :core.Result<Error><B>): core.Result<Error><B> = {
     match(self) {

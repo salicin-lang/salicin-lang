@@ -683,8 +683,8 @@ mod tests {
 
     #[test]
     fn indents_parameter_groups_and_match_arms() {
-        let source = "let apply<e: effects> with<e>\n(action: with<e>(i32): i32)\n(value: i32): i32 = {  action(value) }\n\nlet main(): i32 = { \nmatch(true) {\ntrue => match(false) {\nfalse => apply()(42),\ntrue => 0,\n},\nfalse => 0,\n}\n}\n";
-        let expected = "let apply<e: effects> with<e>\n  (action: with<e>(i32): i32)\n  (value: i32): i32 = {  action(value) }\n\nlet main(): i32 = {\n  match(true) {\n    true => match(false) {\n      false => apply()(42),\n      true => 0,\n    },\n    false => 0,\n  }\n}\n";
+        let source = "let apply<e: effects>: with<e>\n(action: with<e>(i32): i32)\n(value: i32): i32 = {  action(value) }\n\nlet main(): i32 = { \nmatch(true) {\ntrue => match(false) {\nfalse => apply()(42),\ntrue => 0,\n},\nfalse => 0,\n}\n}\n";
+        let expected = "let apply<e: effects>: with<e>\n  (action: with<e>(i32): i32)\n  (value: i32): i32 = {  action(value) }\n\nlet main(): i32 = {\n  match(true) {\n    true => match(false) {\n      false => apply()(42),\n      true => 0,\n    },\n    false => 0,\n  }\n}\n";
         let formatted = format_source(source).expect("format continuations");
         assert_eq!(formatted, expected);
         assert_eq!(

@@ -303,7 +303,7 @@ fn reserves_generated_handle_argument_names_but_allows_return_operations() {
 #[test]
 fn parses_prefix_effect_callable_declarations_and_types() {
     let program = parse(
-        "let apply<e: effects> with<e>\n\
+        "let apply<e: effects>: with<e>\n\
              (action: with<e>(i32): i32)\n\
              (value: i32): i32 = { action(value) }\n\
              let pure(value: i32): i32 = {  value }\n",
@@ -514,18 +514,17 @@ fn parses_name_side_declaration_signatures() {
     parse(
         "let io = effect {}\n\
          let apply: with<io>(value: i32): i32 = { value }\n\
-         let generic<e: effects> with<e>(value: i32): i32 = { value }\n\
+         let generic<e: effects>: with<e>(value: i32): i32 = { value }\n\
          let protocol = trait { read: with<io>(value: i32): i32 }\n\
          let state = effect { get: with<io>(): i32 }\n\
          let value = struct {}\n\
          extend<value> { let read: with<io>(self: Borrow<self>)(): i32 = { 0 } }\n",
     )
-    .expect("a name-adjacent effect signature must use `:`, unless a parameter group is attached");
+    .expect("every named effect signature must use `:` before `with`");
 
     for source in [
         "let Identity: <T: type>: type = T\n",
         "let identity: (value: i32): i32 = { value }\n",
-        "let apply<e: effects>: with<e>(): i32 = { 0 }\n",
         "let protocol = trait { read: <T: type>(value: T): T }\n",
         "let state = effect { get: (): i32 }\n",
         "let value = struct {}\nextend<value> { let read: <T: type>(value: T): T = { value } }\n",
@@ -536,6 +535,7 @@ fn parses_name_side_declaration_signatures() {
 
     for source in [
         "let io = effect {}\nlet apply with<io>(): i32 = { 0 }\n",
+        "let io = effect {}\nlet apply<e: effects> with<e>(): i32 = { 0 }\n",
         "let io = effect {}\nlet protocol = trait { read with<io>(): i32 }\n",
         "let io = effect {}\nlet state = effect { get with<io>(): i32 }\n",
         "let io = effect {}\nlet value = struct {}\nextend<value> { let read with<io>(self: Borrow<self>)(): i32 = { 0 } }\n",
@@ -3125,8 +3125,8 @@ fn parses_parameter_modifier_function_kind() {
 #[test]
 fn parses_effect_parameters_in_with_clauses() {
     let program = parse(
-        "let tagged<e: effects> with<e>(value: i32): i32 = {  value }\n\
-             let combined<e: effects> with<unsafety, e>(value: i32): i32 = {  value }\n",
+        "let tagged<e: effects>: with<e>(value: i32): i32 = {  value }\n\
+             let combined<e: effects>: with<unsafety, e>(value: i32): i32 = {  value }\n",
     )
     .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -3148,7 +3148,7 @@ fn parses_effect_parameters_in_with_clauses() {
         .message
         .contains("effect parameters belong to functions"));
 
-    let error = parse("let bad<e: effects> with<e>(value: e): i32 = {  0 }\n").unwrap_err();
+    let error = parse("let bad<e: effects>: with<e>(value: e): i32 = {  0 }\n").unwrap_err();
     assert!(error.message.contains("cannot be used as a runtime type"));
 
     let error = parse("let old<e: effects>(value: i32): i32(e) = {  value }\n").unwrap_err();
@@ -3194,7 +3194,7 @@ fn parses_trait_self_effect_parameter_in_member_rows() {
     let program = parse(
             "let Handle = trait<self: effect> {\n\
              Arguments<Value: type, Answer: type>: parameters\n\
-             handle<Value: type, Answer: type, rest: effects>with<rest> ...Arguments<Value, Answer>: Answer\n\
+             handle<Value: type, Answer: type, rest: effects>:with<rest> ...Arguments<Value, Answer>: Answer\n\
              }\n",
         )
         .unwrap();
@@ -3239,7 +3239,7 @@ fn parses_compiler_provided_sort_and_control_contract_declarations() {
              /// exclusive mutable access.\n\
              mut\n\
              }\n\
-             pub let do<e: effects, t: type> with<e>(move action: with<e>(): t): t\n",
+             pub let do<e: effects, t: type>: with<e>(move action: with<e>(): t): t\n",
     )
     .unwrap();
     assert!(matches!(
@@ -3349,7 +3349,7 @@ fn parses_variadic_match_control_contract() {
              Output: type,\n\
              e: effects,\n\
              ...cases: parameters,\n\
-             > with<e>\n\
+             >: with<e>\n\
              (move input: Input)\n\
              ...cases: Output\n",
     )
@@ -3562,7 +3562,7 @@ fn parses_function_shaped_handlers_with_contextual_clause_parameters() {
 #[test]
 fn parses_effects_as_part_of_callable_signatures() {
     let program = parse(
-            "let apply<e: effects> with<e>(action: with<e>(i32): i32)(value: i32): i32 = {  value }\n",
+            "let apply<e: effects>: with<e>(action: with<e>(i32): i32)(value: i32): i32 = {  value }\n",
         )
         .unwrap();
     let Item::Function(function) = &program.items[0] else {
@@ -4195,9 +4195,9 @@ fn parses_constructor_compile_parameter_sorts() {
     let program = parse(
             "let use<f: <element: type>: type>(move value: f<i32>): f<i32> = {  value }\n\
              let curried<f: <element: type><length: usize>: type>(): i32 = {  0 }\n\
-              let effects<e: <error: type>: effect> with<e<bool>>(move action: with<e<bool>>(): i32): i32 = {  action() }\n\
+              let effects<e: <error: type>: effect>: with<e<bool>>(move action: with<e<bool>>(): i32): i32 = {  action() }\n\
               let functor = trait<self: <value: type>: type> {\n\
-             map<e: effects, a: type, b: type>with<e>(move self: self<a>)(move transform: with<e>(a): b): self<b>\n\
+             map<e: effects, a: type, b: type>:with<e>(move self: self<a>)(move transform: with<e>(a): b): self<b>\n\
              }\n\
              let applicative = trait<self: <value: type>: type><requires: self is functor> {\n\
              pure<a: type>(move value: a): self<a>\n}\n",

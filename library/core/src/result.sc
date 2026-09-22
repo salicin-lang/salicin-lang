@@ -39,7 +39,7 @@ extend<Result<Error><T>> {
   }
 
   /// Transforms `Ok` once and preserves `Err`.
-  let map<e: effects, U: type> with<e>
+  let map<e: effects, U: type>: with<e>
     (move self)
     (move transform: with<e>(T) :U): Result<Error><U> = {
     match(self) {
@@ -49,7 +49,7 @@ extend<Result<Error><T>> {
   }
 
   /// Transforms `Err` once and preserves `Ok`.
-  let map_error<e: effects, MappedError: type> with<e>
+  let map_error<e: effects, MappedError: type>: with<e>
     (move self)
     (move transform: with<e>(Error) :MappedError): Result<MappedError><T> = {
     match(self) {
@@ -59,7 +59,7 @@ extend<Result<Error><T>> {
   }
 
   /// Runs `next` once for `Ok` and preserves `Err`.
-  let and_then<e: effects, U: type> with<e>
+  let and_then<e: effects, U: type>: with<e>
     (move self)
     (move next: with<e>(T) :Result<Error><U>): Result<Error><U> = {
     match(self) {
@@ -78,7 +78,7 @@ extend<Result<Error><T>> {
   }
 
   /// Extracts `Ok` or evaluates `fallback` exactly once for `Err`.
-  let unwrap_or_else<e: effects> with<e>
+  let unwrap_or_else<e: effects>: with<e>
     (move self)
     (move fallback: with<e>(Error) :T): T = {
     match(self) {
@@ -114,7 +114,7 @@ extend<Result<Error><T>, core.flow.Chain> {
   let Rebind = Result<Error>;
 
   /// Applies `transform` to `Ok` and propagates `Err`.
-  let chain<e: effects, U: type> with<e>
+  let chain<e: effects, U: type>: with<e>
     (self)
     (transform: with<e>(T) :U): Result<Error><U> = {
     match(self) {
@@ -130,7 +130,7 @@ extend<Result<Error><T>, core.flow.Coalesce> {
   let Item = T
 
   /// Extracts `Ok` or evaluates `fallback` for `Err`.
-  let coalesce<e: effects> with<e>
+  let coalesce<e: effects>: with<e>
     (self)
     (fallback: with<e>() :T): T = {
     match(self) {

@@ -1,7 +1,8 @@
 let Result = core.Result
 let throwing = core.error.throwing
 
-let fail<error: type> with<throwing<i32>, throwing<bool>>(move error: error): never = {
+let fail<error: type>: with<throwing<i32>, throwing<bool>>
+  (move error: error): never = {
   throw(error)
 }
 

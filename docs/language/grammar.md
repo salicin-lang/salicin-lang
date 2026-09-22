@@ -99,7 +99,9 @@ let_decl = "let", [ contextual("mut") ], IDENT,
              | "=", declaration_rhs ) ;
 
 name_attached_signature =
-    compile_parameter_group, { compile_parameter_group }, callable_signature_tail
+    compile_parameter_group, { compile_parameter_group },
+    ( ":", with_callable_signature
+    | { runtime_parameter_group }, callable_signature_suffix )
   | runtime_parameter_group, { runtime_parameter_group }, callable_signature_suffix ;
 
 with_callable_signature =
@@ -168,8 +170,9 @@ Named declaration compile-time and runtime parameter groups attach directly to
 the declaration name: `let Cell<T: type> = struct { value: T }` and
 `let identity<T: type>(value: T): T = { value }`. When `with` is the first
 signature element after the name, the declaration colon remains:
-`let read: with<io>(path: str): String = { ... }`. After an attached compile-time
-group, no colon intervenes: `let apply<e: effects> with<e>(): i32 = { ... }`.
+`let read: with<io>(path: str): String = { ... }`. The same colon is required
+after an attached compile-time group:
+`let apply<e: effects>: with<e>(): i32 = { ... }`.
 Compile-time and runtime groups remain valid inside a callable brace for
 anonymous callables and contexts without a declaration name. A named
 declaration cannot repeat its signature in the body.

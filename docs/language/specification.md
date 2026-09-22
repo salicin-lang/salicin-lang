@@ -248,7 +248,7 @@ The same root module publicly declares the other syntax-owned contracts:
 pub let foreign<abi: abi>: never = builtin()
 pub let foreign<abi: abi, symbol: String>: never = builtin()
 pub let test<name: String>{move body: with<core.error.throwing<core.string.String>>(): ()}: () = builtin()
-pub let requires<condition: bool, e: effects, Result: type> with<e>{move body: with<e>(): Result}: Result = builtin()
+pub let requires<condition: bool, e: effects, Result: type>: with<e>{move body: with<e>(): Result}: Result = builtin()
 ```
 
 `foreign<c, ...>` passes the finite `abi.c` value (using the contextual short spelling `c`) as
@@ -810,12 +810,12 @@ let absolute = if(value < 0) {
 The principal source contracts in `core.control` are:
 
 ```sc fragment
-pub let if<e: effects, T: type> with<e>
+pub let if<e: effects, T: type>: with<e>
   (condition: bool)
   (move then: with<e>(): T)
   (move else: with<e>(): T): T
 
-pub let while<e: effects> with<e>
+pub let while<e: effects>: with<e>
   (move condition: with<e>(): bool)
   (move do: with<e>(): ()): ()
 ```
@@ -872,7 +872,7 @@ let read: with<counter>(): i32 = {
   counter.next()
 }
 
-let apply<e: effects> with<e>
+let apply<e: effects>: with<e>
   (action: with<e>(i32): i32)
   (value: i32): i32 = {
   action(value)

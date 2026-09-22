@@ -221,7 +221,7 @@ Its source declaration therefore describes the expression as a lazy callable:
 pub let type_of<
   e: effects,
   T: type,
-> with<e>
+>: with<e>
   (move expression: with<e>(): T): type = builtin()
 ```
 

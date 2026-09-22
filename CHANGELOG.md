@@ -10,9 +10,10 @@ subset.
   `let Box<T: type> = struct { ... }`, `let identity<T: type>(value: T): T =
   { value }`, and `operation(): Result`. The former colon between a declaration
   name and its compile-time or runtime parameter groups is removed. A `with`
-  clause that immediately follows the name retains the signature colon, as in
-  `let read: with<io>(): String`; `:` also remains the result or ordinary value
-  type separator.
+  clause is always introduced by a signature colon, including after compile-time
+  groups: `let read: with<io>(): String` and
+  `let apply<e: effects>: with<e>(): i32`. `:` also remains the result or
+  ordinary value type separator.
 - **Breaking:** Syntax-owned compile-time metadata now consistently uses angle
   groups: `test<"name"> { ... }`, callable-signature
   `requires<T is Trait>`, `extend<Target, Trait>`, and

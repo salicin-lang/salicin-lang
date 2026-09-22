@@ -37,7 +37,7 @@ let increment: with<state<i32>>(): i32 = {
   value
 }
 
-let apply<e: effects> with<e>
+let apply<e: effects>: with<e>
   (action: with<e>(i32): i32)
   (value: i32): i32 = {
   action(value)
@@ -46,8 +46,7 @@ let apply<e: effects> with<e>
 
 An ordinary named callable attaches a leading parameter group directly to the
 declaration name and places its signature before `=`. When `with` is the first
-signature element, it follows a declaration colon, as in `increment` above;
-after an attached compile-time group, `with` needs no colon, as in `apply`.
+signature element, it follows a declaration colon, as in both examples above.
 Trait and effect members use the same rule. A function value uses the callable
 type `with<state<i32>>(): i32`. The row belongs to the complete multi-group call,
 not to a parameter group or result value.

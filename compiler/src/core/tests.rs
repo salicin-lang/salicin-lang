@@ -80,7 +80,7 @@ pub let str: type = builtin()
 
 fn core_bundle_from_source(source: &str) -> Result<CoreBundle, CoreBundleError> {
     let source = format!(
-        "{source}\n{TEST_ASSIGNMENT_OPS}\n{TEST_CHAIN_OPS}\n{EDITION_2026_EFFECT}\n{EDITION_2026_ERROR}\n{EDITION_2026_UNSAFE}\n{EDITION_2026_ASYNC}\n{EDITION_2026_PRIMITIVES}\n{EDITION_2026_SORTS}\n{EDITION_2026_FOREIGN}\n{EDITION_2026_PASSING}\n{EDITION_2026_BORROW}\n{EDITION_2026_CONTROL}\n{EDITION_2026_ITER}\n{EDITION_2026_MEMORY}\nlet builtin(): never = builtin()\npub let test<name: String>{{move body: with<core.error.throwing<core.string.String>>() :()}}: () = builtin()\npub let requires<condition: bool, e: effects, Result: type>with<e>{{move body: with<e>() :Result}}: Result = builtin()"
+        "{source}\n{TEST_ASSIGNMENT_OPS}\n{TEST_CHAIN_OPS}\n{EDITION_2026_EFFECT}\n{EDITION_2026_ERROR}\n{EDITION_2026_UNSAFE}\n{EDITION_2026_ASYNC}\n{EDITION_2026_PRIMITIVES}\n{EDITION_2026_SORTS}\n{EDITION_2026_FOREIGN}\n{EDITION_2026_PASSING}\n{EDITION_2026_BORROW}\n{EDITION_2026_CONTROL}\n{EDITION_2026_ITER}\n{EDITION_2026_MEMORY}\nlet builtin(): never = builtin()\npub let test<name: String>{{move body: with<core.error.throwing<core.string.String>>() :()}}: () = builtin()\npub let requires<condition: bool, e: effects, Result: type>:with<e>{{move body: with<e>() :Result}}: Result = builtin()"
     );
     let mut program = parser::parse(&source).map_err(|error| {
         CoreBundleError::new(
@@ -569,7 +569,7 @@ fn builtin_markers_are_explicit_and_bounded_core_contracts() {
         ),
         (
             "requires",
-            "pub let requires<\n  condition: bool,\n  e: effects,\n  Result: type,\n> with<e>\n  {move body: with<e>() :Result}: Result = builtin()\n",
+            "pub let requires<\n  condition: bool,\n  e: effects,\n  Result: type,\n>: with<e>\n  {move body: with<e>() :Result}: Result = builtin()\n",
         ),
     ] {
         let missing = EDITION_2026_LIB.replace(declaration, "");
@@ -947,8 +947,8 @@ fn rejects_malformed_control_contracts() {
         }
 
     let malformed = EDITION_2026_UNSAFE.replace(
-        "pub let unsafe<e: effects, T: type> with<e>\n  {move action: with<core.unsafe.unsafety, e>() :T}: T",
-        "pub let unsafe<e: effects, T: type> with<e>\n  {move action: with<e>() :T}: T",
+        "pub let unsafe<e: effects, T: type>: with<e>\n  {move action: with<core.unsafe.unsafety, e>() :T}: T",
+        "pub let unsafe<e: effects, T: type>: with<e>\n  {move action: with<e>() :T}: T",
     );
     let modules = edition_2026_test_modules(&[("unsafe", &malformed)]);
     let error = CoreBundle::from_modules(Edition::Edition2026, &modules).unwrap_err();
@@ -1029,7 +1029,7 @@ fn rejects_malformed_control_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `Handle`")));
 
     let malformed = EDITION_2026_ERROR.replace(
-        "pub let throw<Error: type> with<core.error.throwing<Error>>\n  (move error: Error): never",
+        "pub let throw<Error: type>: with<core.error.throwing<Error>>\n  (move error: Error): never",
         "pub let throw<Error: type>\n  (move error: Error): never",
     );
     assert_ne!(malformed, EDITION_2026_ERROR, "stale `throw` mutation");
@@ -1182,7 +1182,7 @@ fn rejects_malformed_flow_operator_contracts() {
         .any(|diagnostic| diagnostic.contains("lang item `Chain`")));
 
     let malformed = EDITION_2026_FLOW.replace(
-        "coalesce<e: effects>with<e>(self)(fallback: with<e>() :Item): Item",
+        "coalesce<e: effects>:with<e>(self)(fallback: with<e>() :Item): Item",
         "coalesce(move self)\n    (move fallback: (): Item): Item",
     );
     let modules = edition_2026_test_modules(&[("flow", &malformed)]);

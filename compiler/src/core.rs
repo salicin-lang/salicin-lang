@@ -135,14 +135,14 @@ pub let Chain = trait {
   Item: type
   Rebind<Value: type>: type
 
-  chain<e: effects, U: type>with<e>
+  chain<e: effects, U: type>:with<e>
     (self)
     (transform: with<e>(Item): U): Rebind<U>
 }
 pub let Coalesce = trait {
   Item: type
 
-  coalesce<e: effects>with<e>
+  coalesce<e: effects>:with<e>
     (self)
     (fallback: with<e>(): Item): Item
 }
@@ -2221,7 +2221,7 @@ fn validate_defer_support(function: &Function, diagnostics: &mut Vec<String>) {
         && function.body.is_none();
     if !valid {
         diagnostics.push(
-            "compiler-owned support function `defer` must have shape `pub let defer<e: effects> =with<e>{move action: with<e>(): ()}: () builtin()`"
+            "compiler-owned support function `defer` must have shape `pub let defer<e: effects>: with<e>{move action: with<e>(): ()}: () = builtin()`"
                 .to_owned(),
         );
     }
@@ -2669,7 +2669,7 @@ fn validate_syntax_contract(
                 "pub let test<name: String> ={move body: with<core.error.throwing<core.string.String>>(): ()}: () builtin()"
             }
             LangItemKind::Requires => {
-                "pub let requires<condition: bool, e: effects, Result: type> =with<e>{move body: with<e>(): Result}: Result builtin()"
+                "pub let requires<condition: bool, e: effects, Result: type>: with<e>{move body: with<e>(): Result}: Result = builtin()"
             }
             _ => unreachable!(),
         };
@@ -3066,7 +3066,7 @@ fn validate_chain(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Chain` must declare `Item`, `Rebind<Value: type>: type`, and `chain<e: effects, U: type>with<e>(self)(transform: with<e>(Item): U): Rebind<U>`"
+            "lang item `Chain` must declare `Item`, `Rebind<Value: type>: type`, and `chain<e: effects, U: type>:with<e>(self)(transform: with<e>(Item): U): Rebind<U>`"
                 .to_owned(),
         );
     }
@@ -3114,7 +3114,7 @@ fn validate_coalesce(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Coalesce` must declare `Item` and `coalesce<e: effects>with<e>(self)(fallback: with<e>(): Item): Item`"
+            "lang item `Coalesce` must declare `Item` and `coalesce<e: effects>:with<e>(self)(fallback: with<e>(): Item): Item`"
                 .to_owned(),
         );
     }
@@ -3923,7 +3923,7 @@ fn validate_handle(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Handle` must have shape `pub let Handle = trait<self: effect> { Arguments<Value: type, Answer: type>: parameters; handle<Value: type, Answer: type, rest: effects>with<rest> ...Arguments<Value, Answer>: Answer }`"
+            "lang item `Handle` must have shape `pub let Handle = trait<self: effect> { Arguments<Value: type, Answer: type>: parameters; handle<Value: type, Answer: type, rest: effects>:with<rest> ...Arguments<Value, Answer>: Answer }`"
                 .to_owned(),
         );
     }
@@ -4197,7 +4197,7 @@ fn validate_future(definition: &TraitDef, diagnostics: &mut Vec<String>) {
         );
     if !valid {
         diagnostics.push(
-            "lang item `Future` must declare `Output` and `poll<r: region>with<e>(self: Borrow<mut><r><self>)(): Poll<Output>`, with `self: Movable`"
+            "lang item `Future` must declare `Output` and `poll<r: region>:with<e>(self: Borrow<mut><r><self>)(): Poll<Output>`, with `self: Movable`"
                 .to_owned(),
         );
     }

@@ -183,7 +183,7 @@ pub let Chain = trait {
   Item: type
   Rebind<Value: type>: type
 
-  chain<e: effects, U: type> with<e>
+  chain<e: effects, U: type>: with<e>
     (self)
     (transform: with<e>(Item): U): Rebind<U>
 }
@@ -191,7 +191,7 @@ pub let Chain = trait {
 pub let Coalesce = trait {
   Item: type
 
-  coalesce<e: effects> with<e>
+  coalesce<e: effects>: with<e>
     (self)
     (fallback: with<e>(): Item): Item
 }
@@ -327,7 +327,7 @@ pub let Continuation<Input: type, Output: type>: type = builtin()
 pub let EffectCallable<Input: type, Output: type, Answer: type>: type = builtin()
 pub let Handle = trait<self: effect> {
   Arguments<Value: type, Answer: type>: parameters
-  handle<Value: type, Answer: type, rest: effects> with<rest>
+  handle<Value: type, Answer: type, rest: effects>: with<rest>
     ...Arguments<Value, Answer>: Answer
 }
 ```
@@ -388,9 +388,9 @@ output agrees. Each branch retains its own linear locals across suspension; a br
 is an immediate `Ready` future. Loop suspension remains compiler work.
 
 ```sc fragment
-pub let do<e: effects, T: type> with<e>
+pub let do<e: effects, T: type>: with<e>
   {move action: with<e>(): T}: T
-pub let do<e: effects> with<e>
+pub let do<e: effects>: with<e>
   {move action: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(): ()}
   {move condition: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(): bool}: () = {
   loop {
@@ -402,18 +402,18 @@ pub let do<e: effects> with<e>
     if(while()) { continue() } else: { break() }
   }
 }
-pub let try<f: effects, T: type, E: type> with<f>
+pub let try<f: effects, T: type, E: type>: with<f>
   {move action: with<core.error.throwing<E>, f>(): T}: core.Result<E><T>
-pub let throw<Error: type> with<core.error.throwing<Error>>
+pub let throw<Error: type>: with<core.error.throwing<Error>>
   (move error: Error): never
-pub let unsafe<e: effects, T: type> with<e>
+pub let unsafe<e: effects, T: type>: with<e>
   {move action: with<core.unsafe.unsafety, e>(): T}: T
-pub let loop<e: effects, T: type> with<e>
+pub let loop<e: effects, T: type>: with<e>
   {move body: with<core.control.loop_exit<T>, core.control.iteration_skip, e>(): ()}: T
-pub let while<e: effects> with<e>
+pub let while<e: effects>: with<e>
   (move condition: with<e>(): bool)
   {move do: with<e>(): ()}: ()
-pub let if<e: effects, T: type> with<e>
+pub let if<e: effects, T: type>: with<e>
   (condition: bool)
   {move then: with<e>(): T}
   {move else: with<e>(): T}: T = {
@@ -422,10 +422,10 @@ pub let if<e: effects, T: type> with<e>
     false => else(),
   }
 }
-pub let match<Input: type, Output: type, e: effects, ...cases: parameters> with<e>
+pub let match<Input: type, Output: type, e: effects, ...cases: parameters>: with<e>
   (move input: Input)
   ...cases: Output
-pub let for<e: effects, Iterable: type, Iter: type, Item: type> with<e>
+pub let for<e: effects, Iterable: type, Iter: type, Item: type>: with<e>
   (move iterable: Iterable)
   {move body: with<core.control.loop_exit<()>, core.control.iteration_skip, e>(Item): ()}: ()
 requires<
@@ -443,12 +443,12 @@ only the selected lazy branch or case. The source definitions that do not requir
 lowering remain intentionally simple:
 
 ```sc fragment
-pub let do<e: effects, T: type> with<e>
+pub let do<e: effects, T: type>: with<e>
   {move action: with<e>(): T}: T = {
   action()
 }
 
-pub let try<f: effects, T: type, E: type> with<f>
+pub let try<f: effects, T: type, E: type>: with<f>
   {move action: with<core.error.throwing<E>, f>(): T}: core.Result<E><T> = {
   core.error.throwing<E>.handle {
     raise: { (error) => core.Result.Err(error) },
@@ -457,7 +457,7 @@ pub let try<f: effects, T: type, E: type> with<f>
   }
 }
 
-pub let throw<Error: type> with<core.error.throwing<Error>>
+pub let throw<Error: type>: with<core.error.throwing<Error>>
   (move error: Error): never = {
   core.error.throwing<Error>.raise(error)
 }
@@ -530,7 +530,7 @@ part of the prelude:
 
 ```sc fragment
 pub let Functor = trait<self: <Value: type>: type> {
-  map<e: effects, A: type, B: type> with<e>
+  map<e: effects, A: type, B: type>: with<e>
     (self: self<A>)
     (transform: with<e>(A): B): self<B>
 }
@@ -539,13 +539,13 @@ pub let Applicative = trait<self: <Value: type>: type><requires: self is Functor
   pure<A: type>
     (value: A): self<A>
 
-  apply<e: effects, A: type, B: type> with<e>
+  apply<e: effects, A: type, B: type>: with<e>
     (self: self<with<e>(A): B>)
     (value: self<A>): self<B>
 }
 
 pub let Monad = trait<self: <Value: type>: type><requires: self is Applicative> {
-  flat_map<e: effects, A: type, B: type> with<e>
+  flat_map<e: effects, A: type, B: type>: with<e>
     (self: self<A>)
     (next: with<e>(A): self<B>): self<B>
 }
@@ -555,7 +555,7 @@ These declarations use constructor sorts such as `<Value: type>: type` on the tr
 not as ordinary trait parameters. Traits with a matching constructor subject can be implemented for
 generic nominal constructors. Method implementations are registered as generic function templates
 and validated, for example
-`extend<Carrier, Functor> { let map<e: effects, A: type, B: type>(self: Carrier<A>)(transform: with<e>(A): B): Carrier<B> = { ... } }`.
+`extend<Carrier, Functor> { let map<e: effects, A: type, B: type>: with<e>(self: Carrier<A>)(transform: with<e>(A): B): Carrier<B> = { ... } }`.
 Receiver methods
 dispatch from concrete nominal instances, so `Carrier<i32>{value: 41}.map(add_one)` selects the
 `Carrier: Functor` implementation and instantiates the generic method template. Constructor

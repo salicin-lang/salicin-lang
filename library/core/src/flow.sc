@@ -6,7 +6,7 @@ pub let Chain = trait {
   Rebind<Value: type>: type
 
   /// Applies `transform` to the successful payload or propagates the residual case.
-  chain<e: effects, U: type>with<e>(self)(transform: with<e>(Item) :U): Rebind<U>
+  chain<e: effects, U: type>:with<e>(self)(transform: with<e>(Item) :U): Rebind<U>
   }
 
 /// Trait used by `??` to extract a Value or evaluate a fallback.
@@ -15,7 +15,7 @@ pub let Coalesce = trait {
   Item: type
 
   /// Returns the successful payload or evaluates `fallback`.
-  coalesce<e: effects>with<e>(self)(fallback: with<e>() :Item): Item
+  coalesce<e: effects>:with<e>(self)(fallback: with<e>() :Item): Item
 }
 
 /// Trait used by postfix `!!` to assert success and extract a payload.

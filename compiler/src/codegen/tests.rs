@@ -1806,7 +1806,7 @@ fn effect_parameters_infer_forward_and_explicitly_select_failure_rows() {
 let Result = core.Result
 let throwing = core.error.throwing
 
-let invoke<e: effects> with<e>(action: with<e>(): i32)(): i32 = {  action() }
+let invoke<e: effects>: with<e>(action: with<e>(): i32)(): i32 = {  action() }
 let fail: with<throwing<bool>>(): i32 = {  throw(true) }
 let forward: with<throwing<bool>>(): i32 = {  invoke(fail)() }
 let explicit: with<throwing<bool>>(): i32 = {  invoke<throwing<bool>>(fail)() }
@@ -1982,11 +1982,11 @@ fn generic_trait_method_effect_usize_and_where_binders_are_alpha_equivalent() {
     compile_text(
         r#"
 let run = trait {
-  run<e: effects>with<e>(self: Borrow<self>)(action: (): i32): i32
+  run<e: effects>:with<e>(self: Borrow<self>)(action: (): i32): i32
 }
 let runner = struct {}
 extend<runner, run> {
-  let run<f: effects> with<f>(self: Borrow<self>)(action: (): i32): i32 = {
+  let run<f: effects>: with<f>(self: Borrow<self>)(action: (): i32): i32 = {
     action()
   }
 }
@@ -2291,7 +2291,7 @@ let choice = enum { present(i32), missing }
 
 extend<choice, Coalesce> {
   let Item = i32
-  let coalesce<e: effects> with<e>
+  let coalesce<e: effects>: with<e>
     (self)
     (fallback: with<e>(): i32): i32 = {
 match(self) {
@@ -2349,7 +2349,7 @@ let maybe<t: type> = enum { Some(t), None }
 extend<maybe<boxed>, Chain> {
   let Item = boxed
   let Rebind = maybe
-  let chain<e: effects, u: type> with<e>
+  let chain<e: effects, u: type>: with<e>
     (self)
     (transform: with<e>(boxed): u): maybe<u> = {
 match(self) {
@@ -2452,7 +2452,7 @@ extend<boxed> {
 extend<maybe<boxed>, Chain> {
   let Item = boxed
   let Rebind = maybe
-  let chain<e: effects, u: type> with<e>
+  let chain<e: effects, u: type>: with<e>
     (self)
     (transform: with<e>(boxed): u): maybe<u> = {
 match(self) {
@@ -2513,7 +2513,7 @@ let maybe<t: type> = enum { Some(t), None }
 extend<maybe<t>, Chain> {
   let Item = t
   let Rebind = maybe
-  let chain<e: effects, u: type> with<e>
+  let chain<e: effects, u: type>: with<e>
     (self)
     (transform: with<e>(t): u): maybe<u> = {
 match(self) {
@@ -6269,7 +6269,7 @@ let main(): i32 = {
     compile_text(
         r#"
 let ask = effect { value(): i32 }
-let combine<value: type> with<ask>[left: i32](right: i32): i32 = {
+let combine<value: type>: with<ask>[left: i32](right: i32): i32 = {
   left + right + ask.value()
 }
 let main(): i32 = {
@@ -6799,7 +6799,7 @@ fn custom_marker_effects_are_nominal_and_checked_at_calls() {
         r#"
 let ui = effect
 let render: with<ui>(): i32 = {  42 }
-let invoke<e: effects> with<e>(action: with<e>(): i32)(): i32 = {  action() }
+let invoke<e: effects>: with<e>(action: with<e>(): i32)(): i32 = {  action() }
 let screen: with<ui>(): i32 = {  invoke(render)() }
 let main(): i32 = {  0 }
 "#,
@@ -6894,7 +6894,7 @@ let ask = effect {
   value(): i32
 }
 
-let forward<e: effects> with<e>(move action: with<e>(): i32): i32 = {
+let forward<e: effects>: with<e>(move action: with<e>(): i32): i32 = {
   action()
 }
 
@@ -6919,7 +6919,7 @@ let tell = effect {
   value(): i32
 }
 
-let forward<e: effects> with<e>(move action: with<e>(): i32): i32 = {
+let forward<e: effects>: with<e>(move action: with<e>(): i32): i32 = {
   action()
 }
 
@@ -7096,8 +7096,8 @@ fn effect_compile_parameters_select_pure_or_unsafe_instances() {
         r#"
 let unsafe = core.unsafe.unsafety
 
-let tagged<e: effects> with<e>(value: i32): i32 = {  value }
-let forward<e: effects> with<e>(value: i32): i32 = {  tagged<e>(value) }
+let tagged<e: effects>: with<e>(value: i32): i32 = {  value }
+let forward<e: effects>: with<e>(value: i32): i32 = {  tagged<e>(value) }
 let main(): i32 = {  forward(20) + forward<pure>(20) + unsafe { forward<e: unsafe>(2) } }
 "#,
     )
@@ -7107,7 +7107,7 @@ let main(): i32 = {  forward(20) + forward<pure>(20) + unsafe { forward<e: unsaf
         r#"
 let unsafe = core.unsafe.unsafety
 
-let identity<e: effects, t: type> with<e>(value: t): t = {  value }
+let identity<e: effects, t: type>: with<e>(value: t): t = {  value }
 let main(): i32 = {  identity(20) + unsafe { identity<e: unsafe, t: i32>(22) } }
 "#,
     )
@@ -7117,8 +7117,8 @@ let main(): i32 = {  identity(20) + unsafe { identity<e: unsafe, t: i32>(22) } }
         r#"
 let unsafe = core.unsafe.unsafety
 
-let tagged<e: effects> with<e>(value: i32): i32 = {  value }
-let forward<e: effects> with<e>(value: i32): i32 = {  tagged<e>(value) }
+let tagged<e: effects>: with<e>(value: i32): i32 = {  value }
+let forward<e: effects>: with<e>(value: i32): i32 = {  tagged<e>(value) }
 let main(): i32 = {  forward<unsafe>(42) }
 "#,
     )
@@ -7134,7 +7134,7 @@ let main(): i32 = {  forward<unsafe>(42) }
         r#"
 let unsafe = core.unsafe.unsafety
 
-let read<e: effects> with<e>(pointer: Ptr<i32>): i32 = {  *pointer }
+let read<e: effects>: with<e>(pointer: Ptr<i32>): i32 = {  *pointer }
 let main(): i32 = {
   let value = 42
   unsafe { read<unsafe>(ptr(borrow(value))) }
@@ -7147,7 +7147,7 @@ let main(): i32 = {
         r#"
 let unsafe = core.unsafe.unsafety
 
-let read<e: effects> with<e>(pointer: Ptr<i32>): i32 = {  *pointer }
+let read<e: effects>: with<e>(pointer: Ptr<i32>): i32 = {  *pointer }
 let main(): i32 = {
   let value = 42
   read(ptr(borrow(value)))
@@ -7164,7 +7164,7 @@ let main(): i32 = {
 
     let errors = compile_text(
         r#"
-let tagged<e: effects> with<e>(value: i32): i32 = {  value }
+let tagged<e: effects>: with<e>(value: i32): i32 = {  value }
 let main(): i32 = {  tagged<e: copyable>(42) }
 "#,
     )
@@ -7182,7 +7182,7 @@ let main(): i32 = {  tagged<e: copyable>(42) }
         r#"
 let unsafe = core.unsafe.unsafety
 
-let always<e: effects> with<unsafe, e>(value: i32): i32 = {  value }
+let always<e: effects>: with<unsafe, e>(value: i32): i32 = {  value }
 let main(): i32 = {  always<pure>(42) }
 "#,
     )
@@ -7197,8 +7197,8 @@ fn effect_identities_and_effect_rows_have_distinct_sorts() {
     compile_resolved_text(
         r#"
 let audit = effect {}
-let require<identity: effect> with<identity>(value: i32): i32 = {  value }
-let forward<row: effects> with<row>(value: i32): i32 = {  value }
+let require<identity: effect>: with<identity>(value: i32): i32 = {  value }
+let forward<row: effects>: with<row>(value: i32): i32 = {  value }
 let main(): i32 = {  forward<pure>(42) }
 "#,
     )
@@ -7206,7 +7206,7 @@ let main(): i32 = {  forward<pure>(42) }
 
     let errors = compile_resolved_text(
         r#"
-let require<identity: effect> with<identity>(value: i32): i32 = {  value }
+let require<identity: effect>: with<identity>(value: i32): i32 = {  value }
 let main(): i32 = {  require<identity: pure>(42) }
 "#,
     )
@@ -7254,7 +7254,7 @@ let main(): i32 = {  use<f: pair>() }
 
     let wrong_effect = compile_text(
         r#"
-let run<e: effects> with<e>(): i32 = {  42 }
+let run<e: effects>: with<e>(): i32 = {  42 }
 let main(): i32 = {  run<e: copyable>() }
 "#,
     )
@@ -7274,7 +7274,7 @@ let unsafe = core.unsafe.unsafety
 
 let value = struct { value: i32 }
 extend<value> {
-  let tagged<e: effects> with<e>(self: Borrow<self>)(): i32 = {  self.value }
+  let tagged<e: effects>: with<e>(self: Borrow<self>)(): i32 = {  self.value }
 }
 let main(): i32 = {
   let item = value{ value: 42 }
@@ -7997,7 +7997,7 @@ fn higher_kinded_trait_method_signatures_validate() {
     let program = crate::parser::parse(
         r#"
 		let functor = trait<self: <value: type>: type> {
-		  map<e: effects, a: type, b: type>with<e>(
+		  map<e: effects, a: type, b: type>:with<e>(
 		    move self: self<a>,
 		  )(
 		    transform: with<e>(a): b,
@@ -8006,7 +8006,7 @@ fn higher_kinded_trait_method_signatures_validate() {
 	let Chain = trait {
 	  Item: type
 	  Rebind<value: type>: type
-	  chain<e: effects, u: type>with<e>(
+	  chain<e: effects, u: type>:with<e>(
 	    move self
 	  )(
 	    transform: with<e>(Item): u
@@ -8037,11 +8037,11 @@ fn higher_kinded_trait_method_signatures_validate() {
 fn higher_kinded_trait_inheritance_requires_constructor_supertraits() {
     let source = r#"
 	let functor = trait<self: <value: type>: type> {
-	  map<e: effects, a: type, b: type>(
+	  map<e: effects, a: type, b: type>: with<e>(
 	    move self: self<a>,
 	  )(
 	    transform: with<e>(a): b,
-	  ): self<b> with<e>
+	  ): self<b>
 	}
 let applicative = trait<self: <value: type>: type><requires: self is functor> {
   pure<a: type>(move value: a): self<a> }
@@ -8061,11 +8061,11 @@ let main(): i32 = {  0 }
     compile_text(
         r#"
 	let functor = trait<self: <value: type>: type> {
-	  map<e: effects, a: type, b: type>(
+	  map<e: effects, a: type, b: type>: with<e>(
 	    move self: self<a>,
 	  )(
 	    transform: with<e>(a): b,
-	  ): self<b> with<e>
+	  ): self<b>
 	}
 let applicative = trait<self: <value: type>: type><requires: self is functor> {
   pure<a: type>(move value: a): self<a> }
@@ -8075,11 +8075,11 @@ extend<carrier, applicative> {
 carrier<a>{ value: value }
   }}
 	extend<carrier, functor> {
-	  let map<e: effects, a: type, b: type>(
+	  let map<e: effects, a: type, b: type>: with<e>(
 	    move self: carrier<a>,
 	  )(
 	    transform: with<e>(a): b,
-	  ): carrier<b> with<e> = {
+	  ): carrier<b> = {
 	    carrier<b>{ value: transform(self.value) }
 	  }
     }
@@ -8141,7 +8141,7 @@ let main(): i32 = {  0 }
         (
             r#"
 let bad = trait<self: type> {
-  read<e: <error: type>: effect>with<e>(): ()
+  read<e: <error: type>: effect>:with<e>(): ()
 }
 "#,
             "expects 1 type arguments, found 0",
@@ -8218,19 +8218,19 @@ fn constructor_trait_implementation_methods_register_generic_templates() {
     let program = crate::parser::parse(
         r#"
 	let functor = trait<self: <value: type>: type> {
-	  map<e: effects, a: type, b: type>(
+	  map<e: effects, a: type, b: type>: with<e>(
 	    move self: self<a>,
 	  )(
 	    transform: with<e>(a): b,
-	  ): self<b> with<e>
+	  ): self<b>
 	}
 let carrier<t: type> = struct { value: t }
 	extend<carrier, functor> {
-	  let map<e: effects, a: type, b: type>(
+	  let map<e: effects, a: type, b: type>: with<e>(
 	    move self: carrier<a>,
 	  )(
 	    transform: with<e>(a): b,
-	  ): carrier<b> with<e> = {
+	  ): carrier<b> = {
 	    carrier<b>{ value: transform(self.value) }
 	  }
     }
@@ -8283,19 +8283,19 @@ fn constructor_trait_receiver_methods_dispatch_from_instances() {
     let program = crate::parser::parse(
         r#"
 	let functor = trait<self: <value: type>: type> {
-	  map<e: effects, a: type, b: type>(
+	  map<e: effects, a: type, b: type>: with<e>(
 	    move self: self<a>,
 	  )(
 	    transform: with<e>(a): b,
-	  ): self<b> with<e>
+	  ): self<b>
 	}
 let carrier<t: type> = struct { value: t }
 	extend<carrier, functor> {
-	  let map<e: effects, a: type, b: type>(
+	  let map<e: effects, a: type, b: type>: with<e>(
 	    move self: carrier<a>,
 	  )(
 	    transform: with<e>(a): b,
-	  ): carrier<b> with<e> = {
+	  ): carrier<b> = {
 	    carrier<b>{ value: transform(self.value) }
 	  }
     }
@@ -8534,11 +8534,11 @@ let main(): i32 = {  0 }
         (
             r#"
 	let functor = trait<self: <value: type>: type> {
-	  map<e: effects, a: type, b: type>(
+	  map<e: effects, a: type, b: type>: with<e>(
 	    move self: self<a>,
 	  )(
 	    transform: with<e>(a): b,
-	  ): self<b> with<e>
+	  ): self<b>
 	}
 let carrier<t: type> = struct { value: t }
 extend<carrier, functor> {}
@@ -9678,7 +9678,7 @@ fn cold_async_future_polls_to_the_standard_ready_variant() {
 let Poll = core.async.Poll
 let Future = core.async.Future
 
-let poll_once<e: effects, f: type, t: type> with<e>(future: Borrow<mut><f>): Poll<t>
+let poll_once<e: effects, f: type, t: type>: with<e>(future: Borrow<mut><f>): Poll<t>
 requires<f is Future<e> && f.Output == t> = {
   future.poll()
 }
